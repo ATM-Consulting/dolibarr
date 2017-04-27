@@ -210,8 +210,10 @@ class Export
 			{
 				if ($value != '') $sqlWhere[]=$this->build_filterQuery($this->array_export_TypeFields[$indice][$key], $key, $array_filterValue[$key]);
 			}
-			if (count($sqlWhere)>0) {
+			if (count($sqlWhere)>0 && empty(strstr($sql,'WHERE'))) {
 				$sql.=' WHERE '.implode(' AND ',$sqlWhere);
+			} else if (count($sqlWhere)>0 ) {
+				$sql.=' AND '.implode(' AND ',$sqlWhere);
 			}
 		}
 		$sql.=$this->array_export_sql_order[$indice];
