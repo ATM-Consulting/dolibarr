@@ -93,9 +93,12 @@ $day_lim	= GETPOST('day_lim','int');
 $month_lim	= GETPOST('month_lim','int');
 $year_lim	= GETPOST('year_lim','int');
 $toselect = GETPOST('toselect', 'array');
+$filter = GETPOST('filtre','alpha');
 
 $option = GETPOST('option');
-if ($option == 'late') $filter = 'paye:0';
+if ($option == 'late') {
+	$filter = 'paye:0';
+}
 
 $search_all = GETPOST('sall', 'alphanohtml');
 $search_label = GETPOST("search_label","alpha");
@@ -194,7 +197,7 @@ if (empty($reshook))
 {
     include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 
-    if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter") || GETPOST("button_removefilter.x"))		// All test must be present to be compatible with all browsers
+    if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter','alpha') || GETPOST('button_removefilter.x','alpha'))		// All test must be present to be compatible with all browsers
     {
         $search_all="";
         $search_user='';
@@ -372,8 +375,9 @@ foreach ($search_array_options as $key => $val)
     $tmpkey=preg_replace('/search_options_/','',$key);
     $typ=$extrafields->attribute_type[$tmpkey];
     $mode=0;
-    if (in_array($typ, array('int','double'))) $mode=1;    // Search on a numeric
-    if ($val && ( ($crit != '' && ! in_array($typ, array('select'))) || ! empty($crit)))
+    if (in_array($typ, array('int','double','real'))) $mode=1;    							// Search on a numeric
+    if (in_array($typ, array('sellist')) && $crit != '0' && $crit != '-1') $mode=2;    		// Search on a foreign key int
+    if ($crit != '' && (! in_array($typ, array('select','sellist')) || $crit != '0'))
     {
         $sql .= natural_search('ef.'.$tmpkey, $crit, $mode);
     }
@@ -426,6 +430,7 @@ if ($resql)
 	{
 		$soc = new Societe($db);
 		$soc->fetch($socid);
+		if (empty($search_societe)) $search_societe = $soc->name;
 	}
 
 	$param='&socid='.$socid;
@@ -491,7 +496,7 @@ if ($resql)
 
 	    if (! GETPOST('cancel'))
 	    {
-	        $objecttmp=new FactureFourn($db);
+	    	$objecttmp=new FactureFournisseur($db);
 	        $listofselectedid=array();
 	        $listofselectedthirdparties=array();
 	        $listofselectedref=array();
@@ -890,7 +895,7 @@ if ($resql)
 	            $align=$extrafields->getAlignFlag($key);
     			$sortonfield = "ef.".$key;
     			if (! empty($extrafields->attribute_computed[$key])) $sortonfield='';
-    			print_liste_field_titre($langs->trans($extralabels[$key]),$_SERVER["PHP_SELF"],$sortonfield,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
+    			print_liste_field_titre($extralabels[$key],$_SERVER["PHP_SELF"],$sortonfield,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
 	        }
 	    }
 	}

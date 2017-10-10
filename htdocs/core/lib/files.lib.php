@@ -47,14 +47,15 @@ function dol_basename($pathfile)
  *  @param	string		$filter        	Regex filter to restrict list. This regex value must be escaped for '/' by doing preg_quote($var,'/'), since this char is used for preg_match function,
  *                                      but must not contains the start and end '/'. Filter is checked into basename only.
  *  @param	array		$excludefilter  Array of Regex for exclude filter (example: array('(\.meta|_preview.*\.png)$','^\.')). Exclude is checked into fullpath.
- *  @param	string		$sortcriteria	Sort criteria ("","fullname","name","date","size")
+ *  @param	string		$sortcriteria	Sort criteria ("","fullname","relativename","name","date","size")
  *  @param	string		$sortorder		Sort order (SORT_ASC, SORT_DESC)
  *	@param	int			$mode			0=Return array minimum keys loaded (faster), 1=Force all keys like date and size to be loaded (slower), 2=Force load of date only, 3=Force load of size only
  *  @param	int			$nohook			Disable all hooks
+ *  @param	string		$relativename	For recursive purpose only. Must be "" at first call.
  *  @return	array						Array of array('name'=>'xxx','fullname'=>'/abc/xxx','date'=>'yyy','size'=>99,'type'=>'dir|file',...)
  *  @see dol_dir_list_indatabase
  */
-function dol_dir_list($path, $types="all", $recursive=0, $filter="", $excludefilter="", $sortcriteria="name", $sortorder=SORT_ASC, $mode=0, $nohook=0)
+function dol_dir_list($path, $types="all", $recursive=0, $filter="", $excludefilter="", $sortcriteria="name", $sortorder=SORT_ASC, $mode=0, $nohook=0, $relativename="")
 {
 	global $db, $hookmanager;
 	global $object;
@@ -144,6 +145,7 @@ function dol_dir_list($path, $types="all", $recursive=0, $filter="", $excludefil
 										"name" => $file,
 										"path" => $path,
 										"level1name" => $level1name,
+										"relativename" => ($relativename?$relativename.'/':'').$file,
 										"fullname" => $path.'/'.$file,
 										"date" => $filedate,
 										"size" => $filesize,
@@ -155,7 +157,7 @@ function dol_dir_list($path, $types="all", $recursive=0, $filter="", $excludefil
 						// if we're in a directory and we want recursive behavior, call this function again
 						if ($recursive)
 						{
-							$file_list = array_merge($file_list,dol_dir_list($path."/".$file, $types, $recursive, $filter, $excludefilter, $sortcriteria, $sortorder, $mode, $nohook));
+							$file_list = array_merge($file_list, dol_dir_list($path."/".$file, $types, $recursive, $filter, $excludefilter, $sortcriteria, $sortorder, $mode, $nohook, ($relativename?$relativename.'/':'').$file));
 						}
 					}
 					else if (! $isdir && (($types == "files") || ($types == "all")))
@@ -172,6 +174,7 @@ function dol_dir_list($path, $types="all", $recursive=0, $filter="", $excludefil
 									"name" => $file,
 									"path" => $path,
 									"level1name" => $level1name,
+									"relativename" => ($relativename?$relativename.'/':'').$file,
 									"fullname" => $path.'/'.$file,
 									"date" => $filedate,
 									"size" => $filesize,
@@ -390,6 +393,7 @@ function dol_dir_is_emtpy($folder)
  *
  * 	@param	string	$file		Filename
  * 	@return int					<0 if KO, Number of lines in files if OK
+ *  @see dol_nboflines
  */
 function dol_count_nb_of_line($file)
 {
@@ -445,12 +449,12 @@ function dol_filemtime($pathoffile)
  * Make replacement of strings into a file.
  *
  * @param	string	$srcfile			Source file (can't be a directory)
- * @param	array	$arrayreplacement	Array with strings to replace
+ * @param	array	$arrayreplacement	Array with strings to replace. Example: array('valuebefore'=>'valueafter', ...)
  * @param	string	$destfile			Destination file (can't be a directory). If empty, will be same than source file.
  * @param	int		$newmask			Mask for new file (0 by default means $conf->global->MAIN_UMASK). Example: '0666'
  * @param	int		$indexdatabase		Index new file into database.
  * @return	int							<0 if error, 0 if nothing done (dest file already exists), >0 if OK
- * @see		dolCopyr
+ * @see		dolCopyr dolReplaceRegExInFile
  */
 function dolReplaceInFile($srcfile, $arrayreplacement, $destfile='', $newmask=0, $indexdatabase=0)
 {
@@ -512,6 +516,23 @@ function dolReplaceInFile($srcfile, $arrayreplacement, $destfile='', $newmask=0,
 }
 
 /**
+ * Make replacement of strings into a file.
+ *
+ * @param	string	$srcfile			Source file (can't be a directory)
+ * @param	array	$arrayreplacement	Array with strings to replace. Example: array('valuebefore'=>'valueafter', ...)
+ * @param	string	$destfile			Destination file (can't be a directory). If empty, will be same than source file.
+ * @param	int		$newmask			Mask for new file (0 by default means $conf->global->MAIN_UMASK). Example: '0666'
+ * @param	int		$indexdatabase		Index new file into database.
+ * @return	int							<0 if error, 0 if nothing done (dest file already exists), >0 if OK
+ * @see		dolCopyr dolReplaceInFile
+ */
+function dolReplaceRegExInFile($srcfile, $arrayreplacement, $destfile='', $newmask=0, $indexdatabase=0)
+{
+	// TODO
+
+}
+
+/**
  * Copy a file to another file.
  *
  * @param	string	$srcfile			Source file (can't be a directory)
@@ -567,7 +588,7 @@ function dol_copy($srcfile, $destfile, $newmask=0, $overwriteifexists=1)
 }
 
 /**
- * Copy a dir to another dir.
+ * Copy a dir to another dir. This include recursive subdirectories.
  *
  * @param	string	$srcfile			Source file (a directory)
  * @param	string	$destfile			Destination file (a directory)
@@ -609,7 +630,7 @@ function dolCopyDir($srcfile, $destfile, $newmask, $overwriteifexists, $arrayrep
         $dir_handle=opendir($ossrcfile);
         while ($file=readdir($dir_handle))
         {
-            if ($file!="." && $file!="..")
+            if ($file != "." && $file != ".." && ! is_link($ossrcfile."/".$file))
             {
                 if (is_dir($ossrcfile."/".$file))
                 {
@@ -978,7 +999,8 @@ function dol_move_uploaded_file($src_file, $dest_file, $allowoverwrite, $disable
 }
 
 /**
- *  Remove a file or several files with a mask
+ *  Remove a file or several files with a mask.
+ *  This delete file physically but also database indexes.
  *
  *  @param	string	$file           File to delete or mask of files to delete
  *  @param  int		$disableglob    Disable usage of glob like * so function is an exact delete function that will return error if no file found
@@ -1113,12 +1135,13 @@ function dol_delete_dir($dir,$nophperrors=0)
  *  Remove a directory $dir and its subdirectories (or only files and subdirectories)
  *
  *  @param	string	$dir            Dir to delete
- *  @param  int		$count          Counter to count nb of deleted elements
+ *  @param  int		$count          Counter to count nb of elements found to delete
  *  @param  int		$nophperrors    Disable all PHP output errors
  *  @param	int		$onlysub		Delete only files and subdir, not main directory
- *  @return int             		Number of files and directory removed
+ *  @param  int		$countdeleted   Counter to count nb of elements found really deleted
+ *  @return int             		Number of files and directory we try to remove. NB really removed is returned into $countdeleted.
  */
-function dol_delete_dir_recursive($dir,$count=0,$nophperrors=0,$onlysub=0)
+function dol_delete_dir_recursive($dir, $count=0, $nophperrors=0, $onlysub=0, &$countdeleted=0)
 {
     dol_syslog("functions.lib:dol_delete_dir_recursive ".$dir,LOG_DEBUG);
     if (dol_is_dir($dir))
@@ -1132,15 +1155,15 @@ function dol_delete_dir_recursive($dir,$count=0,$nophperrors=0,$onlysub=0)
 
                 if ($item != "." && $item != "..")
                 {
-                    if (is_dir(dol_osencode("$dir/$item")))
+                    if (is_dir(dol_osencode("$dir/$item")) && ! is_link(dol_osencode("$dir/$item")))
                     {
-                        $count=dol_delete_dir_recursive("$dir/$item",$count,$nophperrors);
+                        $count=dol_delete_dir_recursive("$dir/$item", $count, $nophperrors, 0, $countdeleted);
                     }
                     else
                     {
-                        dol_delete_file("$dir/$item",1,$nophperrors);
+                        $result=dol_delete_file("$dir/$item", 1, $nophperrors);
                         $count++;
-                        //echo " removing $dir/$item<br>\n";
+                        if ($result) $countdeleted++;
                     }
                 }
             }
@@ -1148,14 +1171,13 @@ function dol_delete_dir_recursive($dir,$count=0,$nophperrors=0,$onlysub=0)
 
             if (empty($onlysub))
             {
-	            dol_delete_dir($dir,$nophperrors);
-    	        $count++;
-        	    //echo "removing $dir<br>\n";
+	            $result=dol_delete_dir($dir, $nophperrors);
+	            $count++;
+    	        if ($result) $countdeleted++;
             }
         }
     }
 
-    //echo "return=".$count;
     return $count;
 }
 
@@ -1328,14 +1350,15 @@ function dol_init_file_process($pathtoscan='', $trackid='')
  *
  * @param	string	$upload_dir				Directory where to store uploaded file (note: used to forge $destpath = $upload_dir + filename)
  * @param	int		$allowoverwrite			1=Allow overwrite existing file
- * @param	int		$donotupdatesession		1=Do no edit _SESSION variable
+ * @param	int		$donotupdatesession		1=Do no edit _SESSION variable but update database index. 0=Update _SESSION and not database index.
  * @param	string	$varfiles				_FILES var name
  * @param	string	$savingdocmask			Mask to use to define output filename. For example 'XXXXX-__YYYYMMDD__-__file__'
  * @param	string	$link					Link to add (to add a link instead of a file)
  * @param   string  $trackid                Track id (used to prefix name of session vars to avoid conflict)
+ * @param	int		$generatethumbs			1=Generate also thumbs for uploaded image files
  * @return	int                             <=0 if KO, >0 if OK
  */
-function dol_add_file_process($upload_dir, $allowoverwrite=0, $donotupdatesession=0, $varfiles='addedfile', $savingdocmask='', $link=null, $trackid='')
+function dol_add_file_process($upload_dir, $allowoverwrite=0, $donotupdatesession=0, $varfiles='addedfile', $savingdocmask='', $link=null, $trackid='', $generatethumbs=1)
 {
 	global $db,$user,$conf,$langs;
 
@@ -1386,16 +1409,19 @@ function dol_add_file_process($upload_dir, $allowoverwrite=0, $donotupdatesessio
 					include_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 
 					// Generate thumbs.
-					if (image_format_supported($destfull) == 1)
+					if ($generatethumbs)
 					{
-					    // Create thumbs
-					    // We can't use $object->addThumbs here because there is no $object known
+						if (image_format_supported($destfull) == 1)
+						{
+						    // Create thumbs
+						    // We can't use $object->addThumbs here because there is no $object known
 
-					    // Used on logon for example
-					    $imgThumbSmall = vignette($destfull, $maxwidthsmall, $maxheightsmall, '_small', 50, "thumbs");
-					    // Create mini thumbs for image (Ratio is near 16/9)
-					    // Used on menu or for setup page for example
-					    $imgThumbMini = vignette($destfull, $maxwidthmini, $maxheightmini, '_mini', 50, "thumbs");
+						    // Used on logon for example
+						    $imgThumbSmall = vignette($destfull, $maxwidthsmall, $maxheightsmall, '_small', 50, "thumbs");
+						    // Create mini thumbs for image (Ratio is near 16/9)
+						    // Used on menu or for setup page for example
+						    $imgThumbMini = vignette($destfull, $maxwidthmini, $maxheightmini, '_mini', 50, "thumbs");
+						}
 					}
 
 					// Update session
@@ -1533,40 +1559,52 @@ function dol_remove_file_process($filenb,$donotupdatesession=0,$donotdeletefile=
 }
 
 /**
- * 	Convert an image file into anoher format.
+ * 	Convert an image file into another format.
  *  This need Imagick php extension.
  *
  *  @param	string	$fileinput  Input file name
  *  @param  string	$ext        Format of target file (It is also extension added to file if fileoutput is not provided).
  *  @param	string	$fileoutput	Output filename
- *  @return	int					<0 if KO, >0 if OK
+ *  @return	int					<0 if KO, 0=Nothing done, >0 if OK
  */
-function dol_convert_file($fileinput,$ext='png',$fileoutput='')
+function dol_convert_file($fileinput, $ext='png', $fileoutput='')
 {
 	global $langs;
 
-	$image=new Imagick();
-	$ret = $image->readImage($fileinput);
-	if ($ret)
+	if (class_exists('Imagick'))
 	{
-		$ret = $image->setImageFormat($ext);
+		$image=new Imagick();
+		try {
+			$ret = $image->readImage($fileinput);
+		} catch(Exception $e) {
+			dol_syslog("Failed to read image using Imagick. Try to install package 'apt-get install ghostscript'.", LOG_WARNING);
+			return 0;
+		}
 		if ($ret)
 		{
-			if (empty($fileoutput)) $fileoutput=$fileinput.".".$ext;
+			$ret = $image->setImageFormat($ext);
+			if ($ret)
+			{
+				if (empty($fileoutput)) $fileoutput=$fileinput.".".$ext;
 
-			$count = $image->getNumberImages();
-			$ret = $image->writeImages($fileoutput, true);
-			if ($ret) return $count;
-			else return -3;
+				$count = $image->getNumberImages();
+				$ret = $image->writeImages($fileoutput, true);
+				if ($ret) return $count;
+				else return -3;
+			}
+			else
+			{
+				return -2;
+			}
 		}
 		else
 		{
-			return -2;
+			return -1;
 		}
 	}
 	else
 	{
-		return -1;
+		return 0;
 	}
 }
 
@@ -1689,7 +1727,7 @@ function dol_uncompress($inputfile,$outputdir)
  * Compress a directory and subdirectories into a package file.
  *
  * @param 	string	$inputdir		Source dir name
- * @param 	string	$outputfile		Target file name
+ * @param 	string	$outputfile		Target file name (output directory must exists and be writable)
  * @param 	string	$mode			'zip'
  * @return	int						<0 if KO, >0 if OK
  */
@@ -1698,6 +1736,15 @@ function dol_compress_dir($inputdir, $outputfile, $mode="zip")
     $foundhandler=0;
 
     dol_syslog("Try to zip dir ".$inputdir." into ".$outputdir." mode=".$mode);
+
+    if (! dol_is_dir(dirname($outputfile)) || ! is_writable(dirname($outputfile)))
+    {
+    	global $langs, $errormsg;
+    	$langs->load("errors");
+    	$errormsg=$langs->trans("ErrorFailedToWriteInDir",$outputfile);
+		return -3;
+    }
+
     try
     {
         if ($mode == 'gz')     { $foundhandler=0; }
@@ -1721,7 +1768,7 @@ function dol_compress_dir($inputdir, $outputfile, $mode="zip")
 
                 // Initialize archive object
                 $zip = new ZipArchive();
-                $zip->open($outputfile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+                $result = $zip->open($outputfile, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
                 // Create recursive directory iterator
                 /** @var SplFileInfo[] $files */
@@ -1755,6 +1802,10 @@ function dol_compress_dir($inputdir, $outputfile, $mode="zip")
         {
             dol_syslog("Try to zip with format ".$mode." with no handler for this format",LOG_ERR);
             return -2;
+        }
+        else
+        {
+        	return 0;
         }
     }
     catch (Exception $e)
@@ -1829,7 +1880,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	if ($modulepart == 'medias' && !empty($dolibarr_main_data_root))
 	{
 	    $accessallowed=1;
-	    $original_file=$dolibarr_main_data_root.'/medias/'.$original_file;
+	    $original_file=$conf->medias->multidir_output[$entity].'/'.$original_file;
 	}
 	// Wrapping for *.log files, like when used with url http://.../document.php?modulepart=logs&file=dolibarr.log
 	elseif ($modulepart == 'logs' && !empty($dolibarr_main_data_root))

@@ -63,7 +63,7 @@ require_once '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 
 // Load user to have $user->conf loaded (not done into main because of NOLOGIN constant defined)
-if (empty($user->id) && ! empty($_SESSION['dol_login'])) $user->fetch('',$_SESSION['dol_login']);
+if (empty($user->id) && ! empty($_SESSION['dol_login'])) $user->fetch('',$_SESSION['dol_login'],'',1);
 
 
 // Define css type
@@ -267,7 +267,9 @@ input.select2-input {
 	border-bottom:  solid 1px rgba(0,0,0,.2) !important;	/* required to avoid to lose bottom line when focus is lost on select2. */
 }
 
-.liste_titre input[name=monthvalid], .liste_titre input[name=search_smonth], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month], .liste_titre select[name=month], .liste_titre input[name=month_lim] {
+.liste_titre input[name=monthvalid], .liste_titre input[name=search_ordermonth], .liste_titre input[name=search_deliverymonth],
+.liste_titre input[name=search_smonth], .liste_titre input[name=search_month], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month], .liste_titre select[name=month],
+.liste_titre input[name=month_lim] {
 	margin-right: 4px;
 }
 input[type=submit] {
@@ -439,9 +441,10 @@ hr { border: 0; border-top: 1px solid #ccc; }
 	box-shadow: 0px 0px 6px 1px rgba(0, 0, 60, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
 }
 .button:hover, .buttonDelete:hover   {
-	-moz-box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
-	-webkit-box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
-	box-shadow: 0px 0px 6px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	/* warning: having a larger shadow has side effect when button is completely on left of a table */
+	-moz-box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	-webkit-box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
+	box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.2), 0px 0px 0px rgba(60,60,60,0.1);
 }
 .button:disabled, .buttonDelete:disabled {
 	opacity: 0.4;
@@ -540,8 +543,14 @@ textarea.centpercent {
 .paddingleft {
 	padding-<?php print $left; ?>: 4px;
 }
+.paddingleft2 {
+	padding-<?php print $left; ?>: 2px;
+}
 .paddingright {
 	padding-<?php print $right; ?>: 4px;
+}
+.paddingright2 {
+	padding-<?php print $right; ?>: 2px;
 }
 .cursorpointer {
 	cursor: pointer;
@@ -635,6 +644,12 @@ div.myavailability {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.tdoverflowmax200 {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .tdoverflowmax300 {			/* For tdoverflow, the max-midth become a minimum ! */
     max-width: 300px;
     overflow: hidden;
@@ -704,7 +719,7 @@ div.fiche>form>div.div-table-responsive {
 }
 
 .flexcontainer {
-    display: inline-flex;
+    <?php if (in_array($conf->browser->name, array('chrome','firefox'))) echo 'display: inline-flex;'."\n"; ?>
     flex-flow: row wrap;
     justify-content: flex-start;
 }
@@ -714,10 +729,11 @@ div.fiche>form>div.div-table-responsive {
 .thumbstat150 {
 	flex: 1 1 170px;
 }
-.thumbstat, thumbstat150 {
+.thumbstat, .thumbstat150 {
     /* flex-grow: 1; */
     /* flex-shrink: 1; */
     /* flex-basis: 140px; */
+	display: inline;
     width: 100%;
     justify-content: flex-start;
     align-self: flex-start;
@@ -2183,6 +2199,11 @@ span.butAction, span.butActionDelete {
     border: 1px solid #bbb;
 }
 
+.butActionTransparent {
+	color: #222 ! important;
+	background-color: transparent ! important;
+}
+
 <?php if (! empty($conf->global->MAIN_BUTTON_HIDE_UNAUTHORIZED) && (! $user->admin)) { ?>
 .butActionRefused {
 	display: none;
@@ -2257,7 +2278,7 @@ div.tabBar div.border .table-border-row, div.tabBar div.border .table-key-border
 }
 div .tdtop {
     vertical-align: top !important;
-	padding-top: 8px !important;
+	/* padding-top: 8px !important; */
 	padding-bottom: 2px !important;
 	padding-bottom: 0px;
 }
@@ -2605,7 +2626,7 @@ form.tagtr:last-of-type div.tagtd, tr.pair:last-of-type td, tr.impair:last-of-ty
 tr.pair td .nobordernopadding tr td, tr.impair td .nobordernopadding tr td {
     border-bottom: 0px !important;
 }
-td.nobottom, td.nobottom {
+tr.nobottom td, tr.nobottom , td.nobottom {
     border-bottom: 0px !important;
 }
 div.liste_titre .tagtd {
@@ -2651,7 +2672,6 @@ div.liste_titre_bydiv, .liste_titre div.tagtr, tr.liste_titre, tr.liste_titre_se
 }
 tr.liste_titre th, tr.liste_titre td, th.liste_titre
 {
-/*	border-bottom: 1px solid #<?php echo ($colorbacktitle1 == '255,255,255'?'BBBBBB':'ddd'); ?>; */
 	border-bottom: 1px solid #888;
 }
 tr.liste_titre:first-child th, tr:first-child th.liste_titre {
@@ -2777,6 +2797,13 @@ div.tabBar .noborder {
 	border-bottom: 1px solid #ddd;
 }
 
+ul.noborder li:nth-child(even):not(.liste_titre) {
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+}
 
 
 /*
@@ -2803,10 +2830,10 @@ div.tabBar .noborder {
 }
 .boxstats {
     padding: 3px;
-    width: 105px;
+    width: 103px;
 }
 .boxstats130 {
-    width: 160px;
+    width: 158px;
     height: 48px;
     padding: 3px
 }
@@ -2989,12 +3016,11 @@ div.info {
   color: #fff;
   padding: 0.4em 0.4em 0.4em 0.4em;
   margin: 0.5em 0em 0.5em 0em;
-  border: 1px solid #e0e0e0;
+  /* border: 1px solid #e0e0e0; */
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  background: #806090;
-  /* text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); */
+  background: #798080;
 }
 
 div.warning a, div.info a, div.error a {
@@ -3345,6 +3371,11 @@ a.websitebuttonsitepreview img {
 	width: 26px;
 	display: inline-block;
 }
+.websitehelp {
+    vertical-align: middle;
+    float: right;
+    padding-top: 8px;
+}
 
 
 /* ============================================================================== */
@@ -3417,6 +3448,15 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 	       height:18px;
 	       cursor:pointer;
 	     }
+
+/* ============================================================================== */
+/* Gantt
+/* ============================================================================== */
+
+td.gtaskname {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 
 /* ============================================================================== */

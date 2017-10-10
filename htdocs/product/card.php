@@ -483,8 +483,8 @@ if (empty($reshook))
             if ($object->id > 0)
             {
                 $object->ref = GETPOST('clone_ref');
-                $object->status = 0;
-                $object->status_buy = 0;
+                //$object->status = 0;
+                //$object->status_buy = 0;
                 $object->id = null;
                 $object->barcode = -1;
 
@@ -561,7 +561,7 @@ if (empty($reshook))
     {
         if (($object->type == Product::TYPE_PRODUCT && $user->rights->produit->supprimer) || ($object->type == Product::TYPE_SERVICE && $user->rights->service->supprimer))
         {
-            $result = $object->delete(DolibarrApiAccess::$user);
+            $result = $object->delete($user);
         }
 
         if ($result > 0)
@@ -1812,7 +1812,7 @@ if ($result > 0)
 }
 
 $tmpcode='';
-if (! empty($modCodeProduct->code_auto)) $tmpcode=$modCodeProduct->getNextValue($object,$object->type);
+if (! empty($modCodeProduct->code_auto) && $conf->global->PRODUIT_USE_MASK_ON_CLONE) $tmpcode=$modCodeProduct->getNextValue($object,$object->type);
 
 // Define confirmation messages
 $formquestionclone=array(

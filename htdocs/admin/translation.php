@@ -74,7 +74,7 @@ if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'e
 include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 
 // Purge search criteria
-if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter.x") || GETPOST("button_removefilter")) // All tests are required to be compatible with all browsers
+if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter.x','alpha') || GETPOST('button_removefilter','alpha')) // All tests are required to be compatible with all browsers
 {
     $transkey='';
     $transvalue='';
@@ -162,6 +162,7 @@ if ($action == 'delete')
  * View
  */
 
+$form = new Form($db);
 $formadmin = new FormAdmin($db);
 
 $wikihelp='EN:Setup|FR:Paramétrage|ES:Configuración';
@@ -233,12 +234,13 @@ if ($mode == 'overwrite')
     print '<input type="hidden" id="action" name="action" value="">';
     print '<input type="hidden" id="mode" name="mode" value="'.$mode.'">';
 
+	print '<div class="div-table-responsive-no-min">';
     print '<table class="noborder" width="100%">';
     print '<tr class="liste_titre">';
-    print_liste_field_titre($langs->trans("Language").' (en_US, es_MX, ...)',$_SERVER["PHP_SELF"],'lang,transkey','',$param,'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("Key"),$_SERVER["PHP_SELF"],'transkey','',$param,'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("NewTranslationStringToShow"),$_SERVER["PHP_SELF"],'transvalue','',$param,'',$sortfield,$sortorder);
-    //if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre($langs->trans("Entity"),$_SERVER["PHP_SELF"],'entity,transkey','',$param,'',$sortfield,$sortorder);
+    print_liste_field_titre( $langs->trans("Language").' (en_US, es_MX, ...)',$_SERVER["PHP_SELF"],'lang,transkey','',$param,'',$sortfield,$sortorder);
+    print_liste_field_titre("Key",$_SERVER["PHP_SELF"],'transkey','',$param,'',$sortfield,$sortorder);
+    print_liste_field_titre("NewTranslationStringToShow",$_SERVER["PHP_SELF"],'transvalue','',$param,'',$sortfield,$sortorder);
+    //if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre("Entity"),$_SERVER["PHP_SELF"],'entity,transkey','',$param,'',$sortfield,$sortorder);
     print '<td align="center"></td>';
     print "</tr>\n";
 
@@ -319,8 +321,8 @@ if ($mode == 'overwrite')
     	}
     }
 
-
     print '</table>';
+    print '</div>';
 
 }
 
@@ -391,12 +393,13 @@ if ($mode == 'searchkey')
     print '<input type="hidden" id="action" name="action" value="search">';
     print '<input type="hidden" id="mode" name="mode" value="'.$mode.'">';
 
+	print '<div class="div-table-responsive-no-min">';
     print '<table class="noborder" width="100%">';
     print '<tr class="liste_titre">';
-    print_liste_field_titre($langs->trans("Language").' (en_US, es_MX, ...)',$_SERVER["PHP_SELF"],'lang,transkey','',$param,'',$sortfield,$sortorder).'</td>';
-    print_liste_field_titre($langs->trans("Key"),$_SERVER["PHP_SELF"],'transkey','',$param,'',$sortfield,$sortorder);
-    print_liste_field_titre($langs->trans("CurrentTranslationString"),$_SERVER["PHP_SELF"],'transvalue','',$param,'',$sortfield,$sortorder);
-    //if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre($langs->trans("Entity"),$_SERVER["PHP_SELF"],'entity,transkey','',$param,'',$sortfield,$sortorder);
+    print_liste_field_titre( $langs->trans("Language").' (en_US, es_MX, ...)',$_SERVER["PHP_SELF"],'lang,transkey','',$param,'',$sortfield,$sortorder).'</td>';
+    print_liste_field_titre("Key",$_SERVER["PHP_SELF"],'transkey','',$param,'',$sortfield,$sortorder);
+    print_liste_field_titre("CurrentTranslationString",$_SERVER["PHP_SELF"],'transvalue','',$param,'',$sortfield,$sortorder);
+    //if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre("Entity",$_SERVER["PHP_SELF"],'entity,transkey','',$param,'',$sortfield,$sortorder);
     print '<td align="center"></td>';
     print "</tr>\n";
 
@@ -465,7 +468,7 @@ if ($mode == 'searchkey')
     }
 
     print '</table>';
-    print '</form>';
+    print '</div>';
 }
 
 dol_fiche_end();

@@ -168,12 +168,17 @@ if (empty($reshook))
 				}
 
 				// Merge extrafields
-				foreach ($soc_origin->array_options as $key => $val)
+				if (is_array($soc_origin->array_options))
 				{
-				    if (empty($object->array_options[$key])) $object->array_options[$key] = $val;
+					foreach ($soc_origin->array_options as $key => $val)
+					{
+					    if (empty($object->array_options[$key])) $object->array_options[$key] = $val;
+					}
 				}
 
 				// TODO Merge categories
+
+
 				$object->update($object->id, $user);
 
 				// Move links
@@ -2000,7 +2005,7 @@ else
 
         dol_htmloutput_errors($error,$errors);
 
-        $linkback = '<a href="'.DOL_URL_ROOT.'/societe/list.php">'.$langs->trans("BackToList").'</a>';
+        $linkback = '<a href="'.DOL_URL_ROOT.'/societe/list.php?restore_lastsearch_values=1">'.$langs->trans("BackToList").'</a>';
 
         dol_banner_tab($object, 'socid', $linkback, ($user->societe_id?0:1), 'rowid', 'nom');
 

@@ -108,7 +108,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 		$this->posxqty=145;
 		$this->posxdiscount=162;
 		$this->postotalht=174;
-		if (! empty($conf->global->MAIN_GENERATE_DOCUMENTS_WITHOUT_VAT)) $this->posxtva=$this->posxup;
+		if (! empty($conf->global->MAIN_GENERATE_DOCUMENTS_WITHOUT_VAT) || ! empty($conf->global->MAIN_GENERATE_DOCUMENTS_WITHOUT_VAT_COLUMN)) $this->posxtva=$this->posxup;
 		$this->posxpicture=$this->posxtva - (empty($conf->global->MAIN_DOCUMENTS_WITH_PICTURE_WIDTH)?20:$conf->global->MAIN_DOCUMENTS_WITH_PICTURE_WIDTH);	// width of images
 		if ($this->page_largeur < 210) // To work with US executive format
 		{
@@ -177,7 +177,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 					$pdir = get_exdir(0,2,0,0,$objphoto,'product') . dol_sanitizeFileName($objphoto->ref).'/';
 					$dir = $conf->product->dir_output.'/'.$pdir;
 				}
-				
+
 				$realpath='';
 				foreach ($objphoto->liste_photos($dir,1) as $key => $obj)
 				{
@@ -445,7 +445,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 					if ($up_excl_tax > 0)
 						$pdf->MultiCell($this->posxqty-$this->posxup-0.8, 3, $up_excl_tax, 0, 'R', 0);
                     */
-					
+
 					// Quantity
 					$qty = pdf_getlineqty($object, $i, $outputlangs, $hidedetails);
 					$pdf->SetXY($this->posxqty, $curY);
@@ -466,11 +466,11 @@ class pdf_aurore extends ModelePDFSupplierProposal
 					if ($total_excl_tax > 0)
 						$pdf->MultiCell($this->page_largeur-$this->marge_droite-$this->postotalht, 3, $total_excl_tax, 0, 'R', 0);
                     */
-					
+
 					// Collecte des totaux par valeur de tva dans $this->tva["taux"]=total_tva
 					if ($conf->multicurrency->enabled && $object->multicurrency_tx != 1) $tvaligne=$object->lines[$i]->multicurrency_total_tva;
 					else $tvaligne=$object->lines[$i]->total_tva;
-					
+
 					$localtax1ligne=$object->lines[$i]->total_localtax1;
 					$localtax2ligne=$object->lines[$i]->total_localtax2;
 					$localtax1_rate=$object->lines[$i]->localtax1_tx;
@@ -941,7 +941,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 							$tvakey=str_replace('*','',$tvakey);
 							$tvacompl = " (".$outputlangs->transnoentities("NonPercuRecuperable").")";
 						}
-						$totalvat =$outputlangs->transnoentities("TotalVAT").' ';
+						$totalvat =$outputlangs->transcountrynoentities("TotalVAT",$mysoc->country_code).' ';
 						$totalvat.=vatrate($tvakey,1).$tvacompl;
 						$pdf->MultiCell($col2x-$col1x, $tab2_hl, $totalvat, 0, 'L', 1);
 
@@ -1035,7 +1035,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 		$resteapayer = $object->total_ttc - $deja_regle;
 		if (! empty($object->paye)) $resteapayer=0;
 		*/
-        
+
 		if ($deja_regle > 0)
 		{
 			$index++;
@@ -1297,7 +1297,7 @@ class pdf_aurore extends ModelePDFSupplierProposal
 		        $pdf->MultiCell(100, 3, $langs->trans("BuyerName")." : ".$usertmp->getFullName($langs), '', 'R');
 		    }
 		}
-		
+
 		$posy+=2;
 
 		// Show list of linked objects

@@ -636,16 +636,17 @@ class Expedition extends CommonObject
 
 		// Class of company linked to order
 		$result=$soc->set_as_client();
-
+		
+		$numref = $this->ref;
 		// Define new ref
 		if (! $error && (preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref))) // empty should not happened, but when it occurs, the test save life
 		{
 			$numref = $this->getNextNumRef($soc);
 		}
-		else
+		/*else
 		{
 			$numref = "EXP".$this->id;
-		}
+		}*/
         $this->newref = $numref;
 
 		$now=dol_now();
@@ -716,6 +717,7 @@ class Expedition extends CommonObject
 						if ($result < 0) {
 							$error++;
 							$this->errors[]=$mouvS->error;
+							$this->errors = array_merge($this->errors, $mouvS->errors);
 							break;
 						}
 					}
@@ -729,6 +731,7 @@ class Expedition extends CommonObject
 						if ($result < 0) {
 							$error++;
 							$this->errors[]=$mouvS->error;
+							$this->errors = array_merge($this->errors, $mouvS->errors);
 							break;
 						}
 					}

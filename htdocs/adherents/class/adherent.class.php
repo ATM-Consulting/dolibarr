@@ -158,6 +158,7 @@ class Adherent extends CommonObject
         $from=$conf->email_from;
         if (! empty($conf->global->ADHERENT_MAIL_FROM)) $from=$conf->global->ADHERENT_MAIL_FROM;
 
+        // Send email (substitutionarray must be done just before this)
         include_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
         $mailfile = new CMailFile($subjecttosend, $this->email, $from, $texttosend, $filename_list, $mimetype_list, $mimefilename_list, $addr_cc, $addr_bcc, $deliveryreceipt, $msgishtml);
         if ($mailfile->sendfile())
@@ -198,6 +199,9 @@ class Adherent extends CommonObject
 		$infos.= $langs->transnoentities("Town").": ".$this->town."\n";
 		$infos.= $langs->transnoentities("Country").": ".$this->country."\n";
 		$infos.= $langs->transnoentities("EMail").": ".$this->email."\n";
+        $infos.= $langs->transnoentities("PhonePro").": ".$this->phone."\n";
+        $infos.= $langs->transnoentities("PhonePerso").": ".$this->phone_perso."\n";
+        $infos.= $langs->transnoentities("PhoneMobile").": ".$this->phone_mobile."\n";
 		if (empty($conf->global->ADHERENT_LOGIN_NOT_REQUIRED))
 		{
 		    $infos.= $langs->transnoentities("Login").": ".$this->login."\n";
@@ -242,6 +246,11 @@ class Adherent extends CommonObject
 				'%PHOTO%'=>$msgishtml?dol_htmlentitiesbr($this->photo):$this->photo,
 				'%LOGIN%'=>$msgishtml?dol_htmlentitiesbr($this->login):$this->login,
 				'%PASSWORD%'=>$msgishtml?dol_htmlentitiesbr($this->pass):$this->pass,
+                '%TYPE%'=>$msgishtml?dol_htmlentitiesbr($this->type):$this->type,
+                '%PHONE_PRO%'=>$msgishtml?dol_htmlentitiesbr($this->phone):$this->phone,
+                '%PHONE_PERSO%'=>$msgishtml?dol_htmlentitiesbr($this->phone_perso):$this->phone_perso,
+                '%PHONE_MOBILE%'=>$msgishtml?dol_htmlentitiesbr($this->phone_mobile):$this->phone_mobile,
+				// For backward compatibility
 				'%INFOS%'=>$msgishtml?dol_htmlentitiesbr($infos):$infos,
 				'%SOCIETE%'=>$msgishtml?dol_htmlentitiesbr($this->societe):$this->societe,
 				'%PRENOM%'=>$msgishtml?dol_htmlentitiesbr($this->firstname):$this->firstname,

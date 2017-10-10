@@ -1250,6 +1250,8 @@ $now = dol_now();
 // Add new proposal
 if ($action == 'create')
 {
+    $currency_code = $conf->currency;
+
 	print load_fiche_titre($langs->trans("NewProp"));
 
 	$soc = new Societe($db);
@@ -1739,7 +1741,7 @@ if ($action == 'create')
 
 	// Proposal card
 
-	$linkback = '<a href="' . DOL_URL_ROOT . '/comm/propal/list.php' . (! empty($socid) ? '?socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
+	$linkback = '<a href="' . DOL_URL_ROOT . '/comm/propal/list.php?restore_lastsearch_values=1' . (! empty($socid) ? '&socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
 
 
 	$morehtmlref='<div class="refidno">';
@@ -1748,6 +1750,7 @@ if ($action == 'create')
 	$morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, $user->rights->propal->creer, 'string', '', null, null, '', 1);
     // Thirdparty
     $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . $object->thirdparty->getNomUrl(1);
+	if (empty($conf->global->MAIN_DISABLE_OTHER_LINK) && $object->thirdparty->id > 0) $morehtmlref.=' (<a href="'.DOL_URL_ROOT.'/comm/propal/list.php?socid='.$object->thirdparty->id.'">'.$langs->trans("OtherProposals").'</a>)';
     // Project
     if (! empty($conf->projet->enabled))
     {
@@ -1762,11 +1765,11 @@ if ($action == 'create')
                 $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
                 $morehtmlref.='<input type="hidden" name="action" value="classin">';
                 $morehtmlref.='<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-                $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
+                $morehtmlref.=$formproject->select_projects(-1, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
                 $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
                 $morehtmlref.='</form>';
             } else {
-                $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
+                $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, -1, $object->fk_project, 'none', 0, 0, 0, 1);
             }
         } else {
             if (! empty($object->fk_project)) {

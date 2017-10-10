@@ -35,14 +35,14 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formother.class.php';
 $langs->load("categories");
 
 $id=GETPOST('id','int');
-$ref=GETPOST('ref');
+$label=GETPOST('label');
 $type=GETPOST('type');
 $action=GETPOST('action','aZ09');
 $confirm=GETPOST('confirm');
 $removeelem = GETPOST('removeelem','int');
 $elemid=GETPOST('elemid');
 
-if ($id == "")
+if ($id == "" && $label == "")
 {
 	dol_print_error('','Missing parameter id');
 	exit();
@@ -52,7 +52,7 @@ if ($id == "")
 $result = restrictedArea($user, 'categorie', $id, '&category');
 
 $object = new Categorie($db);
-$result=$object->fetch($id);
+$result=$object->fetch($id, $label);
 $object->fetch_optionals($id,$extralabels);
 if ($result <= 0)
 {
@@ -195,7 +195,7 @@ $head = categories_prepare_head($object,$type);
 dol_fiche_head($head, 'card', $title, -1, 'category');
 
 $linkback = '<a href="'.DOL_URL_ROOT.'/categories/index.php?leftmenu=cat&type='.$type.'">'.$langs->trans("BackToList").'</a>';
-
+$object->next_prev_filter=" type = ".$object->type;
 $object->ref = $object->label;
 $morehtmlref='<br><div class="refidno"><a href="'.DOL_URL_ROOT.'/categories/index.php?leftmenu=cat&type='.$type.'">'.$langs->trans("Root").'</a> >> ';
 $ways = $object->print_all_ways(" &gt;&gt; ", '', 1);
@@ -205,7 +205,7 @@ foreach ($ways as $way)
 }
 $morehtmlref.='</div>';
 
-dol_banner_tab($object, 'ref', $linkback, ($user->societe_id?0:1), 'ref', 'ref', $morehtmlref, '', 0, '', '', 1);
+dol_banner_tab($object, 'label', $linkback, ($user->societe_id?0:1), 'label', 'label', $morehtmlref, '', 0, '', '', 1);
 
 
 /*
@@ -315,11 +315,52 @@ else
 	print "</table>\n";
 }
 
+function get_products_categs_enfantes(&$cat, &$TProdsInOtherCategs) {
+	
+	$filles = $cat->get_filles();
+	if(!empty($filles)) {
+		foreach($filles as $cat_fille) {
+			$TProds = $cat_fille->getObjectsInCateg("product");
+			$TProdsInOtherCategs = array_merge($TProdsInOtherCategs, $TProds);
+			get_products_categs_enfantes($cat_fille, $TProdsInOtherCategs);
+		}
+	}
+	
+}
+
+function delete_doublons(&$TProducts) {
+	
+	global $db;
+	
+	if(empty($TProducts)) return 0;
+	
+	// On récupère les ID de tous les produits car array_unique marche que sur des chaines ou des nombres
+	foreach($TProducts as $p) {
+		$TIDProducts[] = $p->id;
+	}
+	
+	// On supprime les doublons
+	$TIDProducts = array_unique($TIDProducts);
+	
+	// On vide le tableau de départ
+	$TProducts = array();
+	
+	// On remplit de nouvea le tableau avec les produits de départ sans les doublons
+	foreach($TIDProducts as $id_p) {
+		$p = new Product($db);
+		$p->fetch($id_p);
+		$TProducts[] = $p;
+	}
+	
+}
 
 // List of products or services (type is type of category)
 if ($object->type == Categorie::TYPE_PRODUCT)
 {
 	$prods = $object->getObjectsInCateg("product");
+	$TProdsInOtherCategs = array();
+	get_products_categs_enfantes($object, $TProdsInOtherCategs);
+	delete_doublons($TProdsInOtherCategs);
 	if ($prods < 0)
 	{
 		dol_print_error($db, $prods->error, $prods->errors);
@@ -383,7 +424,41 @@ if ($object->type == Categorie::TYPE_PRODUCT)
 		}
 		else
 		{
-			print "<tr ".$bc[false].'><td colspan="2" class="opacitymedium">'.$langs->trans("ThisCategoryHasNoProduct")."</td></tr>";
+			print "<tr ".$bc[false].'><td colspan="2">'.$langs->trans("ThisCategoryHasNoProduct")."</td></tr>";
+		}
+		print "</table>\n";
+		
+		
+		print "<br />";
+		print "<table class='noborder' width='100%'>\n";
+		print '<tr class="liste_titre"><td colspan="3">'.$langs->trans("ProductsAndServicesInChildrenCategories")."</td></tr>\n";
+
+		if (count($TProdsInOtherCategs) > 0)
+		{
+			$var=true;
+			foreach ($TProdsInOtherCategs as $prod)
+			{
+				$var=!$var;
+				print "\t<tr ".$bc[$var].">\n";
+				print '<td class="nowrap" valign="top">';
+				print $prod->getNomUrl(1,'category');
+				print "</td>\n";
+				print '<td valign="top">'.$prod->libelle."</td>\n";
+				// Link to delete from category
+				print '<td align="right">';
+				$typeid=$object->type;
+				$permission=0;
+				if ($typeid == 0) $permission=($user->rights->produit->creer || $user->rights->service->creer);
+				if ($typeid == 1) $permission=$user->rights->societe->creer;
+				if ($typeid == 2) $permission=$user->rights->societe->creer;
+				if ($typeid == 3) $permission=$user->rights->adherent->creer;
+				print '</td>';
+				print "</tr>\n";
+			}
+		}
+		else
+		{
+			print "<tr ".$bc[false].'><td colspan="2">'.$langs->trans("ThisCategoryHasNoProduct")."</td></tr>";
 		}
 		print "</table>\n";
 	}

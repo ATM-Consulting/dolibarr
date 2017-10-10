@@ -13,13 +13,36 @@
 -- flush privileges;
 
 
--- Requests to change character set and collation of a varchar column.
+-- Request to change default pagecode + colation of database
+-- ALTER DATABASE name_of_database CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+-- Request to change default pagecode + colation of table
+-- ALTER TABLE name_of_table CONVERT TO CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+-- Request to change character set and collation of a varchar column.
 -- utf8 and utf8_unicode_ci is recommended (or even better utf8mb4 and utf8mb4_unicode_ci with mysql 5.5.3+)
+-- ALTER TABLE name_of_table MODIFY field VARCHAR(20) CHARACTER SET utf8;
+-- ALTER TABLE name_of_table MODIFY field VARCHAR(20) COLLATE utf8_unicode_ci;
+-- You can check with 'show full columns from mytablename';
 
--- ALTER TABLE llx_accounting_account MODIFY account_number VARCHAR(20) CHARACTER SET utf8;
--- ALTER TABLE llx_accounting_account MODIFY account_number VARCHAR(20) COLLATE utf8_unicode_ci;
--- You can check with 'show full columns from llx_accounting_account';
 
+
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_accounting_account MODIFY account_number VARCHAR(20) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_accounting_account MODIFY account_number VARCHAR(20) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_accounting_bookkeeping MODIFY numero_compte VARCHAR(20) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_accounting_bookkeeping MODIFY numero_compte VARCHAR(20) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_stock_mouvement MODIFY batch VARCHAR(30) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_stock_mouvement MODIFY batch VARCHAR(30) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product_lot MODIFY batch VARCHAR(30) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product_lot MODIFY batch VARCHAR(30) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product_batch MODIFY batch VARCHAR(30) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product_batch MODIFY batch VARCHAR(30) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product MODIFY accountancy_code_sell VARCHAR(32) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product MODIFY accountancy_code_sell VARCHAR(32) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product MODIFY accountancy_code_buy VARCHAR(32) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_product MODIFY accountancy_code_buy VARCHAR(32) COLLATE utf8_unicode_ci;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_c_type_fees MODIFY accountancy_code VARCHAR(32) CHARACTER SET utf8;
+-- VMYSQLUTF8UNICODECI ALTER TABLE llx_c_type_fees MODIFY accountancy_code VARCHAR(32) COLLATE utf8_unicode_ci;
 
 
 -- VMYSQL4.1 SET sql_mode = 'ALLOW_INVALID_DATES';
@@ -66,6 +89,7 @@ delete from llx_livraison where ref = '';
 delete from llx_expeditiondet where fk_expedition in (select rowid from llx_expedition where ref = '');
 delete from llx_expedition where ref = '';
 delete from llx_holiday_logs where fk_user_update not IN (select rowid from llx_user);
+delete from llx_user_rights where fk_user not IN (select rowid from llx_user);
 
 update llx_deplacement set dated='2010-01-01' where dated < '2000-01-01';
 
@@ -136,7 +160,8 @@ delete from llx_categorie where fk_parent not in (select rowid from tmp_categori
 drop table tmp_categorie;
 -- Fix: delete orphelin category.
 delete from llx_categorie_product where fk_categorie not in (select rowid from llx_categorie where type = 0);
-delete from llx_categorie_societe where fk_categorie not in (select rowid from llx_categorie where type in (1, 2));
+delete from llx_categorie_fournisseur where fk_categorie not in (select rowid from llx_categorie where type = 1);
+delete from llx_categorie_societe where fk_categorie not in (select rowid from llx_categorie where type = 2);
 delete from llx_categorie_member where fk_categorie not in (select rowid from llx_categorie where type = 3);
 delete from llx_categorie_contact where fk_categorie not in (select rowid from llx_categorie where type = 4);
 delete from llx_categorie_project where fk_categorie not in (select rowid from llx_categorie where type = 5);
@@ -320,6 +345,14 @@ drop table tmp_c_shipment_mode;
 create table tmp_c_shipment_mode as (select code, tracking from llx_c_shipment_mode);
 DELETE FROM llx_c_shipment_mode where code IN (select code from tmp_c_shipment_mode WHERE tracking is NULL OR tracking = '') AND code IN (select code from tmp_c_shipment_mode WHERE tracking is NOT NULL AND tracking != '') AND (tracking IS NULL OR tracking = '');
 drop table tmp_c_shipment_mode;
+
+
+-- Restore id of user on link for payment of expense report
+drop table tmp_bank_url_expense_user;
+create table tmp_bank_url_expense_user (select e.fk_user_author, bu2.fk_bank from llx_expensereport as e, llx_bank_url as bu2 where bu2.url_id = e.rowid and bu2.type = 'payment_expensereport');
+update llx_bank_url as bu set url_id = (select e.fk_user_author from tmp_bank_url_expense_user as e where e.fk_bank = bu.fk_bank) where (bu.url_id = 0 OR bu.url_id IS NULL) and bu.type ='user';
+drop table tmp_bank_url_expense_user;
+
 
 
 -- Clean product prices

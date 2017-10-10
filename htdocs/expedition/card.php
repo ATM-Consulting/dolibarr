@@ -765,7 +765,7 @@ if ($action == 'create')
             print "<tr><td>".$langs->trans("DeliveryMethod")."</td>";
             print '<td colspan="3">';
             $expe->fetch_delivery_methods();
-            print $form->selectarray("shipping_method_id",$expe->meths,GETPOST('shipping_method_id','int'),1,0,0,"",1);
+            print $form->selectarray("shipping_method_id", $expe->meths, GETPOST('shipping_method_id','int'),1,0,0,"",1);
             if ($user->admin) print info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"),1);
             print "</td></tr>\n";
 
@@ -777,12 +777,18 @@ if ($action == 'create')
 
             // Other attributes
             $parameters = array('objectsrc' => $objectsrc, 'colspan' => ' colspan="3"', 'socid'=>$socid);
-            $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$expe,$action);    // Note that $action and $object may have been modified by hook
+            $reshook=$hookmanager->executeHooks('formObjectOptions',$parameters,$object,$action);    // Note that $action and $object may have been modified by hook
             print $hookmanager->resPrint;
 
-            if (empty($reshook) && ! empty($extrafields->attribute_label)) {
-            	print $expe->showOptionals($extrafields, 'edit');
-            }
+			if (empty($reshook) && ! empty($extrafields->attribute_label)) {
+				// copy from order
+				$orderExtrafields = new Extrafields($db);
+				$orderExtrafieldLabels = $orderExtrafields->fetch_name_optionals_label($object->table_element);
+				if ($object->fetch_optionals($object->id, $orderExtrafieldLabels) > 0) {
+					$expe->array_options = array_merge($expe->array_options, $object->array_options);
+				}
+				print $object->showOptionals($extrafields, 'edit');
+			}
 
 
             // Incoterms
@@ -1304,8 +1310,13 @@ if ($action == 'create')
 				if (is_array($extralabelslines) && count($extralabelslines)>0)
 				{
 					$colspan=5;
+					$orderLineExtrafields = new Extrafields($db);
+					$orderLineExtrafieldLabels = $orderLineExtrafields->fetch_name_optionals_label($object->table_element_line);
+					$srcLine = new OrderLine($db);
+					$srcLine->fetch_optionals($line->id,$orderLineExtrafieldLabels); // fetch extrafields also available in orderline
 					$line = new ExpeditionLigne($db);
 					$line->fetch_optionals($object->id,$extralabelslines);
+					$line->array_options = array_merge($line->array_options, $srcLine->array_options);
 					print '<tr class="oddeven">';
 					print $line->showOptionals($extrafieldsline, 'edit', array('style'=>$bc[$var], 'colspan'=>$colspan),$indiceAsked);
 					print '</tr>';
@@ -2053,11 +2064,13 @@ else if ($id || $ref)
 				else print '<a class="butActionRefused" href="#">'.$langs->trans('SendByMail').'</a>';
 			}
 
-			// Create bill and Close shipment
+			// Create bill
 			if (! empty($conf->facture->enabled) && $object->statut > 0)
 			{
 				if ($user->rights->facture->creer)
 				{
+					// TODO show button only   if (! empty($conf->global->WORKFLOW_BILL_ON_SHIPMENT))
+					// If we do that, we must also make this option official.
 					print '<a class="butAction" href="'.DOL_URL_ROOT.'/compta/facture/card.php?action=create&amp;origin='.$object->element.'&amp;originid='.$object->id.'&amp;socid='.$object->socid.'">'.$langs->trans("CreateBill").'</a>';
 				}
 			}

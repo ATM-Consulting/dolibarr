@@ -79,7 +79,7 @@ if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'e
 include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 
 // Purge search criteria
-if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter.x") || GETPOST("button_removefilter")) // All tests are required to be compatible with all browsers
+if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter.x','alpha') || GETPOST('button_removefilter','alpha')) // All tests are required to be compatible with all browsers
 {
     $defaulturl='';
     $defaultkey='';
@@ -243,6 +243,7 @@ print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
 print '<input type="hidden" id="action" name="action" value="">';
 print '<input type="hidden" id="mode" name="mode" value="'.dol_escape_htmltag($mode).'">';
 
+print '<div class="div-table-responsive-no-min">';
 print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
 // Page
@@ -285,7 +286,7 @@ if ($mode != 'focus')
     print_liste_field_titre($textvalue, $_SERVER["PHP_SELF"], 'value', '', $param, '', $sortfield, $sortorder);
 }
 // Entity
-if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre($langs->trans("Entity"),$_SERVER["PHP_SELF"],'entity,page','',$param,'',$sortfield,$sortorder);
+if (! empty($conf->multicompany->enabled) && !$user->entity) print_liste_field_titre("Entity",$_SERVER["PHP_SELF"],'entity,page','',$param,'',$sortfield,$sortorder);
 // Actions
 print '<td align="center"></td>';
 print "</tr>\n";
@@ -301,13 +302,13 @@ print '<input type="text" class="flat minwidth200 maxwidthonsmartphone" name="de
 print '</td>'."\n";
 // Field
 print '<td>';
-print '<input type="text" class="flat maxwidth100" name="defaultkey" value="">';
+print '<input type="text" class="flat maxwidth100onsmartphone" name="defaultkey" value="">';
 print '</td>';
 // Value
 if ($mode != 'focus')
 {
     print '<td>';
-    print '<input type="text" class="flat maxwidthonsmartphone" name="defaultvalue" value="">';
+    print '<input type="text" class="flat maxwidth100onsmartphone" name="defaultvalue" value="">';
     print '</td>';
 }
 // Limit to superadmin
@@ -409,6 +410,7 @@ else
 
 
 print '</table>';
+print '</div>';
 
 dol_fiche_end();
 

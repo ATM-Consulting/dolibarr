@@ -46,13 +46,18 @@ if ($action == 'test' || $action == 'send')
 }
 
 $substitutionarrayfortest=array(
-'__LOGIN__' => $user->login,
-'__ID__' => 'TESTIdRecord',
-'__EMAIL__' => 'TESTEMail',
-'__LASTNAME__' => 'TESTLastname',
-'__FIRSTNAME__' => 'TESTFirstname',
-'__SIGNATURE__' => (($user->signature && empty($conf->global->MAIN_MAIL_DO_NOT_USE_SIGN))?$usersignature:''),
-//'__PERSONALIZED__' => 'TESTPersonalized'	// Hiden because not used yet
+'__DOL_MAIN_URL_ROOT__'=>DOL_MAIN_URL_ROOT,
+'__ID__' => 'RecipientIdRecord',
+//'__EMAIL__' => 'RecipientEMail',				// Done into actions_sendmails
+'__CHECK_READ__' => (is_object($object) && is_object($object->thirdparty))?'<img src="'.DOL_MAIN_URL_ROOT.'/public/emailing/mailing-read.php?tag='.$object->thirdparty->tag.'&securitykey='.urlencode($conf->global->MAILING_EMAIL_UNSUBSCRIBE_KEY).'" width="1" height="1" style="width:1px;height:1px" border="0"/>':'',
+'__SIGNATURE__' => (($user->signature && empty($conf->global->MAIN_MAIL_DO_NOT_USE_SIGN))?$usersignature:''),		// Done into actions_sendmails
+'__LOGIN__' => 'RecipientLogin',
+'__LASTNAME__' => 'RecipientLastname',
+'__FIRSTNAME__' => 'RecipientFirstname',
+'__ADDRESS__'=> 'RecipientAddress',
+'__ZIP__'=> 'RecipientZip',
+'__TOWN_'=> 'RecipientTown',
+'__COUNTRY__'=> 'RecipientCountry'
 );
 complete_substitutions_array($substitutionarrayfortest, $langs);
 
@@ -676,6 +681,8 @@ else
 	    print '<div id="formmailbeforetitle" name="formmailbeforetitle"></div>';
 		print load_fiche_titre($action == 'testhtml'?$langs->trans("DoTestSendHTML"):$langs->trans("DoTestSend"));
 
+		dol_fiche_head('');
+
 		// Cree l'objet formulaire mail
 		include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
 		$formmail = new FormMail($db);
@@ -714,7 +721,7 @@ else
 
 		print $formmail->get_form('addfile','removefile');
 
-		print '<br>';
+		dol_fiche_end();
 	}
 }
 

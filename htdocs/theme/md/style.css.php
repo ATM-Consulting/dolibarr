@@ -64,7 +64,7 @@ require_once '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 
 // Load user to have $user->conf loaded (not done into main because of NOLOGIN constant defined)
-if (empty($user->id) && ! empty($_SESSION['dol_login'])) $user->fetch('',$_SESSION['dol_login']);
+if (empty($user->id) && ! empty($_SESSION['dol_login'])) $user->fetch('',$_SESSION['dol_login'],'',1);
 
 
 // Define css type
@@ -282,7 +282,9 @@ textarea.cke_source:focus
 	box-shadow: none;
 }
 
-.liste_titre input[name=monthvalid], .liste_titre input[name=search_smonth], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month], .liste_titre input[name=month_lim] {
+.liste_titre input[name=monthvalid], .liste_titre input[name=search_ordermonth], .liste_titre input[name=search_deliverymonth],
+.liste_titre input[name=search_smonth], .liste_titre input[name=search_month], .liste_titre input[name=search_emonth], .liste_titre input[name=smonth], .liste_titre input[name=month],
+.liste_titre input[name=month_lim] {
 	margin-right: 4px;
 }
 input, input.flat, textarea, textarea.flat, form.flat select, select, select.flat, .dataTables_length label select {
@@ -540,8 +542,14 @@ textarea.centpercent {
 .paddingleft {
 	padding-<?php print $left; ?>: 4px;
 }
+.paddingleft2 {
+	padding-<?php print $left; ?>: 2px;
+}
 .paddingright {
 	padding-<?php print $right; ?>: 4px;
+}
+.paddingright2 {
+	padding-<?php print $right; ?>: 2px;
 }
 .cursorpointer {
 	cursor: pointer;
@@ -636,6 +644,12 @@ div.myavailability {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.tdoverflowmax200 {			/* For tdoverflow, the max-midth become a minimum ! */
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .tdoverflowmax300 {
     max-width: 300px;
     overflow: hidden;
@@ -705,7 +719,7 @@ div.fiche>form>div.div-table-responsive {
 }
 
 .flexcontainer {
-    display: inline-flex;
+    <?php if (in_array($conf->browser->browsername, array('chrome','firefox'))) echo 'display: inline-flex;' ?>
     flex-flow: row wrap;
     justify-content: flex-start;
 }
@@ -715,10 +729,11 @@ div.fiche>form>div.div-table-responsive {
 .thumbstat150 {
 	flex: 1 1 150px;
 }
-.thumbstat, thumbstat150 {
+.thumbstat, .thumbstat150 {
     /* flex-grow: 1; */
     /* flex-shrink: 1; */
     /* flex-basis: 140px; */
+	display: inline;
     width: 100%;
     justify-content: flex-start;
     align-self: flex-start;
@@ -2156,7 +2171,6 @@ span.butAction, span.butActionDelete {
 }
 
 
-/* Prepare for bootstrap look */
 .button, .butAction, .butActionDelete, .butActionRefused {
 	border-color: #c5c5c5;
 	border-color: rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.25);
@@ -2252,7 +2266,10 @@ a.butAction:hover, a.butActionDelete:hover {
 	opacity: 0.9;
 }
 
-/* End bootstrap */
+.butActionTransparent {
+	color: #222 ! important;
+	background-color: transparent ! important;
+}
 
 <?php if (! empty($conf->global->MAIN_BUTTON_HIDE_UNAUTHORIZED)) { ?>
 .butActionRefused {
@@ -2621,6 +2638,15 @@ div.pagination li.paginationafterarrows {
 }
 */
 
+ul.noborder li:nth-child(odd):not(.liste_titre) {
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+	background-color: rgb(<?php echo $colorbacklinepair2; ?>) !important;
+}
+
+
 /* Set the color for hover lines */
 .oddeven:hover, .evenodd:hover, .impair:hover, .pair:hover
 {
@@ -2682,7 +2708,7 @@ tr.pair:last-of-type td, tr.impair:last-of-type td {
 tr.pair td .nobordernopadding tr td, tr.impair td .nobordernopadding tr td {
     border-bottom: 0px !important;
 }
-td.nobottom, td.nobottom {
+tr.nobottom td, tr.nobottom , td.nobottom {
     border-bottom: 0px !important;
 }
 div.liste_titre .tagtd {
@@ -2721,19 +2747,19 @@ tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, tabl
 {
 	height: 26px !important;
 }
-div.liste_titre, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
+div.liste_titre_bydiv, .liste_titre div.tagtr, tr.liste_titre, tr.liste_titre_sel, form.liste_titre, form.liste_titre_sel, table.dataTable thead tr
 {
 	background: rgb(<?php echo $colorbacktitle1; ?>);
 	font-weight: <?php echo $useboldtitle?'bold':'normal'; ?>;
+    border-bottom: 1px solid #FDFFFF;
 
     color: rgb(<?php echo $colortexttitle; ?>);
     font-family: <?php print $fontlist ?>;
-    border-bottom: 1px solid #FDFFFF;
     text-align: <?php echo $left; ?>;
 }
-tr.liste_titre th, tr.liste_titre td, th.liste_titre, form.liste_titre div, div.liste_titre
+tr.liste_titre th, tr.liste_titre td, th.liste_titre
 {
-	border-bottom: 1px solid #<?php echo ($colorbacktitle1 == '255,255,255'?'BBBBBB':'FDFFFF'); ?>;
+	border-bottom: 1px solid #aaa;
 }
 /* TODO Once title line is moved under title search, make border bottom of all th black and force to whit when it's first tr */
 tr:first-child th.liste_titre {
@@ -2887,7 +2913,7 @@ div .tdtop {
 }
 .boxstats {
     padding: 3px;
-    width: 105px;
+    width: 100px;
 }
 .boxstats130 {
     width: 135px;
@@ -3064,15 +3090,13 @@ div.error {
 
 /* Info admin */
 div.info {
-  color: #303035;
+  color: #fff;
   padding: 0.4em 0.4em 0.4em 0.4em;
   margin: 0.5em 0em 0.5em 0em;
-  border: 1px solid #e0e0e0;
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;
   border-radius: 4px;
-  background: #868;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: #989;
 }
 
 div.warning a, div.info a, div.error a {
@@ -3426,7 +3450,11 @@ a.websitebuttonsitepreview img {
 .websiteiframenoborder {
 	border: 0px;
 }
-
+.websitehelp {
+    vertical-align: middle;
+    float: right;
+    padding-top: 8px;
+}
 
 /* ============================================================================== */
 /*  Module agenda                                                                 */
@@ -3501,6 +3529,17 @@ table.cal_event td.cal_event_right { padding: 4px 4px !important; }
 	       height:18px;
 	       cursor:pointer;
 	     }
+
+
+/* ============================================================================== */
+/* Gantt
+/* ============================================================================== */
+
+td.gtaskname {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 /* ============================================================================== */
 /*  jQuery - jeditable                                                            */

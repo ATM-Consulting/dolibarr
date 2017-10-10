@@ -76,8 +76,9 @@ foreach ($search_array_options as $key => $val)
 		$param.='&search_options_'.$tmpkey.'='.urlencode($val);
 	}
 	$mode=0;
-	if (in_array($typ, array('int','double'))) $mode=1;    // Search on a numeric
-	if ($val && ( ($crit != '' && ! in_array($typ, array('select'))) || ! empty($crit)))
+    if (in_array($typ, array('int','double','real'))) $mode=1;    							// Search on a numeric
+    if (in_array($typ, array('sellist')) && $crit != '0' && $crit != '-1') $mode=2;    		// Search on a foreign key int
+    if ($crit != '' && (! in_array($typ, array('select','sellist')) || $crit != '0'))
 	{
 		$filter['ef.'.$tmpkey]=natural_search('ef.'.$tmpkey, $crit, $mode);
 	}
@@ -130,10 +131,11 @@ if (is_array($extrafields->attribute_label) && count($extrafields->attribute_lab
 include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 
 // Do we click on purge search criteria ?
-if (GETPOST("button_removefilter_x") || GETPOST("button_removefilter.x") || GETPOST("button_removefilter")) // Both test are required to be compatible with all browsers
+if (GETPOST('button_removefilter_x','alpha') || GETPOST('button_removefilter.x','alpha') || GETPOST('button_removefilter','alpha')) // Both test are required to be compatible with all browsers
 {
 	$search_ref="";
 	$search_label="";
+	$search_type="";
 	$search_array_options=array();
 	$filter=array();
 }
@@ -162,14 +164,7 @@ if ($action == 'delete_resource')
 	print $form->formconfirm($_SERVER['PHP_SELF']."?element=".$element."&element_id=".$element_id."&lineid=".$lineid,$langs->trans("DeleteResource"),$langs->trans("ConfirmDeleteResourceElement"),"confirm_delete_resource",'','',1);
 }
 
-// Load object list
-$ret = $object->fetch_all($sortorder, $sortfield, $limit, $offset, $filter);
-if($ret == -1) {
-        dol_print_error($db,$object->error);
-        exit;
-} else {
-    print_barre_liste($pagetitle, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, '', $ret+1, $object->num_all,'title_generic.png');
-}
+
 
 $var=true;
 
@@ -185,6 +180,26 @@ print '<input type="hidden" name="sortfield" value="'.$sortfield.'">';
 print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
 print '<input type="hidden" name="page" value="'.$page.'">';
 print '<input type="hidden" name="contextpage" value="'.$contextpage.'">';
+
+if (empty($conf->global->MAIN_DISABLE_FULL_SCANLIST))
+{
+	$ret = $object->fetch_all('', '', 0, 0, $filter);
+	if($ret == -1) {
+		dol_print_error($db,$object->error);
+		exit;
+	} else  {
+		$nbtotalofrecords = $ret;
+	}
+}
+
+// Load object list
+$ret = $object->fetch_all($sortorder, $sortfield, $limit, $offset, $filter);
+if($ret == -1) {
+	dol_print_error($db,$object->error);
+	exit;
+} else {
+	print_barre_liste($pagetitle, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, '', $ret+1, $nbtotalofrecords,'title_generic.png', 0, '', '', $limit);
+}
 
 $moreforfilter = '';
 
@@ -236,7 +251,7 @@ print "</tr>\n";
 
 print '<tr class="liste_titre">';
 if (! empty($arrayfields['t.ref']['checked']))           print_liste_field_titre($arrayfields['t.ref']['label'],$_SERVER["PHP_SELF"],"t.ref","",$param,"",$sortfield,$sortorder);
-if (! empty($arrayfields['ty.label']['checked']))        print_liste_field_titre($arrayfields['ty.label']['label'],$_SERVER["PHP_SELF"],"t.code","",$param,"",$sortfield,$sortorder);
+if (! empty($arrayfields['ty.label']['checked']))        print_liste_field_titre($arrayfields['ty.label']['label'],$_SERVER["PHP_SELF"],"ty.label","",$param,"",$sortfield,$sortorder);
 // Extra fields
 if (is_array($extrafields->attribute_label) && count($extrafields->attribute_label))
 {
@@ -247,7 +262,7 @@ if (is_array($extrafields->attribute_label) && count($extrafields->attribute_lab
             $align=$extrafields->getAlignFlag($key);
 			$sortonfield = "ef.".$key;
 			if (! empty($extrafields->attribute_computed[$key])) $sortonfield='';
-			print_liste_field_titre($langs->trans($extralabels[$key]),$_SERVER["PHP_SELF"],$sortonfield,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
+			print_liste_field_titre($extralabels[$key],$_SERVER["PHP_SELF"],$sortonfield,"",$param,($align?'align="'.$align.'"':''),$sortfield,$sortorder);
         }
     }
 }
@@ -311,7 +326,9 @@ if ($ret)
 }
 else
 {
-    print '<tr><td class="opacitymedium">'.$langs->trans('NoResourceInDatabase').'</td></tr>';
+    $colspan=1;
+    foreach($arrayfields as $key => $val) { if (! empty($val['checked'])) $colspan++; }
+    print '<tr><td colspan="'.$colspan.'" class="opacitymedium">'.$langs->trans("NoRecordFound").'</td></tr>';
 }
 
 print '</table>';

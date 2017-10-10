@@ -23,7 +23,7 @@
 /**
  * \file htdocs/accountancy/customer/index.php
  * \ingroup Advanced accountancy
- * \brief Home customer ventilation
+ * \brief Home customer journalization page
  */
 
 require '../../main.inc.php';
@@ -58,7 +58,7 @@ if ($year == 0) {
 }
 
 // Validate History
-$action = GETPOST('action','alpha');
+$action = GETPOST('action','aZ09');
 
 
 
@@ -97,7 +97,7 @@ if ($action == 'validatehistory') {
 		$sql1 .= " AND fd.fk_code_ventilation = 0";
 	}
 
-	dol_syslog("htdocs/accountancy/customer/index.php sql=" . $sql, LOG_DEBUG);
+	dol_syslog('htdocs/accountancy/customer/index.php');
 
 	$resql1 = $db->query($sql1);
 	if (! $resql1) {
@@ -173,7 +173,7 @@ print $langs->trans("DescVentilCustomer") . '<br>';
 print $langs->trans("DescVentilMore", $langs->transnoentitiesnoconv("ValidateHistory"), $langs->transnoentitiesnoconv("ToBind")) . '<br>';
 print '<br>';
 //print '<div class="inline-block divButAction">';
-// TODO Remove this. Should be done into the repair.php script
+// TODO Remove this. Should be done always or into the repair.php script.
 if ($conf->global->MAIN_FEATURES_LEVEL > 1) print '<a class="butActionDelete" href="' . $_SERVER['PHP_SELF'] . '?year=' . $year_current . '&action=fixaccountancycode">' . $langs->trans("CleanFixHistory", $year_current) . '</a>';
 //print '</div>';
 
@@ -189,7 +189,7 @@ if (! empty($conf->global->FACTURE_DEPOSITS_ARE_JUST_PAYMENTS)) {
 }
 $sql .= " AND f.entity IN (" . getEntity('facture', 0) . ")";	// We don't share object for accountancy
 
-dol_syslog("htdocs/accountancy/customer/index.php sql=" . $sql, LOG_DEBUG);
+dol_syslog('htdocs/accountancy/customer/index.php');
 $result = $db->query($sql);
 if ($result) {
 	$row = $db->fetch_row($result);
@@ -213,8 +213,8 @@ for($i = 1; $i <= 12; $i ++) {
 }
 print '<td width="60" align="right"><b>' . $langs->trans("Total") . '</b></td></tr>';
 
-$sql = "SELECT " . $db->ifsql('aa.account_number IS NULL', "'".$langs->trans('NotMatch')."'", 'aa.account_number') . " AS codecomptable,";
-$sql .= "  " . $db->ifsql('aa.label IS NULL', "'".$langs->trans('NotMatch')."'", 'aa.label') . " AS intitule,";
+$sql = "SELECT " . $db->ifsql('aa.account_number IS NULL', "'tobind'", 'aa.account_number') . " AS codecomptable,";
+$sql .= "  " . $db->ifsql('aa.label IS NULL', "'tobind'", 'aa.label') . " AS intitule,";
 for($i = 1; $i <= 12; $i ++) {
 	$sql .= "  SUM(" . $db->ifsql('MONTH(f.datef)=' . $i, 'fd.total_ht', '0') . ") AS month" . str_pad($i, 2, '0', STR_PAD_LEFT) . ",";
 }
@@ -233,15 +233,27 @@ if (! empty($conf->global->FACTURE_DEPOSITS_ARE_JUST_PAYMENTS)) {
 }
 $sql .= " GROUP BY fd.fk_code_ventilation,aa.account_number,aa.label";
 
-dol_syslog("htdocs/accountancy/customer/index.php sql=" . $sql, LOG_DEBUG);
+dol_syslog('htdocs/accountancy/customer/index.php sql=' . $sql, LOG_DEBUG);
 $resql = $db->query($sql);
 if ($resql) {
 	$num = $db->num_rows($resql);
 
 	while ( $row = $db->fetch_row($resql)) {
 
-		print '<tr class="oddeven"><td>' . length_accountg($row[0]) . '</td>';
-		print '<td align="left">' . $row[1] . '</td>';
+		print '<tr class="oddeven"><td>';
+		if ($row[0] == 'tobind')
+		{
+			print $langs->trans("Unknown");
+		}
+		else print length_accountg($row[0]);
+		print '</td>';
+		print '<td align="left">';
+		if ($row[0] == 'tobind')
+		{
+			print $langs->trans("UseMenuToSetBindindManualy", DOL_URL_ROOT.'/accountancy/customer/list.php?search_year='.$y, $langs->transnoentitiesnoconv("ToBind"));
+		}
+		else print $row[1];
+		print '</td>';
 		for($i = 2; $i <= 12; $i ++) {
 			print '<td align="right">' . price($row[$i]) . '</td>';
 		}
@@ -269,8 +281,8 @@ for($i = 1; $i <= 12; $i ++) {
 }
 print '<td width="60" align="right"><b>' . $langs->trans("Total") . '</b></td></tr>';
 
-$sql = "SELECT " . $db->ifsql('aa.account_number IS NULL', "'".$langs->trans('NotMatch')."'", 'aa.account_number') . " AS codecomptable,";
-$sql .= "  " . $db->ifsql('aa.label IS NULL', "'".$langs->trans('NotMatch')."'", 'aa.label') . " AS intitule,";
+$sql = "SELECT " . $db->ifsql('aa.account_number IS NULL', "'tobind'", 'aa.account_number') . " AS codecomptable,";
+$sql .= "  " . $db->ifsql('aa.label IS NULL', "'tobind'", 'aa.label') . " AS intitule,";
 for($i = 1; $i <= 12; $i ++) {
 	$sql .= "  SUM(" . $db->ifsql('MONTH(f.datef)=' . $i, 'fd.total_ht', '0') . ") AS month" . str_pad($i, 2, '0', STR_PAD_LEFT) . ",";
 }
@@ -289,14 +301,27 @@ if (! empty($conf->global->FACTURE_DEPOSITS_ARE_JUST_PAYMENTS)) {
 $sql .= " AND aa.account_number IS NOT NULL";
 $sql .= " GROUP BY fd.fk_code_ventilation,aa.account_number,aa.label";
 
-dol_syslog("htdocs/accountancy/customer/index.php sql=" . $sql, LOG_DEBUG);
+dol_syslog('htdocs/accountancy/customer/index.php');
 $resql = $db->query($sql);
 if ($resql) {
 	$num = $db->num_rows($resql);
 
 	while ( $row = $db->fetch_row($resql)) {
 
-		print '<tr class="oddeven"><td>' . length_accountg($row[0]) . '</td>';
+		print '<tr class="oddeven"><td>';
+		if ($row[0] == 'tobind')
+		{
+			print $langs->trans("Unknown");
+		}
+		else print length_accountg($row[0]);
+		print '</td>';
+		print '<td align="left">';
+		if ($row[0] == 'tobind')
+		{
+			print $langs->trans("UseMenuToSetBindindManualy", DOL_URL_ROOT.'/accountancy/customer/list.php?search_year='.$y, $langs->transnoentitiesnoconv("ToBind"));
+		}
+		else print $row[1];
+		print '</td>';
 		print '<td align="left">' . $row[1] . '</td>';
 		for($i = 2; $i <= 12; $i ++) {
 			print '<td align="right">' . price($row[$i]) . '</td>';
@@ -347,7 +372,6 @@ if ($conf->global->MAIN_FEATURES_LEVEL > 0) // This part of code looks strange. 
 	dol_syslog('htdocs/accountancy/customer/index.php');
 	$resql = $db->query($sql);
 	if ($resql) {
-		$i = 0;
 		$num = $db->num_rows($resql);
 
 		while ($row = $db->fetch_row($resql)) {
@@ -357,13 +381,13 @@ if ($conf->global->MAIN_FEATURES_LEVEL > 0) // This part of code looks strange. 
 			}
 			print '<td align="right"><b>' . price($row[13]) . '</b></td>';
 			print '</tr>';
-			$i ++;
 		}
 		$db->free($resql);
 	} else {
 		print $db->lasterror(); // Show last sql error
 	}
 	print "</table>\n";
+
 
 	if (! empty($conf->margin->enabled)) {
 		print "<br>\n";
@@ -390,7 +414,7 @@ if ($conf->global->MAIN_FEATURES_LEVEL > 0) // This part of code looks strange. 
 			$sql .= " AND f.type IN (" . Facture::TYPE_STANDARD . "," . Facture::TYPE_REPLACEMENT . "," . Facture::TYPE_CREDIT_NOTE . "," . Facture::TYPE_DEPOSIT . "," . Facture::TYPE_SITUATION . ")";
 		}
 
-		dol_syslog('htdocs/accountancy/customer/index.php:: $sql=' . $sql);
+		dol_syslog('htdocs/accountancy/customer/index.php');
 		$resql = $db->query($sql);
 		if ($resql) {
 			$num = $db->num_rows($resql);

@@ -1482,7 +1482,7 @@ else
             $sql.= " cd.date_fin_validite as date_fin, cd.date_cloture as date_fin_reelle,";
             $sql.= " cd.commentaire as comment, cd.fk_product_fournisseur_price as fk_fournprice, cd.buy_price_ht as pa_ht,";
 	        $sql.= " cd.fk_unit,";
-            $sql.= " p.rowid as pid, p.ref as pref, p.label as label, p.fk_product_type as ptype, p.entity as pentity";
+            $sql.= " p.rowid as pid, p.ref as pref, p.label as plabel, p.fk_product_type as ptype, p.entity as pentity";
             $sql.= " FROM ".MAIN_DB_PREFIX."contratdet as cd";
             $sql.= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON cd.fk_product = p.rowid";
             $sql.= " WHERE cd.rowid = ".$object->lines[$cursorline-1]->id;
@@ -1513,7 +1513,7 @@ else
                 if ($action != 'editline' || GETPOST('rowid') != $objp->rowid)
                 {
                     print '<tr '.$bcnd[$var].' valign="top">';
-                    // Libelle
+                    // Label
                     if ($objp->fk_product > 0)
                     {
                         print '<td>';
@@ -1521,19 +1521,21 @@ else
                         $productstatic->type=$objp->ptype;
                         $productstatic->ref=$objp->pref;
 						$productstatic->entity=$objp->pentity;
-                        $text = $productstatic->getNomUrl(1,'',20);
-                        if ($objp->label)
+						$productstatic->label=$objp->plabel;
+						$text = $productstatic->getNomUrl(1,'',20);
+                        if ($objp->plabel)
                         {
                         	$text .= ' - ';
-                        	$productstatic->ref=$objp->label;
-                        	$text .= $productstatic->getNomUrl(0,'',16);
+                        	//$productstatic->ref=$objp->label;
+                        	//$text .= $productstatic->getNomUrl(0,'',16);
+                        	$text .= $objp->plabel;
                         }
                         $description = $objp->description;
 
 	                    // Add description in form
 						if (! empty($conf->global->PRODUIT_DESC_IN_FORM))
 						{
-							$text .= (! empty($objp->description) && $objp->description!=$objp->product_label)?'<br>'.dol_htmlentitiesbr($objp->description):'';
+							$text .= (! empty($objp->description) && $objp->description!=$objp->plabel)?'<br>'.dol_htmlentitiesbr($objp->description):'';
 							$description = '';	// Already added into main visible desc
 						}
 
@@ -1543,7 +1545,7 @@ else
                     }
                     else
 					{
-                        print '<td>'.dol_htmlentitiesbr($objp->description)."</td>\n";
+                        print '<td>'.img_object($langs->trans("ShowProductOrService"), ($objp->product_type ? 'service' : 'product')).' '.dol_htmlentitiesbr($objp->description)."</td>\n";
                     }
                     // TVA
                     print '<td align="center">';
@@ -1782,7 +1784,7 @@ else
             {
                 $dateactstart = dol_mktime(12, 0, 0, GETPOST('remonth'), GETPOST('reday'), GETPOST('reyear'));
                 $dateactend   = dol_mktime(12, 0, 0, GETPOST('endmonth'), GETPOST('endday'), GETPOST('endyear'));
-                $comment      = GETPOST('comment');
+                $comment      = GETPOST('comment','alpha');
                 $form->form_confirm($_SERVER["PHP_SELF"]."?id=".$object->id."&ligne=".GETPOST('ligne')."&date=".$dateactstart."&dateend=".$dateactend."&comment=".urlencode($comment),$langs->trans("ActivateService"),$langs->trans("ConfirmActivateService",dol_print_date($dateactstart,"%A %d %B %Y")),"confirm_active", '', 0, 1);
                 print '<table class="notopnoleftnoright" width="100%"><tr class="oddeven" height="6"><td></td></tr></table>';
             }
@@ -1794,8 +1796,16 @@ else
             {
                 $dateactstart = dol_mktime(12, 0, 0, GETPOST('remonth'), GETPOST('reday'), GETPOST('reyear'));
                 $dateactend   = dol_mktime(12, 0, 0, GETPOST('endmonth'), GETPOST('endday'), GETPOST('endyear'));
-                $comment      = GETPOST('comment');
-                $form->form_confirm($_SERVER["PHP_SELF"]."?id=".$object->id."&ligne=".GETPOST('ligne')."&date=".$dateactstart."&dateend=".$dateactend."&comment=".urlencode($comment), $langs->trans("CloseService"), $langs->trans("ConfirmCloseService",dol_print_date($dateactend,"%A %d %B %Y")), "confirm_closeline", '', 0, 1);
+                $comment      = GETPOST('comment','alpha');
+
+                if (empty($dateactend))
+                {
+                    setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("DateEndReal")), null, 'errors');
+                }
+                else
+                {
+                    $form->form_confirm($_SERVER["PHP_SELF"]."?id=".$object->id."&ligne=".GETPOST('ligne','int')."&date=".$dateactstart."&dateend=".$dateactend."&comment=".urlencode($comment), $langs->trans("CloseService"), $langs->trans("ConfirmCloseService",dol_print_date($dateactend,"%A %d %B %Y")), "confirm_closeline", '', 0, 1);
+                }
                 print '<table class="notopnoleftnoright" width="100%"><tr class="oddeven" height="6"><td></td></tr></table>';
             }
 
@@ -1918,9 +1928,11 @@ else
                 /**
                  * Disable a contract line
                  */
-                print '<form name="closeline" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;ligne='.$object->lines[$cursorline-1]->id.'&amp;action=closeline" method="post">';
+                print '<!-- Form to disabled a line -->'."\n";
+                print '<form name="closeline" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;ligne='.$object->lines[$cursorline-1]->id.'" method="post">';
 
                 print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
+                print '<input type="hidden" name="action" value="closeline">';
 
                 print '<table class="noborder tableforservicepart2 boxtablenobottom" width="100%">';
 
@@ -1957,7 +1969,7 @@ else
                 print '</td></tr>';
 
                 print '<tr '.$bc[false].'>';
-                print '<td class="nohover">'.$langs->trans("Comment").'</td><td class="nohover"><input size="70" type="text" class="flat" name="comment" value="'.GETPOST('comment').'"></td>';
+                print '<td class="nohover">'.$langs->trans("Comment").'</td><td class="nohover"><input size="70" type="text" class="flat" name="comment" value="'.dol_escape_htmltag(GETPOST('comment', 'alpha')).'"></td>';
                 print '<td class="nohover right">';
                 print '<input type="submit" class="button" name="close" value="'.$langs->trans("Unactivate").'"> &nbsp; ';
                 print '<input type="submit" class="button" name="cancel" value="'.$langs->trans("Cancel").'">';
@@ -2033,7 +2045,7 @@ else
                 if ($user->rights->contrat->creer) print '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;action=valid">'.$langs->trans("Validate").'</a></div>';
                 else print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="'.$langs->trans("NotEnoughPermissions").'">'.$langs->trans("Validate").'</a></div>';
             }
-            if ($object->statut == 1 && $nbofservices)
+            if ($object->statut == 1)
             {
                 if ($user->rights->contrat->creer) print '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;action=reopen">'.$langs->trans("Modify").'</a></div>';
                 else print '<div class="inline-block divButAction"><a class="butActionRefused" href="#" title="'.$langs->trans("NotEnoughPermissions").'">'.$langs->trans("Modify").'</a></div>';

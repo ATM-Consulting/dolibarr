@@ -146,6 +146,7 @@ if (empty($reshook))
 	{
 	    $result=$object->setValueFrom('ref_supplier', GETPOST('ref_supplier','alpha'), '', null, 'text', '', $user, 'ORDER_SUPPLIER_MODIFY');
 		if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+		else $object->ref_supplier = GETPOST('ref_supplier','alpha'); // Geoffrey a fait ça, ça aurait mérité un comm pour comprendre parce que là ça me parait bizarre
 	}
 
 	// Set incoterm
@@ -288,6 +289,7 @@ if (empty($reshook))
 		$product_desc=(GETPOST('dp_desc')?GETPOST('dp_desc'):'');
 		$date_start=dol_mktime(GETPOST('date_start'.$predef.'hour'), GETPOST('date_start'.$predef.'min'), GETPOST('date_start' . $predef . 'sec'), GETPOST('date_start'.$predef.'month'), GETPOST('date_start'.$predef.'day'), GETPOST('date_start'.$predef.'year'));
 		$date_end=dol_mktime(GETPOST('date_end'.$predef.'hour'), GETPOST('date_end'.$predef.'min'), GETPOST('date_end' . $predef . 'sec'), GETPOST('date_end'.$predef.'month'), GETPOST('date_end'.$predef.'day'), GETPOST('date_end'.$predef.'year'));
+		$prod_entry_mode = GETPOST('prod_entry_mode');
 		if ($prod_entry_mode == 'free')
 		{
 			$idprod=0;
@@ -364,21 +366,29 @@ if (empty($reshook))
 	    {
 	    	$productsupplier = new ProductFournisseur($db);
 
-	    	if (empty($conf->global->SUPPLIER_ORDER_WITH_NOPRICEDEFINED))
+	    	if (empty($conf->global->SUPPLIER_ORDER_WITH_NOPRICEDEFINED))	// TODO this test seems useless
 	    	{
 				$idprod=0;
 				if (GETPOST('idprodfournprice') == -1 || GETPOST('idprodfournprice') == '') $idprod=-99;	// Same behaviour than with combolist. When not select idprodfournprice is now -99 (to avoid conflict with next action that may return -1, -2, ...)
 			}
-
-	    	if (GETPOST('idprodfournprice') > 0)
+			if (preg_match('/^idprod_([0-9]+)$/',GETPOST('idprodfournprice'), $reg))
+			{
+				$idprod=$reg[1];
+				$res=$productsupplier->fetch($idprod);
+				// Call to init properties of $productsupplier
+				// So if a supplier price already exists for another thirdparty (first one found), we use it as reference price
+				$productsupplier->get_buyprice(0, -1, $idprod, 'none');        // We force qty to -1 to be sure to find if a supplier price exist
+			}
+	    	elseif (GETPOST('idprodfournprice') > 0)
 	    	{
-	    		$idprod=$productsupplier->get_buyprice(GETPOST('idprodfournprice'), $qty);    // Just to see if a price exists for the quantity. Not used to found vat.
+			    $qtytosearch=$qty; 	   // Just to see if a price exists for the quantity. Not used to found vat.
+			    //$qtytosearch=-1;	       // We force qty to -1 to be sure to find if a supplier price exist
+	    		$idprod=$productsupplier->get_buyprice(GETPOST('idprodfournprice'), $qtytosearch);
+	    		$res=$productsupplier->fetch($idprod);
 	    	}
 
 	    	if ($idprod > 0)
 	    	{
-	    		$res=$productsupplier->fetch($idprod);
-
 	    		$label = $productsupplier->label;
 
 	    		$desc = $productsupplier->description;
@@ -399,8 +409,8 @@ if (empty($reshook))
 	    			$tva_tx,
 	    			$localtax1_tx,
 	    			$localtax2_tx,
-	    			$productsupplier->id,
-	    			GETPOST('idprodfournprice'),
+	    			$idprod,
+	    			$productsupplier->product_fourn_price_id,
 	    			$productsupplier->fourn_ref,
 	    			$remise_percent,
 	    			'HT',
@@ -535,19 +545,7 @@ if (empty($reshook))
 	 */
 	if ($action == 'updateline' && $user->rights->fournisseur->commande->creer &&	! GETPOST('cancel'))
 	{
-		$tva_tx = GETPOST('tva_tx');
-
-		if (GETPOST('price_ht') != '')
-    	{
-    		$price_base_type = 'HT';
-    		$ht = price2num(GETPOST('price_ht'));
-    	}
-    	else
-    	{
-    		$ttc = price2num(GETPOST('price_ttc'));
-    		$ht = $ttc / (1 + ($tva_tx / 100));
-    		$price_base_type = 'HT';
-    	}
+		$vat_rate=(GETPOST('tva_tx')?GETPOST('tva_tx'):0);
 
    		if ($lineid)
 	    {
@@ -559,10 +557,36 @@ if (empty($reshook))
 	    $date_start=dol_mktime(GETPOST('date_starthour'), GETPOST('date_startmin'), GETPOST('date_startsec'), GETPOST('date_startmonth'), GETPOST('date_startday'), GETPOST('date_startyear'));
 	    $date_end=dol_mktime(GETPOST('date_endhour'), GETPOST('date_endmin'), GETPOST('date_endsec'), GETPOST('date_endmonth'), GETPOST('date_endday'), GETPOST('date_endyear'));
 
-	    $localtax1_tx=get_localtax($tva_tx,1,$mysoc,$object->thirdparty);
-	    $localtax2_tx=get_localtax($tva_tx,2,$mysoc,$object->thirdparty);
+	    // Define info_bits
+	    $info_bits = 0;
+	    if (preg_match('/\*/', $vat_rate))
+	    	$info_bits |= 0x01;
 
-		$pu_ht_devise = GETPOST('multicurrency_subprice');
+	    // Define vat_rate
+	    $vat_rate = str_replace('*', '', $vat_rate);
+	    $localtax1_rate = get_localtax($vat_rate, 1, $mysoc, $object->thirdparty);
+	    $localtax2_rate = get_localtax($vat_rate, 2, $mysoc, $object->thirdparty);
+
+	    if (GETPOST('price_ht') != '')
+	    {
+	    	$price_base_type = 'HT';
+	    	$ht = price2num(GETPOST('price_ht'));
+	    }
+	    else
+	    {
+	    	$vatratecleaned = $vat_rate;
+	    	if (preg_match('/^(.*)\s*\((.*)\)$/', $vat_rate, $reg))      // If vat is "xx (yy)"
+	    	{
+	    		$vatratecleaned = trim($reg[1]);
+	    		$vatratecode = $reg[2];
+	    	}
+
+	    	$ttc = price2num(GETPOST('price_ttc'));
+	    	$ht = $ttc / (1 + ($vatratecleaned / 100));
+	    	$price_base_type = 'HT';
+	    }
+
+	    $pu_ht_devise = GETPOST('multicurrency_subprice');
 
 		// Extrafields Lines
 		$extrafieldsline = new ExtraFields($db);
@@ -581,9 +605,9 @@ if (empty($reshook))
 	        $ht,
 	        $_POST['qty'],
 	        $_POST['remise_percent'],
-	        $tva_tx,
-	        $localtax1_tx,
-	        $localtax2_tx,
+	        $vat_rate,
+	        $localtax1_rate,
+	        $localtax2_rate,
 	        $price_base_type,
 	        0,
 	        isset($_POST["type"])?$_POST["type"]:$line->product_type,
@@ -896,7 +920,7 @@ if (empty($reshook))
 	}
 
 	// Actions to build doc
-	$upload_dir = $conf->commande->dir_output;
+	$upload_dir = $conf->fournisseur->commande->dir_output;
 	$permissioncreate = $user->rights->fournisseur->commande->creer;
 	include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
 
@@ -1143,6 +1167,7 @@ if (empty($reshook))
 	        else
 			{
 	            $db->commit();
+            	$object->add_contact($user->id, 140, 'internal');
 	            header("Location: ".$_SERVER['PHP_SELF']."?id=".$id);
 	            exit;
 	        }
@@ -1371,12 +1396,13 @@ if ($action=='create')
 		$soc = $objectsrc->client;
 		$cond_reglement_id	= (!empty($objectsrc->cond_reglement_id)?$objectsrc->cond_reglement_id:(!empty($soc->cond_reglement_id)?$soc->cond_reglement_id:0));
 		$mode_reglement_id	= (!empty($objectsrc->mode_reglement_id)?$objectsrc->mode_reglement_id:(!empty($soc->mode_reglement_id)?$soc->mode_reglement_id:0));
-        $fk_account         = (! empty($objectsrc->fk_account)?$objectsrc->fk_account:(! empty($soc->fk_account)?$soc->fk_account:0));
+	        $fk_account         = (! empty($objectsrc->fk_account)?$objectsrc->fk_account:(! empty($soc->fk_account)?$soc->fk_account:0));
 		$availability_id	= (!empty($objectsrc->availability_id)?$objectsrc->availability_id:(!empty($soc->availability_id)?$soc->availability_id:0));
-        $shipping_method_id = (! empty($objectsrc->shipping_method_id)?$objectsrc->shipping_method_id:(! empty($soc->shipping_method_id)?$soc->shipping_method_id:0));
+        	$shipping_method_id = (! empty($objectsrc->shipping_method_id)?$objectsrc->shipping_method_id:(! empty($soc->shipping_method_id)?$soc->shipping_method_id:0));
 		$demand_reason_id	= (!empty($objectsrc->demand_reason_id)?$objectsrc->demand_reason_id:(!empty($soc->demand_reason_id)?$soc->demand_reason_id:0));
 		$remise_percent		= (!empty($objectsrc->remise_percent)?$objectsrc->remise_percent:(!empty($soc->remise_percent)?$soc->remise_percent:0));
 		$remise_absolue		= (!empty($objectsrc->remise_absolue)?$objectsrc->remise_absolue:(!empty($soc->remise_absolue)?$soc->remise_absolue:0));
+		$datelivraison		= (!empty($objectsrc->date_livraison)?$objectsrc->date_livraison:-1);
 		$dateinvoice		= empty($conf->global->MAIN_AUTOFILL_DATE)?-1:'';
 
 		$datedelivery = (! empty($objectsrc->date_livraison) ? $objectsrc->date_livraison : '');
@@ -2104,6 +2130,7 @@ elseif (! empty($object->id))
 	// Add free products/services form
 	global $forceall, $senderissupplier, $dateSelector;
 	$forceall=1; $senderissupplier=1; $dateSelector=0;
+	if (! empty($conf->global->SUPPLIER_ORDER_WITH_NOPRICEDEFINED)) $senderissupplier=2;	// $senderissupplier=2 is same than 1 but disable test on minimum qty and disable autofill qty with minimum.
 
 	// Show object lines
 	$inputalsopricewithtax=0;
@@ -2704,7 +2731,7 @@ elseif (! empty($object->id))
 		    //print '<tr class="liste_titre"><td colspan="2">'.$langs->trans("ToOrder").'</td></tr>';
 		    print '<tr><td>'.$langs->trans("OrderDate").'</td><td>';
 		    $date_com = dol_mktime(0, 0, 0, GETPOST('remonth'), GETPOST('reday'), GETPOST('reyear'));
-		    print $form->select_date($date_com,'',1,1,'',"commande",1,0,1);
+		    print $form->select_date($date_com,'',1,1,'',"commande",1,1,1);
 		    print '</td></tr>';
 
 		    print '<tr><td>'.$langs->trans("OrderMode").'</td><td>';
@@ -2756,7 +2783,7 @@ if ($action != 'makeorder')
 			print '<table class="noborder" width="100%">';
 			//print '<tr class="liste_titre"><td colspan="2">'.$langs->trans("Receive").'</td></tr>';
 			print '<tr><td>'.$langs->trans("DeliveryDate").'</td><td>';
-			print $form->select_date('','',1,1,'',"commande",1,0,1);
+			print $form->select_date('','',1,1,'',"commande",1,1,1);
 			print "</td></tr>\n";
 
 			print "<tr><td>".$langs->trans("Delivery")."</td><td>\n";

@@ -398,6 +398,7 @@ if (empty($reshook))
 						}
 
 						// Now we create same links to contact than the ones found on origin object
+						/* Useless, already into the create
 						if (! empty($conf->global->MAIN_PROPAGATE_CONTACTS_FROM_ORIGIN))
 						{
 						    $originforcontact = $object->origin;
@@ -420,7 +421,7 @@ if (empty($reshook))
 						        }
 						    }
 						    else dol_print_error($resqlcontact);
-						}
+						}*/
 
 						// Hooks
 						$parameters = array('objFrom' => $srcobject);
@@ -1477,7 +1478,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 		print '</td>';
 	} else {
 		print '<td>';
-		print $form->select_company('', 'socid', 's.client = 1 OR s.client = 3', 'SelectThirdParty', 0, 0, null, 0, 'minwidth300');
+		print $form->select_company('', 'socid', '(s.client = 1 OR s.client = 3)', 'SelectThirdParty', 0, 0, null, 0, 'minwidth300');
 		// reload page to retrieve customer informations
 		if (!empty($conf->global->RELOAD_PAGE_ON_CUSTOMER_CHANGE))
 		{
@@ -1583,7 +1584,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 		$langs->load("projects");
 		print '<tr>';
 		print '<td>' . $langs->trans("Project") . '</td><td>';
-		$numprojet = $formproject->select_projects($soc->id, $projectid, 'projectid', 0);
+		$numprojet = $formproject->select_projects(-1, $projectid, 'projectid', 0);
 		print ' &nbsp; <a href="'.DOL_URL_ROOT.'/projet/card.php?socid=' . $soc->id . '&action=create&status=1&backtopage='.urlencode($_SERVER["PHP_SELF"].'?action=create&socid='.$soc->id).'">' . $langs->trans("AddProject") . '</a>';
 		print '</td>';
 		print '</tr>';
@@ -1915,7 +1916,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 
 		// Order card
 
-		$linkback = '<a href="' . DOL_URL_ROOT . '/commande/list.php' . (! empty($socid) ? '?socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
+		$linkback = '<a href="' . DOL_URL_ROOT . '/commande/list.php?restore_lastsearch_values=1' . (! empty($socid) ? '&socid=' . $socid : '') . '">' . $langs->trans("BackToList") . '</a>';
 
 
 		$morehtmlref='<div class="refidno">';
@@ -1924,6 +1925,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 		$morehtmlref.=$form->editfieldval("RefCustomer", 'ref_client', $object->ref_client, $object, $user->rights->commande->creer, 'string', '', null, null, '', 1);
 	    // Thirdparty
 	    $morehtmlref.='<br>'.$langs->trans('ThirdParty') . ' : ' . $soc->getNomUrl(1);
+		if (empty($conf->global->MAIN_DISABLE_OTHER_LINK) && $object->thirdparty->id > 0) $morehtmlref.=' (<a href="'.DOL_URL_ROOT.'/commande/list.php?socid='.$object->thirdparty->id.'">'.$langs->trans("OtherOrders").'</a>)';
 	    // Project
 	    if (! empty($conf->projet->enabled))
 	    {
@@ -1938,11 +1940,11 @@ if ($action == 'create' && $user->rights->commande->creer)
 	                    $morehtmlref.='<form method="post" action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'">';
 	                    $morehtmlref.='<input type="hidden" name="action" value="classin">';
 	                    $morehtmlref.='<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-	                    $morehtmlref.=$formproject->select_projects($object->socid, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
+	                    $morehtmlref.=$formproject->select_projects(-1, $object->fk_project, 'projectid', $maxlength, 0, 1, 0, 1, 0, 0, '', 1);
 	                    $morehtmlref.='<input type="submit" class="button valignmiddle" value="'.$langs->trans("Modify").'">';
 	                    $morehtmlref.='</form>';
 	                } else {
-	                    $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, $object->socid, $object->fk_project, 'none', 0, 0, 0, 1);
+	                    $morehtmlref.=$form->form_project($_SERVER['PHP_SELF'] . '?id=' . $object->id, -1, $object->fk_project, 'none', 0, 0, 0, 1);
 	                }
 	        } else {
 	            if (! empty($object->fk_project)) {
@@ -2039,7 +2041,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 			print '</form>';
 		} else {
 			print $object->date ? dol_print_date($object->date, 'day') : '&nbsp;';
-			if ($object->hasDelay() && empty($object->date_livraison)) {
+			if ($object->hasDelay() && ! empty($object->date_livraison)) {
 			    print ' '.img_picto($langs->trans("Late").' : '.$object->showDelay(), "warning");
 			}
 		}
@@ -2495,7 +2497,7 @@ if ($action == 'create' && $user->rights->commande->creer)
 				if (! empty($conf->expedition->enabled)) {
 					$numshipping = $object->nb_expedition();
 
-					if ($object->statut > Commande::STATUS_DRAFT && $object->statut < Commande::STATUS_CLOSED && $object->getNbOfProductsLines() > 0) {
+					if ($object->statut > Commande::STATUS_DRAFT && $object->statut < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || !empty($conf->global->STOCK_SUPPORTS_SERVICES))) {
 						if (($conf->expedition_bon->enabled && $user->rights->expedition->creer) || ($conf->livraison_bon->enabled && $user->rights->expedition->livraison->creer)) {
 							if ($user->rights->expedition->creer) {
 								print '<div class="inline-block divButAction"><a class="butAction" href="' . DOL_URL_ROOT . '/expedition/shipment.php?id=' . $object->id . '">' . $langs->trans('CreateShipment') . '</a></div>';

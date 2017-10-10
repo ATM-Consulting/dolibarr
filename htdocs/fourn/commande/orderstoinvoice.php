@@ -301,8 +301,8 @@ if ($action == 'create' && !$error) {
 	if ($socid)
 		$res = $soc->fetch($socid);
 	if ($res) {
-		$cond_reglement_id = $soc->cond_reglement_id;
-		$mode_reglement_id = $soc->mode_reglement_id;
+		$cond_reglement_id = $soc->cond_reglement_supplier_id;
+		$mode_reglement_id = $soc->mode_reglement_supplier_id;
 	}
 	$dateinvoice = empty($conf->global->MAIN_AUTOFILL_DATE) ? - 1 : '';
 
@@ -446,7 +446,7 @@ if (($action != 'create' && $action != 'add') && !$error) {
 	$sql .= ' AND c.fk_soc = s.rowid';
 
 	// Show orders with status validated, shipping started and delivered (well any order we can bill)
-	$sql .= " AND c.fk_statut IN (5)";
+	$sql .= " AND c.fk_statut IN (5,4)";
 	$sql .= " AND c.billed = 0";
 
 	// Find order that are not already invoiced
@@ -501,12 +501,12 @@ if (($action != 'create' && $action != 'add') && !$error) {
 		print '<input type="hidden" name="socid" value="' . $socid . '">';
 		print '<table class="noborder" width="100%">';
 		print '<tr class="liste_titre">';
-		print_liste_field_titre($langs->trans('Ref'), 'orderstoinvoice.php', 'c.ref', '', '&amp;socid=' . $socid, '', $sortfield, $sortorder);
-		print_liste_field_titre($langs->trans('RefSupplier'), 'orderstoinvoice.php', 'c.ref_supplier', '', '&amp;socid=' . $socid, '', $sortfield, $sortorder);
-		print_liste_field_titre($langs->trans('OrderDate'), 'orderstoinvoice.php', 'c.date_commande', '', '&amp;socid=' . $socid, 'align="center"', $sortfield, $sortorder);
-		print_liste_field_titre($langs->trans('DeliveryDate'), 'orderstoinvoice.php', 'c.date_livraison', '', '&amp;socid=' . $socid, 'align="center"', $sortfield, $sortorder);
-		print_liste_field_titre($langs->trans('Status'), '', '', '', '', 'align="right"');
-		print_liste_field_titre($langs->trans('GenerateBill'), '', '', '', '', 'align="center"');
+		print_liste_field_titre('Ref', 'orderstoinvoice.php', 'c.ref', '', '&amp;socid=' . $socid, '', $sortfield, $sortorder);
+		print_liste_field_titre('RefSupplier', 'orderstoinvoice.php', 'c.ref_supplier', '', '&amp;socid=' . $socid, '', $sortfield, $sortorder);
+		print_liste_field_titre('OrderDate', 'orderstoinvoice.php', 'c.date_commande', '', '&amp;socid=' . $socid, 'align="center"', $sortfield, $sortorder);
+		print_liste_field_titre('DeliveryDate', 'orderstoinvoice.php', 'c.date_livraison', '', '&amp;socid=' . $socid, 'align="center"', $sortfield, $sortorder);
+		print_liste_field_titre('Status', '', '', '', '', 'align="right"');
+		print_liste_field_titre('GenerateBill', '', '', '', '', 'align="center"');
 		print "</tr>\n";
 
 		// Lignes des champs de filtre

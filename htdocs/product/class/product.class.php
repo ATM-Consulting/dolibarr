@@ -1532,6 +1532,7 @@ class Product extends CommonObject
                     	$obj->price = $price_result;
                     }
                 }
+                $this->product_fourn_price_id = $obj->rowid;
 				$this->buyprice = $obj->price;                      // deprecated
 				$this->fourn_pu = $obj->price / $obj->quantity;     // Unit price of product of supplier
 				$this->fourn_price_base_type = 'HT';                // Price base type
@@ -1577,6 +1578,7 @@ class Product extends CommonObject
 		                    	$obj->price = $price_result;
 		                    }
 		                }
+		                $this->product_fourn_price_id = $obj->rowid;
 						$this->buyprice = $obj->price;                      // deprecated
 						$this->fourn_qty = $obj->quantity;					// min quantity for price for a virtual supplier
 						$this->fourn_pu = $obj->price / $obj->quantity;     // Unit price of product for a virtual supplier
@@ -2136,11 +2138,12 @@ class Product extends CommonObject
 	/**
 	 *  Charge tableau des stats commande client pour le produit/service
 	 *
-	 *  @param    int	$socid       	Id societe pour filtrer sur une societe
-	 *  @param    int	$filtrestatut   Id statut pour filtrer sur un statut
-	 *  @return   array       			Array of stats (nb=nb of order, qty=qty ordered)
+	 *  @param    int    $socid           Id societe pour filtrer sur une societe
+	 *  @param    string $filtrestatut    Id statut pour filtrer sur un statut
+	 *  @param    int    $forVirtualStock Ignore rights filter for virtual stock calculation.
+	 *  @return   array                  Array of stats (nb=nb of order, qty=qty ordered)
 	 */
-	function load_stats_commande($socid=0,$filtrestatut='')
+	function load_stats_commande($socid=0,$filtrestatut='', $forVirtualStock = 0)
 	{
 		global $conf,$user;
 
@@ -2149,12 +2152,12 @@ class Product extends CommonObject
 		$sql.= " FROM ".MAIN_DB_PREFIX."commandedet as cd";
 		$sql.= ", ".MAIN_DB_PREFIX."commande as c";
 		$sql.= ", ".MAIN_DB_PREFIX."societe as s";
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql.= " WHERE c.rowid = cd.fk_commande";
 		$sql.= " AND c.fk_soc = s.rowid";
 		$sql.= " AND c.entity IN (".getEntity('commande').")";
 		$sql.= " AND cd.fk_product = ".$this->id;
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND c.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= " AND c.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
 		if ($socid > 0)	$sql.= " AND c.fk_soc = ".$socid;
 		if ($filtrestatut <> '') $sql.= " AND c.fk_statut in (".$filtrestatut.")";
 
@@ -2202,11 +2205,12 @@ class Product extends CommonObject
 	/**
 	 *  Charge tableau des stats commande fournisseur pour le produit/service
 	 *
-	 *  @param    int		$socid       	Id societe pour filtrer sur une societe
-	 *  @param    string	$filtrestatut  	Id des statuts pour filtrer sur des statuts
-	 *  @return   array       				Tableau des stats
+	 *  @param    int      $socid           Id societe pour filtrer sur une societe
+	 *  @param    string   $filtrestatut    Id des statuts pour filtrer sur des statuts
+	 *  @param    int      $forVirtualStock Ignore rights filter for virtual stock calculation.
+	 *  @return   array                     Tableau des stats
 	 */
-	function load_stats_commande_fournisseur($socid=0,$filtrestatut='')
+	function load_stats_commande_fournisseur($socid=0,$filtrestatut='', $forVirtualStock = 0)
 	{
 		global $conf,$user;
 
@@ -2215,12 +2219,12 @@ class Product extends CommonObject
 		$sql.= " FROM ".MAIN_DB_PREFIX."commande_fournisseurdet as cd";
 		$sql.= ", ".MAIN_DB_PREFIX."commande_fournisseur as c";
 		$sql.= ", ".MAIN_DB_PREFIX."societe as s";
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql.= " WHERE c.rowid = cd.fk_commande";
 		$sql.= " AND c.fk_soc = s.rowid";
 		$sql.= " AND c.entity IN (".getEntity('supplier_order').")";
 		$sql.= " AND cd.fk_product = ".$this->id;
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND c.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= " AND c.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
 		if ($socid > 0) $sql.= " AND c.fk_soc = ".$socid;
 		if ($filtrestatut != '') $sql.= " AND c.fk_statut in (".$filtrestatut.")"; // Peut valoir 0
 
@@ -2244,11 +2248,12 @@ class Product extends CommonObject
 	/**
 	 *  Charge tableau des stats expedition client pour le produit/service
 	 *
-	 *  @param    int	$socid       	Id societe pour filtrer sur une societe
-	 *  @param    int	$filtrestatut  	Id statut pour filtrer sur un statut
-	 *  @return   array       			Tableau des stats
+	 *  @param    int    $socid           Id societe pour filtrer sur une societe
+	 *  @param    string $filtrestatut    Id statut pour filtrer sur un statut
+	 *  @param    int    $forVirtualStock Ignore rights filter for virtual stock calculation.
+	 *  @return   array                   Tableau des stats
 	 */
-	function load_stats_sending($socid=0,$filtrestatut='')
+	function load_stats_sending($socid=0,$filtrestatut='', $forVirtualStock = 0)
 	{
 		global $conf,$user;
 
@@ -2259,14 +2264,14 @@ class Product extends CommonObject
 		$sql.= ", ".MAIN_DB_PREFIX."commande as c";
 		$sql.= ", ".MAIN_DB_PREFIX."expedition as e";
 		$sql.= ", ".MAIN_DB_PREFIX."societe as s";
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql.= " WHERE e.rowid = ed.fk_expedition";
 		$sql.= " AND c.rowid = cd.fk_commande";
 		$sql.= " AND e.fk_soc = s.rowid";
 		$sql.= " AND e.entity IN (".getEntity('expedition').")";
 		$sql.= " AND ed.fk_origin_line = cd.rowid";
 		$sql.= " AND cd.fk_product = ".$this->id;
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND e.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= " AND e.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
 		if ($socid > 0)	$sql.= " AND e.fk_soc = ".$socid;
 		if ($filtrestatut <> '') $sql.= " AND c.fk_statut in (".$filtrestatut.")";
 
@@ -2290,11 +2295,12 @@ class Product extends CommonObject
 	/**
 	 *  Charge tableau des stats réception fournisseur pour le produit/service
 	 *
-	 *  @param    int	$socid       	Id societe pour filtrer sur une societe
-	 *  @param    int	$filtrestatut  	Id statut pour filtrer sur un statut
-	 *  @return   array       			Tableau des stats
+	 *  @param    int    $socid           Id societe pour filtrer sur une societe
+	 *  @param    string $filtrestatut    Id statut pour filtrer sur un statut
+	 *  @param    int    $forVirtualStock Ignore rights filter for virtual stock calculation.
+	 *  @return   array                   Tableau des stats
 	 */
-	function load_stats_reception($socid=0,$filtrestatut='')
+	function load_stats_reception($socid=0,$filtrestatut='', $forVirtualStock = 0)
 	{
 		global $conf,$user;
 
@@ -2303,12 +2309,12 @@ class Product extends CommonObject
 		$sql.= " FROM ".MAIN_DB_PREFIX."commande_fournisseur_dispatch as fd";
 		$sql.= ", ".MAIN_DB_PREFIX."commande_fournisseur as cf";
 		$sql.= ", ".MAIN_DB_PREFIX."societe as s";
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql.= " WHERE cf.rowid = fd.fk_commande";
 		$sql.= " AND cf.fk_soc = s.rowid";
 		$sql.= " AND cf.entity IN (".getEntity('supplier_order').")";
 		$sql.= " AND fd.fk_product = ".$this->id;
-		if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND cf.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if (!$user->rights->societe->client->voir && !$socid && !$forVirtualStock) $sql.= " AND cf.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
 		if ($socid > 0)	$sql.= " AND cf.fk_soc = ".$socid;
 		if ($filtrestatut <> '') $sql.= " AND cf.fk_statut in (".$filtrestatut.")";
 
@@ -3746,7 +3752,7 @@ class Product extends CommonObject
 		$sql.= " WHERE w.entity IN (".getEntity('stock').")";
 		$sql.= " AND w.rowid = ps.fk_entrepot";
 		$sql.= " AND ps.fk_product = ".$this->id;
-		if ($conf->global->ENTREPOT_EXTRA_STATUS && count($warehouseStatus)) $sql.= " AND w.statut IN (".implode(',',$warehouseStatus).")";
+		if ($conf->global->ENTREPOT_EXTRA_STATUS && count($warehouseStatus)) $sql.= " AND w.statut IN (".$this->db->escape(implode(',',$warehouseStatus)).")";
 
 		dol_syslog(get_class($this)."::load_stock", LOG_DEBUG);
 		$result = $this->db->query($sql);
@@ -3801,23 +3807,23 @@ class Product extends CommonObject
 
         if (! empty($conf->commande->enabled))
         {
-            $result=$this->load_stats_commande(0,'1,2');
+            $result=$this->load_stats_commande(0,'1,2', 1);
             if ($result < 0) dol_print_error($this->db,$this->error);
             $stock_commande_client=$this->stats_commande['qty'];
         }
         if (! empty($conf->expedition->enabled))
         {
-            $result=$this->load_stats_sending(0,'1,2');
+            $result=$this->load_stats_sending(0,'1,2', 1);
             if ($result < 0) dol_print_error($this->db,$this->error);
             $stock_sending_client=$this->stats_expedition['qty'];
         }
         if (! empty($conf->fournisseur->enabled))
         {
-            $result=$this->load_stats_commande_fournisseur(0,'1,2,3,4');
+            $result=$this->load_stats_commande_fournisseur(0,'1,2,3,4', 1);
             if ($result < 0) dol_print_error($this->db,$this->error);
             $stock_commande_fournisseur=$this->stats_commande_fournisseur['qty'];
 
-            $result=$this->load_stats_reception(0,'4');
+            $result=$this->load_stats_reception(0,'4', 1);
             if ($result < 0) dol_print_error($this->db,$this->error);
             $stock_reception_fournisseur=$this->stats_reception['qty'];
         }
