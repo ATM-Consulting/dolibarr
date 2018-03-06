@@ -1157,7 +1157,11 @@ if (empty($reshook))
 	        }
 	        else
 			{
+				require_once DOL_DOCUMENT_ROOT.'/custom/cliacropose/class/actions_cliacropose.class.php';
+				$actionAcropose = new Actionscliacropose();
 	            $db->commit();
+            	//$object->add_contact($user->id, 140, 'internal');
+            	$actionAcropose->addDefaultContact();
 	            header("Location: ".$_SERVER['PHP_SELF']."?id=".$id);
 	            exit;
 	        }
