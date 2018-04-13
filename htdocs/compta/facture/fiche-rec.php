@@ -359,6 +359,11 @@ if (empty($reshook))
     {
     	$object->setAutoValidate(GETPOST('auto_validate', 'int'));
     }
+    // Set generate PDF
+    elseif ($action == 'setgenerate_pdf' && $user->rights->facture->creer)
+    {
+    	$res = $object->setGeneratePDF(GETPOST('generate_pdf', 'int'));
+    }
 
     // Delete line
     if ($action == 'confirm_deleteline' && $confirm == 'yes' && $user->rights->facture->creer)
@@ -1432,6 +1437,22 @@ else
 		if ($action == 'auto_validate' || $object->frequency > 0)
 		{
     		print $form->editfieldval($langs->trans("StatusOfGeneratedInvoices"), 'auto_validate', $object->auto_validate, $object, $user->rights->facture->creer, $select);
+		}
+		print '</td>';
+		print '</tr>';
+		
+		// Generate invoice PDF
+		print '<tr><td>';
+		if ($action == 'generate_pdf' || $object->frequency > 0) {
+		    print $form->editfieldkey($langs->trans("AutoGeneratePDF"), 'generate_pdf', $object->generate_pdf, $object, $user->rights->facture->creer);
+		}
+		else {
+		    print $langs->trans("AutoGeneratePDF");
+		}
+		print '</td><td>';
+    	$select = 'select;0:'.$langs->trans('No').',1:'.$langs->trans('Yes');
+		if ($action == 'generate_pdf' || $object->frequency > 0) {
+    		print $form->editfieldval($langs->trans("AutoGeneratePDF"), 'generate_pdf', $object->generate_pdf, $object, $user->rights->facture->creer, $select);
 		}
 		print '</td>';
 		print '</tr>';

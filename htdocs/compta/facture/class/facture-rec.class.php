@@ -140,6 +140,7 @@ class FactureRec extends CommonInvoice
 			$sql.= ", nb_gen_done";
 			$sql.= ", nb_gen_max";
 			$sql.= ", auto_validate";
+			$sql.= ", generate_pdf";
 			$sql.= ") VALUES (";
 			$sql.= "'".$this->titre."'";
 			$sql.= ", ".$facsrc->socid;
@@ -162,6 +163,7 @@ class FactureRec extends CommonInvoice
 			$sql.= ", ".$this->nb_gen_done;
 			$sql.= ", ".$this->nb_gen_max;
 			$sql.= ", ".$this->auto_validate;
+			$sql.= ", ".(!empty($this->generate_pdf) ? $this->generate_pdf : '0');
 			$sql.= ")";
 
 			if ($this->db->query($sql))
@@ -278,7 +280,7 @@ class FactureRec extends CommonInvoice
 		$sql.= ', f.note_private, f.note_public, f.fk_user_author';
 		$sql.= ', f.fk_mode_reglement, f.fk_cond_reglement, f.fk_projet';
 		$sql.= ', f.fk_account';
-		$sql.= ', f.frequency, f.unit_frequency, f.date_when, f.date_last_gen, f.nb_gen_done, f.nb_gen_max, f.usenewprice, f.auto_validate';
+		$sql.= ', f.frequency, f.unit_frequency, f.date_when, f.date_last_gen, f.nb_gen_done, f.nb_gen_max, f.usenewprice, f.auto_validate, f.generate_pdf';
 		$sql.= ', p.code as mode_reglement_code, p.libelle as mode_reglement_libelle';
 		$sql.= ', c.code as cond_reglement_code, c.libelle as cond_reglement_libelle, c.libelle_facture as cond_reglement_libelle_doc';
 		//$sql.= ', el.fk_source';
@@ -347,6 +349,7 @@ class FactureRec extends CommonInvoice
 				$this->nb_gen_max			  = $obj->nb_gen_max;
 				$this->usenewprice			  = $obj->usenewprice;
 				$this->auto_validate		  = $obj->auto_validate;
+				$this->generate_pdf			  = $obj->generate_pdf;
 
 				if ($this->statut == self::STATUS_DRAFT)	$this->brouillon = 1;
 
@@ -913,6 +916,10 @@ class FactureRec extends CommonInvoice
 					dol_syslog("createRecurringInvoices Process invoice template ".$facturerec->ref." is finished with a success generation");
 					$nb_create++;
 					$this->output.=$langs->trans("InvoiceGeneratedFromTemplate", $facture->ref, $facturerec->ref)."\n";
+					
+					if(! empty($facturerec->generate_pdf)) {
+						$facture->generateDocument('crabe', $langs);
+					}
 				}
 				else
 				{
@@ -1250,6 +1257,37 @@ class FactureRec extends CommonInvoice
         if ($this->db->query($sql))
         {
             $this->auto_validate = $validate;
+            return 1;
+        }
+        else
+        {
+            dol_print_error($this->db);
+            return -1;
+        }
+    }
+
+	/**
+     *	Update the generate pdf invoice
+     *
+     *	@param     	int		$generate_pdf	1 to generate PDF of the new invoice
+     *	@return		int						<0 if KO, >0 if OK
+     */
+    function setGeneratePDF($generate_pdf)
+    {
+        if (! $this->table_element)
+        {
+            dol_syslog(get_class($this)."::setGeneratePDF was called on objet with property table_element not defined",LOG_ERR);
+            return -1;
+        }
+
+        $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element;
+        $sql.= ' SET generate_pdf = '.$generate_pdf;
+        $sql.= ' WHERE rowid = '.$this->id;
+
+        dol_syslog(get_class($this)."::setGeneratePDF", LOG_DEBUG);
+        if ($this->db->query($sql))
+        {
+            $this->generate_pdf = $generate_pdf;
             return 1;
         }
         else

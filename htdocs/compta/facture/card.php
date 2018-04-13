@@ -1439,8 +1439,10 @@ if (empty($reshook))
 				$model=$object->modelpdf;
 				$ret = $object->fetch($id); // Reload to get new records
 
-				$result = $object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
-				if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+				if(! isset($_POST['generate_pdf']) || ! empty(GETPOST('generate_pdf'))) {
+					$result = $object->generateDocument($model, $outputlangs, $hidedetails, $hidedesc, $hideref);
+					if ($result < 0) setEventMessages($object->error, $object->errors, 'errors');
+				}
 			}
 
 			header('Location: ' . $_SERVER["PHP_SELF"] . '?facid=' . $id);
@@ -1789,6 +1791,7 @@ if (empty($reshook))
 
 					unset($_POST['situations']);
 					unset($_POST['progress']);
+					unset($_POST['generate_pdf']);
 				} else {
 					setEventMessages($object->error, $object->errors, 'errors');
 				}
@@ -1966,6 +1969,7 @@ if (empty($reshook))
 
 				unset($_POST['situations']);
 				unset($_POST['progress']);
+				unset($_POST['generate_pdf']);
 			} else {
 				setEventMessages($object->error, $object->errors, 'errors');
 			}
@@ -2313,6 +2317,8 @@ if ($action == 'create')
 	    $fk_account = $invoice_predefined->fk_account;
 	    $note_public = $invoice_predefined->note_public;
 	    $note_private = $invoice_predefined->note_private;
+
+		print '<input name="generate_pdf" type="hidden" value="' . $invoice_predefined->generate_pdf . '">';
 
 		$sql = 'SELECT r.rowid, r.titre, r.total_ttc';
 		$sql .= ' FROM ' . MAIN_DB_PREFIX . 'facture_rec as r';
