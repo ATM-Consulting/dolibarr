@@ -3854,7 +3854,7 @@ class Product extends CommonObject
 			if ($result >= 0)
 			{
 				$this->db->commit();
-				return 1;
+				return $result;
 			}
 			else
 			{

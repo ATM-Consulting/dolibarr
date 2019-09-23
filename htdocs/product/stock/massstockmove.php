@@ -23,6 +23,8 @@
  *  			outgoing warehouse and create all stock movements for this.
  */
 
+use Sabre\VObject\Property\VCard\Date;
+
 require '../../main.inc.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
@@ -54,6 +56,7 @@ $idline = GETPOST('idline');
 $sortfield = GETPOST('sortfield','alpha');
 $sortorder = GETPOST('sortorder','alpha');
 $page = GETPOST('page','int');
+
 if (empty($page) || $page == -1) { $page = 0; }     // If $page is not defined, or '' or -1
 
 if (!$sortfield) {
@@ -225,8 +228,7 @@ if ($action == 'delline' && $idline != '')
 
 if ($action == 'createmovements')
 {
-    var_dump($listofdata);
-    var_dump($_REQUEST); exit;
+
 	$error=0;
 
 	/*if (! GETPOST("label"))
@@ -269,6 +271,11 @@ if ($action == 'createmovements')
 
 				if (empty($assets))
 				{
+				    //Gestion des dates de mouvement de stock
+                    $date = !empty($_SESSION['stockmove_date_ns'][$id]) ? $date =  $_SESSION['stockmove_date_ns'][$id] : $date = '';
+                    $date = DateTime::createFromFormat('d/m/Y', $date);
+                    $date = $date->format('Y-m-d');
+
 					if (empty($conf->productbatch->enabled) || ! $product->hasbatch())		// If product does not need lot/serial
 					{
 						// Remove stock
@@ -285,7 +292,12 @@ if ($action == 'createmovements')
 						{
 							$error++;
 							setEventMessages($product->errors, $product->errorss, 'errors');
-						}
+						} else {
+						    if(!empty($date)) {
+                                $sql = "UPDATE " . MAIN_DB_PREFIX . "stock_mouvement SET datem = '" . $date . "' WHERE rowid =" . $result1;
+                                $db->query($sql);
+                            }
+                        }
 
 						// Add stock
 						$result2=$product->correct_stock(
@@ -301,7 +313,13 @@ if ($action == 'createmovements')
 						{
 							$error++;
 							setEventMessages($product->errors, $product->errorss, 'errors');
-						}
+						} else {
+						    if(!empty($date)) {
+                                $sql = "UPDATE " . MAIN_DB_PREFIX . "stock_mouvement SET datem = '" . $date . "' WHERE rowid =" . $result2;
+                                $db->query($sql);
+                            }
+                        }
+
 					}
 					else
 					{
@@ -384,11 +402,12 @@ if ($action == 'createmovements')
 
 	if (! $error)
 	{
-		unset($_SESSION['massstockmove']);
+        unset($_SESSION['massstockmove']);
 
-		$db->commit();
-		setEventMessages($langs->trans("StockMovementRecorded"), null, 'mesgs');
-		header("Location: ".$_SERVER['PHP_SELF']);		// Redirect to avoid pb when using back
+        $db->commit();
+        setEventMessages($langs->trans("StockMovementRecorded"), null, 'mesgs');
+
+        header("Location: ".$_SERVER['PHP_SELF']);		// Redirect to avoid pb when using back
 		exit;
 	}
 	else
@@ -396,6 +415,15 @@ if ($action == 'createmovements')
 		$db->rollback();
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
+} elseif ($action == 'updatedatemovement_ns'){
+
+    //id ligne
+    $idline_ns = GETPOST('idline_ns');
+    //date
+    $date_ns = GETPOST('date_ns');
+
+    //stockage dans session
+    $_SESSION['stockmove_date_ns'][$idline_ns] = $date_ns;
 }
 
 
@@ -569,8 +597,10 @@ foreach($listofdata as $key => $val)
         print '<td>';
         print '<input type="hidden" name="parent_id" value="'.$val['id'].'">';
 
-        print '<div style="">';
-        print 'Date de mouvement : '.$form->select_date(dol_now('gmt'),'date_mouv_st',0, 0, 0, '', 1, 0, 0);
+        $style = '';
+
+        print '<div '.$style.' data-parent="'.$val['id'].'" class="div_date_mouv_ns"> ';
+        print 'Date de mouvement : '.$form->select_date(dol_now('gmt'),'date_mouv_ns_'.$val['id'], 0, 0, 0, '', 1, 0, 1);
         print '</div>';
         print '</td>';
 
@@ -619,10 +649,25 @@ print '</form>';
 ?>
 	<script type="text/javascript">
 		$(document).ready(function(){
-		    $('#date_mouv_st').on('change', function(e){
-		        val = $(this).val();
-		        console.log(val);
-            })
+
+            $('input[name*="date_mouv_ns_"]').on('change', function(e) {
+
+                val = $(this).val();
+                idline = $(this).closest('.div_date_mouv_ns').data('parent');
+
+                urlval = '<?php echo dol_buildpath('/product/stock/massstockmove.php',1); ?>' + '?action=updatedatemovement_ns';
+
+                $.ajax({
+                       url: urlval,
+                       data: {
+                           idline_ns: idline,
+                           date_ns: val
+                       },
+                       type: "POST"
+                    }).done(function(data){
+                    });
+
+            });
 
 		    $('.savetransfert').on('click', function(e){
 		        var tr = $(this).closest('tr');
