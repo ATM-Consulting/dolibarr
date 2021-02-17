@@ -1671,6 +1671,7 @@ YourCompanyDoesNotUseVAT=Votre société/institution est définie comme non assu
 AccountancyCode=Code comptable
 AccountancyCodeSell=Code comptable vente
 AccountancyCodeBuy=Code comptable achat
+CREATE_NEW_VAT_WITHOUT_AUTO_PAYMENT=Par défaut, laisser vide l’option « Créer automatiquement un règlement total » sur le formulaire de création d’un nouvel objet TVA
 ##### Agenda #####
 AgendaSetup=Configuration du module actions et agenda
 PasswordTogetVCalExport=Clé pour autoriser le lien d'exportation
