@@ -967,7 +967,11 @@ if ($resql)
 
 				print '<td style="min-width: 20px" class="nobordernopadding nowrap">';
 				$filename=dol_sanitizeFileName($obj->ref);
-				$filedir=$conf->facture->dir_output . '/' . dol_sanitizeFileName($obj->ref);
+
+                $upload_dir = $conf->facture->multidir_output[$obj->entity].'/'.dol_sanitizeFileName($obj->ref);
+                if($obj->entity == 1) $upload_dir = str_replace('invoice', 'facture', $upload_dir);
+                else $upload_dir = str_replace('facture', 'invoice', $upload_dir);
+                $filedir = $upload_dir;
 				$urlsource=$_SERVER['PHP_SELF'].'?id='.$obj->id;
 				print $formfile->getDocumentsLink($facturestatic->element, $filename, $filedir);
 				print '</td>';

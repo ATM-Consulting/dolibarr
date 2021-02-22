@@ -1937,8 +1937,11 @@ class Facture extends CommonInvoice
 					$ref = dol_sanitizeFileName($this->ref);
 					if ($conf->facture->dir_output && !empty($this->ref))
 					{
-						$dir = $conf->facture->dir_output . "/" . $ref;
-						$file = $conf->facture->dir_output . "/" . $ref . "/" . $ref . ".pdf";
+					    $upload_dir = $conf->facture->multidir_output[$this->entity].'/'.dol_sanitizeFileName($this->ref);
+                        if($this->entity == 1)$upload_dir= str_replace('invoice','facture',$upload_dir);
+                        else $upload_dir= str_replace('facture','invoice',$upload_dir);
+						$dir = $upload_dir;
+						$file = $upload_dir . "/" . $ref . ".pdf";
 						if (file_exists($file))	// We must delete all files before deleting directory
 						{
 							$ret=dol_delete_preview($this);
@@ -2338,8 +2341,11 @@ class Facture extends CommonInvoice
 					// to  not lose the linked files
 					$oldref = dol_sanitizeFileName($this->ref);
 					$newref = dol_sanitizeFileName($num);
-					$dirsource = $conf->facture->dir_output.'/'.$oldref;
-					$dirdest = $conf->facture->dir_output.'/'.$newref;
+					$upload_dir = $conf->facture->multidir_output[$this->entity];
+                    if($this->entity == 1)$upload_dir= str_replace('invoice','facture',$upload_dir);
+                    else $upload_dir= str_replace('facture','invoice',$upload_dir);
+					$dirsource = $upload_dir.'/'.$oldref;
+					$dirdest = $upload_dir.'/'.$newref;
 					if (file_exists($dirsource))
 					{
 						dol_syslog(get_class($this)."::validate rename dir ".$dirsource." into ".$dirdest);
@@ -2348,7 +2354,7 @@ class Facture extends CommonInvoice
 						{
 							dol_syslog("Rename ok");
 	                        // Rename docs starting with $oldref with $newref
-	                        $listoffiles=dol_dir_list($conf->facture->dir_output.'/'.$newref, 'files', 1, '^'.preg_quote($oldref,'/'));
+	                        $listoffiles=dol_dir_list($upload_dir.'/'.$newref, 'files', 1, '^'.preg_quote($oldref,'/'));
 	                        foreach($listoffiles as $fileentry)
 	                        {
 	                        	$dirsource=$fileentry['name'];
