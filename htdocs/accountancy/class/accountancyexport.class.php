@@ -941,9 +941,9 @@ class AccountancyExport
 			$tab[] = preg_match('/'.$separator.'/', $line->label_operation) ? "'".$line->label_operation."'" : $line->label_operation;
 			$tab[] = length_accountg($line->numero_compte);
 			$tab[] = length_accounta($line->subledger_account);
-			$tab[] = price2num($line->debit);
-			$tab[] = price2num($line->credit);
-			$tab[] = price2num($line->debit - $line->credit);
+			$tab[] = price($line->debit);
+			$tab[] = price($line->credit);
+			$tab[] = price($line->montant);
 			$tab[] = $line->code_journal;
 
 			print implode($separator, $tab).$this->end_line;
