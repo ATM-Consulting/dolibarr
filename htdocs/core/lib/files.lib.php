@@ -1751,10 +1751,19 @@ function addFileIntoDatabaseIndex($dir, $file, $fullpathorig = '', $mode = 'uplo
 		$ecmfile->description = '';    // indexed content
 		$ecmfile->keyword = '';        // keyword content
 
-        if (is_object($object) && $object->id > 0) {
-            $ecmfile->src_object_id = $object->id;
-            $ecmfile->src_object_type = $object->table_element;
-        }
+		if (is_object($object) && $object->id > 0) {
+			$ecmfile->src_object_id = $object->id;
+			/** --- START BACKPORT of fb13746 ---- */
+			if (isset($object->table_element)) {
+				$ecmfile->src_object_type = $object->table_element;
+				if (isset($object->src_object_description)) $ecmfile->description = $object->src_object_description;
+			} else {
+				dol_syslog('Error: object ' . get_class($object) . ' has no table_element attribute.');
+				return -1;
+			}
+			if (isset($object->src_object_keywords)) $ecmfile->keywords = $object->src_object_keywords;
+			/** --- END BACKPORT of fb13746 ---- */
+		}
 
 		if ($setsharekey)
 		{
