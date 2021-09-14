@@ -2163,7 +2163,7 @@ class BonPrelevement extends CommonObject
 				$XML_SEPA_INFO .= '					<Cd>SEPA</Cd>'.$CrLf;
 				$XML_SEPA_INFO .= '				</SvcLvl>'.$CrLf;
 				$XML_SEPA_INFO .= '				<LclInstrm>'.$CrLf;
-				$XML_SEPA_INFO .= '					<Cd>CORE</Cd>'.$CrLf;
+				$XML_SEPA_INFO .= '					<Cd>B2B</Cd>'.$CrLf;
 				$XML_SEPA_INFO .= '				</LclInstrm>'.$CrLf;
 				$XML_SEPA_INFO .= '				<SeqTp>'.$format.'</SeqTp>'.$CrLf;
 				$XML_SEPA_INFO .= '			</PmtTpInf>'.$CrLf;
