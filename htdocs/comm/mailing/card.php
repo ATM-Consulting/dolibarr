@@ -1133,7 +1133,15 @@ else
 			$htmltext .= '</i>';
 
 			// Print mail content
-			print load_fiche_titre($langs->trans("EMail"), $form->textwithpicto('<span class="opacitymedium hideonsmartphone">'.$langs->trans("AvailableVariables").'</span>', $htmltext, 1, 'helpclickable', '', 0, 2, 'emailsubstitionhelp'), 'generic');
+            
+            /*
+             * Spé SGP : suppression de la mention "Variables de substitution disponibles"
+             */
+//			print load_fiche_titre($langs->trans("EMail"), $form->textwithpicto('<span class="opacitymedium hideonsmartphone">'.$langs->trans("AvailableVariables").'</span>', $htmltext, 1, 'helpclickable', '', 0, 2, 'emailsubstitionhelp'), 'generic');
+            print load_fiche_titre($langs->trans("EMail"),'', 'generic');
+            /*
+             * Fin de spé SGP
+             */
 
 			dol_fiche_head('', '', '', -1);
 
