@@ -511,6 +511,7 @@ YouMustCreateInvoiceFromSupplierThird=Cette option est disponible uniquement lor
 YouMustCreateStandardInvoiceFirstDesc=Pour créer une facture modèle, vous devez d'abord créer une facture standard brouillon et la convertir en modèle.
 PDFCrabeDescription=Modèle de facture PDF Crabe. Un modèle de facture complet (ancienne implémentation du modèle Sponge)
 PDFSpongeDescription=Modèle de facture PDF Sponge. Un modèle de facture complet
+PDFSigreneaContactFacturationDescription=Modèle de facture PDF Sigrenea contact facturation. Un modèle de facture complet
 PDFCrevetteDescription=Modèle de facture PDF Crevette (modèle complet pour les factures de situation)
 TerreNumRefModelDesc1=Renvoie le numéro sous la forme %syymm-nnnn pour les factures et factures de remplacement, %syymm-nnnn pour les avoirs et %syymm-nnnn pour les acomptes où yy est l'année, mm le mois et nnnn un compteur séquentiel sans rupture et sans remise à 0
 MarsNumRefModelDesc1=Renvoie une numérotation au format %syymm-nnnn pour les factures standards, %syymm-nnnn pour les factures de remplacement, %syymm-nnnn pour les factures d'acompte et %syymm-nnnn pour les factures d'avoir où yy est l'année, mm le mois et nnnn un compteur sans rupture ni retour à zéro.
