@@ -2120,6 +2120,12 @@ class pdf_sigrenea_contact_facturation extends ModelePDFFactures
 
 			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
+			// Display contact informations in recipient frame
+			$object->thirdparty->email = '';
+			$object->thirdparty->phone = '';
+			$object->thirdparty->idprof1 = '';
+			$object->thirdparty->idprof2 = '';
+			$object->thirdparty->idprof3 = '';
 			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, 'target', $object);
 
 			// Show recipient
