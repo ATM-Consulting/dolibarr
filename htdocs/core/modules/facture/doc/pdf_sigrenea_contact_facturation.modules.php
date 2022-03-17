@@ -1938,6 +1938,21 @@ class pdf_sigrenea_contact_facturation extends ModelePDFFactures
 		$posy += 1;
 		$pdf->SetFont('', '', $default_font_size - 2);
 
+		$author = new User($this->db);
+		$author->fetch($object->fk_user_author);
+		if (!empty($author))
+		{
+			$posy += 4;
+			$pdf->SetXY($posx, $posy);
+			$pdf->SetTextColor(0, 0, 60);
+			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("Author")." : ".$outputlangs->convToOutputCharset($author->getFullName($outputlangs)), '', 'R');
+
+			$posy += 4;
+			$pdf->SetXY($posx, $posy);
+			$pdf->SetTextColor(0, 0, 60);
+			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("Email")." : ".$outputlangs->convToOutputCharset($author->email), '', 'R');
+		}
+
 		if ($object->ref_client)
 		{
 			$posy += 4;
@@ -2121,11 +2136,16 @@ class pdf_sigrenea_contact_facturation extends ModelePDFFactures
 			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
 
 			// Display contact informations in recipient frame
+			$object->contact->email = '';
+			$object->contact->phone_mobile = '';
+			$object->contact->phone_perso = '';
+			$object->contact->phone_pro = '';
 			$object->thirdparty->email = '';
 			$object->thirdparty->phone = '';
 			$object->thirdparty->idprof1 = '';
 			$object->thirdparty->idprof2 = '';
 			$object->thirdparty->idprof3 = '';
+
 			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), $usecontact, 'target', $object);
 
 			// Show recipient
