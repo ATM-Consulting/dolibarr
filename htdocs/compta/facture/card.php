@@ -2756,7 +2756,6 @@ if (empty($reshook))
  * View
  */
 
-
 $form = new Form($db);
 $formother = new FormOther($db);
 $formfile = new FormFile($db);
