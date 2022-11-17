@@ -171,6 +171,7 @@ class Loan extends CommonObject implements \JsonSerializable
 	 * @var string[] Names of fields to include when encoding the object as JSON
 	 */
 	protected $jsonEncodableFields = array(
+		'id',
 		'element',
 		'dateend',
 		'datestart',
@@ -275,10 +276,10 @@ class Loan extends CommonObject implements \JsonSerializable
 			if ($this->db->num_rows($resql)) {
 				$obj = $this->db->fetch_object($resql);
 
-				$this->id                  = $obj->rowid;
+				$this->id                  = (int) $obj->rowid;
 				$this->ref                 = $obj->rowid;
-				$this->datestart           = $this->db->jdate($obj->datestart);
-				$this->dateend             = $this->db->jdate($obj->dateend);
+				$this->datestart           = (int) $this->db->jdate($obj->datestart);
+				$this->dateend             = (int) $this->db->jdate($obj->dateend);
 				$this->label               = $obj->label;
 				$this->capital             = (double) $obj->capital;
 				$this->nbPeriods           = (int) $obj->nbPeriods;
@@ -291,7 +292,7 @@ class Loan extends CommonObject implements \JsonSerializable
 				$this->account_capital     = $obj->accountancy_account_capital;
 				$this->account_insurance   = $obj->accountancy_account_insurance;
 				$this->account_interest    = $obj->accountancy_account_interest;
-				$this->fk_project          = $obj->fk_project;
+				$this->fk_project          = (int) $obj->fk_project;
 				$this->calc_mode           = (int) $obj->calc_mode;
 				$this->fk_periodicity      = (int) $obj->fk_periodicity;
 				$this->future_value        = (double) $obj->future_value;
@@ -456,6 +457,11 @@ class Loan extends CommonObject implements \JsonSerializable
 		$error = 0;
 
 		$this->db->begin();
+
+		// suppression des liens vers ou depuis cet emprunt
+		if ($this->deleteObjectLinked() < 0) {
+			$error++;
+		}
 
 		// Get bank transaction lines for this loan
 		include_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';
@@ -975,7 +981,7 @@ class Loan extends CommonObject implements \JsonSerializable
 	}
 
 	/**
-	 * Securizes calls to json_encode($myLoan) by encoding only business-relevant values
+	 * Secure calls to json_encode($myLoan) by encoding only business-relevant values
 	 *
 	 * @return array
 	 */
