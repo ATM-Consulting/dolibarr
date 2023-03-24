@@ -6658,7 +6658,7 @@ class Form
 					}
 
 					// Zone de saisie manuelle de la date
-					$retstring .= '<div class="nowrap inline-block divfordateinput">';
+					$retstring .= '<div class="nowraponall inline-block divfordateinput">';
 					$retstring .= '<input id="'.$prefix.'" name="'.$prefix.'" type="text" class="maxwidthdate" maxlength="11" value="'.$formated_date.'"';
 					$retstring .= ($disabled ? ' disabled' : '');
 					$retstring .= ($placeholder ? ' placeholder="'.dol_escape_htmltag($placeholder).'"' : '');
@@ -7851,7 +7851,13 @@ class Form
 		}
 
 		// Add where from hooks
-		$parameters = array();
+		$parameters = array(
+			'object' => $objecttmp,
+			'htmlname' => $htmlname,
+			'filter' => $filter,
+			'searchkey' => $searchkey
+		);
+
 		$reshook = $hookmanager->executeHooks('selectForFormsListWhere', $parameters); // Note that $action and $object may have been modified by hook
 		if (!empty($hookmanager->resPrint)) {
 			$sql .= $hookmanager->resPrint;
