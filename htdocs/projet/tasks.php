@@ -336,6 +336,7 @@ if ($action == 'createtask' && $user->rights->projet->creer) {
 			$task = new Task($db);
 
 			$task->fk_project = $projectid;
+			$task->entity = $object->entity; // Task have the same entity of project
 			$task->ref = $taskref;
 			$task->label = $label;
 			$task->description = $description;
@@ -647,7 +648,7 @@ if ($id > 0 || !empty($ref)) {
 
 	// Description
 	print '<td class="titlefield tdtop">'.$langs->trans("Description").'</td><td>';
-	print nl2br($object->description);
+	print dol_htmlentitiesbr($object->description);
 	print '</td></tr>';
 
 	// Categories
