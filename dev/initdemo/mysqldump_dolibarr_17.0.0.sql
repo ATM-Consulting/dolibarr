@@ -1962,6 +1962,7 @@ CREATE TABLE `llx_c_holiday_types` (
   `delay` int(11) NOT NULL,
   `newbymonth` double(8,5) NOT NULL DEFAULT 0.00000,
   `fk_country` int(11) DEFAULT NULL,
+  `block_if_negative` int(11) NOT NULL DEFAULT 0,
   `active` int(11) DEFAULT 1,
   `sortorder` smallint(6) DEFAULT NULL,
   PRIMARY KEY (`rowid`),
@@ -1975,7 +1976,11 @@ CREATE TABLE `llx_c_holiday_types` (
 
 LOCK TABLES `llx_c_holiday_types` WRITE;
 /*!40000 ALTER TABLE `llx_c_holiday_types` DISABLE KEYS */;
-INSERT INTO `llx_c_holiday_types` VALUES (1,'LEAVE_SICK','Sick leave',0,0,0.00000,NULL,1,NULL),(2,'LEAVE_OTHER','Other leave',0,0,0.00000,NULL,1,NULL),(3,'LEAVE_PAID','Paid vacation',1,7,0.00000,NULL,1,NULL),(4,'LEAVE_RTT_FR','RTT',1,7,0.83000,1,0,NULL),(5,'LEAVE_PAID_FR','Paid vacation',1,30,2.08334,1,0,NULL);
+INSERT INTO `llx_c_holiday_types` VALUES (1,'LEAVE_SICK','Sick leave',0,0,0.00000,NULL,0,1,NULL);
+INSERT INTO `llx_c_holiday_types` VALUES (2,'LEAVE_OTHER','Other leave',0,0,0.00000,NULL,0,1,NULL);
+INSERT INTO `llx_c_holiday_types` VALUES (3,'LEAVE_PAID','Paid vacation',1,7,0.00000,NULL,0,1,NULL);
+INSERT INTO `llx_c_holiday_types` VALUES (4,'LEAVE_RTT_FR','RTT',1,7,0.83000,1,0,0,NULL);
+INSERT INTO `llx_c_holiday_types` VALUES (5,'LEAVE_PAID_FR','Paid vacation',1,30,2.08334,1,0,0,NULL);
 /*!40000 ALTER TABLE `llx_c_holiday_types` ENABLE KEYS */;
 UNLOCK TABLES;
 
