@@ -171,10 +171,11 @@ class Translate
 	 * 	@param	int		$stopafterdirection	Stop when the DIRECTION tag is found (optimize speed)
 	 * 	@param	int		$forcelangdir		To force a different lang directory
 	 *  @param  int     $loadfromfileonly   1=Do not load overwritten translation from file or old conf.
+	 *  @param  int     $forceloadifalreadynotfound   Search translation files again even if a previous attempt was already made on the same domain
 	 *	@return	int							<0 if KO, 0 if already loaded or loading not required, >0 if OK
 	 *  @see loadLangs()
 	 */
-	public function load($domain, $alt = 0, $stopafterdirection = 0, $forcelangdir = '', $loadfromfileonly = 0)
+	public function load($domain, $alt = 0, $stopafterdirection = 0, $forcelangdir = '', $loadfromfileonly = 0, $forceloadifalreadynotfound = 0)
 	{
 		global $conf,$db;
 
@@ -205,7 +206,8 @@ class Translate
 		}
 
         // Check cache
-		if (! empty($this->_tab_loaded[$newdomain]))	// File already loaded for this domain
+		if (! empty($this->_tab_loaded[$newdomain])
+            && ($this->_tab_loaded[$newdomain] != 2 || empty($forceloadifalreadynotfound)))	// File already loaded for this domain
 		{
 			//dol_syslog("Translate::Load already loaded for newdomain=".$newdomain);
 			return 0;
