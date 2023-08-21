@@ -118,6 +118,12 @@ $modulepart = GETPOST('modulepart', 'alpha');
 $urlsource = GETPOST('urlsource', 'alpha');
 $entity = GETPOST('entity', 'int') ?GETPOST('entity', 'int') : $conf->entity;
 
+if (!is_object($hookmanager)) {
+	include_once DOL_DOCUMENT_ROOT.'/core/class/hookmanager.class.php';
+	$hookmanager = new HookManager($db);
+}
+$hookmanager->initHooks(array('document'));
+
 // Security check
 if (empty($modulepart) && empty($hashp)) {
 	httponly_accessforbidden('Bad link. Bad value for parameter modulepart', 400);
@@ -291,7 +297,6 @@ if (!file_exists($fullpath_original_file_osencoded)) {
 }
 
 // Hooks
-$hookmanager->initHooks(array('document'));
 $parameters = array('ecmfile' => $ecmfile, 'modulepart' => $modulepart, 'original_file' => $original_file,
 	'entity' => $entity, 'fullpath_original_file' => $fullpath_original_file,
 	'filename' => $filename, 'fullpath_original_file_osencoded' => $fullpath_original_file_osencoded);
