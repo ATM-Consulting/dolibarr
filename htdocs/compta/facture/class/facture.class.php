@@ -3237,7 +3237,7 @@ class Facture extends CommonInvoice
 			return -1;
 		}
 		if ((preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref)) &&	// empty should not happened, but when it occurs, the test save life
-			!empty($conf->global->FAC_FORCE_DATE_VALIDATION)							// If option enabled, we force invoice date
+			!empty($conf->global->FAC_FORCE_DATE_VALIDATION) && $this->date < dol_now()							// If option enabled, we force invoice date
 		) {
 			$this->date = dol_now();
 			$this->date_lim_reglement = $this->calculate_date_lim_reglement();
