@@ -3458,6 +3458,10 @@ class Societe extends CommonObject
 			$module = $conf->global->SOCIETE_CODECLIENT_ADDON;
 
 			$dirsociete = array_merge(array('/core/modules/societe/'), $conf->modules_parts['societe']);
+            foreach($conf->modules_parts['models'] as $mo) {
+                $dirsociete[] = $mo.'core/modules/societe/';    // Add more models
+            }
+
 			foreach ($dirsociete as $dirroot) {
 				$res = dol_include_once($dirroot.$module.'.php');
 				if ($res) {
