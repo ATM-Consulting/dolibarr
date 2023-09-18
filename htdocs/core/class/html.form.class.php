@@ -2067,9 +2067,14 @@ class Form
 					$sql .= " WHERE ug.entity IN (1, " . ((int) $conf->entity) . ")";
 				}
 			} else {
-				$sql .= " WHERE u.entity IN (0, " . ((int) $conf->entity) . ")";
+				if (!empty($force_entity)) {
+					$sql .= " WHERE u.entity IN (0, " . $this->db->sanitize($force_entity) . ")";
+				} else {
+					$sql .= " WHERE u.entity IN (0, " . ((int) $conf->entity) . ")";
+				}
 			}
 		}
+
 		if (!empty($user->socid)) {
 			$sql .= " AND u.fk_soc = " . ((int) $user->socid);
 		}
