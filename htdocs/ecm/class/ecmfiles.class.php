@@ -440,7 +440,8 @@ class EcmFiles extends CommonObject
 			if ($filename != '*') {
 				$sql .= " AND t.filename = '".$this->db->escape($filename)."'";
 			}
-			$sql .= " AND t.entity = ".$conf->entity; // unique key include the entity so each company has its own index
+			// Spé Koesio : no entity filter on file path, files are shared between entities
+			//$sql .= " AND t.entity = ".$conf->entity; // unique key include the entity so each company has its own index
 			$filterfound++;
 		}
 		if (!empty($ref)) {		// hash of file path

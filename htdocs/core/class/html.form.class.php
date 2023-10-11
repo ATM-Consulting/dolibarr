@@ -2062,9 +2062,9 @@ class Form
 				$sql .= " LEFT JOIN " . $this->db->prefix() . "usergroup_user as ug";
 				$sql .= " ON ug.fk_user = u.rowid";
 				if (!empty($force_entity)) {
-					$sql .= " WHERE ug.entity IN (1, " . $this->db->sanitize($force_entity) . ")";
+					$sql .= " WHERE ug.entity IN (0, 1, " . $this->db->sanitize($force_entity) . ")";
 				} else {
-					$sql .= " WHERE ug.entity IN (1, " . ((int) $conf->entity) . ")";
+					$sql .= " WHERE ug.entity IN (0, 1, " . ((int) $conf->entity) . ")";
 				}
 			} else {
 				if (!empty($force_entity)) {
