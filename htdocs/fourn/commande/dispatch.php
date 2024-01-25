@@ -659,7 +659,7 @@ if ($id > 0 || !empty($ref)) {
 				while ($i < $num) {
 					$objd = $db->fetch_object($resql);
                     /*
-                     * Spécifique, proposé en standard, à supprimer lorsque cette PR aura été mergée : https://github.com/Dolibarr/dolibarr/pull/26344
+                     * Spécifique, mergé en standard : develop (V19)
                      */
 					$products_dispatched[$objd->rowid] = price2num($objd->qty, 'MS');
                     /*
