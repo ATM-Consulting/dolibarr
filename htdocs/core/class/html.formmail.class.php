@@ -430,7 +430,7 @@ class FormMail extends Form
 			$keytoavoidconflict = empty($this->trackid) ? '' : '-'.$this->trackid; // this->trackid must be defined
 
 			if (GETPOST('mode', 'alpha') == 'init' || (GETPOST('modelselected') && GETPOST('modelmailselected', 'alpha') && GETPOST('modelmailselected', 'alpha') != '-1')) {
-				if (!empty($arraydefaultmessage->joinfiles) && !empty($this->param['fileinit']) && is_array($this->param['fileinit'])) {
+                if (!empty($arraydefaultmessage->joinfiles) && !empty($this->param['fileinit']) && is_array($this->param['fileinit'])) {
 					foreach ($this->param['fileinit'] as $file) {
 						if (!empty($file)) {
 							$this->add_attached_files($file, basename($file), dol_mimetype($file));
@@ -438,7 +438,6 @@ class FormMail extends Form
 					}
 				}
 			}
-
 			if (!empty($_SESSION["listofpaths".$keytoavoidconflict])) {
 				$listofpaths = explode(';', $_SESSION["listofpaths".$keytoavoidconflict]);
 			}
@@ -834,7 +833,9 @@ class FormMail extends Form
 							// Preview of attachment
 							$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
 
-							$out .= $formfile->showPreview(array(), $formfile_params[2], $formfile_params[4]);
+                            //Spécifique Koesio
+                            // Ajout des paramètres ruleforpicto : 0, param : '&entity='.$conf->entity
+							$out .= $formfile->showPreview(array(), $formfile_params[2], $formfile_params[4], 0, '&entity='.$conf->entity);
 							if (!$this->withfilereadonly) {
 								$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
 								//$out.= ' <a href="'.$_SERVER["PHP_SELF"].'?removedfile='.($key+1).' id="removedfile_'.$key.'">'.img_delete($langs->trans("Delete").'</a>';
@@ -1333,7 +1334,7 @@ class FormMail extends Form
 		$sql = "SELECT rowid, module, label, type_template, topic, joinfiles, content, content_lines, lang, email_from, email_to, email_tocc, email_tobcc";
 		$sql .= " FROM ".$dbs->prefix().'c_email_templates';
 		$sql .= " WHERE (type_template = '".$dbs->escape($type_template)."' OR type_template = 'all')";
-		$sql .= " AND entity IN (".$conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE.', '.getEntity('c_email_templates').")";
+		$sql .= " AND entity IN (". (!empty($conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE) ? $conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE.', ' : '').getEntity('c_email_templates').")";
 		$sql .= " AND (private = 0 OR fk_user = ".((int) $user->id).")"; // Get all public or private owned
 		if ($active >= 0) {
 			$sql .= " AND active = ".((int) $active);
@@ -1494,7 +1495,7 @@ class FormMail extends Form
 		$sql = "SELECT rowid, module, label, topic, content, content_lines, lang, fk_user, private, position";
 		$sql .= " FROM ".$this->db->prefix().'c_email_templates';
 		$sql .= " WHERE type_template IN ('".$this->db->escape($type_template)."', 'all')";
-		$sql .= " AND entity IN (".$conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE.', '.getEntity('c_email_templates').")";
+		$sql .= " AND entity IN (".(!empty($conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE) ? $conf->global->FINANCEMENT_ENTITY_CONF_GLOBALE.', ' : '').getEntity('c_email_templates').")";
 		$sql .= " AND (private = 0 OR fk_user = ".((int) $user->id).")"; // See all public templates or templates I own.
 		if ($active >= 0) {
 			$sql .= " AND active = ".((int) $active);
