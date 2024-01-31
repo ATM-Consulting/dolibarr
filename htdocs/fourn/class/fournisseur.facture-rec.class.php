@@ -480,7 +480,6 @@ class FactureFournisseurRec extends CommonInvoice
 	{
 		global $conf;
 
-		$this->db->begin();
 		$error = 0;
 
 		$sql = "UPDATE ".MAIN_DB_PREFIX."facture_fourn_rec SET";
