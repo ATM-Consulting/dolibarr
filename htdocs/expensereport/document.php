@@ -50,7 +50,6 @@ if ($user->socid) {
 }
 $result = restrictedArea($user, 'expensereport', $id, 'expensereport');
 
-
 // Get parameters
 $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
@@ -95,6 +94,7 @@ if ($object->id > 0) {
 	}
 }
 
+$permissiontoadd = $user->rights->expensereport->creer;	// Used by the include of actions_dellink.inc.php
 
 /*
  * Actions
