@@ -334,9 +334,11 @@ class Contacts extends DolibarrApi
 			$this->contact->setNoEmail($this->contact->no_email);
 		}
 
-		if ($this->contact->update($id, DolibarrApiAccess::$user, 1, 'update')) {
+        // ——————— SPÉ KOESIO: pas de "notrigger", cf. https://github.com/Dolibarr/dolibarr/issues/29594
+		if ($this->contact->update($id, DolibarrApiAccess::$user, 0, 'update')) {
 			return $this->get($id);
 		}
+        // ——————— END SPÉ KOESIO
 
 		return false;
 	}
