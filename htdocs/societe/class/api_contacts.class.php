@@ -65,7 +65,7 @@ class Contacts extends DolibarrApi
 	 * @param 	int    $id                  ID of contact
 	 * @param   int    $includecount        Count and return also number of elements the contact is used as a link for
 	 * @param   int    $includeroles        Includes roles of the contact
-	 * @return 	array|mixed data without useless information
+	 * @return 	object data without useless information
 	 *
 	 * @throws 	RestException
 	 */
@@ -304,9 +304,12 @@ class Contacts extends DolibarrApi
 	/**
 	 * Update contact
 	 *
-	 * @param int   $id             Id of contact to update
-	 * @param array $request_data   Datas
-	 * @return int
+	 * @param int $id Id of contact to update
+	 * @param array $request_data Datas
+	 * @return object  Representation of the Contact
+	 * @throws RestException 401
+	 * @throws RestException 404
+	 * @throws RestException 500
 	 */
 	public function put($id, $request_data = null)
 	{
@@ -334,13 +337,13 @@ class Contacts extends DolibarrApi
 			$this->contact->setNoEmail($this->contact->no_email);
 		}
 
-        // ——————— SPÉ KOESIO: pas de "notrigger", cf. https://github.com/Dolibarr/dolibarr/issues/29594
-		if ($this->contact->update($id, DolibarrApiAccess::$user, 0, 'update')) {
+		// ——————— SPÉ KOESIO: pas de "notrigger", cf. https://github.com/Dolibarr/dolibarr/issues/29594
+		if ($this->contact->update($id, DolibarrApiAccess::$user, 0, 'update') > 0) {
 			return $this->get($id);
+		} else {
+			throw new RestException(500, $this->contact->error);
 		}
-        // ——————— END SPÉ KOESIO
-
-		return false;
+		// ——————— END SPÉ KOESIO
 	}
 
 	/**
