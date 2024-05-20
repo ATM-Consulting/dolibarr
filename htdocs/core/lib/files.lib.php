@@ -2867,6 +2867,17 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		}
 		$original_file = $conf->fournisseur->payment->dir_output.'/'.$original_file;
 		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."paiementfournisseur WHERE ref='".$db->escape($refname)."' AND entity=".$conf->entity;
+
+		/****************************/
+		/* BACKPORT : A retirer lors du passage en V20*/
+	} elseif ($modulepart == 'payment') {
+		// Wrapping pour les rapport de paiements
+		if ($fuser->rights->facture->{$lire} || preg_match('/^specimen/i', $original_file)) {
+			$accessallowed = 1;
+		}
+		$original_file = $conf->compta->payment->dir_output.'/'.$original_file;
+		/****************************/
+
 	} elseif ($modulepart == 'facture_paiement' && !empty($conf->facture->dir_output)) {
 		// Wrapping pour les rapport de paiements
 		if ($fuser->rights->facture->{$lire} || preg_match('/^specimen/i', $original_file)) {

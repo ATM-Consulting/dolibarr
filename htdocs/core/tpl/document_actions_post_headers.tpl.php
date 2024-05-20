@@ -87,6 +87,10 @@ if (!isset($savingdocmask) || !empty($conf->global->MAIN_DISABLE_SUGGEST_REF_AS_
 	if (empty($conf->global->MAIN_DISABLE_SUGGEST_REF_AS_PREFIX)) {
 		//var_dump($modulepart);
 		if (in_array($modulepart, array(
+			/****************************/
+			/* BACKPORT : A retirer lors du passage en V20*/
+			'payment',
+			/****************************/
 			'facture_fournisseur',
 			'commande_fournisseur',
 			'facture',
