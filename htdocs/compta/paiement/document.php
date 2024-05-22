@@ -86,7 +86,7 @@ if ($object->fetch($id, $ref)) {
 	$upload_dir = $conf->compta->payment->dir_output.'/'.dol_sanitizeFileName($object->ref);
 }
 
-$permissiontoadd = $user->rights->fournisseur->facture->creer; // Used by the include of actions_setnotes.inc.php
+$permissiontoadd = $user->rights->facture->creer; // Used by the include of actions_setnotes.inc.php
 
 /*
  * Actions
