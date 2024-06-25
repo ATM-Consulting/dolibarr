@@ -168,11 +168,11 @@ if ($type_element == 'invoice')
 { 	// Customer : show products from invoices
 	require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 	$documentstatic=new Facture($db);
-	$sql_select = 'SELECT f.rowid as doc_id, f.facnumber as doc_number, f.type as doc_type, f.datef as dateprint, ';
+	$sql_select = 'SELECT f.rowid as doc_id, d.devise_pu as devise_pu, f.facnumber as doc_number, f.type as doc_type, f.datef as dateprint, ';
 	$tables_from = MAIN_DB_PREFIX."facture as f,".MAIN_DB_PREFIX."facturedet as d";
 	$where = " WHERE f.fk_soc = s.rowid AND s.rowid = ".$socid;
 	$where.= " AND d.fk_facture = f.rowid";
-	$where.= " AND f.entity = ".$conf->entity;
+	$where.= " AND f.entity = ".$conf->entity." AND d.special_code != 104777";
 	$dateprint = 'f.datef';
 	$doc_number='f.facnumber';
 	$thirdTypeSelect='customer';
@@ -181,11 +181,11 @@ if ($type_element == 'order')
 {
 	require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
 	$documentstatic=new Commande($db);
-	$sql_select = 'SELECT c.rowid as doc_id, c.ref as doc_number, \'1\' as doc_type, c.date_commande as dateprint, ';
+	$sql_select = 'SELECT c.rowid as doc_id, d.devise_pu as devise_pu, c.ref as doc_number, \'1\' as doc_type, c.date_commande as dateprint, ';
 	$tables_from = MAIN_DB_PREFIX."commande as c,".MAIN_DB_PREFIX."commandedet as d";
 	$where = " WHERE c.fk_soc = s.rowid AND s.rowid = ".$socid;
 	$where.= " AND d.fk_commande = c.rowid";
-	$where.= " AND c.entity = ".$conf->entity;
+	$where.= " AND c.entity = ".$conf->entity." AND d.special_code != 104777";
 	$datePrint = 'c.date_commande';
 	$doc_number='c.ref';
 	$thirdTypeSelect='customer';
@@ -194,7 +194,7 @@ if ($type_element == 'supplier_invoice')
 { 	// Supplier : Show products from invoices.
 	require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
 	$documentstatic=new FactureFournisseur($db);
-	$sql_select = 'SELECT f.rowid as doc_id, f.ref as doc_number, \'1\' as doc_type, f.datef as dateprint, ';
+	$sql_select = 'SELECT f.rowid as doc_id, d.devise_pu, f.ref as doc_number, \'1\' as doc_type, f.datef as dateprint, ';
 	$tables_from = MAIN_DB_PREFIX."facture_fourn as f,".MAIN_DB_PREFIX."facture_fourn_det as d";
 	$where = " WHERE f.fk_soc = s.rowid AND s.rowid = ".$socid;
 	$where.= " AND d.fk_facture_fourn = f.rowid";
@@ -206,7 +206,7 @@ if ($type_element == 'supplier_order')
 { 	// Supplier : Show products from orders.
 	require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
 	$documentstatic=new CommandeFournisseur($db);
-	$sql_select = 'SELECT c.rowid as doc_id, c.ref as doc_number, \'1\' as doc_type, c.date_valid as dateprint, ';
+	$sql_select = 'SELECT c.rowid as doc_id, d.devise_pu, c.ref as doc_number, \'1\' as doc_type, c.date_valid as dateprint, ';
 	$tables_from = MAIN_DB_PREFIX."commande_fournisseur as c,".MAIN_DB_PREFIX."commande_fournisseurdet as d";
 	$where = " WHERE c.fk_soc = s.rowid AND s.rowid = ".$socid;
 	$where.= " AND d.fk_commande = c.rowid";
@@ -243,6 +243,7 @@ $sql.= $db->plimit($limit + 1, $offset);
 
 // Define type of elements
 $typeElementString = $form->selectarray("type_element",$elementTypeArray,GETPOST('type_element'));
+
 $button = '<input type="submit" class="button" name="button_third" value="'.dol_escape_htmltag($langs->trans("Search")).'" title="'.dol_escape_htmltag($langs->trans("Search")).'">';
 $param="&amp;sref=".$sref."&amp;month=".$month."&amp;year=".$year."&amp;sprod_fulldescr=".$sprod_fulldescr."&amp;socid=".$socid."&amp;type_element=".$type_element;
 
@@ -261,6 +262,7 @@ print '<tr class="liste_titre">';
 print_liste_field_titre($langs->trans('Ref'),$_SERVER['PHP_SELF'],'doc_number','',$param,'align="left"',$sortfield,$sortorder);
 print_liste_field_titre($langs->trans('Date'),$_SERVER['PHP_SELF'],'dateprint','',$param,'align="center" width="150"',$sortfield,$sortorder);
 print_liste_field_titre($langs->trans('Product'),$_SERVER['PHP_SELF'],'','',$param,'align="left"',$sortfield,$sortorder);
+print_liste_field_titre($langs->trans('UnitPrice'),$_SERVER['PHP_SELF'],'','',$param,'align="left"',$sortfield,$sortorder);
 print_liste_field_titre($langs->trans('Quantity'),$_SERVER['PHP_SELF'],'prod_qty','',$param,'align="right"',$sortfield,$sortorder);
 // Filters
 print '<tr class="liste_titre">';
@@ -273,6 +275,8 @@ $formother->select_year($year?$year:-1,'year',1, 20, 1);
 print '</td>';
 print '<td class="liste_titre" align="left">';
 print '<input class="flat" type="text" name="sprod_fulldescr" size="15" value="'.dol_escape_htmltag($sprod_fulldescr).'">';
+print '</td>';
+print '<td>';
 print '</td>';
 print '<td class="liste_titre" align="right">';
 print '<input type="image" class="liste_titre" name="button_search" src="'.img_picto($langs->trans("Search"),'search.png','','',1).'" value="'.dol_escape_htmltag($langs->trans("Search")).'" title="'.dol_escape_htmltag($langs->trans("Search")).'">';
@@ -381,7 +385,9 @@ if ($sql_select)
 			if ($objp->fk_product > 0) {
 
 				echo $form->textwithtooltip($text,$description,3,'','',$i,0,'');
-
+				
+				echo '<td>'.$objp->devise_pu.'</td>';
+				
 				// Show range
 				echo get_date_range($objp->date_start, $objp->date_end);
 
@@ -406,6 +412,8 @@ if ($sql_select)
 
 				// Show range
 				echo get_date_range($objp->date_start,$objp->date_end);
+				
+				echo '<td></td>';
 			}
 		}
 

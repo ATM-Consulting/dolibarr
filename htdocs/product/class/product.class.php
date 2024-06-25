@@ -2177,6 +2177,40 @@ class Product extends CommonObject
 
 		return $this->_get_stats($sql,$mode);
 	}
+	
+	/**
+	 *  Return nb of units or shipping in which product is included
+	 *
+	 *  @param  	int		$socid      Limit count on a particular third party id
+	 *  @param		string	$mode		'byunit'=number of unit, 'bynumber'=nb of entities
+	 * 	@return   	array       		<0 if KO, result[month]=array(valuex,valuey) where month is 0 to 11
+	 */
+	function get_nb_expe($socid,$mode,$date_deb="",$date_fin="")
+	{
+		global $conf, $user;
+
+		$sql = "SELECT sum(ed.qty), date_format(e.date_delivery, '%Y%m')";
+		if ($mode == 'bynumber') $sql.= ", count(DISTINCT e.rowid)";
+		$sql.= " FROM ".MAIN_DB_PREFIX."expeditiondet as ed, ".MAIN_DB_PREFIX."expedition as e, ".MAIN_DB_PREFIX."commandedet as cd,".MAIN_DB_PREFIX."societe as s";
+		if (!$user->rights->societe->client->voir && !$socid) $sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+		$sql.= " WHERE e.rowid = ed.fk_expedition";
+		$sql.= " AND cd.rowid = ed.fk_origin_line";
+		$sql.= " AND cd.fk_product =".$this->id;
+		
+		if($date_deb) $sql.= " AND e.date_delivery > '".$date_deb."'";
+		if($date_fin) $sql.= " AND e.date_delivery < '".$date_fin."'";
+		
+		$sql.= " AND e.fk_soc = s.rowid";
+		$sql.= " AND e.entity = ".$conf->entity;
+		if (!$user->rights->societe->client->voir && !$socid) $sql.= " AND e.fk_soc = sc.fk_soc AND sc.fk_user = " .$user->id;
+		if ($socid > 0)	$sql.= " AND c.fk_soc = ".$socid;
+		$sql.= " GROUP BY date_format(e.date_delivery,'%Y%m')";
+		$sql.= " ORDER BY date_format(e.date_delivery,'%Y%m') DESC";
+		
+		//echo $sql;
+
+		return $this->_get_stats($sql,$mode);
+	}
 
 	/**
 	 *  Return nb of units or orders in which product is included
@@ -3087,12 +3121,11 @@ class Product extends CommonObject
 			}
 			if (! empty($conf->fournisseur->enabled))
 			{
-				if($mode == 'virtual') $result=$this->load_stats_commande_fournisseur(0,'0,1,2,3');
-				else $result=$this->load_stats_commande_fournisseur(0,'3');
+				$result=$this->load_stats_commande_fournisseur(0,'3,4');
 				if ($result < 0) dol_print_error($db,$this->error);
 				$stock_commande_fournisseur=$this->stats_commande_fournisseur['qty'];
 
-				$result=$this->load_stats_reception(0,'3');
+				$result=$this->load_stats_reception(0,'3,4');
 				if ($result < 0) dol_print_error($db,$this->error);
 				$stock_reception_fournisseur=$this->stats_reception['qty'];
 			}

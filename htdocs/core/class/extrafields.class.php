@@ -757,7 +757,7 @@ class ExtraFields
 				//print $sql;
 
 				dol_syslog(get_class($this).'::showInputField type=sellist sql='.$sql);
-				$resql = $this->db->query($sql);
+				$resql = $this->db->query($sql.$sqlwhere);
 				if ($resql)
 				{
 					$out.='<option value="0">&nbsp;</option>';

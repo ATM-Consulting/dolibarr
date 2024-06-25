@@ -3169,7 +3169,7 @@ function get_default_tva($thirdparty_seller, $thirdparty_buyer, $idprod=0, $idpr
 	if (!is_object($thirdparty_seller)) return -1;
 	if (!is_object($thirdparty_buyer)) return -1;
 	
-	// Spécifique Bourguignon, ticket 1927
+	// Spécifique Nomadic, ticket 1744
 	if($thirdparty_buyer->tva_assuj == "0") return 0;
 
 	// Note: possible values for tva_assuj are 0/1 or franchise/reel

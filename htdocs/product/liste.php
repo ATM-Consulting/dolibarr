@@ -494,6 +494,10 @@ else
     					print '<td align="right">';
                         if ($product_static->stock_reel < $objp->seuil_stock_alerte) print img_warning($langs->trans("StockTooLow")).' ';
         				print $product_static->stock_reel;
+						// Spécifique Nomadic : affichage du stock de l'entrepôt "Neuf"
+						if(!empty($product_static->stock_warehouse[1]->real)) {
+							print ' ('.$product_static->stock_warehouse[1]->real.')';
+						}
     					print '</td>';
     				}
     			}

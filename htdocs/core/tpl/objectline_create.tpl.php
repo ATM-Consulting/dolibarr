@@ -443,7 +443,7 @@ jQuery(document).ready(function() {
 		setforpredef();
 		jQuery('#trlinefordates').show();
 
-		<?php if (! empty($usemargins) && $user->rights->margins->creer) { ?>
+		<?php if (! empty($usemargins)) { ?>
 
 		/* Code for margin */
   		$("#fournprice_predef").find("option").remove();
@@ -468,15 +468,21 @@ jQuery(document).ready(function() {
 	      		$("#fournprice_predef").html(options).show();
 	      		$("#fournprice_predef").change(function() {
 	        		var selval = $(this).find('option:selected').attr("price");
-	        		if (selval)
+	        		if (selval){
 	          			$("#buying_price").val(selval).hide();
-	        		else
+	          		}
+	        		else{
 	          			$('#buying_price').show();
+	          		}
 	      		});
 	    	}
+	    	
+	    	<?php if(!$user->rights->margins->creer && $conf->global->MARGE_SET_AUTO){ ?>
+			$('#fournprice_predef').hide();
+			<?php } ?>
 	  	},
 	  	'json');
-
+		
   		<?php } ?>
 
   		/* To set focus */

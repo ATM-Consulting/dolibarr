@@ -48,3 +48,7 @@ Charges=Charges
 
 AgentContactType=Type de contact agent commercial
 AgentContactTypeDetails=Permet de définir le type de contact associé aux factures qui sera utilisé pour le rapport de marges par agent commercial
+
+DisplayPMPProduct=Permettre la sélection du PMP produit
+MargeUsePMPByDefault=______Utilisation du PMP par défaut
+MargeSetAuto=Affectation invisible du prix de revient

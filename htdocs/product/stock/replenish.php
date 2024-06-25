@@ -249,7 +249,7 @@ $sql.= ' SUM('.$db->ifsql("s.reel IS NULL", "0", "s.reel").') as stock_physique'
 $sql.= ' FROM ' . MAIN_DB_PREFIX . 'product as p';
 $sql.= ' LEFT JOIN ' . MAIN_DB_PREFIX . 'product_stock as s';
 $sql.= ' ON p.rowid = s.fk_product';
-$sql.= ' WHERE p.entity IN (' . getEntity("product", 1) . ')';
+$sql.= ' WHERE p.entity IN (' . getEntity("product", 1) . ') AND s.fk_entrepot = 1';
 if ($sall) {
     $sql .= ' AND (p.ref LIKE "%'.$db->escape($sall).'%" ';
     $sql .= 'OR p.label LIKE "%'.$db->escape($sall).'%" ';

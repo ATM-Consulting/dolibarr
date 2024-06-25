@@ -46,7 +46,7 @@ top_httphead();
 
 if (! empty($idprod))
 {
-	$sql = "SELECT p.rowid, p.label, p.ref, p.price, p.duration, s.rowid as idsoc,";
+	$sql = "SELECT p.rowid, p.label, p.ref, p.price, p.duration, s.rowid as idsoc, p.pmp,";
 	$sql.= " pfp.ref_fourn,";
 	$sql.= " pfp.rowid as idprodfournprice, pfp.price as fprice, pfp.remise_percent, pfp.quantity, pfp.unitprice, pfp.charges, pfp.unitcharges,";
 	$sql.= " s.nom";
@@ -109,12 +109,21 @@ if (! empty($idprod))
 				if ($objp->duration) $label .= " - ".$objp->duration;
 
 				$label = price($price,0,$langs,0,0,-1,$currency)."/".$langs->trans("Unit");
-
 				$prices[] = array("id" => $objp->idprodfournprice, "price" => price($price,0,'',0), "label" => $label, "title" => $title);
 				$i++;
 			}
 
+			if($conf->global->MARGE_CAN_USE_PMP) {
+				$label = price($objp->pmp,0,$langs,0,0,-1,$conf->currency)."/".$langs->trans("Unit")." (PMP)";
+				$prices[] = array("id" => 0, "price" => price($objp->pmp,0,'',0), "label" => $label, "title" => $label);
+			}
+			
+			if($conf->global->MARGE_USE_PMP_BY_DEFAULT) {
+				$prices = array_reverse($prices);
+			}
+
 			$db->free($result);
+			
 		}
 	}
 }

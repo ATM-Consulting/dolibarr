@@ -1614,7 +1614,7 @@ class Facture extends CommonInvoice
 	 * @param	int		$idwarehouse	Id of warehouse to use for stock decrease
 	 * @return	int						<0 if KO, >0 if OK
 	 */
-	function validate($user, $force_number='', $idwarehouse=0)
+	function validate($user, $force_number='', $idwarehouse=0, $no_trigger=false)
 	{
 		global $conf,$langs;
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
@@ -1802,7 +1802,7 @@ class Facture extends CommonInvoice
 			}
 
 			// Trigger calls
-			if (! $error)
+			if (! $error && !$no_trigger)
 			{
 				// Appel des triggers
 				include_once DOL_DOCUMENT_ROOT . '/core/class/interfaces.class.php';

@@ -262,7 +262,7 @@ if ($resql)
 	print '<form method="GET" action="'.$_SERVER["PHP_SELF"].'">';
 	print '<input type="hidden" name="viewstatut" value="'.$viewstatut.'">';
 
-	print '<table class="noborder" width="100%">';
+	print '<table class="noborder liste" width="100%">';
 
 	$moreforfilter='';
 

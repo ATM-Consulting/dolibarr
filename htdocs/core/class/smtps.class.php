@@ -335,7 +335,7 @@ class SMTPs
     			$this->errstr,          // and any text that goes with the error
     			$this->_smtpTimeout
 			))  // timeout for reading/writing data over the socket
-			{
+			{//echo "ok";exit;
 				// Fix from PHP SMTP class by 'Chris Ryan'
 				// Sometimes the SMTP server takes a little longer to respond
 				// so we will give it a longer timeout for the first read
@@ -348,7 +348,7 @@ class SMTPs
 			}
 			// This connection attempt failed.
 			else
-			{
+			{//echo "pasok";exit;
 				// DOL_CHANGE LDR
 				if (empty($this->errstr)) $this->errstr='Failed to connect with fsockopen host='.$this->getHost().' port='.$this->getPort();
 				$this->_setErr($this->errno, $this->errstr);

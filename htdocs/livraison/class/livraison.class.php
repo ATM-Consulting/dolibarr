@@ -119,7 +119,7 @@ class Livraison extends CommonObject
 		$sql.= ", ".$conf->entity;
 		$sql.= ", ".$this->socid;
 		$sql.= ", '".$this->db->escape($this->ref_customer)."'";
-		$sql.= ", '".$this->db->idate($now)."'";
+		$sql.= ", ".$this->db->idate($now);
 		$sql.= ", ".$user->id;
 		$sql.= ", ".($this->date_delivery?"'".$this->db->idate($this->date_delivery)."'":"null");
 		$sql.= ", ".($this->fk_delivery_address > 0 ? $this->fk_delivery_address : "null");
@@ -148,7 +148,7 @@ class Livraison extends CommonObject
 				{
 					$commande = new Commande($this->db);
 					$commande->id = $this->commande_id;
-					$commande->fetch_lines();
+					$this->lines = $commande->fetch_lines();
 				}
 
 
@@ -390,7 +390,7 @@ class Livraison extends CommonObject
 					$sql = "UPDATE ".MAIN_DB_PREFIX."livraison SET";
 					$sql.= " ref='".$this->db->escape($numref)."'";
 					$sql.= ", fk_statut = 1";
-					$sql.= ", date_valid = '".$this->db->idate($now)."'";
+					$sql.= ", date_valid = ".$this->db->idate($now);
 					$sql.= ", fk_user_valid = ".$user->id;
 					$sql.= " WHERE rowid = ".$this->id;
 					$sql.= " AND fk_statut = 0";
@@ -677,7 +677,7 @@ class Livraison extends CommonObject
 	{
 		$this->lines = array();
 
-		$sql = "SELECT ld.rowid, ld.fk_product, ld.description, ld.subprice, ld.total_ht, ld.qty as qty_shipped,";
+		$sql = "SELECT ld.rowid, ld.fk_product, ld.description, ld.subprice, ld.total_ht, ld.qty as qty_shipped, ld.fk_origin_line,";
 		$sql.= " cd.qty as qty_asked, cd.label as custom_label,";
 		$sql.= " p.ref as product_ref, p.fk_product_type as fk_product_type, p.label as product_label, p.description as product_desc";
 		$sql.= " FROM ".MAIN_DB_PREFIX."commandedet as cd, ".MAIN_DB_PREFIX."livraisondet as ld";
@@ -702,6 +702,7 @@ class Livraison extends CommonObject
 				$line->fk_product		= $obj->fk_product;
 				$line->qty_asked		= $obj->qty_asked;
 				$line->qty_shipped		= $obj->qty_shipped;
+				$line->fk_origin_line 	= $obj->fk_origin_line;
 
 				$line->ref				= $obj->product_ref;		// deprecated
 				$line->libelle			= $obj->product_label;		// deprecated
@@ -805,7 +806,7 @@ class Livraison extends CommonObject
 		$this->specimen=1;
 		$this->socid = 1;
 		$this->date_delivery = $now;
-		$this->note_public='Public note';
+		$this->note_public='Pulbic note';
 		$this->note_private='Private note';
 
 		$i=0;
@@ -968,3 +969,5 @@ class LivraisonLigne
 	}
 
 }
+
+?>

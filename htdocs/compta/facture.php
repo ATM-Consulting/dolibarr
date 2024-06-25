@@ -851,7 +851,6 @@ if (empty($reshook)) {
 						{
 							$typeamount = GETPOST('typedeposit', 'alpha');
 							$valuedeposit = GETPOST('valuedeposit', 'int');
-
 							if ($typeamount == 'amount')
 							{
 								$amountdeposit = $valuedeposit;
@@ -879,6 +878,7 @@ if (empty($reshook)) {
 										if (! empty($lines[$i]->special_code)) $qualified=0;	// We discard special_code (frais port, ecotaxe, option, ...)
 										if ($qualified) $totalamount += $lines[$i]->total_ht;
 									}
+									$i--;
 
 									if ($totalamount != 0) {
 										$amountdeposit = ($totalamount * $valuedeposit) / 100;
@@ -889,20 +889,23 @@ if (empty($reshook)) {
 								}
 							}
 
+
 							$result = $object->addline(
 									$langs->trans('Deposit'),
 									$amountdeposit,		 	// subprice
 									1, 						// quantity
-									$lines [$i]->tva_tx, 0, // localtax1_tx
+									$lines [$i]->tva_tx, 	// TVA
+									0, 						// localtax1_tx
 									0, 						// localtax2_tx
 									0, 						// fk_product
 									0, 						// remise_percent
 									0, 						// date_start
 									0, 						// date_end
-									0, $lines [$i]->info_bits, // info_bits
-									0, 						// info_bits
+									0, 						// ventil
+									$lines [$i]->info_bits, // info_bits
+									'',						// fk_remise
 									'HT',
-									0,
+									0,						// pu ttc
 									0, 						// product_type
 									1,
 									$lines [$i]->special_code,

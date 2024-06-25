@@ -297,7 +297,7 @@ RelatedBill=Facture associée
 RelatedBills=Factures associées
 
 # PaymentConditions
-PaymentConditionShortRECEP=A réception
+PaymentConditionShortRECEP=A réception de facture
 PaymentConditionRECEP=A réception de facture
 PaymentConditionShort30D=30 jours
 PaymentCondition30D=Règlement à 30 jours
@@ -310,7 +310,7 @@ PaymentCondition60DENDMONTH=Règlement à 60 jours fin de mois
 PaymentConditionShortPT_DELIVERY=A livraison
 PaymentConditionPT_DELIVERY=Règlement à la livraison
 PaymentConditionShortPT_ORDER=A commande
-PaymentConditionPT_ORDER=A réception de commande
+PaymentConditionPT_ORDER=A la commande
 PaymentConditionShortPT_5050=50/50
 PaymentConditionPT_5050=Règlement 50%% d'avance, 50%% à la livraison
 FixAmount=Montant Fixe

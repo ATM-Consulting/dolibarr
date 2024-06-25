@@ -448,7 +448,21 @@ if (empty($reshook)) {
                     $message = GETPOST('message');
                     $sendtocc = GETPOST('sendtocc','alpha');
                     $deliveryreceipt = GETPOST('deliveryreceipt','alpha');
-
+					
+					$receivercc = GETPOST('receivercc');
+					
+					if($_POST ['sendtocc'] !== '') {
+						$sendtocc = $_POST ['sendtocc']  ;	
+					} elseif ($receivercc != -1) {
+						if ($receivercc == 'thirdparty') {
+							$sendtocc = $object->client->name  . ' <' . $object->client->email . '>';
+						} else {
+							$sendtocc = $object->client->contact_get_property($receivercc, 'email');
+						}
+					} else {
+						$sendtocc = '';
+					}
+					
                     if ($action == 'send')
                     {
                         if (dol_strlen(GETPOST('subject','alpha'))) $subject=GETPOST('subject','alpha');

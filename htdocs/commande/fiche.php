@@ -29,7 +29,7 @@
  * \ingroup commande
  * \brief Page to show customer order
  */
-require '../main.inc.php';
+require_once '../main.inc.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formorder.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/modules/commande/modules_commande.php';
@@ -39,9 +39,9 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/order.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
 if (! empty($conf->propal->enabled))
-	require DOL_DOCUMENT_ROOT . '/comm/propal/class/propal.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/comm/propal/class/propal.class.php';
 if (! empty($conf->projet->enabled)) {
-	require DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
 	require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 }
 require_once DOL_DOCUMENT_ROOT . '/core/class/doleditor.class.php';
@@ -1199,7 +1199,15 @@ if (empty($reshook)) {
 				$from = GETPOST('fromname') . ' <' . GETPOST('frommail') . '>';
 				$replyto = GETPOST('replytoname') . ' <' . GETPOST('replytomail') . '>';
 				$message = GETPOST('message');
-				$sendtocc = GETPOST('sendtocc');
+
+				$receivercc = GETPOST('receivercc');
+				if($_POST ['sendtocc']!=='') {
+				$sendtocc = $_POST ['sendtocc'] ;
+				}
+				elseif($receivercc!=-1) {
+				$sendtocc = $object->client->contact_get_property($receivercc, 'email');
+				}
+
 				$deliveryreceipt = GETPOST('deliveryreceipt');
 
 				if ($action == 'send') {

@@ -10,7 +10,6 @@
  *
  * This	program	is free	software; you can redistribute it and/or modify
  * it under	the	terms of the GNU General Public	License	as published by
- * the Free	Software Foundation; either	version	2 of the License, or
  * (at your	option)	any	later version.
  *
  * This	program	is distributed in the hope that	it will	be useful,
@@ -104,6 +103,9 @@ $permissionnote=$user->rights->fournisseur->commande->creer;	// Used by the incl
 /*
  * Actions
  */
+
+$parameters = array('socid' => $socid);
+$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action);
 
 include DOL_DOCUMENT_ROOT.'/core/actions_setnotes.inc.php';	// Must be include, not includ_once
 
@@ -896,7 +898,19 @@ if ($action == 'send' && ! GETPOST('addfile') && ! GETPOST('removedfile') && ! G
                 $from = GETPOST('fromname','alpha') . ' <' . GETPOST('frommail','alpha') .'>';
                 $replyto = GETPOST('replytoname','alpha'). ' <' . GETPOST('replytomail','alpha').'>';
                 $message = GETPOST('message');
-                $sendtocc = GETPOST('sendtocc','alpha');
+				$receivercc = GETPOST('receivercc');
+			
+				// Si le destinataire est la société
+				if ($receivercc == 'thirdparty') {
+					$receivercc = $object->client->email;
+				} elseif (is_numeric($receivercc) && $receivercc > 0) {
+					$receivercc = $object->client->contact_get_property($receivercc, 'email');
+				} else {
+					$receivercc = '';
+				}
+			
+				$sendtocc = (!empty($receivercc)) ? $receivercc : GETPOST('sendtocc','alpha');;
+			
                 $deliveryreceipt = GETPOST('deliveryreceipt','alpha');
 
                 if ($action == 'send')
@@ -1515,7 +1529,7 @@ elseif (! empty($object->id))
 			}
 			else
 			{
-				if ($object->statut == 0 && $user->rights->fournisseur->commande->creer)
+				if ($user->rights->fournisseur->commande->creer)
 				{
 					print '<tr><td></td><td><a href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=edit_extras">'.img_picto('','edit').' '.$langs->trans('Modify').'</a></td></tr>';
 				}
