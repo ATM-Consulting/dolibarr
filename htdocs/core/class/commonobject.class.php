@@ -6413,7 +6413,7 @@ abstract class CommonObject
 			foreach ($new_array_options as $key => $value) {
 				$attributeKey      = substr($key, 8); // Remove 'options_' prefix
 				$attributeType     = $extrafields->attributes[$this->table_element]['type'][$attributeKey];
-				$attributeLabel    = $extrafields->attributes[$this->table_element]['label'][$attributeKey];
+				$attributeLabel    = $langs->transnoentities($extrafields->attributes[$this->table_element]['label'][$attributeKey]);
 				$attributeParam    = $extrafields->attributes[$this->table_element]['param'][$attributeKey];
 				$attributeRequired = $extrafields->attributes[$this->table_element]['required'][$attributeKey];
 				$attributeUnique   = $extrafields->attributes[$this->table_element]['unique'][$attributeKey];
@@ -8497,7 +8497,7 @@ abstract class CommonObject
 			if (!$validate->isFetchable($fieldValue, $classname, $classpath)) {
 				$lastIsFetchableError = $validate->error;
 
-				// from V19 of Dolibarr, In some cases link use element instead of class exemple project_task
+				// from V19 of Dolibarr, In some cases link use element instead of class, example project_task
 				if ($validate->isFetchableElement($fieldValue, $classname)) {
 					return true;
 				}
