@@ -6413,7 +6413,7 @@ abstract class CommonObject
 			foreach ($new_array_options as $key => $value) {
 				$attributeKey      = substr($key, 8); // Remove 'options_' prefix
 				$attributeType     = $extrafields->attributes[$this->table_element]['type'][$attributeKey];
-				$attributeLabel    = $extrafields->attributes[$this->table_element]['label'][$attributeKey];
+				$attributeLabel    = $langs->transnoentities($extrafields->attributes[$this->table_element]['label'][$attributeKey]);
 				$attributeParam    = $extrafields->attributes[$this->table_element]['param'][$attributeKey];
 				$attributeRequired = $extrafields->attributes[$this->table_element]['required'][$attributeKey];
 				$attributeUnique   = $extrafields->attributes[$this->table_element]['unique'][$attributeKey];
@@ -6797,7 +6797,7 @@ abstract class CommonObject
 	 */
 	public function updateExtraField($key, $trigger = null, $userused = null)
 	{
-		global $conf, $langs, $user;
+		global $conf, $langs, $user, $hookmanager;
 
 		if (getDolGlobalString('MAIN_EXTRAFIELDS_DISABLED')) {
 			return 0;
@@ -7060,6 +7060,14 @@ abstract class CommonObject
 				$result = $this->insertExtraFields('', $user);
 				if ($result < 0) {
 					$error++;
+				}
+			}
+
+			if (!$error) {
+				$parameters = array('key'=>$key);
+				$reshook = $hookmanager->executeHooks('updateExtraFieldBeforeCommit', $parameters, $this, $action);
+				if ($reshook < 0) {
+					setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 				}
 			}
 
@@ -8195,6 +8203,17 @@ abstract class CommonObject
 
 				if (!empty($classpath)) {
 					dol_include_once($InfoFieldList[1]);
+
+					if ($classname && !class_exists($classname)) {
+						// from V19 of Dolibarr, In some cases link use element instead of class, example project_task
+						// TODO use newObjectByElement() introduce in V20 by PR #30036 for better errors management
+						$element_prop = getElementProperties($classname);
+						if ($element_prop) {
+							$classname = $element_prop['classname'];
+						}
+					}
+
+
 					if ($classname && class_exists($classname)) {
 						$object = new $classname($this->db);
 						if ($object->element === 'product') {	// Special case for product because default valut of fetch are wrong
@@ -8487,7 +8506,14 @@ abstract class CommonObject
 			$classname = $InfoFieldList[0];
 			$classpath = $InfoFieldList[1];
 			if (!$validate->isFetchable($fieldValue, $classname, $classpath)) {
-				$this->setFieldError($fieldKey, $validate->error);
+				$lastIsFetchableError = $validate->error;
+
+				// from V19 of Dolibarr, In some cases link use element instead of class, example project_task
+				if ($validate->isFetchableElement($fieldValue, $classname)) {
+					return true;
+				}
+
+				$this->setFieldError($fieldKey, $lastIsFetchableError);
 				return false;
 			} else {
 				return true;
