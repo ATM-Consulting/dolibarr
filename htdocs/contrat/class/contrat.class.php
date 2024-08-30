@@ -3805,4 +3805,53 @@ class ContratLigne extends CommonObjectLine
 			return -1;
 		}
 	}
+
+	/**
+	 * 	Delete line in database
+	 *
+	 *  @param		User	$user		Object user
+	 *  @param		bool		$notrigger	Disable triggers
+	 *	@return		int					<0 if KO, >0 if OK
+	 */
+	public function delete(User $user, bool $notrigger = false): int
+	{
+		$error = 0;
+
+		$this->db->begin();
+
+		if (!$error) {
+			if (!$notrigger) {
+				$result = $this->call_trigger('LINECONTRACT_DELETE', $user);
+				if ($result < 0) {
+					$error++;
+				}
+			}
+		}
+
+		if (!$error) {
+			$result = $this->deleteExtraFields();
+			if ($result < 0) {
+				$error++;
+			}
+		}
+
+		if (!$error) {
+			$sql = "DELETE FROM " . $this->db->prefix() . $this->table_element . " WHERE rowid=" . intval($this->id);
+
+			$res = $this->db->query($sql);
+			if (!$res) {
+				$error++;
+				$this->errors[] = $this->db->lasterror();
+			}
+		}
+
+		if ($error) {
+			$this->db->rollback();
+			return -1;
+		} else {
+			$this->db->commit();
+			return 1;
+		}
+
+	}
 }
