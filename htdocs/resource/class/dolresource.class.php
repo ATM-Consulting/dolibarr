@@ -121,7 +121,7 @@ class DolResource extends CommonObject
 		"fk_user_author" => array("type" => "integer:User:user/class/user.class.php", "label" => "UserAuthor", "enabled" => "1", 'position' => 150, 'notnull' => 0, "visible" => "-2"),
 		"fk_user_modif" => array("type" => "integer:User:user/class/user.class.php", "label" => "UserModif", "enabled" => "1", 'position' => 160, 'notnull' => 0, "visible" => "-2"),
 		"fk_user_valid" => array("type" => "integer:User:user/class/user.class.php", "label" => "UserValid", "enabled" => "1", 'position' => 170, 'notnull' => 0, "visible" => "-2"),
-		"fk_statut" => array("type" => "integer", "label" => "Status", "enabled" => "1", 'position' => 180, 'notnull' => 1, "visible" => "0", "arrayofkeyval" => array("0" => "Draft", "1" => "Validated", "9" => "Canceled")),
+		"fk_statut" => array("type" => "integer", "label" => "Status", "enabled" => "1", 'position' => 180, 'notnull' => -2, "visible" => "0", "arrayofkeyval" => array("0" => "Draft", "1" => "Validated", "9" => "Canceled")),
 		"note_public" => array("type" => "html", "label" => "NotePublic", "enabled" => "1", 'position' => 190, 'notnull' => 0, "visible" => "0"),
 		"note_private" => array("type" => "html", "label" => "NotePrivate", "enabled" => "1", 'position' => 200, 'notnull' => 0, "visible" => "0"),
 		"import_key" => array("type" => "varchar(14)", "label" => "ImportKey", "enabled" => "1", 'position' => 210, 'notnull' => 0, "visible" => "-2"),
