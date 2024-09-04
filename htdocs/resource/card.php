@@ -42,7 +42,7 @@ $ref					= GETPOST('ref', 'alpha');
 $description			= GETPOST('description', 'restricthtml');
 $confirm				= GETPOST('confirm', 'aZ09');
 $fk_code_type_resource = GETPOST('fk_code_type_resource', 'alpha');
-$country_id				= GETPOST('country_id', 'int');
+$fk_country				= GETPOST('fk_country', 'int');
 
 // Protection if external user
 if ($user->socid > 0) {
@@ -89,100 +89,7 @@ if (empty($reshook)) {
 		$action = '';
 	}
 
-	if ($action == 'add' && $user->rights->resource->write) {
-		if (!$cancel) {
-			$error = '';
-
-			if (empty($ref)) {
-				setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("Ref")), null, 'errors');
-				$action = 'create';
-			} else {
-				$object->ref                    = $ref;
-				$object->description            = $description;
-				$object->fk_code_type_resource  = $fk_code_type_resource;
-				$object->fk_country             = $country_id;
-
-				// Fill array 'array_options' with data from add form
-				$ret = $extrafields->setOptionalsFromPost(null, $object);
-				if ($ret < 0) {
-					$error++;
-				}
-
-				$result = $object->create($user);
-				if ($result > 0) {
-					// Creation OK
-					setEventMessages($langs->trans('ResourceCreatedWithSuccess'), null, 'mesgs');
-					Header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
-					exit;
-				} else {
-					// Creation KO
-					setEventMessages($object->error, $object->errors, 'errors');
-					$action = 'create';
-				}
-			}
-		} else {
-			Header("Location: list.php");
-			exit;
-		}
-	}
-
-	if ($action == 'update' && !$cancel && $user->rights->resource->write) {
-		$error = 0;
-
-		if (empty($ref)) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("Ref")), null, 'errors');
-			$error++;
-		}
-
-		if (!$error) {
-			$res = $object->fetch($id);
-			if ($res > 0) {
-				$object->ref          			= $ref;
-				$object->description  			= $description;
-				$object->fk_code_type_resource  = $fk_code_type_resource;
-				$object->fk_country             = $country_id;
-
-				// Fill array 'array_options' with data from add form
-				$ret = $extrafields->setOptionalsFromPost(null, $object, '@GETPOSTISSET');
-				if ($ret < 0) {
-					$error++;
-				}
-
-				$result = $object->update($user);
-				if ($result > 0) {
-					Header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
-					exit;
-				} else {
-					setEventMessages($object->error, $object->errors, 'errors');
-					$error++;
-				}
-			} else {
-				setEventMessages($object->error, $object->errors, 'errors');
-				$error++;
-			}
-		}
-
-		if ($error) {
-			$action = 'edit';
-		}
-	}
-
-	if ($action == 'confirm_delete_resource' && $user->rights->resource->delete && $confirm === 'yes') {
-		$res = $object->fetch($id);
-		if ($res > 0) {
-			$result = $object->delete($user);
-
-			if ($result >= 0) {
-				setEventMessages($langs->trans('RessourceSuccessfullyDeleted'), null, 'mesgs');
-				Header('Location: '.DOL_URL_ROOT.'/resource/list.php');
-				exit;
-			} else {
-				setEventMessages($object->error, $object->errors, 'errors');
-			}
-		} else {
-			setEventMessages($object->error, $object->errors, 'errors');
-		}
-	}
+	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
 }
 
 
@@ -238,7 +145,7 @@ if ($action == 'create' || $object->fetch($id, $ref) > 0) {
 
 		// Origin country
 		print '<tr><td>'.$langs->trans("CountryOrigin").'</td><td>';
-		print $form->select_country($object->fk_country, 'country_id');
+		print $form->select_country($object->fk_country, 'fk_country');
 		if ($user->admin) {
 			print info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"), 1);
 		}
