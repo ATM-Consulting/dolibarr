@@ -1546,8 +1546,10 @@ class FormTicket
 			// Subject/topic
 			$topic = "";
 			foreach ($formmail->lines_model as $line) {
-				if ($this->param['models_id'] == $line->id) {
-					$topic = $line->topic;
+				///// BACKPORT du FIX - DA025150. SUPPRIMER quand pull 19.0 into 19.0_atm
+				if (!empty($this->substit) && $this->param['models_id'] == $line->id) {
+					$topic = make_substitutions($line->topic, $this->substit);
+					/// FIX BACKPORT
 					break;
 				}
 			}

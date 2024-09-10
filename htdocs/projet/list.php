@@ -183,7 +183,9 @@ if (isModEnabled('categorie')) {
 	$search_category_array = GETPOST("search_category_".Categorie::TYPE_PROJECT."_list", "array");
 }
 
-if (GETPOSTISARRAY('search_status')) {
+///// BACKPORT du FIX - DA025452. SUPPRIMER quand pull 19.0 into 19.0_atm
+if (GETPOSTISARRAY('search_status') || GETPOST('search_status_multiselect')) {
+	/// FIX BACKPORT
 	$search_status = join(',', GETPOST('search_status', 'array:intcomma'));
 } else {
 	$search_status = (GETPOST('search_status', 'intcomma') != '' ? GETPOST('search_status', 'intcomma') : '0,1');
