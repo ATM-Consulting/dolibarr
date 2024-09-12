@@ -1945,7 +1945,7 @@ if ($action == 'create') {
 					if ($objp->fk_product > 0) {
 						$product = new Product($db);
 						$product->fetch($objp->fk_product);
-						$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						$dateactend = dol_time_plus_duree(time(), $product->duration_value ?: 0, $product->duration_unit);
 					}
 				}
 
@@ -2001,7 +2001,7 @@ if ($action == 'create') {
 					if ($objp->fk_product > 0) {
 						$product = new Product($db);
 						$product->fetch($objp->fk_product);
-						$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						$dateactend = dol_time_plus_duree(time(), $product->duration_value ?: 0, $product->duration_unit);
 					}
 				}
 				$now = dol_now();

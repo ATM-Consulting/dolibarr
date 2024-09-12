@@ -3338,10 +3338,10 @@ class ContratLigne extends CommonObjectLine
 		$sql .= " localtax2_tx = ".price2num($this->localtax2_tx).",";
 		$sql .= " qty = ".price2num($this->qty).",";
 		$sql .= " remise_percent = ".price2num($this->remise_percent).",";
-		$sql .= " remise = ".($this->remise ?price2num($this->remise) : "null").",";
-		$sql .= " fk_remise_except = ".($this->fk_remise_except > 0 ? $this->fk_remise_except : "null").",";
-		$sql .= " subprice = ".($this->subprice != '' ? $this->subprice : "null").",";
-		$sql .= " price_ht = ".($this->price_ht != '' ? $this->price_ht : "null").",";
+		$sql .= " remise = ".($this->remise ?price2num($this->remise) : "NULL").",";
+		$sql .= " fk_remise_except = ".($this->fk_remise_except > 0 ? $this->fk_remise_except : "NULL").",";
+		$sql .= " subprice = ".($this->subprice != '' ? $this->subprice : "NULL").",";
+		$sql .= " price_ht = ".($this->price_ht != '' ? $this->price_ht : "NULL").",";
 		$sql .= " total_ht = ".$this->total_ht.",";
 		$sql .= " total_tva = ".$this->total_tva.",";
 		$sql .= " total_localtax1 = ".$this->total_localtax1.",";
@@ -3349,7 +3349,9 @@ class ContratLigne extends CommonObjectLine
 		$sql .= " total_ttc = ".$this->total_ttc.",";
 		$sql .= " fk_product_fournisseur_price = ".(!empty($this->fk_fournprice) ? $this->fk_fournprice : "NULL").",";
 		$sql .= " buy_price_ht = '".price2num($this->pa_ht)."',";
-		$sql .= " info_bits = '".$this->db->escape($this->info_bits)."',";
+		if(!empty($this->info_bits)){
+			$sql .= " info_bits = '".$this->db->escape($this->info_bits)."',";
+		}
 		$sql .= " fk_user_author = ".($this->fk_user_author >= 0 ? $this->fk_user_author : "NULL").",";
 		$sql .= " fk_user_ouverture = ".($this->fk_user_ouverture > 0 ? $this->fk_user_ouverture : "NULL").",";
 		$sql .= " fk_user_cloture = ".($this->fk_user_cloture > 0 ? $this->fk_user_cloture : "NULL").",";

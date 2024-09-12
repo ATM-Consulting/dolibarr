@@ -21,6 +21,10 @@
 
  require_once DOL_DOCUMENT_ROOT.'/contrat/class/contrat.class.php';
 
+ dol_include_once('/contact/class/contact.class.php');
+ dol_include_once('/clinetworks/class/koesioresource.class.php');
+ dol_include_once('/koesiosite/class/societesite.class.php');
+
 /**
  * API class for contracts
  *
@@ -280,6 +284,36 @@ class Contracts extends DolibarrApi
 
 		$request_data = (object) $request_data;
 
+		if (!isset($request_data->fk_product)) {
+			throw new RestException(400, "Product/service id missing");
+		}
+
+		if (isset($request_data->array_options['options_invoicing_account'])) {
+			if ($request_data->array_options['options_invoicing_account'] != '') {
+				$fk_invoicing_account = $request_data->array_options['options_invoicing_account'];
+				$this->checkInvoicingAccount($fk_invoicing_account);
+			} else {
+				throw new RestException(400, "options_invoicing_account cannot be empty");
+			}
+		} else {
+			throw new RestException(400, "options_invoicing_account extrafield missing");
+		}
+
+		if (isset($request_data->array_options['options_koesioresource'])) {
+			if ($request_data->array_options['options_koesioresource'] != '') {
+				$fk_koesioresource = $request_data->array_options['options_koesioresource'];
+				$this->checkKoesioResource($fk_koesioresource);
+			}
+		}
+
+		if (isset($request_data->array_options['options_site'])) {
+			if ($request_data->array_options['options_site'] != '') {
+				$fk_site = $request_data->array_options['options_site'];
+				$this->checkSocieteSite($fk_site);
+			}
+		}
+
+
 		$request_data->desc = sanitizeVal($request_data->desc, 'restricthtml');
 		$request_data->price_base_type = sanitizeVal($request_data->price_base_type);
 
@@ -345,29 +379,31 @@ class Contracts extends DolibarrApi
 		$this->contractLine->description = $request_data->desc;
 		$this->contractLine->qty = $request_data->qty;
 		$this->contractLine->remise_percent = $request_data->remise_percent;
+		$this->contractLine->remise_tx = $request_data->remise;
 		$this->contractLine->datestart = $request_data->date_start;
 		$this->contractLine->date_end = $request_data->date_end;
-		$this->contractLine->tva_tx = $request_data->tva_tx;
+		$this->contractLine->tva_tx = $request_data->tva_tx ?? $this->contractLine->tva_tx;
 		$this->contractLine->localtax1_tx = $request_data->localtax1_tx;
 		$this->contractLine->localtax2_tx = $request_data->localtax2_tx;
 		$this->contractLine->date_start_real = $request_data->date_start_real;
 		$this->contractLine->date_end_real = $request_data->date_end_real;
 		$this->contractLine->price_base_type = $request_data->price_base_type ? $request_data->price_base_type : 'HT';
-		$this->contractLine->info_bits = $request_data->info_bits;
+		$this->contractLine->info_bits = $request_data->info_bits ?? $this->contractLine->info_bits;
 		$this->contractLine->fk_fournprice = $request_data->fk_fourn_price;
 		$this->contractLine->pa_ht = $request_data->pa_ht;
 		$this->contractLine->array_options = $request_data->array_options;
 		$this->contractLine->fk_unit = $request_data->fk_unit;
 
-		$updateRes = $this->contractLine->update();
+		$updateRes = $this->contractLine->update(DolibarrApiAccess::$user);
 
 		if ($updateRes > 0) {
 			$result = $this->get($id);
 			unset($result->line);
 			return $this->_cleanObjectDatas($result);
+		} else {
+			throw new RestException(400, 'Error updating contract line : '.$this->contractLine->error);
 		}
 
-		return false;
 	}
 
 	/**
@@ -398,7 +434,8 @@ class Contracts extends DolibarrApi
 			throw new RestException(401, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
-		$updateRes = $this->contract->active_line(DolibarrApiAccess::$user, $lineid, $datestart, $dateend, $comment);
+		$this->contractLine->fetch($lineid);
+		$updateRes = $this->contractLine->active_line(DolibarrApiAccess::$user, $datestart, $dateend, $comment);
 
 		if ($updateRes > 0) {
 			$result = $this->get($id);
@@ -688,5 +725,57 @@ class Contracts extends DolibarrApi
 			$contrat[$field] = $data[$field];
 		}
 		return $contrat;
+	}
+
+
+	/**
+	 * Checks invoicing account
+	 *
+	 * @param int $fk_invoicing_account
+	 * @return bool
+	 * @throws RestException
+	 */
+	private function checkInvoicingAccount(int $fk_invoicing_account): bool
+	{
+		$contact = new Contact($this->db);
+		if ($contact->fetch($fk_invoicing_account)) {
+			return true;
+		} else {
+			throw new RestException(400, "Invoicing account is not valid");
+		}
+	}
+
+
+	/**
+	 *
+	 * Checks koesioresource
+	 *
+	 * @param int $fk_koesioresource
+	 * @return bool
+	 * @throws RestException
+	 */
+	private function checkKoesioResource(int $fk_koesioresource): bool
+	{
+		$koesioResource = new KoesioResource($this->db);
+		if ($koesioResource->fetch($fk_koesioresource)) {
+			return true;
+		} else {
+			throw new RestException(400, "KoesioResource is not valid");
+		}
+	}
+
+	/**
+	 * @param int $fk_societesite
+	 * @return bool
+	 * @throws RestException
+	 */
+	private function checkSocieteSite(int $fk_societesite): bool
+	{
+		$societeSite = new SocieteSite($this->db);
+		if ($societeSite->fetch($fk_societesite)) {
+			return true;
+		} else {
+			throw new RestException(400, "SocieteSite is not valid");
+		}
 	}
 }
