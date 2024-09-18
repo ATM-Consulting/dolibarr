@@ -870,10 +870,10 @@ if ($search_date_delivery_end) {
 	$sql .= " AND cf.date_livraison <= '".$db->idate($search_date_delivery_end)."'";
 }
 if ($search_date_valid_start) {
-	$sql .= " AND cf.date_commande >= '".$db->idate($search_date_valid_start)."'";
+	$sql .= " AND cf.date_valid >= '".$db->idate($search_date_valid_start)."'";
 }
 if ($search_date_valid_end) {
-	$sql .= " AND cf.date_commande <= '".$db->idate($search_date_valid_end)."'";
+	$sql .= " AND cf.date_valid <= '".$db->idate($search_date_valid_end)."'";
 }
 if ($search_date_approve_start) {
 	$sql .= " AND cf.date_livraison >= '".$db->idate($search_date_approve_start)."'";
@@ -1177,7 +1177,7 @@ if ($resql) {
 	// Add $param from extra fields
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
 
-	$parameters = array();
+	$parameters = array('param' => &$param);
 	$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object); // Note that $action and $object may have been modified by hook
 	$param .= $hookmanager->resPrint;
 

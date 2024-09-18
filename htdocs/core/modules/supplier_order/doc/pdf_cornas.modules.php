@@ -1236,6 +1236,10 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 		$pdf->SetXY($posx, $posy);
 		$pdf->SetTextColor(0, 0, 60);
 		$title = $outputlangs->transnoentities("SupplierOrder")." ".$outputlangs->convToOutputCharset($object->ref);
+		if ($object->status == $object::STATUS_DRAFT) {
+			$pdf->SetTextColor(128, 0, 0);
+			$title .= ' - '.$outputlangs->transnoentities("NotValidated");
+		}
 		$pdf->MultiCell($w, 3, $title, '', 'R');
 		$posy += 1;
 
@@ -1277,12 +1281,15 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(0, 0, 60);
 			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("OrderDate")." : ".dol_print_date($object->date_commande, "day", false, $outputlangs, true), '', 'R');
-		} else {
+		}
+		// no point in having this here this a document sent to supplier
+		/*} else {
 			$posy += 5;
 			$pdf->SetXY($posx, $posy);
 			$pdf->SetTextColor(255, 0, 0);
 			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("OrderToProcess"), '', 'R');
-		}
+		}*/
+
 
 		$pdf->SetTextColor(0, 0, 60);
 		$usehourmin = 'day';
@@ -1321,6 +1328,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 		$top_shift = 0;
 		// Show list of linked objects
 		$current_y = $pdf->getY();
+		$posx = $posx+10;
 		$posy = pdf_writeLinkedObjects($pdf, $object, $outputlangs, $posx, $posy, 100, 3, 'R', $default_font_size);
 		if ($current_y < $pdf->getY()) {
 			$top_shift = $pdf->getY() - $current_y;
