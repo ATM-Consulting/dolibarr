@@ -322,7 +322,8 @@ if (empty($reshook)) {
 	}
 
 	if ($user->rights->categorie->supprimer) {
-		print '<a class="butActionDelete" href="'.$_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&id='.$object->id.'&type='.$type.'&backtolist='.urlencode($backtolist).'">'.$langs->trans("Delete").'</a>';
+		$params = [];
+		print dolGetButtonAction('', $langs->trans("Delete"), 'delete', $_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&id='.$object->id.'&type='.$type.'&backtolist='.urlencode($backtolist), 'delete', $user->rights->categorie->supprimer, $params);
 	}
 }
 

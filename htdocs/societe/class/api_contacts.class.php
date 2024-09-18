@@ -21,6 +21,7 @@ use Luracast\Restler\RestException;
 //require_once DOL_DOCUMENT_ROOT.'/contact/class/contact.class.php';
 //require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 
+dol_include_once('/clinetworks/class/CliNetworksTools.class.php');
 
 /**
  * API class for contacts
@@ -358,6 +359,12 @@ class Contacts extends DolibarrApi
 		$result = $this->contact->fetch($id);
 		if (!$result) {
 			throw new RestException(404, 'Contact not found');
+		}
+
+		$documents = implode(', ', array_keys(CliNetworksTools::getIdOfDocumentWhichContainsThisObject('contact', $id)));
+
+		if (!empty($documents)) {
+			throw new RestException(409, 'Error when deleting Contact because it\'s in a document : ' . $documents);
 		}
 
 		if (!DolibarrApi::_checkAccessToResource('contact', $this->contact->id, 'socpeople&societe')) {

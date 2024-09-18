@@ -27,6 +27,8 @@ require_once DOL_DOCUMENT_ROOT.'/societe/class/api_contacts.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/api_thirdparties.class.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/api_projects.class.php';
 
+dol_include_once('/clinetworks/class/CliNetworksTools.class.php');
+
 /**
  * API class for categories
  *
@@ -261,6 +263,12 @@ class Categories extends DolibarrApi
 		$result = $this->category->fetch($id);
 		if (!$result) {
 			throw new RestException(404, 'category not found');
+		}
+
+		$documents = implode(', ', array_keys(CliNetworksTools::getIdOfDocumentWhichContainsThisObject('category', $id)));
+
+		if (!empty($documents)) {
+			throw new RestException(409, 'Error when deleting Category because it\'s in a document : ' . $documents);
 		}
 
 		if (!DolibarrApi::_checkAccessToResource('categorie', $this->category->id)) {
