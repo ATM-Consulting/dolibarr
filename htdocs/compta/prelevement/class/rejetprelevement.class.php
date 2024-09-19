@@ -219,7 +219,7 @@ class RejetPrelevement
 
 			//TODO: Must be managed by notifications module
 			// Send email to sender of the standing order request
-			$this->_send_email($fac);
+			//$this->_send_email($fac);  DA025494
 		}
 
 		if ($error == 0) {
@@ -291,7 +291,7 @@ class RejetPrelevement
 			$message = $langs->trans("InfoRejectMessage", $facref, $socname, $amount, $userinfo);
 
 			$mailfile = new CMailFile($subject, $sendto, $from, $message, $arr_file, $arr_mime, $arr_name, '', '', 0, $msgishtml, $this->user->email, '', $trackid);
-
+//			var_dump($subject, $sendto, $from, $message);exit;
 			$result = $mailfile->sendfile();
 			if ($result) {
 				dol_syslog("RejetPrelevement::_send_email email envoye");
