@@ -2881,7 +2881,9 @@ class FactureFournisseur extends CommonInvoice
 			$dir = dol_buildpath($reldir."core/modules/supplier_invoice/");
 
 			// Load file with numbering class (if found)
-			$mybool |= @include_once $dir.$file;
+			// BACKPORT V20 from e19a60cd6237355fe1f8cbaf7039c6678002ac8f
+			$mybool = ((bool) @include_once $dir.$file) || $mybool;
+			// END BACKPORT
 		}
 
 		if ($mybool === false) {
