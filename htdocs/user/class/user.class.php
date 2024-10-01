@@ -2473,7 +2473,14 @@ class User extends CommonObject
 	{
 		// phpcs:enable
 		global $conf, $langs, $mysoc;
-		global $dolibarr_main_url_root;
+		// ********************
+		// spe Sheltercom DA025506 ticket
+		// ********************
+//		global $dolibarr_main_url_root;
+		dol_include_once('/externalaccess/www/class/context.class.php');
+		// ********************
+		// spe Sheltercom DA025506 ticket
+		// ********************
 
 		require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 
@@ -2503,8 +2510,16 @@ class User extends CommonObject
 		$subject = '['.$appli.'] '.$outputlangs->transnoentitiesnoconv("SubjectNewPassword", $appli);
 
 		// Define $urlwithroot
-		$urlwithouturlroot = preg_replace('/'.preg_quote(DOL_URL_ROOT, '/').'$/i', '', trim($dolibarr_main_url_root));
-		$urlwithroot = $urlwithouturlroot.DOL_URL_ROOT; // This is to use external domain name found into config file
+		// ********************
+		// spe Sheltercom DA025506 ticket
+		// ********************
+//		$urlwithouturlroot = preg_replace('/'.preg_quote(DOL_URL_ROOT, '/').'$/i', '', trim($dolibarr_main_url_root));
+//		$urlwithroot = $urlwithouturlroot.DOL_URL_ROOT; // This is to use external domain name found into config file
+		$context = Context::getInstance();
+		$urlwithroot = rtrim($context->getControllerUrl(), '/');; // This is to use external domain name found into config file
+		// ********************
+		// spe Sheltercom DA025506 ticket
+		// ********************
 
 		if (!$changelater) {
 			$url = $urlwithroot.'/';
