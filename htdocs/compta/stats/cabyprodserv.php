@@ -503,7 +503,7 @@ if ($modecompta == 'CREANCES-DETTES') {
 
 			// Quantity
 			print '<td class="right">';
-			print price($qty[$key], 1, $langs, 0, 0);
+			print floatval($qty[$key]);
 			print '</td>';
 
 			// Percent;
