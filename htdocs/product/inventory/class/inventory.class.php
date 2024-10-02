@@ -297,7 +297,9 @@ class Inventory extends CommonObject
 				if (!empty($include_sub_warehouse) && getDolGlobalInt('INVENTORY_INCLUDE_SUB_WAREHOUSE')) {
 					$TChildWarehouses = array();
 					$this->getChildWarehouse($this->fk_warehouse, $TChildWarehouses);
-					$sql .= " OR ps.fk_entrepot IN (".$this->db->sanitize(join(',', $TChildWarehouses)).")";
+					if (!empty($TChildWarehouses)) {
+						$sql .= " OR ps.fk_entrepot IN (".$this->db->sanitize(join(',', $TChildWarehouses)).")";
+					}
 				}
 				$sql .= ')';
 			}
