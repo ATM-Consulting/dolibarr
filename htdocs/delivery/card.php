@@ -69,6 +69,9 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 // fetch optionals attributes lines and labels
 $extrafields->fetch_name_optionals_label($object->table_element_line);
 
+// Security check
+$id = GETPOSTINT('id');
+
 // Load object. Make an object->fetch
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be include, not include_once
 
@@ -77,8 +80,7 @@ $hookmanager->initHooks(array('deliverycard', 'globalcard'));
 
 $error = 0;
 
-// Security check
-$id = GETPOSTINT('id');
+
 if ($user->socid) {
 	$socid = $user->socid;
 }

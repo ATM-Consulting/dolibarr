@@ -1664,7 +1664,6 @@ class Expedition extends CommonObject
 			while ($i < $num) {
 				$obj = $this->db->fetch_object($resql);
 
-
 				if ($originline > 0 && $originline == $obj->fk_elementdet) {
 					'@phan-var-force ExpeditionLigne $line';  // $line from previous loop
 					$line->entrepot_id = 0; // entrepod_id in details_entrepot
