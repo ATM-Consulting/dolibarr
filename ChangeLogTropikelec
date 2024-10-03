@@ -1,0 +1,4 @@
+------------------------------------------------------------------
+Changelog ATM - Branche cli
+------------------------------------------------------------------
+FIX : erreur sql si l'entrepôt ne posséde pas de sous entrepôt
