@@ -369,12 +369,12 @@ class Contacts extends DolibarrApi
 			throw new RestException(500, 'Error when delete contact ' . $this->contact->error);
 		}
 
-		return array(
-			'success' => array(
+		return [
+			'success' => [
 				'code' => 200,
 				'message' => 'Contact deleted'
-			)
-		);
+			]
+		];
 	}
 
 	/**
