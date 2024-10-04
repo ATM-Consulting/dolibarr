@@ -323,7 +323,7 @@ if (empty($reshook)) {
 
 	if ($user->hasRight('categorie', 'supprimer')) {
 		$params = [];
-		print dolGetButtonAction('', $langs->trans("Delete"), 'delete', $_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&id='.$object->id.'&type='.$type.'&backtolist='.urlencode($backtolist), 'delete', $user->rights->categorie->supprimer, $params);	}
+		print dolGetButtonAction('', $langs->trans("Delete"), 'delete', $_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&id='.$object->id.'&type='.$type.'&backtolist='.urlencode($backtolist), 'delete', $user->hasRight('categorie', 'supprimer'), $params);	}
 }
 
 print "</div>";
