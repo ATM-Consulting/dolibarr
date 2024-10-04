@@ -1226,7 +1226,7 @@ class Contact extends CommonObject
 	 *  @param		int		$notrigger		Disable all trigger
 	 *	@return		int						<0 if KO, >0 if OK
 	 */
-	public function delete($notrigger = 0)
+	public function delete($notriggerr = 0)
 	{
 		global $conf, $langs, $user;
 
@@ -1234,7 +1234,7 @@ class Contact extends CommonObject
 
 		$this->db->begin();
 
-		if (!$error && !$notrigger) {
+		if (!$error && !$notriggerr) {
 			// Call trigger
 			$result = $this->call_trigger('CONTACT_DELETE', $user);
 			if ($result < 0) {
