@@ -392,13 +392,16 @@ if ($socid > 0) {
 foreach ($search as $key => $val) {
 	if ($key == 'fk_statut' && !empty($search['fk_statut'])) {
 		$newarrayofstatus = array();
-		foreach ($search['fk_statut'] as $key2 => $val2) {
-			if (in_array($val2, array('openall', 'closeall'))) {
-				continue;
+		// $search['fk_statut'] is a string if written in the url "list.php?search_fk_statut=openall"
+		if (!is_string($search['fk_statut'])){
+			foreach ($search['fk_statut'] as $key2 => $val2) {
+				if (in_array($val2, array('openall', 'closeall'))) {
+					continue;
+				}
+				$newarrayofstatus[] = $val2;
 			}
-			$newarrayofstatus[] = $val2;
 		}
-		if ($search['fk_statut'] == 'openall' || in_array('openall', $search['fk_statut'])) {
+		if (is_string($search['fk_statut']) ? $search['fk_statut'] == 'openall' : in_array('openall', $search['fk_statut'])) {
 			$newarrayofstatus[] = Ticket::STATUS_NOT_READ;
 			$newarrayofstatus[] = Ticket::STATUS_READ;
 			$newarrayofstatus[] = Ticket::STATUS_ASSIGNED;
@@ -406,7 +409,7 @@ foreach ($search as $key => $val) {
 			$newarrayofstatus[] = Ticket::STATUS_NEED_MORE_INFO;
 			$newarrayofstatus[] = Ticket::STATUS_WAITING;
 		}
-		if ($search['fk_statut'] == 'closeall' || in_array('closeall', $search['fk_statut'])) {
+		if (is_string($search['fk_statut']) ? $search['fk_statut'] == 'closeall' : in_array('closeall', $search['fk_statut'])) {
 			$newarrayofstatus[] = Ticket::STATUS_CLOSED;
 			$newarrayofstatus[] = Ticket::STATUS_CANCELED;
 		}
@@ -902,7 +905,7 @@ foreach ($object->fields as $key => $val) {
 			//var_dump(array_values($search[$key]));
 			$selectedarray = null;
 			if (!empty($search[$key])) {
-				$selectedarray = array_values($search[$key]);
+				$selectedarray = is_string($search[$key]) ? $search[$key] : array_values($search[$key]);
 			}
 			print Form::multiselectarray('search_fk_statut', $arrayofstatus, $selectedarray, 0, 0, 'search_status width150 onrightofpage', 1, 0, '', '', '');
 			print '</td>';
