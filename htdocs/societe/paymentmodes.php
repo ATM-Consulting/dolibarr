@@ -150,6 +150,8 @@ if (empty($reshook)) {
 				$action = 'edit';
 				$error++;
 			}
+		} // REPORT STANDARD
+		if ($companybankaccount->needBIC() == 1) {// REPORT STANDARD
 			if (!GETPOST('bic')) {
 				setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("BIC")), null, 'errors');
 				$action = 'edit';
@@ -306,6 +308,8 @@ if (empty($reshook)) {
 					$action = 'create';
 					$error++;
 				}
+			} // REPORT STANDARD
+			if ($companybankaccount->needBIC() == 1) { // REPORT STANDARD
 				if (!GETPOST('bic')) {
 					setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("BIC")), null, 'errors');
 					$action = 'create';
@@ -1850,7 +1854,7 @@ if ($socid && $action == 'edit' && $permissiontoaddupdatepaymentinformation) {
 			$name = 'bic';
 			$size = 12;
 			$content = $companybankaccount->bic;
-			if ($companybankaccount->needIBAN()) {
+			if ($companybankaccount->needBIC()) { // REPORT STANDARD
 				$require = true;
 			}
 			$tooltip = $langs->trans("Example").': LIABLT2XXXX';
@@ -2021,7 +2025,7 @@ if ($socid && $action == 'create' && $permissiontoaddupdatepaymentinformation) {
 			$name = 'bic';
 			$size = 12;
 			$content = $companybankaccount->bic;
-			if ($companybankaccount->needIBAN()) {
+			if ($companybankaccount->needBIC()) { // REPORT STANDARD
 				$require = true;
 			}
 			$tooltip = $langs->trans("Example").': LIABLT2XXXX';
