@@ -393,7 +393,7 @@ foreach ($search as $key => $val) {
 	if ($key == 'fk_statut' && !empty($search['fk_statut'])) {
 		$newarrayofstatus = array();
 		// $search['fk_statut'] is a string if written in the url "list.php?search_fk_statut=openall"
-		if (!is_string($search['fk_statut'])){
+		if (!is_string($search['fk_statut'])) {
 			foreach ($search['fk_statut'] as $key2 => $val2) {
 				if (in_array($val2, array('openall', 'closeall'))) {
 					continue;
