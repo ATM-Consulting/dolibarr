@@ -4,6 +4,7 @@ English Dolibarr ChangeLog
 
 
 ***** ChangeLog for 19.0.2 compared to 19.0.1 *****
+FIX : Addition of contact substitution keys for sending emails from massactions
 FIX: $object->oldcopy may be a stdClass and not original object
 FIX: 16.0 - parent company gets emptied when updating a third party from the card in edit mode (#28269)
 FIX: 16.0 - the e-mail templates configured in the notification module are not used if the recipient is a fixed e-mail address (#29407)
