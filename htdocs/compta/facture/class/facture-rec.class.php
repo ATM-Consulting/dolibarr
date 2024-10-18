@@ -1352,6 +1352,15 @@ class FactureRec extends CommonInvoice
 						$facture->multicurrency_tx = $facturerec->multicurrency_tx;
 					}
 
+					// Backported from 17.0 standard
+					if (isset($facture->array_options) && isset($facturerec->array_options)) {
+						foreach ($facturerec->array_options as $key => $value) {
+							if (isset($facture->array_options[$key])) {
+								$facture->array_options[$key] = $value;
+							}
+						}
+					}
+
 					$invoiceidgenerated = $facture->create($user);
 					if ($invoiceidgenerated <= 0) {
 						$this->errors = $facture->errors;
