@@ -250,7 +250,7 @@ function invoice_rec_prepare_head($object)
 /**
  * Return array head with list of tabs to view object informations.
  *
- * @param   Facture     $object     Invoice object
+ * @param   FactureFournisseurRec     $object     Invoice object
  * @return array                    head array with tabs
  */
 function supplier_invoice_rec_prepare_head($object)
