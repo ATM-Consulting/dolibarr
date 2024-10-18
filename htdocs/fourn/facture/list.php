@@ -119,6 +119,7 @@ $search_btn = GETPOST('button_search', 'alpha');
 $search_remove_btn = GETPOST('button_removefilter', 'alpha');
 $search_categ_sup = trim(GETPOST("search_categ_sup", 'int'));
 $search_product_category = GETPOST('search_product_category', 'int');
+$search_fk_fac_rec_source = GETPOST('search_fk_fac_rec_source', 'int');
 
 $option = GETPOST('search_option');
 if ($option == 'late') {
@@ -594,6 +595,9 @@ if ($option == 'late') {
 if ($search_label) {
 	$sql .= natural_search('f.libelle', $search_label);
 }
+if ($search_fk_fac_rec_source) {
+	$sql .= " AND f.fk_fac_rec_source = ".(int) $search_fk_fac_rec_source;
+}
 $searchCategorySupplierList = $search_categ_sup ? array($search_categ_sup) : array();
 $searchCategorySupplierOperator = 0;
 // Search for tag/category ($searchCategorySupplierList is an array of ID)
@@ -755,6 +759,15 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 }
 
 llxHeader('', $langs->trans("SuppliersInvoices"), 'EN:Suppliers_Invoices|FR:FactureFournisseur|ES:Facturas_de_proveedores');
+
+if ($search_fk_fac_rec_source) {
+	require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture-rec.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/core/lib/invoice.lib.php';
+	$object = new FactureFournisseurRec($db);
+	$object->id = $search_fk_fac_rec_source;
+	$head = supplier_invoice_rec_prepare_head($object);
+	print dol_get_fiche_head($head, 'generated', $langs->trans('InvoicesGeneratedFromRec'), -1, 'bill'); // Add a div
+}
 
 if ($socid) {
 	$soc = new Societe($db);
