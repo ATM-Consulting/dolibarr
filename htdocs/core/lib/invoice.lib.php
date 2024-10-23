@@ -231,6 +231,7 @@ function invoice_rec_prepare_head($object)
 	$head[$h][2] = 'card';
 	$h++;
 
+	// backport 21.0 #31463
 	$head[$h][0] = DOL_URL_ROOT . '/compta/facture/list.php?search_fk_fac_rec_source=' . $object->id;
 	$head[$h][1] = $langs->trans('InvoicesGeneratedFromRec');
 	$head[$h][2] = 'generated';
@@ -265,6 +266,7 @@ function supplier_invoice_rec_prepare_head($object)
 	$head[$h][2] = 'card';
 	$h++;
 
+	// backport 21.0 #31463
 	$head[$h][0] = DOL_URL_ROOT . '/fourn/facture/list.php?search_fk_fac_rec_source=' . $object->id;
 	$head[$h][1] = $langs->trans('InvoicesGeneratedFromRec');
 	$head[$h][2] = 'generated';

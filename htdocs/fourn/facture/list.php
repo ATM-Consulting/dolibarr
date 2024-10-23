@@ -119,7 +119,7 @@ $search_btn = GETPOST('button_search', 'alpha');
 $search_remove_btn = GETPOST('button_removefilter', 'alpha');
 $search_categ_sup = trim(GETPOST("search_categ_sup", 'int'));
 $search_product_category = GETPOST('search_product_category', 'int');
-$search_fk_fac_rec_source = GETPOST('search_fk_fac_rec_source', 'int');
+$search_fk_fac_rec_source = GETPOST('search_fk_fac_rec_source', 'int'); // backport 21.0 #31463
 
 $option = GETPOST('search_option');
 if ($option == 'late') {
@@ -595,6 +595,7 @@ if ($option == 'late') {
 if ($search_label) {
 	$sql .= natural_search('f.libelle', $search_label);
 }
+// backport 21.0 #31463
 if ($search_fk_fac_rec_source) {
 	$sql .= " AND f.fk_fac_rec_source = ".(int) $search_fk_fac_rec_source;
 }
@@ -760,6 +761,7 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && $
 
 llxHeader('', $langs->trans("SuppliersInvoices"), 'EN:Suppliers_Invoices|FR:FactureFournisseur|ES:Facturas_de_proveedores');
 
+// backport 21.0 #31463
 if ($search_fk_fac_rec_source) {
 	require_once DOL_DOCUMENT_ROOT . '/fourn/class/fournisseur.facture-rec.class.php';
 	require_once DOL_DOCUMENT_ROOT . '/core/lib/invoice.lib.php';
@@ -905,6 +907,7 @@ if ($search_categ_sup > 0) {
 if ($search_type_thirdparty != '' && $search_type_thirdparty > 0) {
 	$param .= '&search_type_thirdparty='.urlencode($search_type_thirdparty);
 }
+// backport 21.0 #31463
 if ($search_fk_fac_rec_source) {
 	$param .= '&search_fk_fac_rec_source=' . (int) $search_fk_fac_rec_source;
 }
