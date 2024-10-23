@@ -231,6 +231,12 @@ function invoice_rec_prepare_head($object)
 	$head[$h][2] = 'card';
 	$h++;
 
+	// backport 21.0 #31463
+	$head[$h][0] = DOL_URL_ROOT . '/compta/facture/list.php?search_fk_fac_rec_source=' . $object->id;
+	$head[$h][1] = $langs->trans('InvoicesGeneratedFromRec');
+	$head[$h][2] = 'generated';
+	$h++;
+
 	// Show more tabs from modules
 	// Entries must be declared in modules descriptor with line
 	// $this->tabs = array('entity:+tabname:Title:@mymodule:/mymodule/mypage.php?id=__ID__');   to add new tab
@@ -245,7 +251,7 @@ function invoice_rec_prepare_head($object)
 /**
  * Return array head with list of tabs to view object informations.
  *
- * @param   Facture     $object     Invoice object
+ * @param   FactureFournisseurRec     $object     Invoice object
  * @return array                    head array with tabs
  */
 function supplier_invoice_rec_prepare_head($object)
@@ -258,6 +264,12 @@ function supplier_invoice_rec_prepare_head($object)
 	$head[$h][0] = DOL_URL_ROOT . '/fourn/facture/card-rec.php?id=' . $object->id;
 	$head[$h][1] = $langs->trans("RepeatableSupplierInvoice");
 	$head[$h][2] = 'card';
+	$h++;
+
+	// backport 21.0 #31463
+	$head[$h][0] = DOL_URL_ROOT . '/fourn/facture/list.php?search_fk_fac_rec_source=' . $object->id;
+	$head[$h][1] = $langs->trans('InvoicesGeneratedFromRec');
+	$head[$h][2] = 'generated';
 	$h++;
 
 	// Show more tabs from modules

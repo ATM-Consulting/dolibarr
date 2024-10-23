@@ -140,6 +140,7 @@ $search_datelimit_end = dol_mktime(23, 59, 59, $search_datelimit_endmonth, $sear
 $search_categ_cus = GETPOST("search_categ_cus", 'int');
 $search_product_category = GETPOST('search_product_category', 'int');
 $search_fac_rec_source_title = GETPOST("search_fac_rec_source_title", 'alpha');
+$search_fk_fac_rec_source = GETPOST('search_fk_fac_rec_source', 'int'); // backport 21.0 #31463
 $search_btn = GETPOST('button_search', 'alpha');
 $search_remove_btn = GETPOST('button_removefilter', 'alpha');
 
@@ -818,6 +819,10 @@ if ($search_user > 0) {
 if (!empty($search_fac_rec_source_title)) {
 	$sql .= natural_search('facrec.titre', $search_fac_rec_source_title);
 }
+// backport 21.0 #31463
+if ($search_fk_fac_rec_source) {
+	$sql .= ' AND f.fk_fac_rec_source = ' . (int) $search_fk_fac_rec_source;
+}
 // Search for tag/category ($searchCategoryProductList is an array of ID)
 $searchCategoryProductList = $search_product_category ? array($search_product_category) : array();
 $searchCategoryProductOperator = 0;
@@ -977,6 +982,14 @@ if ($resql) {
 		if (empty($search_company)) {
 			$search_company = $soc->name;
 		}
+	}
+
+	// backport 21.0 #31463
+	if ($search_fk_fac_rec_source) {
+		$object = new FactureRec($db);
+	$object->id = (int) $search_fk_fac_rec_source;
+		$head = invoice_rec_prepare_head($object);
+		print dol_get_fiche_head($head, 'generated', $langs->trans('InvoicesGeneratedFromRec'), -1, 'bill'); // Add a div
 	}
 
 	$param = '&socid='.urlencode($socid);
@@ -1151,6 +1164,10 @@ if ($resql) {
 	if (!empty($search_fac_rec_source_title)) {
 		$param .= '&search_fac_rec_source_title='.urlencode($search_fac_rec_source_title);
 	}
+// backport 21.0 #31463
+if ($search_fk_fac_rec_source) {
+	$param .= '&search_fk_fac_rec_source=' . (int) $search_fk_fac_rec_source;
+}
 
 	// Add $param from extra fields
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
