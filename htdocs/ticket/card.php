@@ -6,7 +6,7 @@
  * Copyright (C) 2021      Alexandre Spangaro   <aspangaro@open-dsi.fr>
  * Copyright (C) 2022-2023 Charlene Benke       <charlene@patas-monkey.com>
  * Copyright (C) 2023      Benjamin Falière		<benjamin.faliere@altairis.fr>
- * Copyright (C) 2024	   Irvine FLEITH		<irvine.fleith@atm-consulting.fr>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
@@ -204,7 +204,6 @@ if (empty($reshook)) {
 		if (!empty($error)) {
 			$action = $ifErrorAction;
 		}
-
 		$ret = $extrafields->setOptionalsFromPost(null, $object);
 		if ($ret < 0) {
 			$error++;
@@ -328,10 +327,10 @@ if (empty($reshook)) {
 					if (empty($id)) {
 						$url = $backtopage;
 					} else {
-						$url = 'card.php?track_id=' . urlencode($object->track_id);
+						$url = 'card.php?track_id='.urlencode($object->track_id);
 					}
 				} else {
-					$url = 'card.php?track_id=' . urlencode($object->track_id);
+					$url = 'card.php?track_id='.urlencode($object->track_id);
 				}
 
 				header("Location: ".$url);
@@ -537,7 +536,7 @@ if (empty($reshook)) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			// prevent browser refresh from reopening ticket several times
 			if ($object->status == Ticket::STATUS_CLOSED || $object->status == Ticket::STATUS_CANCELED) {
-				$res = $object->setStatut(Ticket::STATUS_ASSIGNED);
+				$res = $object->setStatut(Ticket::STATUS_ASSIGNED, null, '', 'TICKET_MODIFY');
 				if ($res) {
 					$url = 'card.php?track_id='.$object->track_id;
 					header("Location: ".$url);
@@ -983,7 +982,7 @@ if ($action == 'create' || $action == 'presend') {
 				$object->ref = $object->id;
 				print $form->showrefnav($object, 'id', $linkback, 1, 'rowid', 'track_id');
 			} else {
-				print $object->track_id;
+				print dolPrintLabel($object->track_id);
 			}
 		} else {
 			print $langs->trans('None');

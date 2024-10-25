@@ -148,6 +148,7 @@ class ExtraFields
 
 		$result = 0;
 
+		// Clean properties
 		if ($type == 'separate') {
 			$unique = 0;
 			$required = 0;
@@ -157,6 +158,11 @@ class ExtraFields
 		}
 		if ($elementtype == 'contact') {
 			$elementtype = 'socpeople';
+		}
+		// If property has a computed formula, it must not be a required or unique field
+		if (!empty($computed)) {
+			$required = 0;
+			$unique = 0;
 		}
 
 		// Create field into database except for separator type which is not stored in database
@@ -568,6 +574,7 @@ class ExtraFields
 		}
 
 		if (isset($attrname) && $attrname != '' && preg_match("/^\w[a-zA-Z0-9-_]*$/", $attrname)) {
+			// Clean parameters
 			if ($type == 'boolean') {
 				$typedb = 'int';
 				$lengthdb = '1';
@@ -603,6 +610,12 @@ class ExtraFields
 				$lengthdb = $length;
 			}
 			$field_desc = array('type'=>$typedb, 'value'=>$lengthdb, 'null'=>($required ? 'NOT NULL' : 'NULL'), 'default'=>$default);
+
+			// If property has a computed formula, it must not be a required or unique field
+			if (!empty($computed)) {
+				$required = 0;
+				$unique = 0;
+			}
 
 			if (is_object($hookmanager)) {
 				$hookmanager->initHooks(array('extrafieldsdao'));
@@ -1512,6 +1525,8 @@ class ExtraFields
 					// print $sql;
 
 					$sql .= $sqlwhere;
+					$sql .= ' ORDER BY '.implode(', ', $fields_label);
+
 					dol_syslog(get_class($this).'::showInputField type=chkbxlst', LOG_DEBUG);
 					$resql = $this->db->query($sql);
 					if ($resql) {

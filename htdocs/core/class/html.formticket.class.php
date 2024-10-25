@@ -172,15 +172,14 @@ class FormTicket
 	/**
 	 * Show the form to input ticket
 	 *
-	 * @param int $withdolfichehead With dol_get_fiche_head() and dol_get_fiche_end()
-	 * @param string $mode Mode ('create' or 'edit')
-	 * @param int $public 1=If we show the form for the public interface
-	 * @param Contact|null $with_contact [=NULL] Contact to link to this ticket if it exists
-	 * @param string $action [=''] Action in card
-	 * @param   ?Ticket $object [=NULL] Ticket object
-	 * @return    void
+	 * @param  	int	 			$withdolfichehead		With dol_get_fiche_head() and dol_get_fiche_end()
+	 * @param	string			$mode					Mode ('create' or 'edit')
+	 * @param	int				$public					1=If we show the form for the public interface
+	 * @param	Contact|null	$with_contact			[=NULL] Contact to link to this ticket if it exists
+	 * @param	string			$action					[=''] Action in card
+	 * @return 	void
 	 */
-	public function showForm($withdolfichehead = 0, $mode = 'edit', $public = 0, Contact $with_contact = null, $action = '', Ticket $object = null)
+	public function showForm($withdolfichehead = 0, $mode = 'edit', $public = 0, Contact $with_contact = null, $action = '')
 	{
 		global $conf, $langs, $user, $hookmanager;
 
@@ -237,9 +236,9 @@ class FormTicket
 		if (!empty($object->id)) print '<input type="hidden" name="id" value="' . $object->id . '">';
 		print '<input type="hidden" name="trackid" value="' . $this->trackid . '">';
 		foreach ($this->param as $key => $value) {
-			print '<input type="hidden" name="' . $key . '" value="' . $value . '">';
+			print '<input type="hidden" name="'.$key.'" value="'.$value.'">';
 		}
-		print '<input type="hidden" name="fk_user_create" value="' . $this->fk_user_create . '">';
+		print '<input type="hidden" name="fk_user_create" value="'.$this->fk_user_create.'">';
 
 		print '<table class="border centpercent">';
 
@@ -256,14 +255,15 @@ class FormTicket
 		}
 
 		// TITLE
+		$email = GETPOSTISSET('email') ? GETPOST('email', 'alphanohtml') : '';
 		if ($this->withemail) {
-			print '<tr><td class="titlefield"><label for="email"><span class="fieldrequired">' . $langs->trans("Email") . '</span></label></td><td>';
-			print '<input class="text minwidth200" id="email" name="email" value="' . $email . '" autofocus>';
+			print '<tr><td class="titlefield"><label for="email"><span class="fieldrequired">'.$langs->trans("Email").'</span></label></td><td>';
+			print '<input class="text minwidth200" id="email" name="email" value="'.$email.'" autofocus>';
 			print '</td></tr>';
 
 			if ($with_contact) {
 				// contact search and result
-				$html_contact_search = '';
+				$html_contact_search  = '';
 				$html_contact_search .= '<tr id="contact_search_line">';
 				$html_contact_search .= '<td class="titlefield">';
 				$html_contact_search .= '<label for="contact"><span class="fieldrequired">' . $langs->trans('Contact') . '</span></label>';
@@ -279,19 +279,19 @@ class FormTicket
 				$html_contact_lastname .= '</td></tr>';
 				print $html_contact_lastname;
 				// contact firstname
-				$html_contact_firstname = '';
+				$html_contact_firstname  = '';
 				$html_contact_firstname .= '<tr id="contact_firstname_line" class="contact_field"><td class="titlefield"><label for="contact_firstname"><span class="fieldrequired">' . $langs->trans('Firstname') . '</span></label></td><td>';
 				$html_contact_firstname .= '<input type="text" id="contact_firstname" name="contact_firstname" value="' . dol_escape_htmltag(GETPOSTISSET('contact_firstname') ? GETPOST('contact_firstname', 'alphanohtml') : '') . '" />';
 				$html_contact_firstname .= '</td></tr>';
 				print $html_contact_firstname;
 				// company name
-				$html_company_name = '';
+				$html_company_name  = '';
 				$html_company_name .= '<tr id="contact_company_name_line" class="contact_field"><td><label for="company_name"><span>' . $langs->trans('Company') . '</span></label></td><td>';
 				$html_company_name .= '<input type="text" id="company_name" name="company_name" value="' . dol_escape_htmltag(GETPOSTISSET('company_name') ? GETPOST('company_name', 'alphanohtml') : '') . '" />';
 				$html_company_name .= '</td></tr>';
 				print $html_company_name;
 				// contact phone
-				$html_contact_phone = '';
+				$html_contact_phone  = '';
 				$html_contact_phone .= '<tr id="contact_phone_line" class="contact_field"><td><label for="contact_phone"><span>' . $langs->trans('Phone') . '</span></label></td><td>';
 				$html_contact_phone .= '<input type="text" id="contact_phone" name="contact_phone" value="' . dol_escape_htmltag(GETPOSTISSET('contact_phone') ? GETPOST('contact_phone', 'alphanohtml') : '') . '" />';
 				$html_contact_phone .= '</td></tr>';
@@ -299,9 +299,9 @@ class FormTicket
 
 				// search contact form email
 				$langs->load('errors');
-				print '<script nonce="' . getNonce() . '" type="text/javascript">
+				print '<script nonce="'.getNonce().'" type="text/javascript">
                     jQuery(document).ready(function() {
-                        var contact = jQuery.parseJSON("' . dol_escape_js(json_encode($with_contact), 2) . '");
+                        var contact = jQuery.parseJSON("'.dol_escape_js(json_encode($with_contact), 2).'");
                         jQuery("#contact_search_line").hide();
                         if (contact) {
                         	if (contact.id > 0) {
@@ -316,7 +316,7 @@ class FormTicket
 
                     	jQuery("#email").change(function() {
                             jQuery("#contact_search_line").show();
-                            jQuery("#contact_search_result").html("' . dol_escape_js($langs->trans('Select2SearchInProgress')) . '");
+                            jQuery("#contact_search_result").html("'.dol_escape_js($langs->trans('Select2SearchInProgress')).'");
                             jQuery("#contact_id").val("");
                             jQuery("#contact_lastname").val("");
                             jQuery("#contact_firstname").val("");
@@ -324,7 +324,7 @@ class FormTicket
                             jQuery("#contact_phone").val("");
 
                             jQuery.getJSON(
-                                "' . dol_escape_js(dol_buildpath('/public/ticket/ajax/ajax.php', 1)) . '",
+                                "'.dol_escape_js(dol_buildpath('/public/ticket/ajax/ajax.php', 1)).'",
 								{
 									action: "getContacts",
 									email: jQuery("#email").val()
@@ -346,7 +346,7 @@ class FormTicket
 									}
 								}
                             ).fail(function(jqxhr, textStatus, error) {
-    							var error_msg = "' . dol_escape_js($langs->trans('ErrorAjaxRequestFailed')) . '"+" ["+textStatus+"] : "+error;
+    							var error_msg = "'.dol_escape_js($langs->trans('ErrorAjaxRequestFailed')).'"+" ["+textStatus+"] : "+error;
                                 jQuery("#contact_search_result").html("<span class=\"error\">"+error_msg+"</span>");
                             });
                         });
@@ -366,7 +366,7 @@ class FormTicket
 				$subelement = $regs[2];
 			}
 
-			dol_include_once('/' . $element . '/class/' . $subelement . '.class.php');
+			dol_include_once('/'.$element.'/class/'.$subelement.'.class.php');
 			$classname = ucfirst($subelement);
 			$objectsrc = new $classname($this->db);
 			$objectsrc->fetch(GETPOSTINT('originid'));
@@ -377,7 +377,7 @@ class FormTicket
 
 			$objectsrc->fetch_thirdparty();
 			$newclassname = $classname;
-			print '<tr><td>' . $langs->trans($newclassname) . '</td><td colspan="2"><input name="' . $subelement . 'id" value="' . GETPOST('originid') . '" type="hidden" />' . $objectsrc->getNomUrl(1) . '</td></tr>';
+			print '<tr><td>'.$langs->trans($newclassname).'</td><td colspan="2"><input name="'.$subelement.'id" value="'.GETPOST('originid').'" type="hidden" />'.$objectsrc->getNomUrl(1).'</td></tr>';
 		}
 
 		// Type of Ticket
@@ -386,7 +386,7 @@ class FormTicket
 		print '</td></tr>';
 
 		// Group => Category
-		print '<tr><td><span class="fieldrequired"><label for="selectcategory_code">' . $langs->trans("TicketCategory") . '</span></label></td><td>';
+		print '<tr><td><span class="fieldrequired"><label for="selectcategory_code">'.$langs->trans("TicketCategory").'</span></label></td><td>';
 		$filter = '';
 		if ($public) {
 			$filter = 'public=1';
@@ -403,7 +403,7 @@ class FormTicket
 			// KM Articles
 			print '<tr id="KWwithajax" class="hidden"><td></td></tr>';
 			print '<!-- Script to manage change of ticket group -->
-			<script nonce="' . getNonce() . '">
+			<script nonce="'.getNonce().'">
 			jQuery(document).ready(function() {
 				function groupticketchange() {
 					console.log("We called groupticketchange, so we try to load list KM linked to event");
@@ -413,8 +413,8 @@ class FormTicket
 					console.log("We have selected id="+idgroupticket);
 
 					if (idgroupticket != "") {
-						$.ajax({ url: \'' . DOL_URL_ROOT . '/core/ajax/fetchKnowledgeRecord.php\',
-							 data: { action: \'getKnowledgeRecord\', idticketgroup: idgroupticket, token: \'' . newToken() . '\', lang:\'' . $langs->defaultlang . '\', public:' . ($public) . ' },
+						$.ajax({ url: \''.DOL_URL_ROOT.'/core/ajax/fetchKnowledgeRecord.php\',
+							 data: { action: \'getKnowledgeRecord\', idticketgroup: idgroupticket, token: \''.newToken().'\', lang:\''.$langs->defaultlang.'\', public:'.($public).' },
 							 type: \'GET\',
 							 success: function(response) {
 								var urllist = \'\';
@@ -430,7 +430,7 @@ class FormTicket
 									urllist += \'<li><a href="#" title="\'+response[key].title+\'" class="button_KMpopup" data-html="\'+answer+\'">\' +response[key].title+\'</a></li>\';
 								}
 								if (urllist != "") {
-									$("#KWwithajax").html(\'<td>' . $langs->trans("KMFoundForTicketGroup") . '</td><td><ul>\'+urllist+\'</ul></td>\');
+									$("#KWwithajax").html(\'<td>'.$langs->trans("KMFoundForTicketGroup").'</td><td><ul>\'+urllist+\'</ul></td>\');
 									$("#KWwithajax").show();
 									$(".button_KMpopup").on("click",function(){
 										console.log("Open popup with jQuery(...).dialog() with KM article")
@@ -458,61 +458,64 @@ class FormTicket
 					groupticketchange();
 				}
 			});
-			</script>' . "\n";
+			</script>'."\n";
 		}
 
 		// Subject
 		if ($this->withtitletopic) {
-			print '<tr><td><label for="subject"><span class="fieldrequired">' . $langs->trans("Subject") . '</span></label></td><td>';
+			print '<tr><td><label for="subject"><span class="fieldrequired">'.$langs->trans("Subject").'</span></label></td><td>';
 			// Answer to a ticket : display of the thread title in readonly
 			if ($this->withtopicreadonly) {
-				print $langs->trans('SubjectAnswerToTicket') . ' ' . $this->topic_title;
+				print $langs->trans('SubjectAnswerToTicket').' '.$this->topic_title;
 			} else {
 				if (isset($this->withreadid) && $this->withreadid > 0) {
-					$subject = $langs->trans('SubjectAnswerToTicket') . ' ' . $this->withreadid . ' : ' . $this->topic_title;
+					$subject = $langs->trans('SubjectAnswerToTicket').' '.$this->withreadid.' : '.$this->topic_title;
+				} else {
+					$subject = GETPOST('subject', 'alpha');
 				}
-				print '<input class="text minwidth500" id="subject" name="subject" value="' . $subject . '"' . (empty($this->withemail) ? ' autofocus' : '') . ' />';
+				print '<input class="text minwidth500" id="subject" name="subject" value="'.$subject.'"'.(empty($this->withemail) ? ' autofocus' : '').' />';
 			}
 			print '</td></tr>';
 		}
 
 		// MESSAGE
-		print '<tr><td><label for="message"><span class="fieldrequired">' . $langs->trans("Message") . '</span></label></td><td>';
+		$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
+		print '<tr><td><label for="message"><span class="fieldrequired">'.$langs->trans("Message").'</span></label></td><td>';
 
 		// If public form, display more information
 		$toolbarname = 'dolibarr_notes';
 		if ($this->ispublic) {
 			$toolbarname = 'dolibarr_details';
-			print '<div class="warning hideonsmartphone">' . (getDolGlobalString("TICKET_PUBLIC_TEXT_HELP_MESSAGE", $langs->trans('TicketPublicPleaseBeAccuratelyDescribe'))) . '</div>';
+			print '<div class="warning hideonsmartphone">'.(getDolGlobalString("TICKET_PUBLIC_TEXT_HELP_MESSAGE", $langs->trans('TicketPublicPleaseBeAccuratelyDescribe'))).'</div>';
 		}
-		include_once DOL_DOCUMENT_ROOT . '/core/class/doleditor.class.php';
+		include_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 		$uselocalbrowser = true;
 		$doleditor = new DolEditor('message', $msg, '100%', 230, $toolbarname, 'In', true, $uselocalbrowser, getDolGlobalInt('FCKEDITOR_ENABLE_TICKET'), ROWS_8, '90%');
 		$doleditor->Create();
 		print '</td></tr>';
 
 		if ($public && getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_TICKET')) {
-			require_once DOL_DOCUMENT_ROOT . '/core/lib/security2.lib.php';
-			print '<tr><td class="titlefield"><label for="email"><span class="fieldrequired">' . $langs->trans("SecurityCode") . '</span></label></td><td>';
+			require_once DOL_DOCUMENT_ROOT.'/core/lib/security2.lib.php';
+			print '<tr><td class="titlefield"><label for="email"><span class="fieldrequired">'.$langs->trans("SecurityCode").'</span></label></td><td>';
 			print '<span class="span-icon-security inline-block">';
-			print '<input id="securitycode" placeholder="' . $langs->trans("SecurityCode") . '" class="flat input-icon-security width125" type="text" maxlength="5" name="code" tabindex="3" />';
+			print '<input id="securitycode" placeholder="'.$langs->trans("SecurityCode").'" class="flat input-icon-security width125" type="text" maxlength="5" name="code" tabindex="3" />';
 			print '</span>';
 			print '<span class="nowrap inline-block">';
-			print '<img class="inline-block valignmiddle" src="' . DOL_URL_ROOT . '/core/antispamimage.php" border="0" width="80" height="32" id="img_securitycode" />';
-			print '<a class="inline-block valignmiddle" href="" tabindex="4" data-role="button">' . img_picto($langs->trans("Refresh"), 'refresh', 'id="captcha_refresh_img"') . '</a>';
+			print '<img class="inline-block valignmiddle" src="'.DOL_URL_ROOT.'/core/antispamimage.php" border="0" width="80" height="32" id="img_securitycode" />';
+			print '<a class="inline-block valignmiddle" href="" tabindex="4" data-role="button">'.img_picto($langs->trans("Refresh"), 'refresh', 'id="captcha_refresh_img"').'</a>';
 			print '</span>';
 			print '</td></tr>';
 		}
 
 		// Categories
-		if (isModEnabled('category')) {
-			include_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
-			$cate_arbo = $form->select_all_categories(Categorie::TYPE_TICKET, '', 'parent', 64, 0, 3);
+		if (isModEnabled('categorie')) {
+			include_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
+			$cate_arbo = $form->select_all_categories(Categorie::TYPE_TICKET, '', 'parent', 64, 0, 1);
 
 			if (count($cate_arbo)) {
 				// Categories
-				print '<tr><td class="wordbreak">' . $langs->trans("Categories") . '</td><td>';
-				print img_picto('', 'category', 'class="pictofixedwidth"') . $form->multiselectarray('categories', $cate_arbo, GETPOST('categories', 'array'), '', 0, 'quatrevingtpercent widthcentpercentminusx', 0, 0);
+				print '<tr><td class="wordbreak">'.$langs->trans("Categories").'</td><td>';
+				print img_picto('', 'category', 'class="pictofixedwidth"').$form->multiselectarray('categories', $cate_arbo, GETPOST('categories', 'array'), '', 0, 'quatrevingtpercent widthcentpercentminusx', 0, 0);
 				print "</td></tr>";
 			}
 		}
@@ -536,23 +539,23 @@ class FormTicket
 			}
 
 			$out = '<tr>';
-			$out .= '<td>' . $langs->trans("MailFile") . '</td>';
+			$out .= '<td>'.$langs->trans("MailFile").'</td>';
 			$out .= '<td>';
 			// TODO Trick to have param removedfile containing nb of image to delete. But this does not works without javascript
-			$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">' . "\n";
-			$out .= '<script nonce="' . getNonce() . '" type="text/javascript">';
+			$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">'."\n";
+			$out .= '<script nonce="'.getNonce().'" type="text/javascript">';
 			$out .= 'jQuery(document).ready(function () {';
 			$out .= '    jQuery(".removedfile").click(function() {';
 			$out .= '        jQuery(".removedfilehidden").val(jQuery(this).val());';
 			$out .= '    });';
 			$out .= '})';
-			$out .= '</script>' . "\n";
+			$out .= '</script>'."\n";
 			if (count($listofpaths)) {
 				foreach ($listofpaths as $key => $val) {
-					$out .= '<div id="attachfile_' . $key . '">';
-					$out .= img_mime($listofnames[$key]) . ' ' . $listofnames[$key];
+					$out .= '<div id="attachfile_'.$key.'">';
+					$out .= img_mime($listofnames[$key]).' '.$listofnames[$key];
 					if (!$this->withfilereadonly) {
-						$out .= ' <input type="image" style="border: 0px;" src="' . DOL_URL_ROOT . '/theme/' . $conf->theme . '/img/delete.png" value="' . ($key + 1) . '" class="removedfile" id="removedfile_' . $key . '" name="removedfile_' . $key . '" />';
+						$out .= ' <input type="image" style="border: 0px;" src="'.DOL_URL_ROOT.'/theme/'.$conf->theme.'/img/delete.png" value="'.($key + 1).'" class="removedfile" id="removedfile_'.$key.'" name="removedfile_'.$key.'" />';
 					}
 					$out .= '<br></div>';
 				}
@@ -563,11 +566,11 @@ class FormTicket
 				$maxfilesizearray = getMaxFileSizeArray();
 				$maxmin = $maxfilesizearray['maxmin'];
 				if ($maxmin > 0) {
-					$out .= '<input type="hidden" name="MAX_FILE_SIZE" value="' . ($maxmin * 1024) . '">';    // MAX_FILE_SIZE must precede the field type=file
+					$out .= '<input type="hidden" name="MAX_FILE_SIZE" value="'.($maxmin * 1024).'">';	// MAX_FILE_SIZE must precede the field type=file
 				}
-				$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="' . $langs->trans("Upload") . '" />';
+				$out .= '<input type="file" class="flat" id="addedfile" name="addedfile" value="'.$langs->trans("Upload").'" />';
 				$out .= ' ';
-				$out .= '<input type="submit" class="button smallpaddingimp reposition" id="addfile" name="addfile" value="' . $langs->trans("MailingAddFile") . '" />';
+				$out .= '<input type="submit" class="button smallpaddingimp reposition" id="addfile" name="addfile" value="'.$langs->trans("MailingAddFile").'" />';
 			}
 			$out .= "</td></tr>\n";
 
@@ -576,7 +579,7 @@ class FormTicket
 
 		// User of creation
 		if ($this->withusercreate > 0 && $this->fk_user_create) {
-			print '<tr><td class="titlefield">' . $langs->trans("CreatedBy") . '</td><td>';
+			print '<tr><td class="titlefield">'.$langs->trans("CreatedBy").'</td><td>';
 			$langs->load("users");
 			$fuser = new User($this->db);
 
@@ -591,10 +594,10 @@ class FormTicket
 
 		// Customer or supplier
 		if ($this->withcompany) {
-			// force company and contact id for external user
+			// altairis: force company and contact id for external user
 			if (empty($user->socid)) {
 				// Company
-				print '<tr><td class="titlefield">' . $langs->trans("ThirdParty") . '</td><td>';
+				print '<tr><td class="titlefield">'.$langs->trans("ThirdParty").'</td><td>';
 				$events = array();
 				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid', 'params' => array('add-customer-contact' => 'disabled'));
 				print img_picto('', 'company', 'class="paddingright"');
@@ -602,20 +605,20 @@ class FormTicket
 				print '</td></tr>';
 				if (!empty($conf->use_javascript_ajax) && getDolGlobalString('COMPANY_USE_SEARCH_TO_SELECT')) {
 					$htmlname = 'socid';
-					print '<script nonce="' . getNonce() . '" type="text/javascript">
+					print '<script nonce="'.getNonce().'" type="text/javascript">
                     $(document).ready(function () {
-                        jQuery("#' . $htmlname . '").change(function () {
-                            var obj = ' . json_encode($events) . ';
+                        jQuery("#'.$htmlname.'").change(function () {
+                            var obj = '.json_encode($events).';
                             $.each(obj, function(key,values) {
                                 if (values.method.length) {
-                                    runJsCodeForEvent' . $htmlname . '(values);
+                                    runJsCodeForEvent'.$htmlname.'(values);
                                 }
                             });
                         });
 
-                        function runJsCodeForEvent' . $htmlname . '(obj) {
-                            console.log("Run runJsCodeForEvent' . $htmlname . '");
-                            var id = $("#' . $htmlname . '").val();
+                        function runJsCodeForEvent'.$htmlname.'(obj) {
+                            console.log("Run runJsCodeForEvent'.$htmlname.'");
+                            var id = $("#'.$htmlname.'").val();
                             var method = obj.method;
                             var url = obj.url;
                             var htmlname = obj.htmlname;
@@ -668,8 +671,8 @@ class FormTicket
 					print '</td></tr>';
 				}
 			} else {
-				print '<tr><td class="titlefield"><input type="hidden" name="socid" value="' . $user->socid . '"/></td>';
-				print '<td><input type="hidden" name="contactid" value="' . $user->contact_id . '"/></td>';
+				print '<tr><td class="titlefield"><input type="hidden" name="socid" value="'.$user->socid.'"/></td>';
+				print '<td><input type="hidden" name="contactid" value="'.$user->contact_id.'"/></td>';
 				print '<td><input type="hidden" name="type" value="Z"/></td></tr>';
 			}
 
@@ -703,7 +706,7 @@ class FormTicket
 			if (isModEnabled('contract') && !$this->ispublic) {
 				$langs->load('contracts');
 				$formcontract = new FormContract($this->db);
-				print '<tr><td><label for="contract"><span class="">' . $langs->trans("Contract") . '</span></label></td><td>';
+				print '<tr><td><label for="contract"><span class="">'.$langs->trans("Contract").'</span></label></td><td>';
 				print img_picto('', 'contract');
 				print $formcontract->select_contract(-1, $contractid, 'contractid', 0, 1, 1, 1);
 				print '</td></tr>';
@@ -745,11 +748,12 @@ class FormTicket
 		print '</div>';
 		*/
 
-		print '<input type="hidden" name="page_y">' . "\n";
+		print '<input type="hidden" name="page_y">'."\n";
 
 		print "</form>\n";
 		print "<!-- End form TICKET -->\n";
 	}
+
 	/**
 	 *      Return html list of tickets type
 	 *
@@ -1546,10 +1550,8 @@ class FormTicket
 			// Subject/topic
 			$topic = "";
 			foreach ($formmail->lines_model as $line) {
-				///// BACKPORT du FIX - DA025150. SUPPRIMER quand pull 19.0 into 19.0_atm
 				if (!empty($this->substit) && $this->param['models_id'] == $line->id) {
 					$topic = make_substitutions($line->topic, $this->substit);
-					/// FIX BACKPORT
 					break;
 				}
 			}
