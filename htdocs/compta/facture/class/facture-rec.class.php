@@ -1906,6 +1906,7 @@ class FactureRec extends CommonInvoice
 			if ($increment_nb_gen_done > 0) {
 				$this->nb_gen_done++;
 
+				// Backport 17.0 #31623
 				if (getDolGlobalInt('MAIN_SUSPEND_FACTURE_REC_ON_MAX_GEN_REACHED') && $this->isMaxNbGenReached()) {
 					$resSuspend = $this->setValueFrom('suspended', 1);
 
