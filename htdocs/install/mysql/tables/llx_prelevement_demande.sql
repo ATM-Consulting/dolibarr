@@ -31,7 +31,7 @@ create table llx_prelevement_demande
   date_traite         datetime,
   fk_prelevement_bons integer,
   fk_user_demande     integer NOT NULL,
--- BACKPORT PR 30899
+-- BACKPORT PR 30848
   fk_societe_rib integer DEFAULT NULL,
 
   code_banque         varchar(128),
