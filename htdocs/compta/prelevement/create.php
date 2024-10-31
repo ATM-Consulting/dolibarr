@@ -332,7 +332,9 @@ print '<br>';
  */
 
 $sql = "SELECT f.ref, f.rowid, f.total_ttc, s.nom as name, s.rowid as socid,";
-$sql .= " pfd.rowid as request_row_id, pfd.date_demande, pfd.amount";
+/**BACKPORT PR 30899**/
+$sql .= " pfd.rowid as request_row_id, pfd.date_demande, pfd.amount, pfd.fk_societe_rib as soc_rib_id";
+/**BACKPORT PR 30899**/
 if ($type == 'bank-transfer') {
 	$sql .= " FROM ".MAIN_DB_PREFIX."facture_fourn as f,";
 } else {
@@ -428,7 +430,9 @@ if ($resql) {
 			$obj = $db->fetch_object($resql);
 
 			$bac = new CompanyBankAccount($db);
-			$bac->fetch(0, $obj->socid);
+			/**BACKPORT PR 30899**/
+			$bac->fetch($obj->soc_rib_id ?? 0, $obj->socid);
+			/**BACKPORT PR 30899**/
 
 			print '<tr class="oddeven">';
 
@@ -463,18 +467,24 @@ if ($resql) {
 
 			// RUM
 			print '<td>';
-			$rumtoshow = $thirdpartystatic->display_rib('rum');
-			if ($rumtoshow) {
-				print $rumtoshow;
-				$format = $thirdpartystatic->display_rib('format');
-				if ($type != 'bank-transfer') {
-					if ($format) {
-						print ' ('.$format.')';
-					}
-				}
+			/**BACKPORT PR 30899**/
+			if (!empty($bac->rum)) {
+				print $bac->rum;
 			} else {
-				print img_warning($langs->trans("NoBankAccountDefined"));
+				$rumtoshow = $thirdpartystatic->display_rib('rum');
+				if ($rumtoshow) {
+					print $rumtoshow;
+					$format = $thirdpartystatic->display_rib('format');
+					if ($type != 'bank-transfer') {
+						if ($format) {
+							print ' (' . $format . ')';
+						}
+					}
+				} else {
+					print img_warning($langs->trans("NoBankAccountDefined"));
+				}
 			}
+			/**BACKPORT PR 30899**/
 			print '</td>';
 			// Amount
 			print '<td class="right amount">';

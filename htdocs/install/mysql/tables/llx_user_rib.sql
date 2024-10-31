@@ -36,5 +36,7 @@ create table llx_user_rib
   owner_address  varchar(255),
   state_id       integer,
   fk_country     integer,
-  currency_code  varchar(3)
+  currency_code  varchar(3),
+-- BACKPORT PR 30899
+  default_rib smallint DEFAULT 0 NOT NULL
 )ENGINE=innodb;
