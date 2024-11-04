@@ -1,3 +1,4 @@
+- FIX create/edit ticket forms
 - Backport from 20.0 :
   - Added hook into getElementProperties to handle $element_properties array
 - Backport from 17.0_atm : 
