@@ -879,6 +879,29 @@ class BonPrelevement extends CommonObject
 
 		$error = 0;
 
+		/**BACKPORT PR 30899**/
+		$societeRibID = '';
+		$sqlTable = $type != 'bank-transfer' ? "facture" : "facture_fourn";
+		// Check if there is an iban associated to bank transfer or if we take the default
+		$sql = "SELECT fk_societe_rib";
+		$sql .= " FROM " . $this->db->prefix() . "prelevement_demande as pd";
+		$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->escape($sqlTable) . " as f ON f.rowid = pd.fk_".$this->db->escape($sqlTable);
+		$sql .= " WHERE f.entity IN (" . $this->db->escape('invoice') . ')';
+		/**BACKPORT PR 30899**/
+
+		$resql = $this->db->query($sql);
+
+		if (!$resql) {
+			$this->error = $this->db->lasterror();
+			dol_syslog(__METHOD__ . " Read fk_societe_rib error " . $this->db->lasterror(), LOG_ERR);
+			return -1;
+		}
+		if ($resql->num_rows) {
+			$obj = $this->db->fetch_object($resql);
+			$societeRibID = $obj->fk_societe_rib;
+			$this->db->free($resql);
+		}
+
 		$datetimeprev = dol_now('gmt');
 		// Choice the date of the execution direct debit
 		if (!empty($executiondate)) {
@@ -908,9 +931,17 @@ class BonPrelevement extends CommonObject
 			} else {
 				$sql .= " FROM " . MAIN_DB_PREFIX . "facture_fourn as f";
 			}
-			$sql .= ", " . MAIN_DB_PREFIX . "societe as s";
-			$sql .= ", " . MAIN_DB_PREFIX . "prelevement_demande as pfd";
-			$sql .= " WHERE f.entity IN (" . getEntity('invoice') . ')';
+			$sql .= ", ".MAIN_DB_PREFIX."societe as s";
+			$sql .= ", ".MAIN_DB_PREFIX."prelevement_demande as pfd";
+			/**BACKPORT PR 30899**/
+			$sql .= " LEFT JOIN " . $this->db->prefix() . "societe_rib as sr ON s.rowid = sr.".$this->db->escape('fk_soc');
+			if (!empty($societeRibID)) {
+				$sql .= " AND sr.rowid = " . intval($societeRibID);
+			} else {
+				$sql .= " AND sr.default_rib = 1";
+			}
+			/**BACKPORT PR 30899**/
+			$sql .= " WHERE f.entity IN (".getEntity('invoice').')';
 			if ($type != 'bank-transfer') {
 				$sql .= " AND f.rowid = pfd.fk_facture";
 			} else {
@@ -1189,7 +1220,9 @@ class BonPrelevement extends CommonObject
 
 					// Generation of direct debit or credit transfer file $this->filename (May be a SEPA file for european countries)
 					// This also set the property $this->total with amount that is included into file
-					$result = $this->generate($format, $executiondate, $type);
+					/**BACKPORT 30899**/
+					$result = $this->generate($format, $executiondate, $type, $fk_bank_account, (string) $societeRibID);
+					/**BACKPORT 30899**/
 					if ($result < 0) {
 						//var_dump($this->error);
 						//var_dump($this->invoice_in_error);
@@ -1498,9 +1531,10 @@ class BonPrelevement extends CommonObject
 	 * @param   int     $executiondate      Timestamp date to execute transfer
 	 * @param   string  $type               'direct-debit' or 'bank-transfer'
 	 * @param   int     $fk_bank_account    Bank account ID the receipt is generated for. Will use the ID into the setup of module Direct Debit or Credit Transfer if 0.
+	 * @param   string  $societeRibID       If defined, will use this ID to get the RIB. Otherwise, the default RIB will be taken.
 	 * @return  int                         >=0 if OK, <0 if KO
 	 */
-	public function generate($format = 'ALL', $executiondate = 0, $type = 'direct-debit', $fk_bank_account = 0)
+	public function generate($format = 'ALL', $executiondate = 0, $type = 'direct-debit', $fk_bank_account = 0, string $societeRibID = '')
 	{
 		global $conf, $langs, $mysoc;
 
@@ -1571,7 +1605,13 @@ class BonPrelevement extends CommonObject
 				$sql .= " AND f.fk_soc = soc.rowid";
 				$sql .= " AND soc.fk_pays = c.rowid";
 				$sql .= " AND rib.fk_soc = f.fk_soc";
-				$sql .= " AND rib.default_rib = 1";
+				/**BACKPORT PR 30899**/
+				if (!empty($societeRibID)) {
+					$sql .= " AND rib.rowid = " . intval($societeRibID);
+				} else {
+					$sql .= " AND rib.default_rib = 1";
+				}
+				/**BACKPORT PR 30899**/
 				$sql .= " AND rib.type = 'ban'";
 
 				// Define $fileDebiteurSection. One section DrctDbtTxInf per invoice.
@@ -1689,7 +1729,13 @@ class BonPrelevement extends CommonObject
 				$sql .= " AND f.fk_soc = soc.rowid";
 				$sql .= " AND soc.fk_pays = c.rowid";
 				$sql .= " AND rib.fk_soc = f.fk_soc";
-				$sql .= " AND rib.default_rib = 1";
+				/**BACKPORT PR 30899**/
+				if (!empty($societeRibID)) {
+					$sql .= " AND rib.rowid = " . intval($societeRibID);
+				} else {
+					$sql .= " AND rib.default_rib = 1";
+				}
+				/**BACKPORT PR 30899**/
 				$sql .= " AND rib.type = 'ban'";
 
 				// Define $fileCrediteurSection. One section DrctDbtTxInf per invoice.

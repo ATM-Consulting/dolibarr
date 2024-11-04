@@ -424,3 +424,7 @@ INSERT INTO llx_c_hrm_public_holiday (code, entity, fk_country, dayrule, year, m
 
 UPDATE llx_menu SET url = '/fourn/paiement/list.php?mainmenu=billing&leftmenu=suppliers_bills_payment' WHERE leftmenu = 'suppliers_bills_payment';
 
+-- BACKPORT PR 30850
+ALTER TABLE llx_user_rib ADD COLUMN default_rib smallint NOT NULL DEFAULT 0;
+-- BACKPORT PR 30848
+ALTER TABLE llx_prelevement_demande ADD COLUMN fk_societe_rib integer DEFAULT NULL after fk_user_demande;
