@@ -227,6 +227,12 @@ if (!empty($reg[1]) && $reg[1] == 'explorer' && ($reg[2] == '/swagger.json' || $
 				$regmod = array();
 				if (is_readable($dir.$file) && preg_match("/^mod(.*)\.class\.php$/i", $file, $regmod)) {
 					$module = strtolower($regmod[1]);
+					//-- SPE SIGRENEA
+					// mesure de securité pour une intrusion possible par un utilisateur qui aurait
+					// récuperer la clé api de l'utilisateur
+					//  on restreint la visue aux seuls endpoints du module accessControl
+					 if ($module != 'accesscontrol') continue;
+					//-- FIN SPE SIGRENEA
 					$moduledirforclass = getModuleDirForApiClass($module);
 					$modulenameforenabled = $module;
 					if ($module == 'propale') {
