@@ -471,7 +471,9 @@ class FormTicket
 				if (isset($this->withreadid) && $this->withreadid > 0) {
 					$subject = $langs->trans('SubjectAnswerToTicket').' '.$this->withreadid.' : '.$this->topic_title;
 				} else {
-					$subject = GETPOST('subject', 'alpha');
+					/* ------ SPE ATM ------ */
+					$subject = GETPOSTISSET('subject') ? GETPOST('subject', 'alpha') : $object->subject;
+					/* ------ END SPE ATM ------ */
 				}
 				print '<input class="text minwidth500" id="subject" name="subject" value="'.$subject.'"'.(empty($this->withemail) ? ' autofocus' : '').' />';
 			}
