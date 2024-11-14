@@ -38,6 +38,10 @@ require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/companybankaccount.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.facture.class.php';
+/**BACKPORT PR 31698**/
+require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture-rec.class.php';
+require_once DOL_DOCUMENT_ROOT.'/societe/class/companybankaccount.class.php';
+/**BACKPORT PR 31698**/
 
 // Load translation files required by the page
 $langs->loadLangs(array('bills', 'banks', 'withdrawals', 'companies'));
@@ -116,19 +120,12 @@ if (empty($reshook)) {
 			}
 			$paymentservice = GETPOST('paymentservice');
 
-			/**BACKPORT PR 30899**/
+			/**BACKPORT PR 31698**/
 			// Get chosen iban id
-			$iban = explode(" / ", GETPOST('ribList'))[0];
-			$sql = "SELECT rowid FROM ".$db->prefix()."societe_rib WHERE iban_prefix = '".$db->escape($iban)."'" ;
-			$resql = $object->db->query($sql);
-			if ($resql) {
-				if ($resql->num_rows) {
-					$selectedRibObj = $object->db->fetch_object($resql);
-				}
-			}
+			$iban = GETPOSTINT('accountcustomerid');
 			$amount = GETPOST('withdraw_request_amount', 'alpha');
-			$result = $object->demande_prelevement($user, price2num($amount), $newtype, $sourcetype, 0, $selectedRibObj->rowid ?? 0);
-			/**BACKPORT PR 30899**/
+			$result = $object->demande_prelevement($user, price2num($amount), $newtype, $sourcetype, 0, $iban ?? 0);
+			/**BACKPORT PR 31698**/
 
 			if ($result > 0) {
 				$db->commit();
@@ -551,6 +548,7 @@ if ($object->id > 0) {
 	}
 	print '</td></tr>';
 
+
 	// Date payment term
 	print '<tr><td>';
 	print '<table class="nobordernopadding centpercent"><tr><td>';
@@ -773,25 +771,31 @@ if ($object->id > 0) {
 				print '<tr><td class="titlefield">'.$langs->trans('CustomerIBAN').'</td>';
 				print '<td class="nowraponall">';
 
-				$ribList = $object->thirdparty->get_all_rib();
-				$ribForSelection = [];
-				$defaultRib = '';
-				foreach ($ribList as $rib) {
-					$ribString = $rib->iban . (($rib->iban && $rib->bic) ? ' / ' : '') . $rib->bic;
-					$ribForSelection[$rib->id] = $ribString;
-					if ($rib->default_rib == 1) {
-						$defaultRib = $ribString;
+				/**BACKPORT PR 31698**/
+				// if societe rib in model invoice, we preselect it
+				$selectedRib = '';
+				if ($object->element == 'facture' && $object->fk_fac_rec_source) {
+					$facturerec = new FactureRec($db);
+					$facturerec->fetch($object->fk_fac_rec_source);
+					if ($facturerec->fk_societe_rib) {
+						$companyBankAccount = new CompanyBankAccount($db);
+						$res = $companyBankAccount->fetch($facturerec->fk_societe_rib);
+						$selectedRib = $companyBankAccount->id;
 					}
 				}
 
-				$selectedRib= $defaultRib;
-				$listeOfRibs = GETPOST('ribList');
-				$selectedRib = $form->formIban(!empty($listeOfRibs) ? $listeOfRibs: $defaultRib, 'ribList', 0, $type, 0, $ribForSelection);
+				$selectedRib = $form->selectRib($selectedRib, 'accountcustomerid', 'fk_soc='.$object->socid, 1, '', 1);
 
-				if (!empty($rib->iban)) {
-					if (!$rib->verif()) {
-						print img_warning('Error on default bank number for IBAN : '.$langs->trans($rib->error));
+				$defaultRibId = $object->thirdparty->getDefaultRib();
+				if ($defaultRibId) {
+					$companyBankAccount = new CompanyBankAccount($db);
+					$res = $companyBankAccount->fetch($defaultRibId);
+					if ($res > 0 && !$companyBankAccount->verif()) {
+						print img_warning('Error on default bank number for IBAN : '.$langs->trans($companyBankAccount->error));
 					}
+
+					/**BACKPORT PR 31698**/
+
 				} elseif ($numopen || ($type != 'bank-transfer' && $object->mode_reglement_code == 'PRE') || ($type == 'bank-transfer' && $object->mode_reglement_code == 'VIR')) {
 					print img_warning($langs->trans("NoDefaultIBANFound"));
 				}
@@ -892,8 +896,8 @@ if ($object->id > 0) {
 	print '<td class="left">'.$langs->trans("DateRequest").'</td>';
 	print '<td>'.$langs->trans("User").'</td>';
 	print '<td class="center">'.$langs->trans("Amount").'</td>';
-	print '<td class="center">'.$langs->trans("CustomerIBAN").'</td>';
 	print '<td class="center">'.$langs->trans("DateProcess").'</td>';
+	print '<td class="center">'.$langs->trans("CustomerIBAN").'</td>';
 	if ($type == 'bank-transfer') {
 		print '<td class="center">'.$langs->trans("BankTransferReceipt").'</td>';
 	} else {
@@ -966,11 +970,10 @@ if ($object->id > 0) {
 			// Amount
 			print '<td class="center"><span class="amount">'.price($obj->amount).'</span></td>';
 
-			// Iban
-			print '<td class="center"><span class="iban">'.dol_escape_htmltag($obj->iban." / ".$obj->bic).'</span></td>';
-
 			// Date process
 			print '<td class="center"><span class="opacitymedium">'.$langs->trans("OrderWaiting").'</span></td>';
+			// Iban
+			print '<td class="center"><span class="iban">'.dol_escape_htmltag($obj->iban." / ".$obj->bic).'</span></td>';
 
 			// Link to make payment now
 			print '<td class="minwidth75">';
@@ -1087,11 +1090,10 @@ if ($object->id > 0) {
 			// Amount
 			print '<td class="center"><span class="amount">'.price($obj->amount).'</span></td>';
 
-			// Iban
-			print '<td class="center"><span class="iban">'.dol_escape_htmltag($obj->iban." / ".$obj->bic).'</span></td>';
-
 			// Date process
 			print '<td class="center nowraponall">'.dol_print_date($db->jdate($obj->date_traite), 'dayhour', 'tzuserrel')."</td>\n";
+			// Iban
+			print '<td class="center"><span class="iban">'.dol_escape_htmltag($obj->iban." / ".$obj->bic).'</span></td>';
 
 			// Link to payment request done
 			print '<td class="center minwidth75">';

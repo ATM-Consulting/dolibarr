@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport 21.0 PR #31698 : management rib select in fac rec card - *2024-11-14*
 - Backport  17.0 PR #30899 : multiselect rib - *2024-10-30*
 - Backport  17.0 PR #31623 : Suspend facture rec when nb gen max is reached - *2024-10-29*
 - Backport  21.0 PR #31463 : Tab to see generated invoices on recurring 
