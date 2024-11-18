@@ -205,7 +205,7 @@ $sql .= ' WHERE ndf.entity IN ('.getEntity("expensereport").')';
 
 // RESTRICT RIGHTS
 if (!$user->hasRight('expensereport', 'readall') && !$user->hasRight('expensereport', 'lire_tous')
-	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance'))) {
+	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall'))) {
 	$sql .= " AND ndf.fk_user_author IN (".$db->sanitize(implode(',', $childids)).")\n";
 }
 

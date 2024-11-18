@@ -341,7 +341,7 @@ if ($search_status != '' && $search_status >= 0) {
 }
 // RESTRICT RIGHTS
 if (!$user->hasRight('expensereport', 'readall') && !$user->hasRight('expensereport', 'lire_tous')
-	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance'))) {
+	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall'))) {
 	$sql .= " AND d.fk_user_author IN (".$db->sanitize(implode(',', $childids)).")\n";
 }
 // Add where from extra fields
@@ -516,7 +516,7 @@ if ($id > 0) {		// For user tab
 		$childids = $user->getAllChildIds(1);
 
 		$canedit = ((in_array($user_id, $childids) && $user->hasRight('expensereport', 'creer'))
-			|| ($conf->global->MAIN_USE_ADVANCED_PERMS && $user->hasRight('expensereport', 'writeall_advance')));
+			|| ($conf->global->MAIN_USE_ADVANCED_PERMS && $user->hasRight('expensereport', 'writeall')));
 
 		// Buttons for actions
 		if ($canedit) {

@@ -91,7 +91,7 @@ $sql .= " FROM ".MAIN_DB_PREFIX."expensereport as d, ".MAIN_DB_PREFIX."expensere
 $sql .= " WHERE de.fk_expensereport = d.rowid AND d.entity IN (".getEntity('expensereport').") AND de.fk_c_type_fees = tf.id";
 // RESTRICT RIGHTS
 if (!$user->hasRight('expensereport', 'readall') && !$user->hasRight('expensereport', 'lire_tous')
-	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance'))) {
+	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall'))) {
 	$childids = $user->getAllChildIds();
 	$childids[] = $user->id;
 	$sql .= " AND d.fk_user_author IN (".$db->sanitize(implode(',', $childids)).")\n";
@@ -200,7 +200,7 @@ $sql .= " FROM ".MAIN_DB_PREFIX."expensereport as d, ".MAIN_DB_PREFIX."user as u
 $sql .= " WHERE u.rowid = d.fk_user_author";
 // RESTRICT RIGHTS
 if (!$user->hasRight('expensereport', 'readall') && !$user->hasRight('expensereport', 'lire_tous')
-	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance'))) {
+	&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall'))) {
 	$childids = $user->getAllChildIds();
 	$childids[] = $user->id;
 	$sql .= " AND d.fk_user_author IN (".$db->sanitize(implode(',', $childids)).")\n";

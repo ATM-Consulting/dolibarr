@@ -160,7 +160,7 @@ class modExpenseReport extends DolibarrModules
 		$this->rights[$r][1] = 'Create expense reports for everybody';
 		$this->rights[$r][2] = 'w';
 		$this->rights[$r][3] = 0;
-		$this->rights[$r][4] = 'writeall_advance';
+		$this->rights[$r][4] = 'writeall';
 		$r++;
 
 		$this->rights[$r][0] = 779;

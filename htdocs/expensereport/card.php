@@ -268,12 +268,12 @@ if (empty($reshook)) {
 
 		// Check that expense report is for a user inside the hierarchy, or that advanced permission for all is set
 		if ((!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') && !$user->hasRight('expensereport', 'creer'))
-			|| (getDolGlobalString('MAIN_USE_ADVANCED_PERMS') && !$user->hasRight('expensereport', 'creer') && !$user->hasRight('expensereport', 'writeall_advance'))) {
+			|| (getDolGlobalString('MAIN_USE_ADVANCED_PERMS') && !$user->hasRight('expensereport', 'creer') && !$user->hasRight('expensereport', 'writeall'))) {
 			$error++;
 			setEventMessages($langs->trans("NotEnoughPermissions"), null, 'errors');
 		}
 		if (!$error) {
-			if (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance')) {
+			if (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall')) {
 				if (!in_array($object->fk_user_author, $childids)) {
 					$error++;
 					setEventMessages($langs->trans("UserNotInHierachy"), null, 'errors');
@@ -1463,7 +1463,7 @@ if ($action == 'create') {
 		$defaultselectuser = GETPOSTINT('fk_user_author');
 	}
 	$include_users = 'hierarchyme';
-	if (getDolGlobalString('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('expensereport', 'writeall_advance')) {
+	if (getDolGlobalString('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('expensereport', 'writeall')) {
 		$include_users = array();
 	}
 	$s = $form->select_dolusers($defaultselectuser, "fk_user_author", 0, "", 0, $include_users, '', '0,'.$conf->entity);
@@ -1549,7 +1549,7 @@ if ($action == 'create') {
 	if ($result > 0) {
 		if (!in_array($object->fk_user_author, $childids)) {
 			if (!$user->hasRight('expensereport', 'readall') && !$user->hasRight('expensereport', 'lire_tous')
-				&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall_advance'))) {
+				&& (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS') || !$user->hasRight('expensereport', 'writeall'))) {
 				print load_fiche_titre($langs->trans('TripCard'), '', 'trip');
 
 				print '<div class="tabBar">';
@@ -2757,7 +2757,7 @@ if ($action != 'create' && $action != 'edit' && $action != 'editline') {
 	* 	Afficher : "Enregistrer" / "Modifier" / "Supprimer"
 	*/
 	if ($user->hasRight('expensereport', 'creer') && $object->status == ExpenseReport::STATUS_DRAFT) {
-		if (in_array($object->fk_user_author, $childids) || $user->hasRight('expensereport', 'writeall_advance')) {
+		if (in_array($object->fk_user_author, $childids) || $user->hasRight('expensereport', 'writeall')) {
 			// Modify
 			print '<div class="inline-block divButAction"><a class="butAction" href="'.$_SERVER["PHP_SELF"].'?action=edit&token='.newToken().'&id='.$object->id.'">'.$langs->trans('Modify').'</a></div>';
 
