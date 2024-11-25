@@ -350,22 +350,18 @@ class Contracts extends DolibarrApi
 		$request_data->desc = sanitizeVal($request_data->desc, 'restricthtml');
 		$request_data->price_base_type = sanitizeVal($request_data->price_base_type);
 
-		$this->contractLine->description = $request_data->desc;
-		$this->contractLine->subprice = $request_data->subprice;
-		$this->contractLine->qty = $request_data->qty;
-		$this->contractLine->remise_percent = $request_data->remise_percent;
-		$this->contractLine->date_start = $request_data->date_start;
-		$this->contractLine->date_end = $request_data->date_end;
-		$this->contractLine->tva_tx = $request_data->tva_tx ?? 0;
-		$this->contractLine->localtax1_tx = $request_data->localtax1_tx;
-		$this->contractLine->localtax2_tx = $request_data->localtax2_tx;
-		$this->contractLine->date_start_real = $request_data->date_start_real;
-		$this->contractLine->date_end_real = $request_data->date_end_real;
-		$this->contractLine->info_bits = $request_data->info_bits;
-		$this->contractLine->fk_fournprice = $request_data->fk_fourn_price;
-		$this->contractLine->pa_ht = $request_data->pa_ht;
-		$this->contractLine->array_options = $request_data->array_options ?? $this->contractLine->array_options;
-		$this->contractLine->fk_unit = $request_data->fk_unit;
+		foreach ($request_data as $field => $value) {
+			if ($field == 'id') {
+				//nothing
+			}
+			elseif($field == 'array_options'){
+				foreach ($value as $extrafieldKey => $extrafieldValue) {
+					$this->contractLine->array_options[$extrafieldKey] = $extrafieldValue;
+				}
+			} else {
+				$this->contractLine->$field = $value;
+			}
+		}
 
 		$updateRes = $this->contractLine->update(DolibarrApiAccess::$user);
 
