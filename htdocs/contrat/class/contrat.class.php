@@ -3245,7 +3245,7 @@ class ContratLigne extends CommonObjectLine
 		$this->total_localtax1 = trim($this->total_localtax1);
 		$this->total_localtax2 = trim($this->total_localtax2);
 		$this->total_ttc = trim($this->total_ttc);
-		$this->info_bits = trim($this->info_bits);
+		$this->info_bits = (int) $this->info_bits;
 		$this->fk_user_author = (int) $this->fk_user_author;
 		$this->fk_user_ouverture = (int) $this->fk_user_ouverture;
 		$this->fk_user_cloture = (int) $this->fk_user_cloture;
@@ -3349,7 +3349,7 @@ class ContratLigne extends CommonObjectLine
 		$sql .= " total_ttc = ".$this->total_ttc.",";
 		$sql .= " fk_product_fournisseur_price = ".(!empty($this->fk_fournprice) ? $this->fk_fournprice : "NULL").",";
 		$sql .= " buy_price_ht = '".price2num($this->pa_ht)."',";
-		$sql .= " info_bits = '".$this->db->escape($this->info_bits)."',";
+		$sql .= " info_bits = '".((int) $this->info_bits)."',";
 		$sql .= " fk_user_author = ".($this->fk_user_author >= 0 ? $this->fk_user_author : "NULL").",";
 		$sql .= " fk_user_ouverture = ".($this->fk_user_ouverture > 0 ? $this->fk_user_ouverture : "NULL").",";
 		$sql .= " fk_user_cloture = ".($this->fk_user_cloture > 0 ? $this->fk_user_cloture : "NULL").",";
