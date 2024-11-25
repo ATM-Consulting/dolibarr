@@ -445,7 +445,7 @@ if (empty($reshook)) {
 					for ($i = 0; $i < $num; $i++) {
 						$desc = ($lines[$i]->desc ? $lines[$i]->desc : '');
 						// If we build one invoice for several orders, we must put the ref of order on the invoice line
-						if (!empty($createbills_onebythird)) {
+						if (!empty($createbills_onebythird) && !getDolGlobalString('INVOICE_DONT_KEEP_DETAIL_ORDER')) {
 							$desc = dol_concatdesc($desc, $langs->trans("Order").' '.$cmd->ref.' - '.dol_print_date($cmd->date, 'day'));
 						}
 
