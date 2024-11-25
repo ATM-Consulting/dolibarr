@@ -350,15 +350,17 @@ class Contracts extends DolibarrApi
 		$request_data->desc = sanitizeVal($request_data->desc, 'restricthtml');
 		$request_data->price_base_type = sanitizeVal($request_data->price_base_type);
 
-		foreach ($request_data->array_options as $key => $value) {
-			$this->contractLine->array_options[$key] = $value;
-		}
-
 		foreach ($request_data as $field => $value) {
-			if ($field == 'id' || $field == 'array_options') {
-				continue;
+			if ($field == 'id') {
+				//nothing
 			}
-			$this->contractLine->$field = $value;
+			elseif($field == 'array_options'){
+				foreach ($value as $extrafieldKey => $extrafieldValue) {
+					$this->contractLine->array_options[$extrafieldKey] = $extrafieldValue;
+				}
+			} else {
+				$this->contractLine->$field = $value;
+			}
 		}
 
 		$updateRes = $this->contractLine->update(DolibarrApiAccess::$user);
