@@ -847,9 +847,9 @@ class Position extends CommonObject
 	 */
 	public function showInputField($val, $key, $value, $moreparam = '', $keysuffix = '', $keyprefix = '', $morecss = 0, $nonewbutton = 0)
 	{
-		global $langs, $db;
+		global $langs, $db, $form;
 
-		$form = new Form($db);
+		$form ??= new Form($db);
 
 		if ($key == 'fk_user') {
 			$vacantId = $keyprefix.$key.'vacant'.$keysuffix;
