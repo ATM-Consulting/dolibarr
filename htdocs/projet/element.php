@@ -1288,7 +1288,7 @@ foreach ($listofreferent as $key => $value) {
 				print "</td>\n";
 
 				// Ref
-				print '<td class="left nowraponall tdoverflowmax250">';
+				print '<td class="left nowraponall">';
 				if ($tablename == 'expensereport_det') {
 					print $expensereport->getNomUrl(1);
 				} else {
