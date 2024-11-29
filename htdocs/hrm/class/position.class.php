@@ -849,7 +849,9 @@ class Position extends CommonObject
 	{
 		global $langs, $form;
 
-		$form ??= new Form($this->db);
+		if (empty($form)) {
+			$form = new Form($this->db);
+		}
 
 		if ($key == 'fk_user') {
 			$vacantId = $keyprefix.$key.'vacant'.$keysuffix;
