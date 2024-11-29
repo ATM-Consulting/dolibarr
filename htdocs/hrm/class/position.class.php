@@ -849,7 +849,7 @@ class Position extends CommonObject
 	{
 		global $langs, $form;
 
-		if (empty($form)) {
+		if (!($form instanceof Form)) {
 			$form = new Form($this->db);
 		}
 
