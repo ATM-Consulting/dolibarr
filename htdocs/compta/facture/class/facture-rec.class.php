@@ -498,9 +498,9 @@ class FactureRec extends CommonInvoice
 		$sql .= " localtax2 = ".((float) $this->total_localtax2).",";
 		$sql .= " total_ht = ".((float) $this->total_ht).",";
 		$sql .= " total_ttc = ".((float) $this->total_ttc).",";
-		$sql .= " remise_percent = ".((float) $this->remise_percent);
+		$sql .= " remise_percent = ".((float) $this->remise_percent).",";
 		/**BACKPORT PR 31698**/
-		$sql .= " fk_societe_rib = ".((int) $this->fk_societe_rib);
+		$sql .= " fk_societe_rib = ".(!empty($this->fk_societe_rib) ? ((int) $this->fk_societe_rib) : 'NULL');
 		/**BACKPORT PR 31698**/
 		// TODO Add missing fields
 		$sql .= " WHERE rowid = ".((int) $this->id);
