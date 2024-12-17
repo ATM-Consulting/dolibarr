@@ -343,7 +343,7 @@ class FactureRec extends CommonInvoice
 			$sql .= ", ".((float) $facsrc->multicurrency_tx);
 			$sql .= ", ".((int) $this->suspended);
 			/**BACKPORT PR 31698**/
-			$sql .= ", ".($this->fk_societe_rib);
+			$sql .= ", ".(!empty($this->fk_societe_rib) ? ((float) $this->fk_societe_rib) : 'NULL');
 			/**BACKPORT PR 31698**/
 			$sql .= ")";
 			if ($this->db->query($sql)) {
