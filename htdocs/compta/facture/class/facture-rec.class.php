@@ -505,11 +505,6 @@ class FactureRec extends CommonInvoice
 		// TODO Add missing fields
 		$sql .= " WHERE rowid = ".((int) $this->id);
 
-		echo "<pre>";
-		print $sql;
-		echo "</pre>";
-		exit;
-
 		$this->db->begin();
 
 		dol_syslog(get_class($this)."::update", LOG_DEBUG);
