@@ -186,6 +186,7 @@ class Evaluation extends CommonObject
 		}
 
 		if (!$user->hasRight('hrm', 'evaluation', 'readall')) {
+			// BACKPORT 20.0
 			$this->fields['fk_user']['type'] .= '(:t.rowid:in:'.implode(",", $user->getAllChildIds(1));
 		}
 
