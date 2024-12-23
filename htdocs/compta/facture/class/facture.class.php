@@ -2453,9 +2453,7 @@ class Facture extends CommonInvoice
 		if (empty($this->type)) {
 			$this->type = self::TYPE_STANDARD;
 		}
-		if (isset($this->subtype)) {
-			$this->subtype = trim($this->subtype);
-		}
+		// BACKPORT STD #32422 : Removed trim of subtype
 		if (isset($this->ref)) {
 			$this->ref = trim($this->ref);
 		}
