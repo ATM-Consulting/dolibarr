@@ -1,3 +1,4 @@
+- FIX/SUPPORT/DA025922/SetSpecialCharacter because the character '<' was not set into the whitelist  of special character which causes an issue when you try to fetch this type of extrafields - *30/12/2024*
 - FIX/SUPPORT/DA025737/HIDDEN_DROPDOWN - *19/12/2024*
 - FIX/SUPPORT/DA025871/FiltreEvalListe - **16/12/2024**
 - FIX/SUPPORT/DA025787/HRM_closed_job_position_on_application - *04/12/2024*
