@@ -214,6 +214,9 @@ if (empty($reshook)) {
 			/**BACKPORT PR 31698**/
 			$object->fk_societe_rib = GETPOSTINT('accountcustomerid');
 			/**BACKPORT PR 31698**/
+			/**BACKPORT PR 32129**/
+			$object->rule_for_lines_dates = GETPOST('rule_for_lines_dates', 'alpha');
+			/**BACKPORT PR 32129**/
 
 			$object->frequency = $frequency;
 			$object->unit_frequency = GETPOST('unit_frequency', 'alpha');
@@ -391,6 +394,12 @@ if (empty($reshook)) {
 	} elseif ($action == 'setmulticurrencyrate' && $usercancreate) {
 		// Multicurrency rate
 		$result = $object->setMulticurrencyRate(price2num(GETPOST('multicurrency_tx')), GETPOST('calculation_mode', 'int'));
+	} elseif ($action == 'setruleforlinesdates' && $usercancreate) {
+		/** BACKPORT PR 32129 */
+		$object->context['actionmsg'] = $langs->trans("FieldXModified", $langs->transnoentitiesnoconv("RuleForLinesDates"));
+		$ruleForLinesDates = GETPOSTISSET('rule_for_lines_dates') ? GETPOST('rule_for_lines_dates', 'alpha') : 'prepaid';
+		$object->setValueFrom('rule_for_lines_dates', $ruleForLinesDates);
+		/** BACKPORT PR 32129 */
 	}
 
 	// Delete line
@@ -1112,6 +1121,13 @@ if ($action == 'create') {
 			print "</td></tr>";
 		}
 
+		// Rule for lines dates
+		/** BACKPORT PR 32129 */
+		print "<tr><td>".$langs->trans("RuleForLinesDates")."</td><td>";
+		print $form->getSelectRuleForLinesDates(GETPOSTISSET('rule_for_lines_dates') ? GETPOST('rule_for_lines_dates', 'alpha') : $object->rule_for_lines_dates);
+		print "</td></tr>";
+		/** BACKPORT PR 32129 */
+
 		// Project
 		if (isModEnabled('project') && is_object($object->thirdparty) && $object->thirdparty->id > 0) {
 			$projectid = GETPOST('projectid') ?GETPOST('projectid') : $object->fk_project;
@@ -1518,6 +1534,25 @@ if ($action == 'create') {
 		}
 		print "</td>";
 		print '</tr>';
+
+		// Billing Term
+		/** BACKPORT 32129 */
+		print '<tr><td>';
+		print '<table class="nobordernopadding centpercent"><tr><td>';
+		print $langs->trans('RuleForLinesDates');
+		print '</td>';
+		if ($action != 'editruleforlinesdates' && $user->hasRight('facture', 'creer')) {
+			print '<td class="right"><a class="editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editruleforlinesdates&token='.newToken().'&facid='.$object->id.'">'.img_edit($langs->trans('SetRuleForLinesDates'), 1).'</a></td>';
+		}
+		print '</tr></table>';
+		print '</td><td>';
+		if ($action == 'editruleforlinesdates') {
+			$form->form_rule_for_lines_dates($_SERVER['PHP_SELF'].'?facid='.$object->id, $object->rule_for_lines_dates, 'rule_for_lines_dates');
+		} else {
+			$form->form_rule_for_lines_dates($_SERVER['PHP_SELF'].'?facid='.$object->id, $object->rule_for_lines_dates, 'none');
+		}
+		print '</td></tr>';
+		/** BACKPORT 32129 */
 
 		// Model pdf
 		print '<tr><td class="nowrap">';

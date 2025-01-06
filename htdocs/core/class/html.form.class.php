@@ -77,6 +77,7 @@ class Form
 	public $cache_demand_reason = array();
 	public $cache_types_fees = array();
 	public $cache_vatrates = array();
+	public $cache_rule_for_lines_dates = array();
 
 
 	/**
@@ -4226,6 +4227,24 @@ class Form
 		return $out;
 	}
 
+	/**
+	 * Loads into cache rule for lines dates
+	 *
+	 * @return int 1=OK ; -1=Empty
+	 */
+	public function load_cache_rule_for_lines_dates()
+	{
+		$factureRec = new FactureRec($this->db);
+
+		$this->cache_rule_for_lines_dates = $factureRec->fields['rule_for_lines_dates']['arrayofkeyval'];
+
+		if (empty($this->cache_rule_for_lines_dates)) {
+			return -1;
+		}
+
+		return 1;
+	}
+
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
@@ -4638,6 +4657,47 @@ class Form
 		}
 		return $opt;
 	}
+
+	/** BACKPORT PR 32129 */
+	/**
+	 * Returns select with rule for lines dates
+	 *
+	 * @param $selected Selected value
+	 * @param $htmlname HTML element name
+	 * @param $addempty Add empty option ?
+	 * @return string HTML string with all datas
+	 */
+	public function getSelectRuleForLinesDates($selected = '', $htmlname = 'rule_for_lines_dates', $addempty = 0)
+	{
+		global $langs;
+
+		$out = '';
+
+		$this->load_cache_rule_for_lines_dates();
+
+		$out .= '<select id="' . $htmlname . '" class="flat selectbillingterm" name="' . $htmlname . '">';
+		if ($addempty) {
+			$out .= '<option value="-1">&nbsp;</option>';
+		}
+
+
+		foreach ($this->cache_rule_for_lines_dates as $rule_for_lines_dates_key => $rule_for_lines_dates_name) {
+			if ($selected == $rule_for_lines_dates_key) {
+				$out .= '<option value="' . $rule_for_lines_dates_key . '" selected>';
+			} else {
+				$out .= '<option value="' . $rule_for_lines_dates_key . '">';
+			}
+
+			$out .= $langs->trans($rule_for_lines_dates_name);
+			$out .= '</option>';
+		}
+		$out .= '</select>';
+
+		$out .= ajax_combobox($htmlname);
+
+		return $out;
+	}
+	/** BACKPORT PR 32129 */
 
 	/**
 	 *      Creates HTML units selector (code => label)
@@ -6201,6 +6261,50 @@ class Form
 		// Make select dynamic
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/ajax.lib.php';
 		$out .= ajax_combobox($htmlname);
+
+		return $out;
+	}
+
+	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
+	/**
+	 * Form select for rule for lines dates
+	 *
+	 * @param $page Page
+	 * @param string $selected Id condition pre-selectionne
+	 * @param string $htmlname Name of select html field
+	 * @param int $addempty Add empty entry
+	 * @param int $nooutput No print is done. String is returned.
+	 * @return string HTML output or ''
+	 */
+	public function form_rule_for_lines_dates($page, $selected = '', $htmlname = 'rule_for_lines_dates', $addempty = 0, $nooutput = 0): string
+	{
+		global $langs;
+
+		$out = '';
+
+		if ($htmlname != 'none') {
+			$out .= '<form method="POST" action="' . $page . '">';
+			$out .= '<input type="hidden" name="action" value="setruleforlinesdates">';
+			$out .= '<input type="hidden" name="token" value="' . newToken() . '">';
+			$out .= $this->getSelectRuleForLinesDates($selected, $htmlname, $addempty);
+			$out .= '<input type="submit" class="button valignmiddle smallpaddingimp" value="' . $langs->trans("Modify") . '">';
+			$out .= '</form>';
+		} else {
+			if (isset($selected)) {
+				$this->load_cache_rule_for_lines_dates();
+				if (isset($this->cache_rule_for_lines_dates[$selected])) {
+					$label = $this->cache_rule_for_lines_dates[$selected];
+					$out .= $langs->trans($label);
+				}
+			} else {
+				$out .= '&nbsp;';
+			}
+		}
+
+		if (empty($nooutput)) {
+			print $out;
+			return '';
+		}
 
 		return $out;
 	}

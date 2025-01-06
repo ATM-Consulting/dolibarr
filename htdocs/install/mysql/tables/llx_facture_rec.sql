@@ -66,7 +66,8 @@ create table llx_facture_rec
   usenewprice        integer DEFAULT 0,			-- update invoice with current price of product instead of recorded price
   frequency          integer,						-- frequency (for example: 3 for every 3 month)
   unit_frequency     varchar(2) DEFAULT 'm',		-- 'm' for month (date_when must be a day <= 28), 'y' for year, ... 
-  
+  rule_for_lines_dates varchar(255) DEFAULT 'prepaid',
+
   date_when          datetime DEFAULT NULL,		-- date for next gen (when an invoice is generated, this field must be updated with next date)
   date_last_gen      datetime DEFAULT NULL,		-- date for last gen (date with last successfull generation of invoice)
   nb_gen_done        integer DEFAULT NULL,		-- nb of generation done (when an invoice is generated, this field must incremented)
