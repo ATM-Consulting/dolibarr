@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport develop PR #32129 : New field rule for lines dates
 - Backport 17.0 PR #32247 : added error message in cron
 - Backport develop : fix abs fatal error
 - Backport develop PR 31267 : fix error in code, putline() function in api contract overwrote the data that was not updated by the api - *2024-11-25*
