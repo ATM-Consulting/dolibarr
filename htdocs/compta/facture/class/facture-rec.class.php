@@ -136,6 +136,13 @@ class FactureRec extends CommonInvoice
 	 */
 	public $fk_societe_rib;
 
+	/** BACKPORT PR 32129 */
+	/**
+	 * @var string
+	 */
+	public $rule_for_lines_dates;
+	/** BACKPORT PR 32129 */
+
 	const PAYMENTCODETOEDITSOCIETERIB = "PRV";
 	/**BACKPORT PR 31698**/
 
@@ -220,6 +227,9 @@ class FactureRec extends CommonInvoice
 		/**BACKPORT PR 31698**/
 		'fk_societe_rib' => array('type' => 'integer', 'label' => 'Fk Societe RIB', 'enabled' => 'isModEnabled("bank")', 'visible' => -1, 'position' => 175),
 		/**BACKPORT PR 31698**/
+		/** BACKPORT PR 32129 **/
+		'rule_for_lines_dates' => array('type' => 'varchar(255)', 'label' => 'RuleForLinesDates', 'enabled' => 1, 'visible' => 1, 'position' => 153, 'arrayofkeyval' => array('prepaid' => "Prepaid", 'postpaid' => "Postpaid"), 'default' => 'prepaid'),
+		/** BACKPORT PR 32129 **/
 	);
 	// END MODULEBUILDER PROPERTIES
 
@@ -314,6 +324,9 @@ class FactureRec extends CommonInvoice
 			/**BACKPORT PR 31698**/
 			$sql .= ", fk_societe_rib";
 			/**BACKPORT PR 31698**/
+			/**BACKPORT PR 32129**/
+			$sql .= ", rule_for_lines_dates";
+			/**BACKPORT PR 32129**/
 			$sql .= ") VALUES (";
 			$sql .= "'".$this->db->escape($this->titre ? $this->titre : $this->title)."'";
 			$sql .= ", ".((int) $this->fk_soc);
@@ -345,6 +358,9 @@ class FactureRec extends CommonInvoice
 			/**BACKPORT PR 31698**/
 			$sql .= ", ".(!empty($this->fk_societe_rib) ? ((int) $this->fk_societe_rib) : 'NULL');
 			/**BACKPORT PR 31698**/
+			/** BACKPORT PR 32129 */
+			$sql .= ", ".(!empty($this->rule_for_lines_dates) ? ("'".$this->db->escape($this->rule_for_lines_dates)."'") : "NULL");
+			/** BACKPORT PR 32129 */
 			$sql .= ")";
 			if ($this->db->query($sql)) {
 				$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."facture_rec");
@@ -557,6 +573,9 @@ class FactureRec extends CommonInvoice
 		/**BACKPORT PR 31698**/
 		$sql .= ', f.fk_account, f.fk_societe_rib';
 		/**BACKPORT PR 31698**/
+		/**BACKPORT PR 32129 **/
+		$sql .= ', f.rule_for_lines_dates';
+		/**BACKPORT PR 32129 **/
 		$sql .= ', f.frequency, f.unit_frequency, f.date_when, f.date_last_gen, f.nb_gen_done, f.nb_gen_max, f.usenewprice, f.auto_validate';
 		$sql .= ', f.generate_pdf';
 		$sql .= ", f.fk_multicurrency, f.multicurrency_code, f.multicurrency_tx, f.multicurrency_total_ht, f.multicurrency_total_tva, f.multicurrency_total_ttc";
@@ -620,6 +639,9 @@ class FactureRec extends CommonInvoice
 				//$this->special_code = $obj->special_code;
 				$this->frequency			  = $obj->frequency;
 				$this->unit_frequency = $obj->unit_frequency;
+				/** BACKPORT PR 32129 **/
+				$this->rule_for_lines_dates = $obj->rule_for_lines_dates;
+				/** BACKPORT PR 32129 **/
 				$this->date_when			  = $this->db->jdate($obj->date_when);
 				$this->date_last_gen = $this->db->jdate($obj->date_last_gen);
 				$this->nb_gen_done			  = $obj->nb_gen_done;
