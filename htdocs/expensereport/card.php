@@ -2210,7 +2210,11 @@ if ($action == 'create') {
 										}
 									}
 
-									if (!$thumbshown) {
+									if (!$thumbshown && $fileinfo['extension'] == 'pdf' && !empty($filepdf) && !empty($relativepath) && !empty($fileinfo['filename'])) {
+										$formFile = new FormFile($db);
+										$imgpreview = $formFile->showPreview([], $modulepart, $relativepath.'/'.$fileinfo['filename'].'.'.strtolower($fileinfo['extension']), 0);
+										print $imgpreview;
+									} elseif (!$thumbshown) {
 										print img_mime($ecmfilesstatic->filename);
 									}
 								}
@@ -2858,7 +2862,7 @@ if ($action != 'presend') {
 }
 
 // Presend form
-$modelmail = 'expensereport';
+$modelmail = 'expensereport_send';
 $defaulttopic = 'SendExpenseReportRef';
 $diroutput = $conf->expensereport->dir_output;
 $trackid = 'exp'.$object->id;

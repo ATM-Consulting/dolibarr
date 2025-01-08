@@ -146,7 +146,13 @@ class Utils
 
 						$result = dol_delete_dir_recursive($filesarray[$key]['fullname'], $startcount, 1, 0, $tmpcountdeleted);
 
-						if (!in_array($filesarray[$key]['fullname'], array($conf->api->dir_temp, $conf->user->dir_temp))) {		// The 2 directories $conf->api->dir_temp and $conf->user->dir_temp are recreated at end, so we do not count them
+						$recreatedDirs = array($conf->user->dir_temp);
+
+						if (isModEnabled('api')) {
+							$recreatedDirs[] = $conf->api->dir_temp;
+						}
+
+						if (!in_array($filesarray[$key]['fullname'], $recreatedDirs)) {		// The 2 directories $conf->api->dir_temp and $conf->user->dir_temp are recreated at end, so we do not count them
 							$count += $result;
 							$countdeleted += $tmpcountdeleted;
 						}
@@ -528,7 +534,7 @@ class Utils
 				} elseif ($compression == 'zstd') {
 					fclose($handle);
 				}
-				if ($ok && preg_match('/^-- (MySql|MariaDB)/i', $errormsg)) {	// No error
+				if ($ok && preg_match('/^-- (MySql|MariaDB)/i', $errormsg) || preg_match('/^\/\*M?!999999/', $errormsg)) {	// Start of file is ok, NOT an error
 					$errormsg = '';
 				} else {
 					// Renommer fichier sortie en fichier erreur
