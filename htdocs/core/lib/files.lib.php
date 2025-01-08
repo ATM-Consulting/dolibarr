@@ -313,14 +313,13 @@ function dol_dir_list_in_database($path, $filter = "", $excludefilter = null, $s
  */
 function completeFileArrayWithDatabaseInfo(&$filearray, $relativedir)
 {
-	global $conf, $db, $user;
+	global $conf, $db, $user, $object;
 
 	$filearrayindatabase = dol_dir_list_in_database($relativedir, '', null, 'name', SORT_ASC);
 
 	// TODO Remove this when PRODUCT_USE_OLD_PATH_FOR_PHOTO will be removed
 	global $modulepart;
 	if ($modulepart == 'produit' && getDolGlobalInt('PRODUCT_USE_OLD_PATH_FOR_PHOTO')) {
-		global $object;
 		if (!empty($object->id)) {
 			if (isModEnabled("product")) {
 				$upload_dirold = $conf->product->multidir_output[$object->entity].'/'.substr(substr("000".$object->id, -2), 1, 1).'/'.substr(substr("000".$object->id, -2), 0, 1).'/'.$object->id."/photos";
@@ -382,6 +381,10 @@ function completeFileArrayWithDatabaseInfo(&$filearray, $relativedir)
 				$ecmfile->label = md5_file(dol_osencode($filearray[$key]['fullname'])); // $destfile is a full path to file
 				$ecmfile->fullpath_orig = $filearray[$key]['fullname'];
 				$ecmfile->gen_or_uploaded = 'unknown';
+				/** BACKPORT PR 32580 */
+				$ecmfile->src_object_type = $object->element;
+				$ecmfile->src_object_id = $object->id;
+				/** BACKPORT PR 32580 */
 				$ecmfile->description = ''; // indexed content
 				$ecmfile->keywords = ''; // keyword content
 				$result = $ecmfile->create($user);

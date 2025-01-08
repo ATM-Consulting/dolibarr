@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backported 17.0 PR #32580 : Missing src_object_type and src_object_id in ecm_files
 - Backport develop PR #32129 : New field rule for lines dates
 - Backport 17.0 PR #32247 : added error message in cron
 - Backport develop : fix abs fatal error
