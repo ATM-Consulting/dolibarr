@@ -362,6 +362,7 @@ class FactureRec extends CommonInvoice
 			$sql .= ", ".(!empty($this->rule_for_lines_dates) ? ("'".$this->db->escape($this->rule_for_lines_dates)."'") : "NULL");
 			/** BACKPORT PR 32129 */
 			$sql .= ")";
+
 			if ($this->db->query($sql)) {
 				$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."facture_rec");
 

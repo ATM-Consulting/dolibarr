@@ -31,8 +31,24 @@ if (!empty($search_array_options) && is_array($search_array_options)) {	// $extr
 			$param .= '&'.$search_options_pattern.$tmpkey.'_endmin='.dol_print_date($val['end'], '%M');
 			$val = '';
 		}
-		if ($val != '') {
-			$param .= '&'.$search_options_pattern.$tmpkey.'='.urlencode($val);
+		if ($val !== '') {
+			if (is_array($val)) {
+				foreach ($val as $val2) {
+					$param .= '&'.$search_options_pattern.$tmpkey.'[]='.urlencode($val2);
+				}
+			} else {
+				// test if we have checkbox type, we add the _multiselect needed into param
+				$tmpkey = preg_replace('/'.$search_options_pattern.'/', '', $key);
+				if (in_array($extrafields->attributes[$extrafieldsobjectkey]['type'][$tmpkey], array('checkbox', 'chkbxlst'))) {
+					$param .= '&'.$search_options_pattern.$tmpkey.'_multiselect='.urlencode($val);
+				}
+				// test if we have boolean type, we add the _booleand needed into param
+				if (in_array($extrafields->attributes[$extrafieldsobjectkey]['type'][$tmpkey], array('boolean'))) {
+					$param .= '&'.$search_options_pattern.$tmpkey.'_boolean='.urlencode($val);
+				}
+
+				$param .= '&'.$search_options_pattern.$tmpkey.'='.urlencode($val);
+			}
 		}
 	}
 }

@@ -268,7 +268,7 @@ class Categories extends DolibarrApi
 		}
 
 		if ($this->category->delete(DolibarrApiAccess::$user) <= 0) {
-			throw new RestException(500, 'Error when delete category ' . $this->category->error);
+			throw new RestException(500, 'Error when delete category : ' . $this->category->error);
 		}
 
 		return array(
