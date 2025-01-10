@@ -270,6 +270,11 @@ class FactureRec extends CommonInvoice
 		if (empty($this->suspended)) {
 			$this->suspended = 0;
 		}
+		/** BACKPORT PR 32129 */
+		if (empty($this->rule_for_lines_dates)) {
+			$this->rule_for_lines_dates = 'prepaid';
+		}
+		/** BACKPORT PR 32129 */
 
 		// No frequency defined then no next date to execution
 		if (empty($this->frequency)) {
@@ -359,7 +364,7 @@ class FactureRec extends CommonInvoice
 			$sql .= ", ".(!empty($this->fk_societe_rib) ? ((int) $this->fk_societe_rib) : 'NULL');
 			/**BACKPORT PR 31698**/
 			/** BACKPORT PR 32129 */
-			$sql .= ", ".(!empty($this->rule_for_lines_dates) ? ("'".$this->db->escape($this->rule_for_lines_dates)."'") : "NULL");
+			$sql .= ", '".$this->db->escape($this->rule_for_lines_dates)."'";
 			/** BACKPORT PR 32129 */
 			$sql .= ")";
 			if ($this->db->query($sql)) {
