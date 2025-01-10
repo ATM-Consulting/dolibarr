@@ -786,11 +786,7 @@ if ($num == 1 && !empty($conf->global->MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE) && (
 		}
 	}
 
-	// Spé Koesio : Il faut aller sur la création d'une simulation avec ce socid
-	$url = dol_buildpath('/financement/simulation/simulation.php', 1);
-	$url .= '?action=new&fk_soc='.$id;
-
-	header('Location: '.$url);
+	header("Location: ".DOL_URL_ROOT.'/societe/card.php?socid='.$id);
 	exit;
 }
 
