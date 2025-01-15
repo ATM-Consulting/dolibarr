@@ -860,7 +860,7 @@ class Position extends CommonObject
 		if ($key == 'fk_user') {
 			$vacantId = $keyprefix.$key.'vacant'.$keysuffix;
 
-			$out = $form->select_dolusers($value, 'search_'.$key, 1, null, 0, '', '', '0', 0, 0, '', 0, '', (!empty($val['css']) ? $val['css'] : 'maxwidth100'));
+			$out = $form->select_dolusers($value, $keyprefix.$key.$keysuffix, 1, null, 0, '', '', '0', 0, 0, '', 0, '', (!empty($val['css']) ? $val['css'] : 'maxwidth100'));
 
 			$out .= '<label class="nowrap position-fk-user classfortooltip" title="'.dol_escape_js($langs->trans('VacantCheckboxHelper')).'"><input type="checkbox" id="'.$vacantId.'" name="'.$vacantId.'">&nbsp;'.$langs->trans("Vacant").'</label>'; ?>
 			<script type="text/javascript">
