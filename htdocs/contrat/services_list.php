@@ -97,7 +97,7 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 $search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 /** BACKPORT PR 32662 */
-$sall = GETPOST('search_all', 'alphanohtml') ? GETPOST('search_all', 'alphanohtml') : GETPOST('sall', 'alphanohtml');
+$search_all = GETPOST('search_all', 'alphanohtml');
 
 $fieldstosearchall = [
 	'p.label' => 'Product',
@@ -370,8 +370,8 @@ if (!empty($filter_opcloture) && $filter_opcloture == ' BETWEEN ') {
 }
 
 /** BACKPORT PR 32662 */
-if ($sall) {
-	$sql .= natural_search(array_keys($fieldstosearchall), $sall);
+if ($search_all) {
+	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
 /** END BACKPORT PR 32662 */
 
@@ -423,8 +423,8 @@ if ($limit > 0 && $limit != $conf->liste_limit) {
 }
 
 /** BACKPORT PR 32662 */
-if ($sall != '') {
-	$param .= '&sall='.urlencode($sall);
+if ($search_all != '') {
+	$param .= '&sall='.urlencode($search_all);
 }
 /** END BACKPORT PR 32662 */
 
@@ -511,11 +511,11 @@ if ($mode == "5") {
 
 print_barre_liste($title, $page, $_SERVER["PHP_SELF"], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'contract', 0, '', '', $limit);
 
-if (!empty($sall)) {
+if (!empty($search_all)) {
 	foreach ($fieldstosearchall as $key => $val) {
 		$fieldstosearchall[$key] = $langs->trans($val);
 	}
-	print '<div class="divsearchfieldfilter">'.$langs->trans("FilterOnInto", $sall).join(', ', $fieldstosearchall).'</div>';
+	print '<div class="divsearchfieldfilter">'.$langs->trans("FilterOnInto", $search_all).join(', ', $fieldstosearchall).'</div>';
 }
 
 $morefilter = '';
