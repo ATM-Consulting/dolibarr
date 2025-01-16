@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport develop PR #32662 : New hooks in services_list and added global search
 - Backport 17.0 PR #32654 : Search thirdparty in services list
 - Backport develop PR #32129 : New field rule for lines dates
 - Backport 17.0 PR #32247 : added error message in cron
