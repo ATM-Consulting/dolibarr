@@ -45,6 +45,15 @@ require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT.'/workstation/class/workstation.class.php';
+/*
+ * Backport d'un développement proposé dans le standard en develop (22.0)
+ * https://github.com/Dolibarr/dolibarr/pull/32689
+ * A supprimer lors du passage en, 22.0 si le développement est mergé dans le standard
+ */
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+/*
+ * Fin backport
+ */
 if (isModEnabled('categorie')) {
 	require_once DOL_DOCUMENT_ROOT.'/categories/class/categorie.class.php';
 	require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcategory.class.php';
@@ -152,6 +161,15 @@ $extrafields = new ExtraFields($db);
 $form = new Form($db);
 $formcompany = new FormCompany($db);
 $formproduct = new FormProduct($db);
+/*
+ * Backport d'un développement proposé dans le standard en develop (22.0)
+ * https://github.com/Dolibarr/dolibarr/pull/32689
+ * A supprimer lors du passage en, 22.0 si le développement est mergé dans le standard
+ */
+$formfile = new FormFile($db);
+/*
+ * Fin backport
+ */
 
 // fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -811,7 +829,15 @@ include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
 $arrayofmassactions = array(
 	'generate_doc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("ReGeneratePDF"),
 	'edit_extrafields'=>img_picto('', 'edit', 'class="pictofixedwidth"').$langs->trans("ModifyValueExtrafields"),
-	//'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
+	/*
+ 	 * Backport d'un développement proposé dans le standard en develop (22.0)
+ 	 * https://github.com/Dolibarr/dolibarr/pull/32689
+ 	 * A supprimer lors du passage en, 22.0 si le développement est mergé dans le standard
+ 	 */
+	'builddoc'=>img_picto('', 'pdf', 'class="pictofixedwidth"').$langs->trans("PDFMerge"),
+	/*
+ 	 * Fin backport
+ 	 */
 	//'presend'=>img_picto('', 'email', 'class="pictofixedwidth"').$langs->trans("SendByMail"),
 );
 
@@ -2181,6 +2207,32 @@ print '</table>'."\n";
 print '</div>'."\n";
 
 print '</form>'."\n";
+
+
+/*
+ * Backport d'un développement proposé dans le standard en develop (22.0)
+ * https://github.com/Dolibarr/dolibarr/pull/32689
+ * A supprimer lors du passage en, 22.0 si le développement est mergé dans le standard
+ */
+$hidegeneratedfilelistifempty = 1;
+if ($massaction == 'builddoc' || $action == 'remove_file' || $show_files) {
+	$hidegeneratedfilelistifempty = 0;
+}
+
+// Show list of available documents
+$urlsource = $_SERVER['PHP_SELF'].'?sortfield='.$sortfield.'&sortorder='.$sortorder;
+$urlsource .= str_replace('&amp;', '&', $param);
+
+$filedir = $diroutputmassaction;
+$genallowed = $user->hasRight('product', 'lire');
+$delallowed = $user->hasRight('product', 'creer');
+
+$formfile = new FormFile($db);
+print $formfile->showdocuments('massfilesarea_product', '', $filedir, $urlsource, 0, $delallowed, '', 1, 1, 0, 48, 1, $param, $title, '', '', '', null, $hidegeneratedfilelistifempty);
+
+/*
+ * Fin backport
+ */
 
 // End of page
 llxFooter();
