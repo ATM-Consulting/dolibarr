@@ -2982,6 +2982,12 @@ if (!empty($conf->global->PRODUCT_ADD_FORM_ADD_TO) && $object->id && ($action ==
  * Generated documents
  */
 
+// START BACKPORT WENEOS - A SUPP EN V22.0
+if (GETPOST('modelselected')) {
+	$action = 'presend';
+}
+// END BACKPORT WENEOS - A SUPP EN V22.0
+
 if ($action != 'create' && $action != 'edit' && $action != 'delete') {
 	print '<div class="fichecenter"><div class="fichehalfleft">';
 	print '<a name="builddoc"></a>'; // ancre

@@ -239,6 +239,11 @@ if (isModEnabled('eventorganization') && !empty($user->rights->eventorganization
 if (isModEnabled('partnership') && !empty($user->rights->partnership->read)) {
 	$elementList['partnership_send'] = img_picto('', 'partnership', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToPartnership'));
 }
+// START BACKPORT WENEOS - A SUPP EN V22.0
+if (isModEnabled('product') && !empty($user->rights->produit->lire)) {
+	$elementList['product_send'] = img_picto('', 'product', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('Product'));
+}
+// END BACKPORT WENEOS - A SUPP EN V22.0
 
 $parameters = array('elementList'=>$elementList);
 $reshook = $hookmanager->executeHooks('emailElementlist', $parameters); // Note that $action and $object may have been modified by some hooks
