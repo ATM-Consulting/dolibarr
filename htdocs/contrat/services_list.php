@@ -480,6 +480,13 @@ if ($optioncss != '') {
 }
 // Add $param from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
+/** BACKPORT PR #32850 */
+// Add $param from hooks
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$param .= $hookmanager->resPrint;
+/** BACKPORT PR #32850 */
+
 
 // List of mass actions available
 $arrayofmassactions = array(

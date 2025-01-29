@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport 17.0 PR #32850 : Added missing printFieldListSearchParam hook in services_list
 - Backport 17.0 PR #32834 : Added missing printFieldListWhere hook in services_list
 - Backport develop PR #32662 : New hooks in services_list and added global search
 - Backport 17.0 PR #32654 : Search thirdparty in services list
