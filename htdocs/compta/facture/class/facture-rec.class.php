@@ -1094,13 +1094,14 @@ class FactureRec extends CommonInvoice
                 $factureRecLine->id = $lineId;
                 $result = $factureRecLine->insertExtraFields();
                 if ($result < 0) {
-                    $this->error[] = $factureRecLine->error;
+                    $this->error = $factureRecLine->error;
+					return -2;
                 }
 
                 return $lineId;
             } else {
                 $this->error = $this->db->lasterror();
-                return -1;
+                return -3;
             }
 		}
 	}
