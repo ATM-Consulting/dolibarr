@@ -37,4 +37,13 @@ COPY --chown=www-data:www-data ./scripts ./scripts
 COPY --chown=www-data:www-data ./test ./test
 COPY --chown=www-data:www-data ./build ./build
 
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+RUN composer config --global repo.packagist composer https://packagist.org
+COPY --chown=www-data:www-data composer.json ./
+
+# Share the same config between root and www-data
+RUN cp -r /root/.composer /var/www && chown -R www-data:www-data /var/www/.composer
+RUN git config --global --add safe.directory /var/www
+
 USER www-data

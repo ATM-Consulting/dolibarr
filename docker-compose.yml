@@ -33,5 +33,6 @@ services:
     restart: on-failure
     volumes:
       - .:/var/www/
+      - ~/.ssh:/var/www/.ssh
     depends_on:
       - database

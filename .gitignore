@@ -61,3 +61,4 @@ doc/install.lock
 # Docker
 .docker
 .env
+.ssh

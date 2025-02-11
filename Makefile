@@ -1,6 +1,7 @@
 .PHONY: help install up stop exec ssh-symlink composer-install composer-update
 
 .DEFAULT_GOAL := help
+SSH_DIR := $(HOME)/.ssh
 CONTAINER := php
 COMMAND := /bin/bash
 
@@ -13,7 +14,7 @@ up: ## Démarre les conteneurs.
 stop: ## Arrête les conteneurs.
 	@docker compose stop
 
-install: ## Configure le projet et installe les dépendances.
+install: ssh-symlink ## Configure le projet et installe les dépendances.
 	@echo "Configuration du projet..."
 	@cp -n .env.example .env || true
 	@mkdir -p documents
@@ -22,9 +23,22 @@ install: ## Configure le projet et installe les dépendances.
 	@echo "\nDémarrage de l'application..."
 	@docker compose up -d
 
+	@echo "\nInstallation des dépendances Composer..."
+	@$(MAKE) composer-install
+
 	@echo "\n------------------------------------------------"
 	@echo "Installation terminée."
 	@echo "------------------------------------------------\n"
 
 exec: ## Exécute une commande dans le conteneur PHP (par défaut : /bin/bash).
 	docker compose exec $(CONTAINER) $(COMMAND)
+
+ssh-symlink: ## Crée un lien symbolique vers les clés SSH.
+	@echo "Configuration des clés SSH..."
+	@ln -sfn $(SSH_DIR) ./
+
+composer-install: ## Installe les dépendances Composer.
+	@$(MAKE) exec COMMAND="composer install"
+
+composer-update: ## Met à jour les dépendances Composer.
+	@$(MAKE) exec COMMAND="composer update"
