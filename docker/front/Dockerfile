@@ -1,8 +1,8 @@
 # Dockerfile pour Apache
 FROM httpd:latest
 
-ARG PUID=1001
-ARG PGID=1001
+ARG PUID=1000
+ARG PGID=1000
 
 RUN usermod -u ${PUID} www-data && groupmod -g ${PGID} www-data
 
