@@ -125,6 +125,27 @@ foreach ($object->fields as $key => $val) {
 	}
 }
 
+
+if ($object->loadCacheSeveritiesTickets()) {
+	// Load the cached list of ticket severities
+	$arrayTicketsSeverity = $object->cache_severity_tickets;
+
+	foreach ($arrayTicketsSeverity as $severity) {
+		if ($severity['use_default'] === '1') {
+			$defaultSeverityTicket = $severity['code'];
+			break;
+		}
+	}
+
+	if (!empty($defaultSeverityTicket)) {
+		// Check if the severity code is not already set in the search array
+		if (empty($search[$defaultSeverityTicket])) {
+			// Assign the default severity code to the search array
+			$search['severity_code'] = $defaultSeverityTicket;
+		}
+	}
+}
+
 // List of fields to search into when doing a "search in all"
 $fieldstosearchall = array();
 foreach ($object->fields as $key => $val) {
