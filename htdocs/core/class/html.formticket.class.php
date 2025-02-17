@@ -257,7 +257,7 @@ class FormTicket
 	 * @param	?Ticket		$object					[=NULL] Ticket object
 	 * @return 	void
 	 */
-	public function showForm($withdolfichehead = 0, $mode = 'edit', $public = 0, $with_contact = null, $action = '', $object = null)
+	public function showForm($withdolfichehead = 0, $mode = 'edit', $public = 0, $with_contact = null, $action = '', Ticket $object = null)
 	{
 		global $conf, $langs, $user, $hookmanager;
 
@@ -274,6 +274,7 @@ class FormTicket
 			$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
 			$projectid = GETPOSTISSET('projectid') ? GETPOST('projectid', 'int') : '';
 			$user_assign = GETPOSTISSET('fk_user_assign') ? GETPOSTINT('fk_user_assign') : $this->fk_user_create;
+			$contractid = GETPOSTISSET('contractid') ? GETPOSTINT('contractid') : '';
 		} else {
 			$ref = GETPOSTISSET("ref") ? GETPOST("ref", 'alpha') : $object->ref;
 			$type_code = GETPOSTISSET('type_code') ? GETPOST('type_code', 'alpha') : $object->type_code;
@@ -284,6 +285,7 @@ class FormTicket
 			$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : $object->message;
 			$projectid = GETPOSTISSET('projectid') ? GETPOST('projectid', 'int') : $object->fk_project;
 			$user_assign = GETPOSTISSET('fk_user_assign') ? GETPOSTINT('fk_user_assign') : $object->fk_user_assign;
+			$contractid = GETPOSTISSET('contractid') ? GETPOSTINT('contractid') : $object->fk_contract;
 		}
 
 		$form = new Form($this->db);
@@ -548,6 +550,10 @@ class FormTicket
 			} else {
 				if (isset($this->withreadid) && $this->withreadid > 0) {
 					$subject = $langs->trans('SubjectAnswerToTicket').' '.$this->withreadid.' : '.$this->topic_title;
+				} else {
+					/* ------ SPE ATM ------ */
+					$subject = GETPOSTISSET('subject') ? GETPOST('subject', 'alpha') : $object->subject;
+					/* ------ END SPE ATM ------ */
 				}
 				print '<input class="text minwidth500" id="subject" name="subject" value="'.$subject.'"'.(empty($this->withemail) ? ' autofocus' : '').' />';
 			}
@@ -621,6 +627,8 @@ class FormTicket
 					}
 					$out .= '<br></div>';
 				}
+			} else {
+				$out .= '<span class="opacitymedium">' . $langs->trans("NoAttachedFiles") . '</span><br>';
 			}
 			if ($this->withfile == 2) { // Can add other files
 				$maxfilesizearray = getMaxFileSizeArray();

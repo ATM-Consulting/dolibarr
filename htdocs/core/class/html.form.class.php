@@ -8546,7 +8546,7 @@ class Form
 				}
 			}
 		}
-
+		if(empty($objectdesc)) $objectdesc = $objectdescorig;
 		if ($objectdesc) {
 			// Example of value for $objectdesc:
 			// Bom:bom/class/bom.class.php:0:t.status=1
