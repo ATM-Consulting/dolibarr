@@ -60,6 +60,16 @@ class Ticket extends CommonObject
 	public $fk_element = 'fk_ticket';
 
 	/**
+	 * @var int  Does ticketcore support multicompany module ? 0=No test on entity, 1=Test with field entity, 2=Test with link by societe
+	 */
+	public $ismultientitymanaged = 1;
+
+	/**
+	 * @var int  Does ticketcore support extrafields ? 0=No, 1=Yes
+	 */
+	public $isextrafieldmanaged = 1;
+
+	/**
 	 * @var string String with name of icon for ticketcore. Must be the part after the 'object_' into object_ticketcore.png
 	 */
 	public $picto = 'ticket';

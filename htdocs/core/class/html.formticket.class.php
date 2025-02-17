@@ -778,7 +778,7 @@ class FormTicket
 				print '<tr><td><label for="contract"><span class="">'.$langs->trans("Contract").'</span></label></td><td>';
 				print img_picto('', 'contract', 'class="pictofixedwidth"');
 				// socid is for internal users null and not 0 or -1
-				print $formcontract->select_contract($user->socid ?? -1, GETPOSTINT('contactid'), 'contractid', 0, 1, 1, 1);
+				print $formcontract->select_contract($user->socid ?? -1, $contractid, 'contractid', 0, 1, 1, 1);
 				print '</td></tr>';
 			}
 		}
