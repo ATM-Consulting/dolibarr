@@ -269,9 +269,11 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 
 				$pdf = pdf_getInstance($this->format);
 				$default_font_size = pdf_getPDFFontSize($outputlangs); // Must be after pdf_getInstance
+				//BACKPPORT PR 33157
 				$pdf->SetAutoPageBreak(1, 0);
 
 				$heightforinfotot = 40; // Height reserved to output the info and total part
+				//BACKPPORT PR 33157
 				$heightforfreetext = (isset($conf->global->MAIN_PDF_FREETEXT_HEIGHT) ? $conf->global->MAIN_PDF_FREETEXT_HEIGHT : 5); // Height reserved to output the free text on last page
 				$heightforfooter = $this->marge_basse + 8; // Height reserved to output the footer (value include bottom margin)
 				if (getDolGlobalString('MAIN_GENERATE_DOCUMENTS_SHOW_FOOT_DETAILS')) {
@@ -329,6 +331,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 
 				$tab_height = $this->page_hauteur - $tab_top - $heightforfooter - $heightforfreetext;
 
+				//BACKPPORT PR 33157
 				$nexY = $tab_top - 1;
 
 				// Incoterm
@@ -340,6 +343,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 
 						$pdf->SetFont('', '', $default_font_size - 1);
 						$pdf->writeHTMLCell(190, 3, $this->posxdesc - 1, $tab_top - 1, dol_htmlentitiesbr($desc_incoterms), 0, 1);
+						//BACKPPORT PR 33157
 						$nexY = max($pdf->GetY(), $nexY);
 						$height_incoterms = $nexY - $tab_top;
 
@@ -363,6 +367,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 
 				$pagenb = $pdf->getPage();
 				if (!empty($notetoshow)) {
+					//BACKPPORT PR 33157
 					$tab_top -= 2;
 
 					$tab_width = $this->page_largeur - $this->marge_gauche - $this->marge_droite;
@@ -487,6 +492,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 				// Use new auto column system
 				$this->prepareArrayColumnField($object, $outputlangs, $hidedetails, $hidedesc, $hideref);
 
+				//BACKPPORT PR 33157
 				$nexY = $tab_top + $this->tabTitleHeight;
 
 				$pageposbeforeprintlines = $pdf->getPage();
@@ -550,6 +556,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 
 						if ($pageposafter > $pageposbefore) {	// There is a pagebreak
 							$pdf->rollbackTransaction(true);
+							//BACKPPORT PR 33157
 							$pageposafter = $pageposbefore;
 							$pdf->setPageOrientation('', 1, $heightforfooter); // The only function to edit the bottom margin of current page to set it.
 
@@ -580,6 +587,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 						$posYAfterDescription = $pdf->GetY();
 					}
 
+					//BACKPPORT PR 33157
 					$nexY = max($pdf->GetY(), $posYAfterImage);
 
 					$pageposafter = $pdf->getPage();
@@ -785,6 +793,7 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 					}
 				}
 
+				//BACKPPORT PR 33157
 				// Show square
 				if ($pagenb == $pageposbeforeprintlines) {
 					$this->_tableau($pdf, $tab_top, $this->page_hauteur - $tab_top - $heightforinfotot - $heightforfreetext - $heightforfooter, 0, $outputlangs, $hidetop, 0, $object->multicurrency_code, $outputlangsbis);
