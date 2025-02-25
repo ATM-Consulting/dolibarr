@@ -1940,9 +1940,11 @@ class Facture extends CommonInvoice
 	 * 	@param		string	$ref_ext			External reference of invoice
 	 * 	@param		int		$notused			Not used
 	 *  @param		bool	$fetch_situation	Load also the previous and next situation invoice into $tab_previous_situation_invoice and $tab_next_situation_invoice
+	 *  @param		bool	$include_lines		Load also lines
 	 *	@return     int         				>0 if OK, <0 if KO, 0 if not found
 	 */
-	public function fetch($rowid, $ref = '', $ref_ext = '', $notused = '', $fetch_situation = false)
+	/** BACKPORT #33220 */
+	public function fetch($rowid, $ref = '', $ref_ext = '', $notused = '', $fetch_situation = false, $include_lines = true)
 	{
 		if (empty($rowid) && empty($ref) && empty($ref_ext)) {
 			return -1;
@@ -2089,11 +2091,15 @@ class Facture extends CommonInvoice
 				// Lines
 				$this->lines = array();
 
-				$result = $this->fetch_lines();
-				if ($result < 0) {
-					$this->error = $this->db->error();
-					return -3;
+				/** BACKPORT #33220 */
+				if ($include_lines) {
+					$result = $this->fetch_lines();
+					if ($result < 0) {
+						$this->error = $this->db->error();
+						return -3;
+					}
 				}
+				/** BACKPORT #33220 */
 
 				$this->db->free($resql);
 
