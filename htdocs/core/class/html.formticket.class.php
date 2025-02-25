@@ -187,6 +187,7 @@ class FormTicket
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
+        //---------------- Spé ATM -----------------------------
 		if ($mode == 'create') {
 			$ref = GETPOSTISSET("ref") ? GETPOST("ref", 'alpha') : '';
 			$type_code = GETPOSTISSET('type_code') ? GETPOST('type_code', 'alpha') : '';
@@ -382,7 +383,12 @@ class FormTicket
 
 		// Type of Ticket
 		print '<tr><td class="titlefield"><span class="fieldrequired"><label for="selecttype_code">'.$langs->trans("TicketTypeRequest").'</span></label></td><td>';
-		$this->selectTypesTickets((GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code), 'type_code', '', 2, 'ifone', 0, 0, 'minwidth200');
+        // -------------------- spé ATM --------------------
+        if ($mode = 'edit') {
+		    $this->selectTypesTickets((GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $object->type_code), 'type_code', '', 2, 'ifone', 0, 0, 'minwidth200');
+        }else {
+            $this->selectTypesTickets((GETPOST('type_code', 'alpha') ? GETPOST('type_code', 'alpha') : $this->type_code), 'type_code', '', 2, 'ifone', 0, 0, 'minwidth200');
+        }
 		print '</td></tr>';
 
 		// Group => Category
@@ -396,8 +402,13 @@ class FormTicket
 		print '</td></tr>';
 
 		// Severity => Priority
-		print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
-		$this->selectSeveritiesTickets((GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code), 'severity_code', '', 2, 'ifone');
+        print '<tr><td><span class="fieldrequired"><label for="selectseverity_code">'.$langs->trans("TicketSeverity").'</span></label></td><td>';
+        // ---------------------- spé ATM ---------------------------
+        if ($mode = 'edit') {
+            $this->selectSeveritiesTickets((GETPOST('severity_code') ? GETPOST('severity_code') : $object->severity_code), 'severity_code', '', 2, 'ifone');
+        }else {
+            $this->selectSeveritiesTickets((GETPOST('severity_code') ? GETPOST('severity_code') : $this->severity_code), 'severity_code', '', 2, 'ifone');
+        }
 		print '</td></tr>';
 
 		if (!empty($conf->knowledgemanagement->enabled)) {
@@ -480,9 +491,13 @@ class FormTicket
 			}
 			print '</td></tr>';
 		}
-
+        //----------------- spe atm -------------------------
 		// MESSAGE
-		$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
+        if ($mode == 'edit') {
+		        $msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : $object->message;
+        }else {
+               $msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
+        }
 		print '<tr><td><label for="message"><span class="fieldrequired">'.$langs->trans("Message").'</span></label></td><td>';
 
 		// If public form, display more information
