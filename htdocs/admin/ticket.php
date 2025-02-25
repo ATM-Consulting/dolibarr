@@ -572,6 +572,10 @@ print $formcategory->textwithpicto('', $langs->trans("TicketsAutoNotifyCloseHelp
 print '</td>';
 print '</tr>';
 
+
+
+
+
 if (isModEnabled('product')) {
 	$htmlname = "product_category_id";
 	print '<tr class="oddeven"><td>'.$langs->trans("TicketChooseProductCategory").'</td>';
@@ -619,6 +623,21 @@ if ($conf->use_javascript_ajax) {
 print '</td>';
 print '<td class="center">';
 print $formcategory->textwithpicto('', $langs->trans("TicketsAllowClassificationModificationIfClosedHelp"), 1, 'help');
+print '</td>';
+print '</tr>';
+
+// Enable default severity in the ticket list.
+print '<tr class="oddeven"><td>' . $langs->trans('TicketsListDefaultSeverity') . '</td>';
+print '<td class="left">';
+if ($conf->use_javascript_ajax) {
+	print ajax_constantonoff('TICKET_LIST_DEFAULT_SEVERITY');
+} else {
+	$arrval = array('0' => $langs->trans('No'), '1' => $langs->trans('Yes'));
+	print $formcategory->selectarray('TICKET_LIST_DEFAULT_SEVERITY', $arrval, getDolGlobalString('TICKET_LIST_DEFAULT_SEVERITY'));
+}
+print '</td>';
+print '<td class="center">';
+print $formcategory->textwithpicto('', $langs->trans('TicketsListDefaultSeverityHelp'), 1, 'help');
 print '</td>';
 print '</tr>';
 

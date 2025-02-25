@@ -157,6 +157,8 @@ TicketUseCaptchaCode=Utiliser le code graphique (CAPTCHA) lors de la création d
 TicketUseCaptchaCodeHelp=Ajoute la vérification CAPTCHA lors de la création d'un nouveau ticket.
 TicketsAllowClassificationModificationIfClosed=Autoriser la modification de la classification des tickets fermés
 TicketsAllowClassificationModificationIfClosedHelp=Permet de modifier la classification (type, groupe de ticket, gravité) même si les tickets sont fermés.
+TicketsListDefaultSeverity=Activer la sévérité par défaut dans la liste des tickets.
+TicketsListDefaultSeverityHelp=La sévérité par défaut des tickets peut être modifié dans Dictionnaires - Ticket - Sévérités
 
 #
 # Index & list page
