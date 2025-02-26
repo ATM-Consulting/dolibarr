@@ -281,6 +281,9 @@ class Mailing extends CommonObject
 		$sql .= " WHERE rowid = ".(int) $this->id;
 
 		dol_syslog("Mailing::Update", LOG_DEBUG);
+		/** BACKPORT #33241 */
+		$this->db->query("SET NAMES 'utf8mb4'");
+		/** BACKPORT #33241 */
 		$result = $this->db->query($sql);
 		if ($result) {
 			return 1;
