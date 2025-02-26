@@ -612,7 +612,7 @@ class Propal extends CommonObject
 			}
 			$txlocaltax1 = price2num($txlocaltax1);
 			$txlocaltax2 = price2num($txlocaltax2);
-			$pa_ht = price2num($pa_ht);
+			$pa_ht = price2num($pa_ht);  // do not convert to float here, it breaks the functioning of $pa_ht_isemptystring
 			if ($price_base_type == 'HT') {
 				$pu = $pu_ht;
 			} else {
@@ -840,7 +840,7 @@ class Propal extends CommonObject
 		}
 		$txlocaltax1 = price2num($txlocaltax1);
 		$txlocaltax2 = price2num($txlocaltax2);
-		$pa_ht = price2num($pa_ht);
+		$pa_ht = price2num($pa_ht);  // do not convert to float here, it breaks the functioning of $pa_ht_isemptystring
 		if (empty($qty) && empty($special_code)) {
 			$special_code = 3; // Set option tag
 		}
@@ -2861,7 +2861,7 @@ class Propal extends CommonObject
 
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -3384,7 +3384,7 @@ class Propal extends CommonObject
 		}
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -3561,7 +3561,7 @@ class Propal extends CommonObject
 
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -4025,6 +4025,11 @@ class PropaleLigne extends CommonObjectLine
 	public $rang = 0;
 
 	public $fk_fournprice;
+
+	/**
+	 * Buy price without taxes
+	 * @var float|string|null
+	 */
 	public $pa_ht;
 	public $marge_tx;
 	public $marque_tx;
@@ -4234,6 +4239,7 @@ class PropaleLigne extends CommonObjectLine
 		dol_syslog(get_class($this)."::insert rang=".$this->rang);
 
 		$pa_ht_isemptystring = (empty($this->pa_ht) && $this->pa_ht == ''); // If true, we can use a default value. If this->pa_ht = '0', we must use '0'.
+		$this->pa_ht = (float) $this->pa_ht; // convert to float after check if empty value
 
 		// Clean parameters
 		if (empty($this->tva_tx)) {
@@ -4277,9 +4283,6 @@ class PropaleLigne extends CommonObjectLine
 		}
 		if (!is_numeric($this->qty)) {
 			$this->qty = 0;
-		}
-		if (empty($this->pa_ht)) {
-			$this->pa_ht = 0;
 		}
 		if (empty($this->multicurrency_subprice)) {
 			$this->multicurrency_subprice = 0;
@@ -4453,6 +4456,7 @@ class PropaleLigne extends CommonObjectLine
 		$error = 0;
 
 		$pa_ht_isemptystring = (empty($this->pa_ht) && $this->pa_ht == ''); // If true, we can use a default value. If this->pa_ht = '0', we must use '0'.
+		$this->pa_ht = (float) $this->pa_ht; // convert to float after check if empty value
 
 		if (empty($this->id) && !empty($this->rowid)) {
 			$this->id = $this->rowid;
@@ -4506,9 +4510,6 @@ class PropaleLigne extends CommonObjectLine
 		}
 		if (empty($this->subprice)) {
 			$this->subprice = 0;
-		}
-		if (empty($this->pa_ht)) {
-			$this->pa_ht = 0;
 		}
 
 		// if buy price not defined, define buyprice as configured in margin admin

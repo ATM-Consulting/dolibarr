@@ -123,6 +123,7 @@ $formactions = new FormActions($db);
 // Load object
 if ($id > 0 && $action != 'add') {
 	$ret = $object->fetch($id);
+	$ret1 = 0;
 	if ($ret > 0) {
 		$ret = $object->fetch_optionals();
 		$ret1 = $object->fetch_userassigned();

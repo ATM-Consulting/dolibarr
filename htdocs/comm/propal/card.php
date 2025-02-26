@@ -224,7 +224,7 @@ if (empty($reshook)) {
 					}
 				}
 
-				$result = $object->createFromClone($user, $socid, (GETPOSTISSET('entity') ? GETPOSTINT('entity') : null), (GETPOSTINT('update_prices') ? true : false), (GETPOSTINT('update_desc') ? true : false));
+				$result = $object->createFromClone($user, $socid, (GETPOSTISSET('entity') ? GETPOSTINT('entity') : null), (GETPOST('update_prices') == 'on'), (GETPOST('update_desc') == 'on'));
 				if ($result > 0) {
 					$warningMsgLineList = array();
 					// check all product lines are to sell otherwise add a warning message for each product line is not to sell
@@ -1813,6 +1813,7 @@ if ($action == 'create') {
 	$fk_account = GETPOSTINT('fk_account');
 
 	// Load objectsrc
+	$objectsrc = null;
 	if (!empty($origin) && !empty($originid)) {
 		// Parse element/subelement (ex: project_task)
 		$element = $subelement = $origin;
@@ -1824,6 +1825,14 @@ if ($action == 'create') {
 
 		if ($element == 'project') {
 			$projectid = $originid;
+
+			// Fetch project and thirdparty
+			$project = new Project($db);
+			$project->fetch($projectid);
+			if ($project->socid > 0) {
+				$soc = new Societe($db);
+				$soc->fetch($project->socid);
+			}
 		} else {
 			// For compatibility
 			if ($element == 'order' || $element == 'commande') {
@@ -1855,9 +1864,9 @@ if ($action == 'create') {
 
 			$soc = $objectsrc->thirdparty;
 
-			$cond_reglement_id 	= (!empty($objectsrc->cond_reglement_id) ? $objectsrc->cond_reglement_id : (!empty($soc->cond_reglement_id) ? $soc->cond_reglement_id : 0));
-			$mode_reglement_id 	= (!empty($objectsrc->mode_reglement_id) ? $objectsrc->mode_reglement_id : (!empty($soc->mode_reglement_id) ? $soc->mode_reglement_id : 0));
-			$warehouse_id       = (!empty($objectsrc->warehouse_id) ? $objectsrc->warehouse_id : (!empty($soc->warehouse_id) ? $soc->warehouse_id : 0));
+			$cond_reglement_id  = (!empty($objectsrc->cond_reglement_id) ? $objectsrc->cond_reglement_id : (!empty($soc->cond_reglement_id) ? $soc->cond_reglement_id : 0));
+			$mode_reglement_id  = (!empty($objectsrc->mode_reglement_id) ? $objectsrc->mode_reglement_id : (!empty($soc->mode_reglement_id) ? $soc->mode_reglement_id : 0));
+			$warehouse_id      = (!empty($objectsrc->warehouse_id) ? $objectsrc->warehouse_id : (!empty($soc->warehouse_id) ? $soc->warehouse_id : 0));
 
 			// Replicate extrafields
 			$objectsrc->fetch_optionals();
@@ -1872,7 +1881,10 @@ if ($action == 'create') {
 				}
 			}
 		}
-	} else {
+	}
+
+	// Load default values from thirdparty
+	if (!empty($soc)) {
 		$cond_reglement_id  = empty($soc->cond_reglement_id) ? $cond_reglement_id : $soc->cond_reglement_id;
 		$deposit_percent    = empty($soc->deposit_percent) ? $deposit_percent : $soc->deposit_percent;
 		$mode_reglement_id  = empty($soc->mode_reglement_id) ? $mode_reglement_id : $soc->mode_reglement_id;
@@ -1910,7 +1922,7 @@ if ($action == 'create') {
 		if (empty($object->warehouse_id) && getDolGlobalString('MAIN_DEFAULT_WAREHOUSE')) {
 			$warehouse_id = getDolGlobalString('MAIN_DEFAULT_WAREHOUSE');
 		}
-		if (empty($object->warehouse_id) && getDolGlobalString('MAIN_DEFAULT_WAREHOUSE_USER') && !empty($user->warehouse_id)) {
+		if (empty($object->warehouse_id) && getDolGlobalString('MAIN_DEFAULT_WAREHOUSE_USER') && !empty($user->fk_warehouse)) {
 			$warehouse_id = $user->fk_warehouse;
 		}
 	}

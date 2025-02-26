@@ -1962,6 +1962,7 @@ if ($action == 'create') {
 
 
 	$formconfirm = '';
+	$text = '';
 
 	// Confirmation de la suppression de la commande
 	if ($action == 'delete') {
