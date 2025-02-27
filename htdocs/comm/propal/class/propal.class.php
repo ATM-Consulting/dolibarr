@@ -1529,6 +1529,29 @@ class Propal extends CommonObject
 	 */
 	public function fetch($rowid, $ref = '', $ref_ext = '', $forceentity = 0)
 	{
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $conf, $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element
+			if (empty($extrafields->attributes[$this->table_element]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element]['label'])
+				&& is_array($extrafields->attributes[$this->table_element]['label'])
+				&& count($extrafields->attributes[$this->table_element]['label']) > 0
+			);
+		}
+
 		$sql = "SELECT p.rowid, p.ref, p.entity, p.remise, p.remise_percent, p.remise_absolue, p.fk_soc";
 		$sql .= ", p.total_ttc, p.total_tva, p.localtax1, p.localtax2, p.total_ht";
 		$sql .= ", p.datec";
@@ -1558,7 +1581,24 @@ class Propal extends CommonObject
 		$sql .= ", dr.code as demand_reason_code, dr.label as demand_reason";
 		$sql .= ", cr.code as cond_reglement_code, cr.libelle as cond_reglement, cr.libelle_facture as cond_reglement_libelle_doc, p.deposit_percent";
 		$sql .= ", cp.code as mode_reglement_code, cp.libelle as mode_reglement";
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
 		$sql .= " FROM ".MAIN_DB_PREFIX."propal as p";
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element.'_extrafields as ef ON p.rowid = ef.fk_object';
+		}
+
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_propalst as c ON p.fk_statut = c.id';
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as cp ON p.fk_mode_reglement = cp.id AND cp.entity IN ('.getEntity('c_paiement').')';
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_payment_term as cr ON p.fk_cond_reglement = cr.rowid AND cr.entity IN ('.getEntity('c_payment_term').')';
@@ -1671,9 +1711,41 @@ class Propal extends CommonObject
 					$this->brouillon = 1;
 				}
 
-				// Retrieve all extrafield
-				// fetch optionals attributes and labels
-				$this->fetch_optionals();
+				// Now process extrafields
+				$this->array_options = array();
+				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+					foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+						if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+							$keyname = $key;
+
+							// Process date/datetime fields
+							if (!empty($extrafields->attributes[$this->table_element]) && in_array($extrafields->attributes[$this->table_element]['type'][$key], array('date', 'datetime'))) {
+								$this->array_options["options_".$key] = $this->db->jdate($obj->$keyname);
+							} else {
+								$this->array_options["options_".$key] = $obj->$keyname;
+							}
+						}
+					}
+
+					// Process computed fields
+					if (is_array($extrafields->attributes[$this->table_element]['label'])) {
+						foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+							if (!empty($extrafields->attributes[$this->table_element]) && !empty($extrafields->attributes[$this->table_element]['computed'][$key])) {
+								if (empty($conf->disable_compute)) {
+									global $objectoffield;    // We set a global variable to $objectoffield so
+									$objectoffield = $this;   // we can use it inside computed formula
+									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element]['computed'][$key], 1, 0, '');
+								}
+							}
+						}
+					}
+				}
+
+				if (!$doFetchInOneSqlRequest) {
+					// Retrieve all extrafield
+					// fetch optionals attributes and labels
+					$this->fetch_optionals();
+				}
 
 				$this->db->free($resql);
 
@@ -1822,6 +1894,29 @@ class Propal extends CommonObject
 
 		$this->lines = array();
 
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element_line
+			if (empty($extrafields->attributes[$this->table_element_line]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element_line);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element_line]['label'])
+				&& is_array($extrafields->attributes[$this->table_element_line]['label'])
+				&& count($extrafields->attributes[$this->table_element_line]['label']) > 0
+			);
+		}
+
 		$sql = 'SELECT d.rowid, d.fk_propal, d.fk_parent_line, d.label as custom_label, d.description, d.price, d.vat_src_code, d.tva_tx, d.localtax1_tx, d.localtax2_tx, d.localtax1_type, d.localtax2_type, d.qty, d.fk_remise_except, d.remise_percent, d.subprice, d.fk_product,';
 		$sql .= ' d.info_bits, d.total_ht, d.total_tva, d.total_localtax1, d.total_localtax2, d.total_ttc, d.fk_product_fournisseur_price as fk_fournprice, d.buy_price_ht as pa_ht, d.special_code, d.rang, d.product_type,';
 		$sql .= ' d.fk_unit,';
@@ -1829,7 +1924,24 @@ class Propal extends CommonObject
 		$sql .= ' p.weight, p.weight_units, p.volume, p.volume_units,';
 		$sql .= ' d.date_start, d.date_end,';
 		$sql .= ' d.fk_multicurrency, d.multicurrency_code, d.multicurrency_subprice, d.multicurrency_total_ht, d.multicurrency_total_tva, d.multicurrency_total_ttc';
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'propaldet as d';
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element_line.'_extrafields as ef ON l.rowid = ef.fk_object';
+		}
+
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product as p ON (d.fk_product = p.rowid)';
 		$sql .= ' WHERE d.fk_propal = '.((int) $this->id);
 		if ($only_product) {
@@ -1916,7 +2028,39 @@ class Propal extends CommonObject
 				$line->multicurrency_total_tva 	= $objp->multicurrency_total_tva;
 				$line->multicurrency_total_ttc 	= $objp->multicurrency_total_ttc;
 
-				$line->fetch_optionals();
+				// Now process extrafields
+				$this->array_options = array();
+				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+					foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+						if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+							$keyname = $key;
+
+							// Process date/datetime fields
+							if (!empty($extrafields->attributes[$this->table_element_line]) && in_array($extrafields->attributes[$this->table_element_line]['type'][$key], array('date', 'datetime'))) {
+								$this->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
+							} else {
+								$this->array_options["options_".$key] = $objp->$keyname;
+							}
+						}
+					}
+
+					// Process computed fields
+					if (is_array($extrafields->attributes[$this->table_element_line]['label'])) {
+						foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+							if (!empty($extrafields->attributes[$this->table_element_line]) && !empty($extrafields->attributes[$this->table_element_line]['computed'][$key])) {
+								if (empty($conf->disable_compute)) {
+									global $objectoffield;    // We set a global variable to $objectoffield so
+									$objectoffield = $this;   // we can use it inside computed formula
+									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
+								}
+							}
+						}
+					}
+				}
+
+				if (!$doFetchInOneSqlRequest) {
+					$line->fetch_optionals();
+				}
 
 				// multilangs
 				if (getDolGlobalInt('MAIN_MULTILANGS') && !empty($objp->fk_product) && !empty($loadalsotranslation)) {
