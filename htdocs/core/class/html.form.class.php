@@ -7986,6 +7986,23 @@ class Form
 			if ($preselectedvalue && empty($selected_input_value)) {
 				$objecttmp->fetch($preselectedvalue);
 				$selected_input_value = ($prefixforautocompletemode == 'company' ? $objecttmp->name : $objecttmp->ref);
+
+				/** BACKPORT #28631 */
+				$oldValueForShowOnCombobox = 0;
+				foreach ($objecttmp->fields as $fieldK => $fieldV) {
+					if (!array_key_exists('showoncombobox', $fieldV) || !$fieldV['showoncombobox'] || empty($objecttmp->$fieldK)) {
+						continue;
+					}
+
+					if (!$oldValueForShowOnCombobox) {
+						$selected_input_value = '';
+					}
+
+					$selected_input_value .= $oldValueForShowOnCombobox ? ' - ' : '';
+					$selected_input_value .= $objecttmp->$fieldK;
+					$oldValueForShowOnCombobox = empty($fieldV['showoncombobox']) ? 0 : $fieldV['showoncombobox'];
+				}
+				/** END BACKPORT #28631 */
 				//unset($objecttmp);
 			}
 
