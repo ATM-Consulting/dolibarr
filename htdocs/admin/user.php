@@ -227,6 +227,7 @@ print '<td>'.$langs->trans("UserHideNonEmployee").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 
 print '<td align="center" width="100">';
+
 if ($conf->use_javascript_ajax) {
 	print ajax_constantonoff('USER_HIDE_NONEMPLOYEE_IN_COMBOBOX');
 } else {

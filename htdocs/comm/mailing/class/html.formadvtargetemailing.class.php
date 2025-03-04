@@ -237,14 +237,6 @@ class FormAdvTargetEmailing extends Form
 		if (getDolGlobalString('USER_HIDE_EXTERNAL_IN_COMBOBOX')) {
 			$sql_usr .= " AND u2.fk_soc IS NULL ";
 		}
-		/**DEBUT SPECIFIQUE ATM **/
-		if (getDolGlobalString('USER_HIDE_NONEMPLOYEE_IN_COMBOBOX')) {
-			$sql_usr .= " AND u2.employee<>0 ";
-		}
-		if (getDolGlobalString('USER_HIDE_EXTERNAL_IN_COMBOBOX')) {
-			$sql_usr .= " AND u2.fk_soc IS NULL ";
-		}
-		/**END SPECIFIQUE ATM **/
 		$sql_usr .= " ORDER BY name ASC";
 		// print $sql_usr;exit;
 
