@@ -241,13 +241,19 @@ class ActionsTicket extends CommonHookActions
 			$doleditor->Create();
 		} else {
 			print '<div class="longmessagecut small">';
-			print dolPrintHTML($object->message);
+			print dol_nl2br($object->message);
 			print '</div>';
 			/*print '<div class="clear center">';
 			print $langs->trans("More").'...';
 			print '</div>';*/
 
 			//print '<div>' . $object->message . '</div>';
+		}
+		if ($user->hasRight('ticket', 'manage') && $action == 'edit_message_init') {
+			print '<div class="center">';
+			print ' <input type="submit" class="button button-edit" value="'.$langs->trans('Modify').'">';
+			print ' <input type="submit" class="button button-cancel" name="cancel" value="'.$langs->trans("Cancel").'">';
+			print '</div>';
 		}
 		print '</td>';
 		print '</tr>';
@@ -512,5 +518,32 @@ class ActionsTicket extends CommonHookActions
 		print '</div>';
 		print '</div>';
 		print '<br>';
+	}
+
+	/**
+	 * Hook to add email element template
+	 *
+	 * @param array 		$parameters   Parameters
+	 * @param Ticket		$object       Object for action
+	 * @param string 		$action       Action string
+	 * @param HookManager 	$hookmanager  Hookmanager object
+	 * @return int
+	 */
+	public function emailElementlist($parameters, &$object, &$action, $hookmanager)
+	{
+		global $langs;
+
+		$error = 0;
+
+		if (in_array('admin', explode(':', $parameters['context']))) {
+			$this->results = array('ticket_send' => $langs->trans('MailToSendTicketMessage'));
+		}
+
+		if (!$error) {
+			return 0; // or return 1 to replace standard code
+		} else {
+			$this->errors[] = 'Error message';
+			return -1;
+		}
 	}
 }

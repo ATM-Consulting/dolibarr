@@ -47,6 +47,7 @@ return static function (RectorConfig $rectorConfig): void {
 		__DIR__ . '/../../../htdocs/',
 		__DIR__ . '/../../../scripts/',
 		__DIR__ . '/../../../test/phpunit/',
+		__DIR__ . '/../../../htdocs/custom/googlepeopleconnector',
 	]);
 
 	$rectorConfig->skip([

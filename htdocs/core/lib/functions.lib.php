@@ -13556,9 +13556,7 @@ function fetchObjectByElement($element_id, $element_type, $element_ref = '', $us
 	} else {
 		$ismodenabled = isModEnabled($element_prop['module']);
 	}
-	//var_dump('element_type='.$element_type);
-	//var_dump($element_prop);
-	//var_dump($element_prop['module'].' '.$ismodenabled);
+
 	if (is_array($element_prop) && (empty($element_prop['module']) || $ismodenabled)) {
 		if ($useCache === 1
 			&& !empty($conf->cache['fetchObjectByElement'][$element_type])

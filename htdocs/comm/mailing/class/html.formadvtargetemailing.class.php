@@ -228,13 +228,13 @@ class FormAdvTargetEmailing extends Form
 		$sql_usr .= " FROM ".MAIN_DB_PREFIX."user as u2, ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 		$sql_usr .= " WHERE u2.entity IN (0,".$conf->entity.")";
 		$sql_usr .= " AND u2.rowid = sc.fk_user";
-		if (getDolGlobalString('USER_HIDE_INACTIVE_IN_COMBOBOX')) {
+		if (getDolGlobalInt('USER_HIDE_INACTIVE_IN_COMBOBOX')) {
 			$sql_usr .= " AND u2.statut <> 0";
 		}
-		if (getDolGlobalString('USER_HIDE_NONEMPLOYEE_IN_COMBOBOX')) {
+		if (getDolGlobalInt('USER_HIDE_NONEMPLOYEE_IN_COMBOBOX')) {
 			$sql_usr .= " AND u2.employee<>0 ";
 		}
-		if (getDolGlobalString('USER_HIDE_EXTERNAL_IN_COMBOBOX')) {
+		if (getDolGlobalInt('USER_HIDE_EXTERNAL_IN_COMBOBOX')) {
 			$sql_usr .= " AND u2.fk_soc IS NULL ";
 		}
 		$sql_usr .= " ORDER BY name ASC";
