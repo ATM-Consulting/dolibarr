@@ -828,7 +828,9 @@ class Product extends CommonObject
 					$sql .= ", batch_mask";
 					$sql .= ", fk_unit";
 					$sql .= ", mandatory_period";
+					//* Début FIX Ticket DA026197 - Set default_vat_code *//
 					if (!empty($this->default_vat_code)) $sql.=", default_vat_code";
+					//* Fin du FIX Ticket DA026197 *//
 					$sql .= ") VALUES (";
 					$sql .= "'".$this->db->idate($now)."'";
 					$sql .= ", ".(!empty($this->entity) ? (int) $this->entity : (int) $conf->entity);
@@ -858,7 +860,9 @@ class Product extends CommonObject
 					$sql .= ", '".$this->db->escape($this->batch_mask)."'";
 					$sql .= ", ".($this->fk_unit > 0 ? ((int) $this->fk_unit) : 'NULL');
 					$sql .= ", '".$this->db->escape($this->mandatory_period)."'";
+					//* Début FIX Ticket DA026197 - Set default_vat_code *//
 					if (!empty($this->default_vat_code)) $sql.=", '".$this->db->escape($this->default_vat_code)."'";
+					//* Fin du FIX Ticket DA026197 *//
 					$sql .= ")";
 
 					dol_syslog(get_class($this)."::Create", LOG_DEBUG);

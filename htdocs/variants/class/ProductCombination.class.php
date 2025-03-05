@@ -582,7 +582,9 @@ class ProductCombination
 					$new_price += $this->variation_price;
 				}
 
+				//* Début FIX Ticket DA026197 - Set default_vat_code *//
 				$ret = $child->updatePrice($new_price, $new_type, $user, $new_vat, $new_min_price, 1, $new_npr, $new_psq,0, array(), $parent->default_vat_code);
+				//* Fin du FIX Ticket DA026197 *//
 
 				if ($ret < 0) {
 					$this->db->rollback();
