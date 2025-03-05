@@ -1,0 +1,1 @@
+- FIX : Ticket DA026197 - Le champ default_vat_code n'était jamais défini en base, ce qui causait des problèmes lors de la création de variantes de produit
