@@ -569,3 +569,8 @@ insert into llx_c_action_trigger (code,label,description,elementtype,rang) value
 insert into llx_c_action_trigger (code,label,description,elementtype,rang) values ('HRM_EVALUATION_DELETE', 'HR Evaluation deleted', 'Executed when an evaluation is dleted', 'hrm', 4005);
 
 UPDATE llx_menu SET url = '/fourn/paiement/list.php?mainmenu=billing&leftmenu=suppliers_bills_payment' WHERE leftmenu = 'suppliers_bills_payment';
+
+UPDATE llx_paiement SET ref = rowid WHERE ref IS NULL OR ref = '';
+
+-- rename const WORKFLOW_EXPEDITION_CLASSIFY_CLOSED_INVOICE to WORKFLOW_RECEPTION_CLASSIFY_CLOSED_INVOICE
+UPDATE llx_const SET name = 'WORKFLOW_RECEPTION_CLASSIFY_CLOSED_INVOICE' WHERE name = 'WORKFLOW_EXPEDITION_CLASSIFY_CLOSED_INVOICE';

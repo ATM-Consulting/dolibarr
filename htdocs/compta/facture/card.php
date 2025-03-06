@@ -12,7 +12,7 @@
  * Copyright (C) 2013       Jean-Francois FERRY     <jfefe@aternatik.fr>
  * Copyright (C) 2013-2014  Florian Henry           <florian.henry@open-concept.pro>
  * Copyright (C) 2013       Cédric Salvador         <csalvador@gpcsolutions.fr>
- * Copyright (C) 2014-2019  Ferran Marcet           <fmarcet@2byte.es>
+ * Copyright (C) 2014-2024  Ferran Marcet           <fmarcet@2byte.es>
  * Copyright (C) 2015-2016  Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2018-2023  Frédéric France         <frederic.france@netlogic.fr>
  * Copyright (C) 2022       Gauthier VERDOL         <gauthier.verdol@atm-consulting.fr>
@@ -321,7 +321,7 @@ if (empty($reshook)) {
 			$object->date = dol_now();
 		}
 
-		if (!empty($conf->global-> INVOICE_CHECK_POSTERIOR_DATE)) {
+		if (!empty($conf->global->INVOICE_CHECK_POSTERIOR_DATE)) {
 			$last_of_type = $object->willBeLastOfSameType(true);
 			if (empty($object->date_validation) && !$last_of_type[0]) {
 				setEventMessages($langs->transnoentities("ErrorInvoiceIsNotLastOfSameType", $object->ref, dol_print_date($object->date, 'day'), dol_print_date($last_of_type[1], 'day')), null, 'errors');
@@ -456,7 +456,7 @@ if (empty($reshook)) {
 
 		$object->date = $newdate;
 		$new_date_lim_reglement = $object->calculate_date_lim_reglement();
-		if ($new_date_lim_reglement > $old_date_lim_reglement) {
+		if ($new_date_lim_reglement) {
 			$object->date_lim_reglement = $new_date_lim_reglement;
 		}
 		if ($object->date_lim_reglement < $object->date) {
@@ -496,7 +496,7 @@ if (empty($reshook)) {
 		if (!$error) {
 			$old_date_lim_reglement = $object->date_lim_reglement;
 			$new_date_lim_reglement = $object->calculate_date_lim_reglement();
-			if ($new_date_lim_reglement > $old_date_lim_reglement) {
+			if ($new_date_lim_reglement) {
 				$object->date_lim_reglement = $new_date_lim_reglement;
 			}
 			if ($object->date_lim_reglement < $object->date) {
@@ -1604,7 +1604,7 @@ if (empty($reshook)) {
 									null,
 									0,
 									'',
-									1
+									(!empty($conf->global->MAIN_DEPOSIT_MULTI_TVA)?0:1)
 								);
 							}
 
@@ -4487,6 +4487,9 @@ if ($action == 'create') {
 	$morehtmlref .= '</div>';
 
 	$object->totalpaid = $totalpaid; // To give a chance to dol_banner_tab to use already paid amount to show correct status
+	$object->totalcreditnotes = $totalcreditnotes;
+	$object->totaldeposits = $totaldeposits;
+	$object->remaintopay = price2num($object->total_ttc - $object->totalpaid - $object->totalcreditnotes - $object->totaldeposits, 'MT');
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref, '', 0, '', '');
 
@@ -4904,7 +4907,9 @@ if ($action == 'create') {
 		print '<td class="titlefieldmiddle">' . $langs->transcountry("AmountLT1", $mysoc->country_code) . '</td>';
 		print '<td class="nowrap amountcard right">' . price($sign * $object->total_localtax1, '', $langs, 0, -1, -1, $conf->currency) . '</td>';
 		if (isModEnabled("multicurrency") && ($object->multicurrency_code && $object->multicurrency_code != $conf->currency)) {
-			print '<td class="nowrap amountcard right">' . price($sign * $object->total_localtax1, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
+			$object->multicurrency_total_localtax1 = price2num($object->total_localtax1 * $object->multicurrency_tx, 'MT');
+
+			print '<td class="nowrap amountcard right">' . price($sign * $object->multicurrency_total_localtax1, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
 		}
 		print '</tr>';
 
@@ -4913,7 +4918,9 @@ if ($action == 'create') {
 			print '<td>' . $langs->transcountry("AmountLT2", $mysoc->country_code) . '</td>';
 			print '<td class="nowrap amountcard right">' . price($sign * $object->total_localtax2, '', $langs, 0, -1, -1, $conf->currency) . '</td>';
 			if (isModEnabled("multicurrency") && ($object->multicurrency_code && $object->multicurrency_code != $conf->currency)) {
-				print '<td class="nowrap amountcard right">' . price($sign * $object->total_localtax2, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
+				$object->multicurrency_total_localtax2 = price2num($object->total_localtax2 * $object->multicurrency_tx, 'MT');
+
+				print '<td class="nowrap amountcard right">' . price($sign * $object->multicurrency_total_localtax2, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
 			}
 			print '</tr>';
 		}
@@ -5035,7 +5042,9 @@ if ($action == 'create') {
 
 			$current_situation_counter = array();
 			foreach ($object->tab_previous_situation_invoice as $prev_invoice) {
-				$tmptotalpaidforthisinvoice = $prev_invoice->getSommePaiement();
+				$tmptotalallpayments = $prev_invoice->getSommePaiement(0);
+				$tmptotalallpayments += $prev_invoice->getSumDepositsUsed(0);
+				$tmptotalallpayments += $prev_invoice->getSumCreditNotesUsed(0);
 				$total_prev_ht += $prev_invoice->total_ht;
 				$total_prev_ttc += $prev_invoice->total_ttc;
 				$current_situation_counter[] = (($prev_invoice->type == Facture::TYPE_CREDIT_NOTE) ?-1 : 1) * $prev_invoice->situation_counter;
@@ -5048,11 +5057,14 @@ if ($action == 'create') {
 				}
 				print '<td class="right"><span class="amount">'.price($prev_invoice->total_ht).'</span></td>';
 				print '<td class="right"><span class="amount">'.price($prev_invoice->total_ttc).'</span></td>';
-				print '<td class="right">'.$prev_invoice->getLibStatut(3, $tmptotalpaidforthisinvoice).'</td>';
+				print '<td class="right">'.$prev_invoice->getLibStatut(3, $tmptotalallpayments).'</td>';
 				print '</tr>';
 			}
 		}
 
+		$totalallpayments = $object->getSommePaiement(0);
+		$totalallpayments += $object->getSumCreditNotesUsed(0);
+		$totalallpayments += $object->getSumDepositsUsed(0);
 
 		$total_global_ht += $total_prev_ht;
 		$total_global_ttc += $total_prev_ttc;
@@ -5068,7 +5080,7 @@ if ($action == 'create') {
 		}
 		print '<td class="right"><span class="amount">'.price($object->total_ht).'</span></td>';
 		print '<td class="right"><span class="amount">'.price($object->total_ttc).'</span></td>';
-		print '<td class="right">'.$object->getLibStatut(3, $object->getSommePaiement()).'</td>';
+		print '<td class="right">'.$object->getLibStatut(3, $totalallpayments).'</td>';
 		print '</tr>';
 
 
@@ -5110,7 +5122,9 @@ if ($action == 'create') {
 			$total_next_ht = $total_next_ttc = 0;
 
 			foreach ($object->tab_next_situation_invoice as $next_invoice) {
-				$totalpaid = $next_invoice->getSommePaiement();
+				$totalpaid = $next_invoice->getSommePaiement(0);
+				$totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
+				$totaldeposits = $next_invoice->getSumDepositsUsed(0);
 				$total_next_ht += $next_invoice->total_ht;
 				$total_next_ttc += $next_invoice->total_ttc;
 
@@ -5123,7 +5137,7 @@ if ($action == 'create') {
 				}
 				print '<td class="right"><span class="amount">'.price($next_invoice->total_ht).'</span></td>';
 				print '<td class="right"><span class="amount">'.price($next_invoice->total_ttc).'</span></td>';
-				print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid).'</td>';
+				print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid + $totalcreditnotes + $totaldeposits).'</td>';
 				print '</tr>';
 			}
 

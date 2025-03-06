@@ -276,6 +276,14 @@ class SecurityTest extends PHPUnit\Framework\TestCase
 		$result=testSqlAndScriptInject($test, 0);
 		$this->assertGreaterThanOrEqual($expectedresult, $result, 'Error on testSqlAndScriptInject aaa7');
 
+		$test='<marquee onbeforeintput="alert(1)">';
+		$result=testSqlAndScriptInject($test, 0);
+		$this->assertGreaterThanOrEqual($expectedresult, $result, 'Error on testSqlAndScriptInject onbeforeintput');
+		$test='<marquee onbounce="alert(1)">';
+		$result=testSqlAndScriptInject($test, 0);
+		$this->assertGreaterThanOrEqual($expectedresult, $result, 'Error on testSqlAndScriptInject onbounce');
+
+
 		$test='<IMG SRC=&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#88;&#83;&#83;&#39;&#41;>';
 		$result=testSqlAndScriptInject($test, 0);
 		$this->assertGreaterThanOrEqual($expectedresult, $result, 'Error on testSqlAndScriptInject bbb');
@@ -959,6 +967,16 @@ class SecurityTest extends PHPUnit\Framework\TestCase
 		$result=dol_eval($s, 1, 1, '2');
 		print "result = ".$result."\n";
 		$this->assertEquals('Parent project not found', $result);
+
+		$s = 'new abc->invoke(\'whoami\')';
+		$result=dol_eval($s, 1, 1, '2');
+		print "result = ".$result."\n";
+		$this->assertEquals('Bad string syntax to evaluate: new abc__forbiddenstring__(\'whoami\')', $result);
+
+		$s = 'new ReflectionFunction(\'abc\')';
+		$result=dol_eval($s, 1, 1, '2');
+		print "result = ".$result."\n";
+		$this->assertEquals('Bad string syntax to evaluate: new __forbiddenstring__(\'abc\')', $result);
 
 		$result=dol_eval('$a=function() { }; $a;', 1, 1, '');
 		print "result = ".$result."\n";

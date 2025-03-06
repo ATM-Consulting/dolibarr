@@ -1000,7 +1000,7 @@ if (empty($reshook) && GETPOST('actionmove', 'alpha') == 'mupdate') {
 
 	$newdate = GETPOST('newdate', 'alpha');
 	if (empty($newdate) || strpos($newdate, 'dayevent_') != 0) {
-		header("Location: ".$backtopage);
+		header("Location: ".$backtopage, true, 307);
 		exit;
 	}
 
@@ -1085,7 +1085,7 @@ if (empty($reshook) && GETPOST('actionmove', 'alpha') == 'mupdate') {
 		}
 	}
 	if (!empty($backtopage)) {
-		header("Location: ".$backtopage);
+		header("Location: ".$backtopage, true, 307);
 		exit;
 	} else {
 		$action = '';
@@ -1960,7 +1960,12 @@ if ($id > 0) {
 			// related contact
 			print '<tr><td>'.$langs->trans("ActionOnContact").'</td><td>';
 			print '<div class="maxwidth200onsmartphone">';
-			print img_picto('', 'contact', 'class="paddingrightonly"').$form->selectcontacts(empty($conf->global->MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT) ? $object->socid : 0, array_keys($object->socpeopleassigned), 'socpeopleassigned[]', 1, '', '', 1, 'quatrevingtpercent', false, 0, 0, array(), 'multiple', 'contactid');
+			if (getDolGlobalInt('MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT')) {
+				$select_contact_default = 0; // select "all" contacts by default : avoid to use it if there is a lot of contacts
+			} else {
+				$select_contact_default = -1; // select "none" by default
+			}
+			print img_picto('', 'contact', 'class="paddingrightonly"').$form->selectcontacts(!empty($object->socid) ? $object->socid : $select_contact_default, array_keys($object->socpeopleassigned), 'socpeopleassigned[]', 1, '', '', 1, 'quatrevingtpercent', false, 0, 0, array(), 'multiple', 'contactid');
 			print '</div>';
 			print '</td>';
 			print '</tr>';

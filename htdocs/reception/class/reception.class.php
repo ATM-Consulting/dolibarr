@@ -756,7 +756,7 @@ class Reception extends CommonObject
 				// qty wished in order supplier (origin)
 				foreach ($this->commandeFournisseur->lines as $origin_line) {
 					// exclude lines not qualified for reception
-					if (empty($conf->global->STOCK_SUPPORTS_SERVICES) && $origin_line->product_type > 0) {
+					if ((!getDolGlobalString('STOCK_SUPPORTS_SERVICES') && $origin_line->product_type > 0) || $origin_line->product_type > 1) {
 						continue;
 					}
 
@@ -1058,6 +1058,11 @@ class Reception extends CommonObject
 					$mouvS->origin = null;
 
 					$result = $mouvS->livraison($user, $obj->fk_product, $obj->fk_entrepot, $obj->qty, 0, $langs->trans("ReceptionDeletedInDolibarr", $this->ref), '', $obj->eatby, $obj->sellby, $obj->batch); // Price is set to 0, because we don't want to see WAP changed
+					if ($result < 0) {
+						$error++;
+						$this->error = $mouvS->error;
+						$this->errors = $mouvS->errors;
+					}
 				}
 			} else {
 				$error++; $this->errors[] = "Error ".$this->db->lasterror();
@@ -1667,7 +1672,7 @@ class Reception extends CommonObject
 	}
 
 	/**
-	 *	Classify the reception as invoiced (used when WORKFLOW_EXPEDITION_CLASSIFY_CLOSED_INVOICE is on)
+	 *	Classify the reception as invoiced (used when WORKFLOW_RECEPTION_CLASSIFY_CLOSED_INVOICE is on)
 	 *
 	 *	@return     int     <0 if ko, >0 if ok
 	 */

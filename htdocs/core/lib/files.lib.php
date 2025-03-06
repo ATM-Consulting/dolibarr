@@ -1448,6 +1448,7 @@ function dol_delete_file($file, $disableglob = 0, $nophperrors = 0, $nohook = 0,
 					}
 				}
 			} else {
+				$ok = true; // nothing to delete when glob is on must return ok
 				dol_syslog("No files to delete found", LOG_DEBUG);
 			}
 		} else {
@@ -2605,7 +2606,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	// Find the subdirectory name as the reference. For example original_file='10/myfile.pdf' -> refname='10'
 	if (empty($refname)) {
 		$refname = basename(dirname($original_file)."/");
-		if ($refname == 'thumbs') {
+		if ($refname == 'thumbs' || $refname == 'temp') {
 			// If we get the thumbs directory, we must go one step higher. For example original_file='10/thumbs/myfile_small.jpg' -> refname='10'
 			$refname = basename(dirname(dirname($original_file))."/");
 		}

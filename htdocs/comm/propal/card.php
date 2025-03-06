@@ -146,7 +146,6 @@ $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action
 if ($reshook < 0) {
 	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 }
-
 if (empty($reshook)) {
 	$backurlforlist = DOL_URL_ROOT.'/comm/propal/list.php';
 
@@ -1614,7 +1613,20 @@ if (empty($reshook)) {
 		$result = $object->set_demand_reason($user, GETPOST('demand_reason_id', 'int'));
 	} elseif ($action == 'setconditions' && $usercancreate) {
 		// Terms of payment
-		$result = $object->setPaymentTerms(GETPOST('cond_reglement_id', 'int'), GETPOST('cond_reglement_id_deposit_percent', 'alpha'));
+		$sql = "SELECT code ";
+		$sql .= "FROM " . $db->prefix() . "c_payment_term";
+		$sql .= " WHERE rowid = " . ((int) GETPOST('cond_reglement_id', 'int'));
+		$result = $db->query($sql);
+		if ($result) {
+			$obj = $db->fetch_object($result);
+			if ($obj->code == 'DEP30PCTDEL') {
+				$result = $object->setPaymentTerms(GETPOST('cond_reglement_id', 'int'), GETPOST('cond_reglement_id_deposit_percent', 'alpha'));
+			} else {
+				$object->deposit_percent = 0;
+				$object->update($user);
+				$result = $object->setPaymentTerms(GETPOST('cond_reglement_id', 'int'), $object->deposit_percent);
+			}
+		}
 	} elseif ($action == 'setremisepercent' && $usercancreate) {
 		$result = $object->set_remise_percent($user, price2num(GETPOST('remise_percent'), '', 2));
 	} elseif ($action == 'setremiseabsolue' && $usercancreate) {
@@ -2857,7 +2869,9 @@ if ($action == 'create') {
 		print '<td class="titlefieldmiddle">' . $langs->transcountry("AmountLT1", $mysoc->country_code) . '</td>';
 		print '<td class="nowrap amountcard right">' . price($object->total_localtax1, '', $langs, 0, -1, -1, $conf->currency) . '</td>';
 		if (isModEnabled("multicurrency") && ($object->multicurrency_code && $object->multicurrency_code != $conf->currency)) {
-			print '<td class="nowrap amountcard right">' . price($object->total_localtax1, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
+			$object->multicurrency_total_localtax1 = price2num($object->total_localtax1 * $object->multicurrency_tx, 'MT');
+
+			print '<td class="nowrap amountcard right">' . price($object->multicurrency_total_localtax1, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
 		}
 		print '</tr>';
 
@@ -2866,7 +2880,9 @@ if ($action == 'create') {
 			print '<td>' . $langs->transcountry("AmountLT2", $mysoc->country_code) . '</td>';
 			print '<td class="nowrap amountcard right">' . price($object->total_localtax2, '', $langs, 0, -1, -1, $conf->currency) . '</td>';
 			if (isModEnabled("multicurrency") && ($object->multicurrency_code && $object->multicurrency_code != $conf->currency)) {
-				print '<td class="nowrap amountcard right">' . price($object->total_localtax2, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
+				$object->multicurrency_total_localtax2 = price2num($object->total_localtax2 * $object->multicurrency_tx, 'MT');
+
+				print '<td class="nowrap amountcard right">' . price($object->multicurrency_total_localtax2, '', $langs, 0, -1, -1, $object->multicurrency_code) . '</td>';
 			}
 			print '</tr>';
 		}

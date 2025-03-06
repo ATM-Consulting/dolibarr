@@ -802,6 +802,8 @@ if (empty($reshook)) {
 			$result = $objectline->update($user);
 			if ($result < 0) {
 				$error++;
+				$action = 'editline';
+				$_GET['rowid'] = GETPOST('elrowid');
 				setEventMessages($objectline->error, $objectline->errors, 'errors');
 			}
 		}
@@ -1711,7 +1713,7 @@ if ($action == 'create') {
 						$line = new ContratLigne($db);
 						$line->id = $objp->rowid;
 						$line->fetch_optionals();
-						print $line->showOptionals($extrafields, 'view', array('class'=>'oddeven', 'style'=>$moreparam, 'colspan'=>$colspan), '', '', 1);
+						print $line->showOptionals($extrafields, 'view', array('class'=>'oddeven', 'style'=>$moreparam, 'colspan'=>$colspan, 'tdclass' => 'notitlefieldcreate'), '', '', 1);
 					}
 				} else {
 					// Line in mode update
@@ -1815,7 +1817,7 @@ if ($action == 'create') {
 						$line = new ContratLigne($db);
 						$line->id = $objp->rowid;
 						$line->fetch_optionals();
-						print $line->showOptionals($extrafields, 'edit', array('style'=>'class="oddeven"', 'colspan'=>$colspan), '', '', 1);
+						print $line->showOptionals($extrafields, 'edit', array('style'=>'class="oddeven"', 'colspan'=>$colspan, 'tdclass' => 'notitlefieldcreate'), '', '', 1);
 					}
 				}
 
