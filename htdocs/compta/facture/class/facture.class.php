@@ -2199,7 +2199,7 @@ class Facture extends CommonInvoice
 	public function fetch_lines($only_product = 0, $loadalsotranslation = 0)
 	{
 		// phpcs:enable
-		global $langs, $conf;
+		global $langs, $conf, $extrafields;
 
 		$this->lines = array();
 
@@ -5994,6 +5994,30 @@ class FactureLigne extends CommonInvoiceLine
 	 */
 	public function fetch($rowid)
 	{
+		global $extrafields;
+
+		$extraFieldsCheck = false;
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element
+			if (empty($extrafields->attributes[$this->table_element]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element]['label'])
+				&& is_array($extrafields->attributes[$this->table_element]['label'])
+				&& count($extrafields->attributes[$this->table_element]['label']) > 0
+			);
+		}
+
 		$sql = 'SELECT fd.rowid, fd.fk_facture, fd.fk_parent_line, fd.fk_product, fd.product_type, fd.label as custom_label, fd.description, fd.price, fd.qty, fd.vat_src_code, fd.tva_tx,';
 		$sql .= ' fd.localtax1_tx, fd. localtax2_tx, fd.remise, fd.remise_percent, fd.fk_remise_except, fd.subprice, fd.ref_ext,';
 		$sql .= ' fd.date_start as date_start, fd.date_end as date_end, fd.fk_product_fournisseur_price as fk_fournprice, fd.buy_price_ht as pa_ht,';
@@ -6006,8 +6030,25 @@ class FactureLigne extends CommonInvoiceLine
 		$sql .= ' fd.multicurrency_total_tva,';
 		$sql .= ' fd.multicurrency_total_ttc,';
 		$sql .= ' p.ref as product_ref, p.label as product_label, p.description as product_desc';
-		$sql .= ' FROM '.MAIN_DB_PREFIX.'facturedet as fd';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product as p ON fd.fk_product = p.rowid';
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
+		$sql .= ' FROM '.$this->db->prefix().'facturedet as fd';
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element.'_extrafields as ef ON fd.rowid = ef.fk_object';
+		}
+
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'product as p ON fd.fk_product = p.rowid';
 		$sql .= ' WHERE fd.rowid = '.((int) $rowid);
 
 		$result = $this->db->query($sql);
@@ -6071,6 +6112,42 @@ class FactureLigne extends CommonInvoiceLine
 			$this->multicurrency_total_ht = $objp->multicurrency_total_ht;
 			$this->multicurrency_total_tva = $objp->multicurrency_total_tva;
 			$this->multicurrency_total_ttc = $objp->multicurrency_total_ttc;
+
+			// Now process extrafields
+			$this->array_options = array();
+			if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+				foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+					if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+						$keyname = $key;
+
+						// Process date/datetime fields
+						if (!empty($extrafields->attributes[$this->table_element]) && in_array($extrafields->attributes[$this->table_element]['type'][$key], array('date', 'datetime'))) {
+							$this->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
+						} else {
+							$this->array_options["options_".$key] = $objp->$keyname;
+						}
+					}
+				}
+
+				// Process computed fields
+				if (is_array($extrafields->attributes[$this->table_element]['label'])) {
+					foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+						if (!empty($extrafields->attributes[$this->table_element]) && !empty($extrafields->attributes[$this->table_element]['computed'][$key])) {
+							if (empty($conf->disable_compute)) {
+								global $objectoffield;    // We set a global variable to $objectoffield so
+								$objectoffield = $this;   // we can use it inside computed formula
+								$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element]['computed'][$key], 1, 0, '');
+							}
+						}
+					}
+				}
+			}
+
+			if (!$doFetchInOneSqlRequest) {
+				// Retrieve all extrafield
+				// fetch optionals attributes and labels
+				$this->fetch_optionals();
+			}
 
 			$this->db->free($result);
 
