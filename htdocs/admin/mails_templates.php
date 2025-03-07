@@ -44,7 +44,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/accounting.lib.php';
 
 // Load translation files required by the page
-$langsArray = array("errors", "admin", "mails", "languages");
+$langsArray = array("errors", "admin", "mails", "languages", "products");
 
 if (isModEnabled('member')) {
 	$langsArray[] = 'members';
@@ -242,7 +242,12 @@ if (isModEnabled('eventorganization') && $user->hasRight('eventorganization', 'r
 if (isModEnabled('partnership') && $user->hasRight('partnership', 'read')) {
 	$elementList['partnership_send'] = img_picto('', 'partnership', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToPartnership'));
 }
-
+/**
+ * BACKPORT FROM V22
+ */
+if (isModEnabled('product') && !empty($user->rights->produit->lire)) {
+	$elementList['product_send'] = img_picto('', 'product', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('Product'));
+}
 $parameters = array('elementList' => $elementList);
 $reshook = $hookmanager->executeHooks('emailElementlist', $parameters); // Note that $action and $object may have been modified by some hooks
 if ($reshook == 0) {
@@ -250,6 +255,9 @@ if ($reshook == 0) {
 		$elementList[$item] = $value;
 	}
 }
+/**
+ * END BACKPORT FROM V22
+ */
 
 $error = 0;
 

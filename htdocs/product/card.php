@@ -1243,6 +1243,20 @@ if (empty($reshook)) {
 			setEventMessages($langs->trans("WarningSelectOneDocument"), null, 'warnings');
 		}
 	}
+
+	/**
+	 * BACKPORT FROM V22
+	 */
+	// Actions to send emails
+	$triggersendname = 'PRODUCT_SENTBYMAIL';
+	$paramname = 'id';
+	$autocopy = 'MAIN_MAIL_AUTOCOPY_PRODUCT_TO';
+	$trackid = 'prod'.$object->id;
+	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
+	/**
+	 * END BACKPORT FROM V22
+	 */
+
 }
 
 
@@ -2947,6 +2961,17 @@ if ($action != 'create' && $action != 'edit') {
 				print dolGetButtonAction('', $langs->trans('Modify'), 'default', $_SERVER["PHP_SELF"].'?action=edit&token='.newToken().'&id='.$object->id, '', $usercancreate);
 			}
 
+			/**
+			 * BACKPORT FROM V22
+			 */
+
+			//Send
+			print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=presend&mode=init&token=' . newToken() . '#formmailbeforetitle');
+
+			/**
+			 * END BACKPORT FROM V22
+			 */
+
 			if (!isset($object->no_button_copy) || $object->no_button_copy != 1) {
 				if (!empty($conf->use_javascript_ajax) && empty($conf->dol_use_jmobile)) {
 					$cloneProductUrl = '';
@@ -3084,6 +3109,16 @@ if (getDolGlobalString('PRODUCT_ADD_FORM_ADD_TO') && $object->id && ($action == 
  * Generated documents
  */
 
+/**
+ * BACKPORT FROM V22
+ */
+if (GETPOST('modelselected')) {
+	$action = 'presend';
+}
+/**
+ * END BACKPORT FROM V22
+ */
+
 if ($action != 'create' && $action != 'edit' && $action != 'delete') {
 	print '<div class="fichecenter"><div class="fichehalfleft">';
 	print '<a name="builddoc"></a>'; // ancre
@@ -3116,6 +3151,20 @@ if ($action != 'create' && $action != 'edit' && $action != 'delete') {
 	$somethingshown = $formactions->showactions($object, 'product', 0, 1, '', $MAXEVENT, '', $morehtmlcenter); // Show all action for product
 
 	print '</div></div>';
+
+	/**
+	 * BACKPORT FROM V22
+	 */
+	// Presend form
+	$modelmail = 'product_send';
+	$defaulttopic = $object->label;
+	$diroutput = $conf->product->multidir_output[$object->entity];
+	$trackid = 'prod' . $object->id;
+
+	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
+	/**
+	 * END BACKPORT FROM V22
+	 */
 }
 
 // End of page
