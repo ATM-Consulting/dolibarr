@@ -148,8 +148,10 @@ $staticcontratligne = new ContratLigne($db);
 $companystatic = new Societe($db);
 
 $arrayfields = array(
+	/* SPE KOESIO */
 	'cd.rowid'=>array('label'=>"TechnicalID", 'position'=>1, 'checked'=>(getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID')), 'enabled'=>(getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID'))),
 	'c.rowid'=>array('label'=>"ContractID", 'position'=>2, 'checked'=>(getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID')), 'enabled'=>(getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID'))),
+	/* END SPE KOESIO */
 	'c.ref'=>array('label'=>"Contract", 'checked'=>1, 'position'=>80),
 	'p.description'=>array('label'=>"Service", 'checked'=>1, 'position'=>80),
 	's.nom'=>array('label'=>"ThirdParty", 'checked'=>1, 'position'=>90),
@@ -302,12 +304,14 @@ if ($mode == "4") {
 if ($mode == "5") {
 	$sql .= " AND cd.statut = 5";
 }
+/* SPE KOESIO */
 if ($search_id > 0) {
 	$sql .= natural_search("cd.rowid", $search_id, 1);
 }
 if ($search_contract_id > 0) {
 	$sql .= natural_search("c.rowid", $search_contract_id, 1);
 }
+/* END SPE KOESIO */
 if ($filter == "expired") {
 	$sql .= " AND cd.date_fin_validite < '".$db->idate($now)."'";
 }
@@ -581,6 +585,7 @@ print '<table class="tagtable liste'.($moreforfilter ? " listwithfilterbefore" :
 
 
 print '<tr class="liste_titre">';
+/* SPE KOESIO */
 if (!empty($arrayfields['cd.rowid']['checked'])) {
 	print '<td class="liste_titre" data-key="id">';
 	print '<input class="flat searchstring" type="text" name="search_id" size="1" value="'.dol_escape_htmltag($search_id).'">';
@@ -591,6 +596,7 @@ if (!empty($arrayfields['c.rowid']['checked'])) {
 	print '<input class="flat searchstring" type="text" name="search_contract_id" size="1" value="'.dol_escape_htmltag($search_contract_id).'">';
 	print '</td>';
 }
+/* END SPE KOESIO */
 if (!empty($arrayfields['c.ref']['checked'])) {
 	print '<td class="liste_titre">';
 	print '<input type="hidden" name="filter" value="'.$filter.'">';
@@ -706,12 +712,14 @@ print '</td>';
 print "</tr>\n";
 
 print '<tr class="liste_titre">';
+/* SPE KOESIO */
 if (!empty($arrayfields['cd.rowid']['checked'])) {
 	print_liste_field_titre($arrayfields['cd.rowid']['label'], $_SERVER["PHP_SELF"], "cd.rowid", "", $param, ' data-key="id"', $sortfield, $sortorder, 'actioncolumn ');
 }
 if (!empty($arrayfields['c.rowid']['checked'])) {
 	print_liste_field_titre($arrayfields['c.rowid']['label'], $_SERVER["PHP_SELF"], "c.rowid", "", $param, ' data-key="id"', $sortfield, $sortorder, 'actioncolumn ');
 }
+/* END SPE KOESIO */
 if (!empty($arrayfields['c.ref']['checked'])) {
 	print_liste_field_titre($arrayfields['c.ref']['label'], $_SERVER["PHP_SELF"], "c.ref", "", $param, "", $sortfield, $sortorder);
 }
@@ -798,6 +806,7 @@ while ($i < min($num, $limit)) {
 
 	print '<tr class="oddeven">';
 
+	/* SPE KOESIO */
 	// Technical ID
 	if (!empty($arrayfields['cd.rowid']['checked'])) {
 		print '<td class="tdoverflowmax50" data-key="id">';
@@ -817,6 +826,7 @@ while ($i < min($num, $limit)) {
 			$totalarray['nbfield']++;
 		}
 	}
+	/* END SPE KOESIO */
 
 	// Ref
 	if (!empty($arrayfields['c.ref']['checked'])) {
