@@ -1088,6 +1088,7 @@ class FactureRec extends CommonInvoice
 				$result = $factureRecLine->insertExtraFields();
 				if ($result < 0) {
 					$this->errors[] = $factureRecLine->error;
+					return -1;
 				}
 
 				return $lineId;
@@ -1356,6 +1357,8 @@ class FactureRec extends CommonInvoice
 			$sql .= ' AND rowid = '.((int) $restrictioninvoiceid);
 		}
 		$sql .= $this->db->order('entity', 'ASC');
+		// Diff Prod : backport PR 33473
+		if(getDolGlobalInt('NB_REC_FACT_GEN_BY_CALL')) $sql .= $this->db->plimit(getDolGlobalInt('NB_REC_FACT_GEN_BY_CALL'));
 		//print $sql;exit;
 		$parameters = array(
 			'restrictioninvoiceid' => $restrictioninvoiceid,
