@@ -6359,19 +6359,39 @@ abstract class CommonObject
 							if ($value == '-1') {	// -1 is key for no defined in combo list of objects
 								$new_array_options[$key] = '';
 							} elseif ($value) {
+								/** BACKPORT PR #33460 */
 								$object = new $InfoFieldList[0]($this->db);
+
+								$objectId = 0;
+
+								$sqlFetchObject = "SELECT rowid FROM ".$this->db->prefix().$object->table_element;
 								if (is_numeric($value)) {
-									$res = $object->fetch($value); // Common case
+									$sqlFetchObject .= " WHERE rowid = " . $value;
 								} else {
-									$res = $object->fetch('', $value); // For compatibility
+									$sqlFetchObject .= " WHERE ref = '" . $value . "'";
+								}
+
+								$resql = $this->db->query($sqlFetchObject);
+								if ($resql) {
+									if ($this->db->num_rows($resql) === 1) {
+										$obj = $this->db->fetch_object($resql);
+										$objectId = $obj->rowid;
+										$res = 1;
+									} else {
+										$res = -1;
+									}
+								} else {
+									$this->error = 'SQL Query error : ' . $this->db->lasterror();
+									return -1;
 								}
 
 								if ($res > 0) {
-									$new_array_options[$key] = $object->id;
+									$new_array_options[$key] = $objectId;
 								} else {
 									$this->error = "Id/Ref '".$value."' for object '".$object->element."' not found";
 									return -1;
 								}
+								/** END BACKPORT PR #33460 */
 							}
 						} else {
 							dol_syslog('Error bad setup of extrafield', LOG_WARNING);
