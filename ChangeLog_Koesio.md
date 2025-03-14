@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport develop PR #33460 : removed useless fetch product for a SQL request
 - Backport develop PR #33302 : hook printObjectLinesList - *2025-03-04*
 - Backport develop PR #33314 : hook completeFieldsToSearchAll on thirdparty list
 - Backport develop PR #32662 : New hooks in services_list and added global search
