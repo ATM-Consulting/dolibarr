@@ -709,7 +709,7 @@ class FormSetupItem
 			$this->fieldValue = getDolGlobalString($this->confKey);
 			return true;
 		} else {
-			$this->fieldValue = '';
+			$this->fieldValue = null;
 			return false;
 		}
 	}
@@ -906,8 +906,8 @@ class FormSetupItem
 		} elseif ($this->type == 'yesno') {
 			if (!empty($conf->use_javascript_ajax)) {
 				$input = $this->fieldParams['input'] ?? array();
-				$revertonoff = $this->fieldParams['revertonoff'] ? 1 : 0;
-				$forcereload = $this->fieldParams['forcereload'] ? 1 : 0;
+				$revertonoff = !empty($this->fieldParams['revertonoff']) ? 1 : 0;
+				$forcereload = !empty($this->fieldParams['forcereload']) ? 1 : 0;
 
 				$out .= ajax_constantonoff($this->confKey, $input, $this->entity, $revertonoff, 0, $forcereload);
 			} else {

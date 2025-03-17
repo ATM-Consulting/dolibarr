@@ -1983,7 +1983,7 @@ function dol_add_file_process($upload_dir, $allowoverwrite = 0, $updatesessionor
 				// Move file from temp directory to final directory. A .noexe may also be appended on file name.
 				$resupload = dol_move_uploaded_file($TFile['tmp_name'][$i], $destfull, $allowoverwrite, 0, $TFile['error'][$i], 0, $varfiles, $upload_dir);
 
-				if (is_numeric($resupload) && $resupload > 0) {   // $resupload can be 'ErrorFileAlreadyExists'
+				if (is_numeric($resupload) && $resupload > 0) {   // $resupload can be 'ErrorFileAlreadyExists', 'ErrorFileIsInfectedWithAVirus...'
 					include_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 
 					$tmparraysize = getDefaultImageSizes();
@@ -2047,7 +2047,7 @@ function dol_add_file_process($upload_dir, $allowoverwrite = 0, $updatesessionor
 						if (preg_match('/File is a PDF with javascript inside/', $resupload)) {
 							setEventMessages($langs->trans("ErrorFileIsAnInfectedPDFWithJSInside"), null, 'errors');
 						} else {
-							setEventMessages($langs->trans("ErrorFileIsInfectedWithAVirus"), null, 'errors');
+							setEventMessages($langs->trans("ErrorFileIsInfectedWithAVirus").'<br>'.dolGetFirstLineOfText($resupload), null, 'errors');
 						}
 					} else { // Known error
 						setEventMessages($langs->trans($resupload), null, 'errors');
@@ -2909,7 +2909,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			$entity = 1;
 		}
 		$accessallowed = 1;
-		$original_file = (empty($conf->medias->multidir_output[$entity]) ? $conf->medias->dir_output : $conf->medias->multidir_output[$entity]).'/'.$original_file;
+		$original_file = (empty($conf->medias->multidir_output[$entity]) ? (empty($conf->medias->dir_output) ? DOL_DATA_ROOT.'/medias' : $conf->medias->dir_output) : $conf->medias->multidir_output[$entity]).'/'.$original_file;
 	} elseif ($modulepart == 'logs' && !empty($dolibarr_main_data_root)) {
 		// Wrapping for *.log files, like when used with url http://.../document.php?modulepart=logs&file=dolibarr.log
 		$accessallowed = ($user->admin && basename($original_file) == $original_file && preg_match('/^dolibarr.*\.(log|json)$/', basename($original_file)));

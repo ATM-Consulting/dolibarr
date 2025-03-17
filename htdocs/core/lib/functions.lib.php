@@ -812,7 +812,7 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 	if (empty($check)) {
 		dol_syslog("Deprecated use of GETPOST, called with 1st param = ".$paramname." and a 2nd param that is '', when calling page ".$_SERVER["PHP_SELF"], LOG_WARNING);
 		// Enable this line to know who call the GETPOST with '' $check parameter.
-		//var_dump(debug_backtrace()[0]);
+		//var_dump(getCallerInfoString());
 	}
 
 	if (empty($method)) {
@@ -1636,22 +1636,27 @@ function dol_size($size, $type = '')
  *	@param	string	$str            String to clean
  * 	@param	string	$newstr			String to replace bad chars with.
  *  @param	int	    $unaccent		1=Remove also accent (default), 0 do not remove them
+ *  @param	int		$includequotes	1=Include simple quotes (double is already included by default)
  *	@return string          		String cleaned
  *
  * 	@see        	dol_string_nospecial(), dol_string_unaccent(), dol_sanitizePathName()
  */
-function dol_sanitizeFileName($str, $newstr = '_', $unaccent = 1)
+function dol_sanitizeFileName($str, $newstr = '_', $unaccent = 1, $includequotes = 0)
 {
 	// List of special chars for filenames in windows are defined on page https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
 	// Char '>' '<' '|' '$' and ';' are special chars for shells.
 	// Char '/' and '\' are file delimiters.
 	// Chars '--' can be used into filename to inject special parameters like --use-compress-program to make command with file as parameter making remote execution of command
 	$filesystem_forbidden_chars = array('<', '>', '/', '\\', '?', '*', '|', '"', ':', '°', '$', ';', '`');
+	if ($includequotes) {
+		$filesystem_forbidden_chars[] = "'";
+	}
 	$tmp = dol_string_nospecial($unaccent ? dol_string_unaccent($str) : $str, $newstr, $filesystem_forbidden_chars);
 	$tmp = preg_replace('/\-\-+/', '_', $tmp);
 	$tmp = preg_replace('/\s+\-([^\s])/', ' _$1', $tmp);
 	$tmp = preg_replace('/\s+\-$/', '', $tmp);
 	$tmp = str_replace('..', '', $tmp);
+
 	return $tmp;
 }
 
@@ -2332,8 +2337,12 @@ function getCallerInfoString()
 {
 	$backtrace = debug_backtrace();
 	$msg = "";
-	if (count($backtrace) >= 2) {
-		$trace = $backtrace[1];
+	if (count($backtrace) >= 1) {
+		$pos = 1;
+		if (count($backtrace) == 1) {
+			$pos = 0;
+		}
+		$trace = $backtrace[$pos];
 		if (isset($trace['file'], $trace['line'])) {
 			$msg = " From {$trace['file']}:{$trace['line']}.";
 		}
@@ -4472,6 +4481,14 @@ function dol_print_phone($phone, $countrycode = '', $cid = 0, $socid = 0, $addli
 			$newphonewa = $newphone;
 			$newphone = substr($newphone, 0, 3).$separ.substr($newphone, 3, 3).$separ.substr($newphone, 6, 3).$separ.substr($newphone, 10, 3).$separ.substr($newphone, 14, 3);
 		}
+	} elseif (strtoupper($countrycode) == "IN") {//India
+		if (dol_strlen($phone) == 13) {
+			if ($withpicto == 'phone') {//ex: +91_AB_CDEF_GHIJ
+				$newphone = substr($newphone, 0, 3).$separ.substr($newphone, 3, 2).$separ.substr($newphone, 5, 4).$separ.substr($newphone, 9, 4);
+			} else {//ex: +91_ABCDE_FGHIJ
+				$newphone = substr($newphone, 0, 3).$separ.substr($newphone, 3, 5).$separ.substr($newphone, 8, 5);
+			}
+		}
 	}
 
 	$newphoneastart = $newphoneaend = '';
@@ -6049,7 +6066,7 @@ function info_admin($text, $infoonimgalt = 0, $nodiv = 0, $admin = '1', $morecss
 		if ($picto == 'warning') {
 			$fa = 'exclamation-triangle';
 		}
-		$result = ($nodiv ? '' : '<div class="wordbreakall '.$class.($morecss ? ' '.$morecss : '').($textfordropdown ? ' hidden' : '').'">').'<span class="fa fa-'.$fa.'" title="'.dol_escape_htmltag($admin ? $langs->trans('InfoAdmin') : $langs->trans('Note')).'"></span> ';
+		$result = ($nodiv ? '' : '<div class="wordbreak '.$class.($morecss ? ' '.$morecss : '').($textfordropdown ? ' hidden' : '').'">').'<span class="fa fa-'.$fa.'" title="'.dol_escape_htmltag($admin ? $langs->trans('InfoAdmin') : $langs->trans('Note')).'"></span> ';
 		$result .= dol_escape_htmltag($text, 1, 0, 'div,span,b,br,a');
 		$result .= ($nodiv ? '' : '</div>');
 
@@ -11697,13 +11714,20 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 
 	$value = preg_replace('/\s*\|\s*/', '|', $value);
 
-	$crits = explode(' ', $value);
+	// Split criteria on ' '.
+	// For mode 3, the split is done later on the , only and not on the ' '.
+	if ($mode != -3 && $mode != 3) {
+		$crits = explode(' ', $value);
+	} else {
+		$crits = array($value);
+	}
+
 	$res = '';
 	if (!is_array($fields)) {
 		$fields = array($fields);
 	}
 
-	$i1 = 0;	// count the nb of and criteria added (all fields / criteria)
+	$i1 = 0;	// count the nb of "and" criteria added (all fields / criteria)
 	foreach ($crits as $crit) {		// Loop on each AND criteria
 		$crit = trim($crit);
 		$i2 = 0;	// count the nb of valid criteria added for this this first criteria
@@ -11758,7 +11782,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 							$listofcodes .= "'".$db->escape($val)."'";
 						}
 					}
-					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1).")";
+					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1, 0, 1).")";
 					$i2++; // a criteria for 1 more field was added to string
 				}
 				if ($mode == -3) {
@@ -12553,7 +12577,7 @@ function dolGetBadge($label, $html = '', $type = 'primary', $mode = '', $url = '
 	// TODO: add hook
 
 	// escape all attribute
-	$attr = array_map('dol_escape_htmltag', $attr);
+	$attr = array_map('dolPrintHtmlForAttribute', $attr);
 
 	$TCompiledAttr = array();
 	foreach ($attr as $key => $value) {
@@ -12686,9 +12710,9 @@ function dolGetStatus($statusLabel = '', $statusLabelShort = '', $html = '', $st
  *                                                                                                                                                  30 => array('attr' => array('class'=>''), 'lang'=>'mymodule', 'enabled'=>isModEnabled("mymodule"), 'perm'=>$user->hasRight('mymodule', 'write'), 'label' => 'MyModuleOtherAction', 'urlraw' => '# || external Url || javascript: || tel: || mailto:' ),
  *                                                                                                                                                  );                                                                                                               );
  * @param string    	$id         	Attribute id of action button. Example 'action-delete'. This can be used for full ajax confirm if this code is reused into the ->formconfirm() method.
- * @param int|boolean	$userRight  	User action right
+ * @param int|boolean	$userRight  	User action right. Use 0 if user has no permission. It will add the message "No permission" on tooltip. Use -1 to have button not allowed without adding the message (because an explicit label is already set).
  * // phpcs:disable
- * @param array{confirm?:array{url?:string,title?:string,content?:string,action-btn-label?:string,cancel-btn-label?:string,modal?:bool},attr?:array<string,mixed>,areDropdownButtons?:bool,backtopage?:string,lang?:string,enabled?:bool,perm?:int<0,1>,label?:string,url?:string,isDropdown?:int<0,1>,isDropDown?:int<0,1>}	$params = [ // Various params for future : recommended rather than adding more function arguments
+ * @param array{confirm?:array{url?:string,title?:string,content?:string,use_unsecured_unescapedattr?:bool|string[],action-btn-label?:string,cancel-btn-label?:string,modal?:bool},attr?:array<string,mixed>,areDropdownButtons?:bool,backtopage?:string,lang?:string,enabled?:bool,perm?:int<0,1>,label?:string,url?:string,isDropdown?:int<0,1>,isDropDown?:int<0,1>}	$params = [ // Various params for future : recommended rather than adding more function arguments
  *                                                                                                                                                                                                                                                                                                                                      'attr' => [ // to add or override button attributes
  *                                                                                                                                                                                                                                                                                                                                      'xxxxx' => '', // your xxxxx attribute you want
  *                                                                                                                                                                                                                                                                                                                                      'class' => 'reposition', // to add more css class to the button class attribute
@@ -12705,7 +12729,7 @@ function dolGetStatus($statusLabel = '', $statusLabelShort = '', $html = '', $st
  *                                                                                                                                                                                                                                                                                                                                      ],
  *                                                                                                                                                                                                                                                                                                                                      ]
  * // phpcs:enable
- *                                                                                                                                                                                                                                                                                                                                      Example: array('attr' => array('class' => 'reposition'))
+ *                                                                                                                                                                                                                                                                                                                                                                              Example: array('attr' => array('class' => 'reposition'))
  * @return string               		html button
  */
 function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = '', $id = '', $userRight = 1, $params = array())
@@ -12814,11 +12838,11 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 		$attr['aria-label'] = $label;
 	}
 
-	if (empty($userRight)) {
+	if (empty($userRight) || $userRight < 0) {
 		$attr['class'] = 'butActionRefused';
 		$attr['href'] = '';
 		$attr['title'] = (($label && $text && $label != $text) ? $label : '');
-		$attr['title'] = ($attr['title'] ? $attr['title'].'<br>' : '').$langs->trans('NotEnoughPermissions');
+		$attr['title'] = ($attr['title'] ? $attr['title'] . (empty($userRight) ? '<br>' : '') : '').(empty($userRight) ? $langs->trans('NotEnoughPermissions') : '');
 	}
 
 	if (!empty($id)) {
@@ -12869,10 +12893,12 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 		unset($attr['href']);
 	}
 
-	// escape all attributes
 	$TCompiledAttr = array();
 	foreach ($attr as $key => $value) {
-		if ($key == 'href') {
+		if (!empty($params['use_unsecured_unescapedattr']) && is_array($params['use_unsecured_unescapedattr']) && in_array($key, $params['use_unsecured_unescapedattr'])) {
+			// Not recommended
+			$value = dol_htmlentities($value, ENT_QUOTES | ENT_SUBSTITUTE);
+		} elseif ($key == 'href') {
 			$value = dolPrintHTMLForAttributeUrl($value);
 		} else {
 			$value = dolPrintHTMLForAttribute($value);
@@ -13945,7 +13971,7 @@ function forgeSQLFromUniversalSearchCriteria($filter, &$errorstr = '', $noand = 
 	$ret = ($noand ? "" : " AND ").($nopar ? "" : '(').preg_replace_callback('/'.$regexstring.'/i', 'dolForgeSQLCriteriaCallback', $filter).($nopar ? "" : ')');
 
 	if (is_object($db)) {
-		$ret = str_replace('__NOW__', $db->idate(dol_now()), $ret);
+		$ret = str_replace('__NOW__', "'".$db->idate(dol_now())."'", $ret);
 	}
 	if (is_object($user)) {
 		$ret = str_replace('__USER_ID__', (string) $user->id, $ret);
@@ -14151,10 +14177,13 @@ function dolForgeSQLCriteriaCallback($matches)
 		$tmpelemarray = explode(',', $tmpescaped);
 		foreach ($tmpelemarray as $tmpkey => $tmpelem) {
 			$reg = array();
+			$tmpelem = trim($tmpelem);
 			if (preg_match('/^\'(.*)\'$/', $tmpelem, $reg)) {
-				$tmpelemarray[$tmpkey] = "'".$db->escape($db->sanitize($reg[1], 1, 1, 1))."'";
+				$tmpelemarray[$tmpkey] = "'".$db->escape($db->sanitize($reg[1], 2, 1, 1, 1))."'";
 			} else {
-				$tmpelemarray[$tmpkey] = $db->escape($db->sanitize($tmpelem, 1, 1, 1));
+				// TODO Replace with $tmpelemarray[$tmpkey] = (float) $tmpelem;
+				// or allow subrequests.
+				$tmpelemarray[$tmpkey] = $db->escape($db->sanitize($tmpelem, 1, 1, 1, 1));
 			}
 		}
 		$tmpescaped2 .= implode(',', $tmpelemarray);
@@ -14176,8 +14205,10 @@ function dolForgeSQLCriteriaCallback($matches)
 			$tmpescaped = 'NULL';
 		} elseif (ctype_digit((string) $tmpescaped)) {	// if only 0-9 chars, no .
 			$tmpescaped = (int) $tmpescaped;
-		} else {
+		} elseif (is_numeric((string) $tmpescaped)) {	// it can be a float with a .
 			$tmpescaped = (float) $tmpescaped;
+		} else {
+			$tmpescaped = preg_replace('/[^a-z0-9_]/i', '', $tmpescaped);	// it can be a name of field or a substitution variable like '__NOW__'
 		}
 	}
 

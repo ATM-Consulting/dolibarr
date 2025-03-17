@@ -104,7 +104,7 @@ class Facture extends CommonInvoice
 	protected $table_ref_field = 'ref';
 
 	/**
-	 * @var int ID
+	 * @var int|null ID
 	 * @deprecated		Use $user_creation_id
 	 */
 	public $fk_user_author;
@@ -3913,7 +3913,7 @@ class Facture extends CommonInvoice
 		// Deprecation warning
 		if ($label) {
 			dol_syslog(__METHOD__.": using line label is deprecated", LOG_WARNING);
-			//var_dump(debug_backtrace(false));exit;
+			//var_dump(getCallerInfoString());exit;
 		}
 
 		global $mysoc, $conf, $langs;
@@ -3955,7 +3955,12 @@ class Facture extends CommonInvoice
 				$fk_prev_id = 'null';
 			}
 			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null) {
-				$situation_percent = 100;
+				// INVOICE_USE_SITUATION = 2 - Lines situation percent on new lines must be 0 (No cumulative)
+				if ($this->isSituationInvoice() && getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+					$situation_percent = 0;
+				} else {
+					$situation_percent = 100;
+				}
 			}
 			if (empty($ref_ext)) {
 				$ref_ext = '';
@@ -4224,7 +4229,12 @@ class Facture extends CommonInvoice
 				$special_code = 0;
 			}
 			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null) {
-				$situation_percent = 100;
+				// INVOICE_USE_SITUATION = 2 - If there is no progress on a line, percent must not be 100% (No cumulative)
+				if ($this->type == Facture::TYPE_SITUATION && getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && (int) $situation_percent < 100) {
+					$situation_percent = 0;
+				} else {
+					$situation_percent = 100;
+				}
 			}
 			if (empty($ref_ext)) {
 				$ref_ext = '';
@@ -4318,6 +4328,11 @@ class Facture extends CommonInvoice
 				$rangmax = $this->line_max($fk_parent_line);
 				$this->line->rang = $rangmax + 1;
 			}
+			$apply_abs_price_on_credit_note=false;
+			if ($this->type == self::TYPE_CREDIT_NOTE  && !getDolGlobalInt('FACTURE_ENABLE_NEGATIVE_LINES') && !getDolGlobalInt('INVOICE_KEEP_DISCOUNT_LINES_AS_IN_ORIGIN')) {
+				$apply_abs_price_on_credit_note = true;
+			}
+
 
 			$this->line->id = $rowid;
 			$this->line->rowid = $rowid;
@@ -4334,14 +4349,14 @@ class Facture extends CommonInvoice
 			$this->line->localtax2_type		= empty($localtaxes_type[2]) ? 0 : $localtaxes_type[2];
 
 			$this->line->remise_percent		= $remise_percent;
-			$this->line->subprice			= ($this->type == self::TYPE_CREDIT_NOTE ? -abs((float) $pu_ht) : (float) $pu_ht); // For credit note, unit price always negative, always positive otherwise
+			$this->line->subprice			= ($apply_abs_price_on_credit_note ? -abs((float) $pu_ht) : (float) $pu_ht); // For credit note, unit price always negative, always positive otherwise
 			$this->line->date_start = $date_start;
 			$this->line->date_end			= $date_end;
-			$this->line->total_ht			= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $total_ht) : (float) $total_ht); // For credit note and if qty is negative, total is negative
-			$this->line->total_tva			= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $total_tva) : (float) $total_tva);
+			$this->line->total_ht			= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $total_ht) : (float) $total_ht); // For credit note and if qty is negative, total is negative
+			$this->line->total_tva			= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $total_tva) : (float) $total_tva);
 			$this->line->total_localtax1	= (float) $total_localtax1;
 			$this->line->total_localtax2	= (float) $total_localtax2;
-			$this->line->total_ttc			= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $total_ttc) : (float) $total_ttc);
+			$this->line->total_ttc			= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $total_ttc) : (float) $total_ttc);
 			$this->line->info_bits			= $info_bits;
 			$this->line->special_code		= $special_code;
 			$this->line->product_type		= $type;
@@ -4354,10 +4369,10 @@ class Facture extends CommonInvoice
 			$this->line->pa_ht = $pa_ht;
 
 			// Multicurrency
-			$this->line->multicurrency_subprice		= ($this->type == self::TYPE_CREDIT_NOTE ? -abs((float) $pu_ht_devise) : (float) $pu_ht_devise); // For credit note, unit price always negative, always positive otherwise
-			$this->line->multicurrency_total_ht 	= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $multicurrency_total_ht) : (float) $multicurrency_total_ht); // For credit note and if qty is negative, total is negative
-			$this->line->multicurrency_total_tva 	= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $multicurrency_total_tva) : (float) $multicurrency_total_tva);
-			$this->line->multicurrency_total_ttc 	= (($this->type == self::TYPE_CREDIT_NOTE || $qty < 0) ? -abs((float) $multicurrency_total_ttc) : (float) $multicurrency_total_ttc);
+			$this->line->multicurrency_subprice		= ($apply_abs_price_on_credit_note ? -abs((float) $pu_ht_devise) : (float) $pu_ht_devise); // For credit note, unit price always negative, always positive otherwise
+			$this->line->multicurrency_total_ht 	= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $multicurrency_total_ht) : (float) $multicurrency_total_ht); // For credit note and if qty is negative, total is negative
+			$this->line->multicurrency_total_tva 	= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $multicurrency_total_tva) : (float) $multicurrency_total_tva);
+			$this->line->multicurrency_total_ttc 	= (($apply_abs_price_on_credit_note || $qty < 0) ? -abs((float) $multicurrency_total_ttc) : (float) $multicurrency_total_ttc);
 
 			if (is_array($array_options) && count($array_options) > 0) {
 				// We replace values in this->line->array_options only for entries defined into $array_options
@@ -5583,13 +5598,21 @@ class Facture extends CommonInvoice
 	}
 
 	/**
+	 * Check if an invoice is a situation invoice
+	 *
+	 * @return int		Return a value if invoice is a situation invoice
+	 */
+	public function isSituationInvoice()
+	{
+		return $this->situation_cycle_ref;
+	}
+
+	/**
 	 * Currently used for documents generation : to know if retained warranty need to be displayed
 	 * @return bool
 	 */
 	public function displayRetainedWarranty()
 	{
-		global $conf;
-
 		// TODO : add a flag on invoices to store this conf : INVOICE_RETAINED_WARRANTY_LIMITED_TO_FINAL_SITUATION
 
 		// note : we don't need to test INVOICE_USE_RETAINED_WARRANTY because if $this->retained_warranty is not empty it's because it was set when this conf was active
@@ -5598,7 +5621,7 @@ class Facture extends CommonInvoice
 		if (!empty($this->retained_warranty)) {
 			$displayWarranty = true;
 
-			if ($this->type == Facture::TYPE_SITUATION && getDolGlobalString('INVOICE_RETAINED_WARRANTY_LIMITED_TO_FINAL_SITUATION')) {
+			if ($this->isSituationInvoice() && getDolGlobalString('INVOICE_RETAINED_WARRANTY_LIMITED_TO_FINAL_SITUATION')) {
 				// Check if this situation invoice is 100% for real
 				$displayWarranty = false;
 				if (!empty($this->situation_final)) {
@@ -5626,7 +5649,6 @@ class Facture extends CommonInvoice
 	 */
 	public function getRetainedWarrantyAmount($rounding = -1)
 	{
-		global $conf;
 		if (empty($this->retained_warranty)) {
 			return -1;
 		}
@@ -5634,7 +5656,7 @@ class Facture extends CommonInvoice
 		$retainedWarrantyAmount = 0;
 
 		// Billed - retained warranty
-		if ($this->type == Facture::TYPE_SITUATION && getDolGlobalString('INVOICE_RETAINED_WARRANTY_LIMITED_TO_FINAL_SITUATION')) {
+		if ($this->isSituationInvoice() && getDolGlobalString('INVOICE_RETAINED_WARRANTY_LIMITED_TO_FINAL_SITUATION')) {
 			$displayWarranty = true;
 			// Check if this situation invoice is 100% for real
 			if (!empty($this->lines)) {

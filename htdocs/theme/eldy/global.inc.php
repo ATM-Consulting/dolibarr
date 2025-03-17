@@ -1055,7 +1055,7 @@ textarea.centpercent {
 	word-break: break-word !important;
 }
 .wordbreak {
-	word-break: break-word;	/* cut fist between word, inside word if not possible */
+	word-break: break-word;	/* cut first between word, inside word if not possible */
 }
 .wordbreakall {
 	word-break: break-all;
@@ -3990,9 +3990,6 @@ a.tabTitle {
 	margin-<?php print $right; ?>: 10px;
 	text-decoration: none;
 	white-space: nowrap;
-}
-.tabTitleText {
-	display: none;
 }
 .imgTabTitle {
 	max-height: 14px;
