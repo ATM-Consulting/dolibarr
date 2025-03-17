@@ -308,6 +308,12 @@ class DoliDBMysqli extends DoliDB
 			return false; // Return false = error if empty request
 		}
 
+        if (defined('KQUERIES')) {
+            if (preg_match('/^(INSERT|UPDATE|REPLACE|DELETE|CREATE|ALTER|TRUNCATE|DROP)/i', $query)) {
+                file_put_contents(KQUERIES, "\n\n$query", FILE_APPEND);
+            }
+        }
+
 		if (!empty($dolibarr_main_db_readonly)) {
 			if (preg_match('/^(INSERT|UPDATE|REPLACE|DELETE|CREATE|ALTER|TRUNCATE|DROP)/i', $query)) {
 				$this->lasterror = 'Application in read-only mode';
