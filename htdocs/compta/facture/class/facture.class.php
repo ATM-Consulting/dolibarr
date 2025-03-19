@@ -997,13 +997,13 @@ class Facture extends CommonInvoice
 					////////////////////////////
 					// For line from template invoice, we use data from template invoice
 					/*
+					////////////////////////////
+					//END BACKPORT V17 to V17_koesio
+					////////////////////////////
 					if ($_facrec->lines[$i]->fk_product) {
 						$prod = new Product($this->db);
 						$res = $prod->fetch($_facrec->lines[$i]->fk_product);
 					}
-					////////////////////////////
-					//END BACKPORT V17 to V17_koesio
-					////////////////////////////
 
 					$tva_tx = get_default_tva($mysoc,$soc,$prod->id);
 					$tva_npr = get_default_npr($mysoc,$soc,$prod->id);
