@@ -1327,12 +1327,6 @@ parameters:
 			path: ../../../htdocs/admin/index.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/admin/knowledgemanagement.php
-
-		-
 			message: '#^Offset ''includedocgeneration'' on array\{label\: ''KnowledgeManagement'', includerefgeneration\: 1, includedocgeneration\: 0, class\: ''KnowledgeRecord''\} in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.offset
 			count: 1
@@ -2191,12 +2185,6 @@ parameters:
 			path: ../../../htdocs/asset/class/asset.class.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 2
-			path: ../../../htdocs/asset/class/asset.class.php
-
-		-
 			message: '#^Call to function is_callable\(\) with array\{\$this\(AssetDepreciationOptions\), ''validateField''\} will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -2635,12 +2623,6 @@ parameters:
 			path: ../../../htdocs/bookcal/availabilities_card.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/bookcal/availabilities_list.php
-
-		-
 			message: '#^If condition is always false\.$#'
 			identifier: if.alwaysFalse
 			count: 1
@@ -2771,12 +2753,6 @@ parameters:
 			identifier: booleanNot.alwaysFalse
 			count: 1
 			path: ../../../htdocs/bookcal/calendar_document.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/bookcal/calendar_list.php
 
 		-
 			message: '#^If condition is always false\.$#'
@@ -3699,7 +3675,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 6
+			count: 2
 			path: ../../../htdocs/comm/propal/card.php
 
 		-
@@ -3993,7 +3969,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 6
+			count: 2
 			path: ../../../htdocs/commande/card.php
 
 		-
@@ -5425,12 +5401,6 @@ parameters:
 			path: ../../../htdocs/compta/paiement/cheque/card.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 3
-			path: ../../../htdocs/compta/paiement/cheque/card.php
-
-		-
 			message: '#^Call to function method_exists\(\) with \$this\(RemiseCheque\) and ''LibStatut'' will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -6133,12 +6103,6 @@ parameters:
 			path: ../../../htdocs/compta/stats/supplier_turnover_by_prodserv.php
 
 		-
-			message: '#^Variable \$result might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: ../../../htdocs/compta/stats/supplier_turnover_by_prodserv.php
-
-		-
 			message: '#^Variable \$sortfield in empty\(\) always exists and is not falsy\.$#'
 			identifier: empty.variable
 			count: 1
@@ -6164,12 +6128,6 @@ parameters:
 
 		-
 			message: '#^Variable \$description might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: ../../../htdocs/compta/stats/supplier_turnover_by_thirdparty.php
-
-		-
-			message: '#^Variable \$result might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: ../../../htdocs/compta/stats/supplier_turnover_by_thirdparty.php
@@ -6370,12 +6328,6 @@ parameters:
 			message: '#^If condition is always true\.$#'
 			identifier: if.alwaysTrue
 			count: 2
-			path: ../../../htdocs/compta/tva/payments.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
 			path: ../../../htdocs/compta/tva/payments.php
 
 		-
@@ -6675,7 +6627,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 3
+			count: 1
 			path: ../../../htdocs/contrat/card.php
 
 		-
@@ -6889,12 +6841,6 @@ parameters:
 			path: ../../../htdocs/contrat/note.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/contrat/services_list.php
-
-		-
 			message: '#^Loose comparison using \=\= between '''' and \-1 will always evaluate to false\.$#'
 			identifier: equal.alwaysFalse
 			count: 1
@@ -6955,12 +6901,6 @@ parameters:
 			path: ../../../htdocs/core/actions_addupdatedelete.inc.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 4
-			path: ../../../htdocs/core/actions_addupdatedelete.inc.php
-
-		-
 			message: '#^Comparison operation "\>" between false and 0 is always false\.$#'
 			identifier: greater.alwaysFalse
 			count: 1
@@ -6969,12 +6909,6 @@ parameters:
 		-
 			message: '#^Negated boolean expression is always false\.$#'
 			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: ../../../htdocs/core/actions_builddoc.inc.php
-
-		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
 			count: 1
 			path: ../../../htdocs/core/actions_builddoc.inc.php
 
@@ -7041,12 +6975,6 @@ parameters:
 		-
 			message: '#^Variable \$hideref might not be defined\.$#'
 			identifier: variable.undefined
-			count: 2
-			path: ../../../htdocs/core/actions_lineupdown.inc.php
-
-		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
 			count: 2
 			path: ../../../htdocs/core/actions_lineupdown.inc.php
 
@@ -7135,12 +7063,6 @@ parameters:
 			path: ../../../htdocs/core/actions_massactions.inc.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 3
-			path: ../../../htdocs/core/actions_massactions.inc.php
-
-		-
 			message: '#^Variable \$search_status might not be defined\.$#'
 			identifier: variable.undefined
 			count: 2
@@ -7205,12 +7127,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: ../../../htdocs/core/actions_setmoduleoptions.inc.php
-
-		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: ../../../htdocs/core/actions_setnotes.inc.php
 
 		-
 			message: '#^Variable \$result might not be defined\.$#'
@@ -9101,12 +9017,6 @@ parameters:
 			identifier: isset.property
 			count: 1
 			path: ../../../htdocs/core/class/html.formmail.class.php
-
-		-
-			message: '#^Parameter \#3 \$zone of static method InfoBox\:\:listBoxes\(\) expects int, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: ../../../htdocs/core/class/html.formother.class.php
 
 		-
 			message: '#^Property CommonObjectLine\:\:\$id \(int\) in isset\(\) is not nullable\.$#'
@@ -12253,12 +12163,6 @@ parameters:
 			path: ../../../htdocs/core/photos_resize.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/core/search_page.php
-
-		-
 			message: '#^Loose comparison using \=\= between 1 and 2 will always evaluate to false\.$#'
 			identifier: equal.alwaysFalse
 			count: 1
@@ -12478,12 +12382,6 @@ parameters:
 			message: '#^Left side of && is always true\.$#'
 			identifier: booleanAnd.leftAlwaysTrue
 			count: 2
-			path: ../../../htdocs/core/tpl/extrafields_view.tpl.php
-
-		-
-			message: '#^Variable \$action might not be defined\.$#'
-			identifier: variable.undefined
-			count: 4
 			path: ../../../htdocs/core/tpl/extrafields_view.tpl.php
 
 		-
@@ -12985,12 +12883,6 @@ parameters:
 			path: ../../../htdocs/debugbar/class/DataCollector/DolPhpCollector.php
 
 		-
-			message: '#^Parameter \#2 \$resql of method TraceableDB\:\:endTracing\(\) expects string, bool\|mysqli_result\|resource given\.$#'
-			identifier: argument.type
-			count: 1
-			path: ../../../htdocs/debugbar/class/TraceableDB.php
-
-		-
 			message: '#^Parameter \#1 \$callback of function spl_autoload_register expects \(callable\(string\)\: void\)\|null, Closure\(mixed\)\: bool given\.$#'
 			identifier: argument.type
 			count: 1
@@ -13023,7 +12915,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 2
+			count: 1
 			path: ../../../htdocs/delivery/card.php
 
 		-
@@ -13459,12 +13351,6 @@ parameters:
 			path: ../../../htdocs/emailcollector/class/emailcollector.class.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: ../../../htdocs/emailcollector/class/emailcollector.class.php
-
-		-
 			message: '#^Call to function method_exists\(\) with \$this\(ConferenceOrBooth\) and ''getLibStatut'' will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -13839,7 +13725,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 3
+			count: 1
 			path: ../../../htdocs/expedition/card.php
 
 		-
@@ -14239,12 +14125,6 @@ parameters:
 			path: ../../../htdocs/expensereport/card.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 10
-			path: ../../../htdocs/expensereport/card.php
-
-		-
 			message: '#^Call to function method_exists\(\) with \$this\(ExpenseReport\) and ''getLibStatut'' will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -14272,12 +14152,6 @@ parameters:
 			message: '#^Negated boolean expression is always true\.$#'
 			identifier: booleanNot.alwaysTrue
 			count: 2
-			path: ../../../htdocs/expensereport/class/expensereport.class.php
-
-		-
-			message: '#^Parameter \#2 \$pu of function calcul_price_total expects float, string given\.$#'
-			identifier: argument.type
-			count: 1
 			path: ../../../htdocs/expensereport/class/expensereport.class.php
 
 		-
@@ -14571,7 +14445,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 11
+			count: 1
 			path: ../../../htdocs/fichinter/card.php
 
 		-
@@ -15213,7 +15087,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 7
+			count: 2
 			path: ../../../htdocs/fourn/commande/card.php
 
 		-
@@ -15381,7 +15255,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 6
+			count: 1
 			path: ../../../htdocs/fourn/facture/card.php
 
 		-
@@ -15731,12 +15605,6 @@ parameters:
 			identifier: variable.undefined
 			count: 2
 			path: ../../../htdocs/holiday/view_log.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 2
-			path: ../../../htdocs/hrm/admin/admin_hrm.php
 
 		-
 			message: '#^Negated boolean expression is always true\.$#'
@@ -17143,12 +17011,6 @@ parameters:
 			path: ../../../htdocs/main.inc.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 2
-			path: ../../../htdocs/main.inc.php
-
-		-
 			message: '#^If condition is always false\.$#'
 			identifier: if.alwaysFalse
 			count: 1
@@ -17779,12 +17641,6 @@ parameters:
 			path: ../../../htdocs/modulebuilder/template/myobject_document.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/modulebuilder/template/myobject_list.php
-
-		-
 			message: '#^Negated boolean expression is always true\.$#'
 			identifier: booleanNot.alwaysTrue
 			count: 1
@@ -18019,12 +17875,6 @@ parameters:
 			path: ../../../htdocs/mrp/mo_card.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: ../../../htdocs/mrp/mo_card.php
-
-		-
 			message: '#^If condition is always false\.$#'
 			identifier: if.alwaysFalse
 			count: 1
@@ -18109,12 +17959,6 @@ parameters:
 			path: ../../../htdocs/mrp/mo_production.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: ../../../htdocs/mrp/mo_production.php
-
-		-
 			message: '#^Unable to resolve the template type T in call to function dol_sort_array$#'
 			identifier: argument.templateType
 			count: 1
@@ -18137,12 +17981,6 @@ parameters:
 			identifier: if.alwaysTrue
 			count: 4
 			path: ../../../htdocs/multicurrency/multicurrency_rate.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/opcachepreload.php
 
 		-
 			message: '#^Variable \$id might not be defined\.$#'
@@ -18367,12 +18205,6 @@ parameters:
 			path: ../../../htdocs/partnership/class/partnershiputils.class.php
 
 		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 2
-			path: ../../../htdocs/partnership/class/partnershiputils.class.php
-
-		-
 			message: '#^Variable \$triggersendname in empty\(\) always exists and is not falsy\.$#'
 			identifier: empty.variable
 			count: 2
@@ -18400,12 +18232,6 @@ parameters:
 			message: '#^Variable \$adht might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
-			path: ../../../htdocs/partnership/partnership_card.php
-
-		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
-			count: 2
 			path: ../../../htdocs/partnership/partnership_card.php
 
 		-
@@ -19755,12 +19581,6 @@ parameters:
 		-
 			message: '#^Variable \$month might not be defined\.$#'
 			identifier: variable.undefined
-			count: 1
-			path: ../../../htdocs/product/stock/movement_list.php
-
-		-
-			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
-			identifier: empty.variable
 			count: 1
 			path: ../../../htdocs/product/stock/movement_list.php
 
@@ -21909,7 +21729,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 6
+			count: 1
 			path: ../../../htdocs/reception/card.php
 
 		-
@@ -22237,12 +22057,6 @@ parameters:
 			path: ../../../htdocs/recruitment/admin/public_interface.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/recruitment/admin/setup.php
-
-		-
 			message: '#^If condition is always true\.$#'
 			identifier: if.alwaysTrue
 			count: 2
@@ -22265,12 +22079,6 @@ parameters:
 			identifier: empty.variable
 			count: 1
 			path: ../../../htdocs/recruitment/admin/setup.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: ../../../htdocs/recruitment/admin/setup_candidatures.php
 
 		-
 			message: '#^If condition is always false\.$#'
@@ -23251,12 +23059,6 @@ parameters:
 			path: ../../../htdocs/societe/messaging.php
 
 		-
-			message: '#^Variable \$id might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: ../../../htdocs/societe/notify/card.php
-
-		-
 			message: '#^Call to function is_array\(\) with array\<array\{available\: mixed, currency\: mixed, pending\?\: \(array\|float\|int\)\}\> will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -23487,7 +23289,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 4
+			count: 1
 			path: ../../../htdocs/supplier_proposal/card.php
 
 		-
@@ -23889,7 +23691,7 @@ parameters:
 		-
 			message: '#^Variable \$newlang in empty\(\) always exists and is always falsy\.$#'
 			identifier: empty.variable
-			count: 2
+			count: 1
 			path: ../../../htdocs/ticket/card.php
 
 		-
