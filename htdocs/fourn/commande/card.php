@@ -340,63 +340,17 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'reopen') {	// no test on permission here, permission to use will depends on status
-		if (in_array($object->statut, array(1, 2, 3, 4, 5, 6, 7, 9))) {
-			if ($object->statut == 1) {
-				$newstatus = 0; // Validated->Draft
-			} elseif ($object->statut == 2) {
-				$newstatus = 0; // Approved->Draft
-			} elseif ($object->statut == 3) {
-				$newstatus = 2; // Ordered->Approved
-			} elseif ($object->statut == 4) {
-				$newstatus = 3;
-			} elseif ($object->statut == 5) {
-				//$newstatus=2;    // Ordered
-				// TODO Can we set it to submitted ?
-				//$newstatus=3;  // Submitted
-				// TODO If there is at least one reception, we can set to Received->Received partially
-				$newstatus = 4; // Received partially
-			} elseif ($object->statut == 6) {
-				$newstatus = 2; // Canceled->Approved
-			} elseif ($object->statut == 7) {
-				$newstatus = 3; // Canceled->Process running
-			} elseif ($object->statut == 9) {
-				$newstatus = 1; // Refused->Validated
-			} else {
-				$newstatus = 2;
-			}
-
-			//print "old status = ".$object->statut.' new status = '.$newstatus;
-			$db->begin();
-
-			$result = $object->setStatus($user, $newstatus);
-			if ($result > 0) {
-				// Currently the "Re-open" also remove the billed flag because there is no button "Set unpaid" yet.
-				$sql = 'UPDATE '.MAIN_DB_PREFIX.'commande_fournisseur';
-				$sql .= ' SET billed = 0';
-				$sql .= ' WHERE rowid = '.((int) $object->id);
-
-				$resql = $db->query($sql);
-
-				if ($newstatus == 0) {
-					$sql = 'UPDATE '.MAIN_DB_PREFIX.'commande_fournisseur';
-					$sql .= ' SET fk_user_approve = null, fk_user_approve2 = null, date_approve = null, date_approve2 = null';
-					$sql .= ' WHERE rowid = '.((int) $object->id);
-
-					$resql = $db->query($sql);
-				}
-
-				$db->commit();
-
-				header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
-				exit;
-			} else {
-				$db->rollback();
-
-				setEventMessages($object->error, $object->errors, 'errors');
-			}
+	/** BACKPORT DEVELOP PR #33597 */
+	if ($action == 'reopen' && $permissiontoadd) {	// no test on permission here, permission to use will depends on status
+		$resSetReopen = $object->setReopen($user);
+		if ($resSetReopen) {
+			header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
+			exit;
+		} else {
+			setEventMessages($object->error, $object->errors, 'errors');
 		}
 	}
+	/** END BACKPORT DEVELOP */
 
 	/*
 	 * Classify supplier order as billed
