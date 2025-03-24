@@ -7538,12 +7538,14 @@ abstract class CommonObject
 		if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
 			$param['options'] = $val['arrayofkeyval'];
 		}
-		if (preg_match('/^integer:(.*):(.*)/i', $val['type'], $reg)) {
-			$type = 'link';
-			$stringforoptions = $reg[1].':'.$reg[2];
-			if ($reg[1] == 'User') {
-				$stringforoptions .= ':-1';
-			}
+		// -----------------backport v 19 -------------------
+		if (preg_match('/^integer:([^:]*):([^:]*)/i', $val['type'], $reg)) {        // ex: integer:User:user/class/user.class.php
+                        $type = 'link';
+                        $stringforoptions = $reg[1].':'.$reg[2];
+                        if ($reg[1] == 'User') {
+                                $stringforoptions .= ':#getnomurlparam1=-1';
+                        }
+		// -------------------- end backport v19
 			$param['options'] = array($stringforoptions => $stringforoptions);
 		} elseif (preg_match('/^sellist:(.*):(.*):(.*):(.*)/i', $val['type'], $reg)) {
 			$param['options'] = array($reg[1].':'.$reg[2].':'.$reg[3].':'.$reg[4] => 'N');
