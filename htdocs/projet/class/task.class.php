@@ -139,7 +139,7 @@ class Task extends CommonObjectLine
 	public $timespent_old_duration;
 	public $timespent_date;
 	public $timespent_datehour; // More accurate start date (same than timespent_date but includes hours, minutes and seconds)
-	public $timespent_withhour; // 1 = we entered also start hours for timesheet line
+	public $timespent_withhour; // 0 or 1 = we have entered also start hours for timesheet line
 	public $timespent_fk_user;
 	public $timespent_thm;
 	public $timespent_note;
@@ -1467,10 +1467,9 @@ class Task extends CommonObjectLine
 		$timespent->fk_user = $this->timespent_fk_user;
 		$timespent->fk_product = $this->timespent_fk_product;
 		$timespent->note = $this->timespent_note;
-		$timespent->datec = $this->db->idate($now);
+		$timespent->datec = $now;
 
 		$result = $timespent->create($user);
-
 		if ($result > 0) {
 			$ret = $result;
 			$this->timespent_id = $result;

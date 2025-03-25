@@ -919,12 +919,18 @@ foreach ($listofreferent as $key => $value) {
 					$total_ttc_by_line = $element->total_ttc;
 				}
 
-				// Change sign of $total_ht_by_line and $total_ttc_by_line for some cases
+				// Change sign of $total_ht_by_line and $total_ttc_by_line for various payments
 				if ($tablename == 'payment_various') {
 					if ($element->sens == 1) {
 						$total_ht_by_line = -$total_ht_by_line;
 						$total_ttc_by_line = -$total_ttc_by_line;
 					}
+				}
+
+				// Change sign of $total_ht_by_line and $total_ttc_by_line for supplier proposal and supplier order
+				if ($tablename == 'commande_fournisseur' || $tablename == 'supplier_proposal') {
+					$total_ht_by_line = -$total_ht_by_line;
+					$total_ttc_by_line = -$total_ttc_by_line;
 				}
 
 				// Add total if we have to
@@ -1226,6 +1232,7 @@ foreach ($listofreferent as $key => $value) {
 			}
 
 			$num = count($elementarray);
+			$total_time = 0;
 			for ($i = 0; $i < $num; $i++) {
 				$tmp = explode('_', $elementarray[$i]);
 				$idofelement = $tmp[0];
@@ -1287,11 +1294,13 @@ foreach ($listofreferent as $key => $value) {
 				}
 				print "</td>\n";
 
+				// BACKPORT STD #32102
 				// Ref
-				print '<td class="left nowraponall tdoverflowmax250">';
+				print '<td class="left nowraponall">';
 				if ($tablename == 'expensereport_det') {
 					print $expensereport->getNomUrl(1);
 				} else {
+					print '<table><tr><td style="border-bottom: none;">';
 					// Show ref with link
 					if ($element instanceof Task) {
 						print $element->getNomUrl(1, 'withproject', 'time');
@@ -1327,6 +1336,10 @@ foreach ($listofreferent as $key => $value) {
 					}
 					print '</div>';
 
+					print '</td>';
+
+					print '<td class="tdoverflowmax250" style="border-bottom: none;">';
+
 					// Show supplier ref
 					if (!empty($element->ref_supplier)) {
 						print ' - '.$element->ref_supplier;
@@ -1339,8 +1352,12 @@ foreach ($listofreferent as $key => $value) {
 					if (empty($element->ref_customer) && !empty($element->ref_client)) {
 						print ' - '.$element->ref_client;
 					}
+
+					print '</td></tr></table>';
 				}
 				print "</td>\n";
+				// END BACKPORT STD
+				
 				// Product and qty on stock movement
 				if ('MouvementStock' == $classname) {
 					$mvsProd = new Product($element->db);

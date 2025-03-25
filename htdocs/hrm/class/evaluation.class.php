@@ -171,7 +171,7 @@ class Evaluation extends CommonObject
 	 */
 	public function __construct(DoliDB $db)
 	{
-		global $conf, $langs, $user;
+		global $langs, $user;
 
 		$this->db = $db;
 

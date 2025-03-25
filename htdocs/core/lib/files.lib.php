@@ -1562,6 +1562,7 @@ function dol_delete_file($file, $disableglob = 0, $nophperrors = 0, $nohook = 0,
 					}
 				}
 			} else {
+				$ok = true; // nothing to delete when glob is on must return ok
 				dol_syslog("No files to delete found", LOG_DEBUG);
 			}
 		} else {
@@ -3295,7 +3296,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		} elseif (isModEnabled("service")) {
 			$original_file = $conf->service->multidir_output[$entity].'/'.$original_file;
 		}
-	} elseif ($modulepart == 'product_batch' || $modulepart == 'produitlot') {
+	} elseif ($modulepart == 'product_batch' || $modulepart == 'productlot') {
 		// Wrapping pour les lots produits
 		if (empty($entity) || (empty($conf->productbatch->multidir_output[$entity]))) {
 			return array('accessallowed' => 0, 'error' => 'Value entity must be provided');

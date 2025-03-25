@@ -304,7 +304,8 @@ $object->fields = dol_sort_array($object->fields, 'position');
 $arrayfields = dol_sort_array($arrayfields, 'position');
 '@phan-var-force array<string,array{label:string,checked?:int<0,1>,position?:int,help?:string}> $arrayfields';  // dol_sort_array looses type for Phan
 
-if (!$user->hasRight('societe', 'client', 'voir')) {
+// Check only if it's an internal user, external users are already filtered by $socid
+if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 	$search_sale = $user->id;
 }
 
@@ -313,6 +314,10 @@ $fieldid = (!empty($ref) ? 'ref' : 'rowid');
 if (!empty($user->socid)) {
 	$socid = $user->socid;
 }
+if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
+	$search_sale = $user->id;
+}
+
 $result = restrictedArea($user, 'facture', $id, '', '', 'fk_soc', $fieldid);
 
 
@@ -875,8 +880,8 @@ if (!empty($search_fac_rec_source_title)) {
 if ($search_user > 0) {
 	$sql .= " AND EXISTS (";
 	$sql .= " SELECT ec.fk_c_type_contact, ec.element_id, ec.fk_socpeople";
-	$sql .= " FROM llx_element_contact as ec";
-	$sql .= " INNER JOIN llx_c_type_contact as tc";
+	$sql .= " FROM ".MAIN_DB_PREFIX."element_contact as ec";
+	$sql .= " INNER JOIN ".MAIN_DB_PREFIX."c_type_contact as tc";
 	$sql .= " ON ec.fk_c_type_contact = tc.rowid AND tc.element='facture' AND tc.source='internal'";
 	$sql .= " WHERE ec.element_id = f.rowid AND ec.fk_socpeople = ".((int) $search_user).")";
 }

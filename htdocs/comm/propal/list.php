@@ -286,7 +286,8 @@ foreach ($object->fields as $key => $val) {
 	}
 }*/
 
-if (!$user->hasRight('societe', 'client', 'voir')) {
+// Check only if it's an internal user (external users are already filtered by company whatever are permissions on this)
+if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 	$search_sale = $user->id;
 }
 
@@ -735,8 +736,8 @@ if ($search_note_public) {
 if ($search_user > 0) {
 	$sql .= " AND EXISTS (";
 	$sql .= " SELECT ec.fk_c_type_contact, ec.element_id, ec.fk_socpeople";
-	$sql .= " FROM llx_element_contact as ec";
-	$sql .= " INNER JOIN  llx_c_type_contact as tc";
+	$sql .= " FROM ".MAIN_DB_PREFIX."element_contact as ec";
+	$sql .= " INNER JOIN  ".MAIN_DB_PREFIX."c_type_contact as tc";
 	$sql .= " ON ec.fk_c_type_contact = tc.rowid AND tc.element='propal' AND tc.source='internal'";
 	$sql .= " WHERE ec.element_id = p.rowid AND ec.fk_socpeople = ".((int) $search_user).")";
 }
@@ -1938,8 +1939,8 @@ while ($i < $imaxinloop) {
 		}
 		// Country
 		if (!empty($arrayfields['country.code_iso']['checked'])) {
-			print '<td class="center">';
 			$tmparray = getCountry($obj->fk_pays, 'all');
+			print '<td class="center tdoverflowmax100" title="'.dolPrintHTML($tmparray['label']).'">';
 			print $tmparray['label'];
 			print '</td>';
 			if (!$i) {
