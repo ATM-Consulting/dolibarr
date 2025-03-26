@@ -1,0 +1,1 @@
+FIX : Ajout de la conf MAIN_DISABLE_DNS_GET_RECORD - **26/03/2025**
