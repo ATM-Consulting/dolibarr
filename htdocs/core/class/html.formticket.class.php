@@ -197,7 +197,7 @@ class FormTicket
 			$email = GETPOSTISSET('email') ? GETPOST('email', 'alpha') : '';
 			$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
 			$projectid = GETPOSTISSET('projectid') ? GETPOSTINT('projectid') : '';
-			$user_assign = GETPOSTISSET('fk_user_assign') ? GETPOSTINT('fk_user_assign') : $this->fk_user_create;
+			$user_assign = GETPOSTISSET('fk_user_assign') ? GETPOSTINT('fk_user_assign') : '';
 			$contractid = GETPOSTISSET('contractid') ? GETPOSTINT('contractid') : '';
 		} else {
 			$ref = GETPOSTISSET("ref") ? GETPOST("ref", 'alpha') : $object->ref;
