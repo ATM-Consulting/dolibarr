@@ -991,7 +991,8 @@ if ($action == 'edit') {
 		}
 		$companyemail = getDolGlobalString('MAIN_INFO_SOCIETE_MAIL');
 		$dnsinfo = false;
-		if (!empty($companyemail) && function_exists('dns_get_record')) {
+		//-------------------- backport v19 conf dns----------------
+		if (!empty($companyemail) && function_exists('dns_get_record') && !getDolGlobalString('MAIN_DISABLE_DNS_GET_RECORD')) {
 			$arrayofemailparts = explode('@', $companyemail);
 			if (count($arrayofemailparts) == 2) {
 				$domain = $arrayofemailparts[1];
