@@ -1,3 +1,4 @@
+- FIX DA026273 Don't automatically assign myself on ticket creation
 - FIX create/edit ticket forms
 - Backport from 20.0 :
   - Added hook into getElementProperties to handle $element_properties array
