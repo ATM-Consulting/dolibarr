@@ -1,3 +1,4 @@
+- FIX print SIG actuel ( getpost report id was null)
 - FIX create/edit ticket forms
 - Backport from 20.0 :
   - Added hook into getElementProperties to handle $element_properties array
