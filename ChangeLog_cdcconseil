@@ -1,3 +1,4 @@
+- FIX/20.0/DA026307/search_extra_field_error - **01/04/2025**
 - FIX/SUPPORT/DA026290/fix_fatal_trying_update_desc_invoice_situation_2 - **25/03/2025**
 - FIX/132/DA025977/SELECT_DOLUSERS - *14/01/2025*
 - FIX/SUPPORT/DA025922/SetSpecialCharacter because the character '<' was not set into the whitelist  of special character which causes an issue when you try to fetch this type of extrafields - *30/12/2024*

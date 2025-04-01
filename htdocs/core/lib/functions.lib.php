@@ -13736,7 +13736,9 @@ function dolForgeCriteriaCallback($matches)
 		} elseif (is_numeric((string) $tmpescaped)) {	// it can be a float with a .
 			$tmpescaped = (float) $tmpescaped;
 		} else {
-			$tmpescaped = preg_replace('/[^a-z0-9_]/i', '', $tmpescaped);	// it can be a name of field or a substitution variable like '__NOW__'
+			// Backport PR 33685
+			$tmpescaped = "'".preg_replace('/[^a-z0-9_]/i', '', $tmpescaped)."'";	// it can be a name of field or a substitution variable like '__NOW__'
+			// End backport
 		}
 	}
 
