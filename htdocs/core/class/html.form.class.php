@@ -3138,7 +3138,7 @@ class Form
 
 				// include search in supplier ref
 				if (getDolGlobalString('MAIN_SEARCH_PRODUCT_BY_FOURN_REF')) {
-					$sqlSupplierSearch .= !empty($sqlSupplierSearch) ? ' OR ':'';
+					$sqlSupplierSearch .= !empty($sqlSupplierSearch) ? ' AND ':'';
 					$sqlSupplierSearch .= " pfp.ref_fourn LIKE '" . $this->db->escape($prefix . $crit) . "%'";
 				}
 				$sql .= ")";
@@ -7384,7 +7384,7 @@ class Form
 					$retstring .= ' onChange="dpChangeDay(\'' . dol_escape_js($prefix) . '\',\'' . dol_escape_js($langs->trans("FormatDateShortJavaInput")) . '\'); "'; // FormatDateShortInput for dol_print_date / FormatDateShortJavaInput that is same for javascript
 					$retstring .= ' autocomplete="off">';
 
-					// Icone calendrier
+					// Icon calendar
 					if ($disabled) {
 						$retstringbutton = '<button id="' . $prefix . 'Button" type="button" class="dpInvisibleButtons">' . img_object($langs->trans("Disabled"), 'calendarday', 'class="datecallink"') . '</button>';
 						$retstring = $retstringbutton . $retstring;
@@ -9501,7 +9501,7 @@ class Form
             </dt>
             <dd class="dropdowndd">
                 <div class="multiselectcheckbox'.$htmlname.'">
-                    <ul class="'.$htmlname.($pos == '1' ? 'left' : '').'">
+                    <ul class="'.$htmlname.(((string) $pos == '1' || (string) $pos == 'left') ? 'left' : '').'">
                     <li class="liinputsearch"><input class="inputsearch_dropdownselectedfields width90p minwidth200imp" style="width:90%;" type="text" placeholder="'.$langs->trans('Search').'"></li>
                     '.$listoffieldsforselection.'
                     </ul>
