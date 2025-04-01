@@ -4152,7 +4152,7 @@ abstract class CommonObject
 							}
 						}
 					} else {
-//						unset($this->linkedObjectsIds[$objecttype]);
+						//                      unset($this->linkedObjectsIds[$objecttype]);
 					}
 				}
 			}
@@ -4951,57 +4951,62 @@ abstract class CommonObject
 		}
 		$extrafields->fetch_name_optionals_label($this->table_element_line);
 
-		$parameters = array('num'=>$num, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$this->table_element_line);
-		$reshook = $hookmanager->executeHooks('printObjectLineTitle', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+		// Backport this PR https://github.com/Dolibarr/dolibarr/pull/33302/files
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('printObjectLinesList', $parameters, $this, $action);
 		if (empty($reshook)) {
-			// Output template part (modules that overwrite templates must declare this into descriptor)
-			// Use global variables + $dateSelector + $seller and $buyer
-			// Note: This is deprecated. If you need to overwrite the tpl file, use instead the hook.
-			$dirtpls = array_merge($conf->modules_parts['tpl'], array($defaulttpldir));
-			foreach ($dirtpls as $module => $reldir) {
-				$res = 0;
-				if (!empty($module)) {
-					$tpl = dol_buildpath($reldir.'/objectline_title.tpl.php');
-				} else {
-					$tpl = DOL_DOCUMENT_ROOT.$reldir.'/objectline_title.tpl.php';
-				}
-				if (file_exists($tpl)) {
-					if (empty($conf->file->strict_mode)) {
-						$res = @include $tpl;
+			$parameters = array('num'=>$num, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$this->table_element_line);
+			$reshook = $hookmanager->executeHooks('printObjectLineTitle', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+			if (empty($reshook)) {
+				// Output template part (modules that overwrite templates must declare this into descriptor)
+				// Use global variables + $dateSelector + $seller and $buyer
+				// Note: This is deprecated. If you need to overwrite the tpl file, use instead the hook.
+				$dirtpls = array_merge($conf->modules_parts['tpl'], array($defaulttpldir));
+				foreach ($dirtpls as $module => $reldir) {
+					$res = 0;
+					if (!empty($module)) {
+						$tpl = dol_buildpath($reldir.'/objectline_title.tpl.php');
 					} else {
-						$res = include $tpl; // for debug
+						$tpl = DOL_DOCUMENT_ROOT.$reldir.'/objectline_title.tpl.php';
+					}
+					if (file_exists($tpl)) {
+						if (empty($conf->file->strict_mode)) {
+							$res = @include $tpl;
+						} else {
+							$res = include $tpl; // for debug
+						}
+					}
+					if ($res) {
+						break;
 					}
 				}
-				if ($res) {
-					break;
+			}
+
+			$i = 0;
+
+			print "<!-- begin printObjectLines() --><tbody>\n";
+			foreach ($this->lines as $line) {
+				//Line extrafield
+				$line->fetch_optionals();
+
+				//if (is_object($hookmanager) && (($line->product_type == 9 && !empty($line->special_code)) || !empty($line->fk_parent_line)))
+				if (is_object($hookmanager)) {   // Old code is commented on preceding line.
+					if (empty($line->fk_parent_line)) {
+						$parameters = array('line'=>$line, 'num'=>$num, 'i'=>$i, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$line->table_element);
+						$reshook = $hookmanager->executeHooks('printObjectLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+					} else {
+						$parameters = array('line'=>$line, 'num'=>$num, 'i'=>$i, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$line->table_element, 'fk_parent_line'=>$line->fk_parent_line);
+						$reshook = $hookmanager->executeHooks('printObjectSubLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+					}
 				}
-			}
-		}
-
-		$i = 0;
-
-		print "<!-- begin printObjectLines() --><tbody>\n";
-		foreach ($this->lines as $line) {
-			//Line extrafield
-			$line->fetch_optionals();
-
-			//if (is_object($hookmanager) && (($line->product_type == 9 && !empty($line->special_code)) || !empty($line->fk_parent_line)))
-			if (is_object($hookmanager)) {   // Old code is commented on preceding line.
-				if (empty($line->fk_parent_line)) {
-					$parameters = array('line'=>$line, 'num'=>$num, 'i'=>$i, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$line->table_element);
-					$reshook = $hookmanager->executeHooks('printObjectLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
-				} else {
-					$parameters = array('line'=>$line, 'num'=>$num, 'i'=>$i, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$line->table_element, 'fk_parent_line'=>$line->fk_parent_line);
-					$reshook = $hookmanager->executeHooks('printObjectSubLine', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+				if (empty($reshook)) {
+					$this->printObjectLine($action, $line, '', $num, $i, $dateSelector, $seller, $buyer, $selected, $extrafields, $defaulttpldir);
 				}
-			}
-			if (empty($reshook)) {
-				$this->printObjectLine($action, $line, '', $num, $i, $dateSelector, $seller, $buyer, $selected, $extrafields, $defaulttpldir);
-			}
 
-			$i++;
+				$i++;
+			}
+			print "</tbody><!-- end printObjectLines() -->\n";
 		}
-		print "</tbody><!-- end printObjectLines() -->\n";
 	}
 
 	/**
@@ -6354,19 +6359,34 @@ abstract class CommonObject
 							if ($value == '-1') {	// -1 is key for no defined in combo list of objects
 								$new_array_options[$key] = '';
 							} elseif ($value) {
+								/** BACKPORT PR #33460 */
 								$object = new $InfoFieldList[0]($this->db);
+
+								$objectId = 0;
+
+								$sqlFetchObject = "SELECT rowid FROM ".$this->db->prefix().$object->table_element;
 								if (is_numeric($value)) {
-									$res = $object->fetch($value); // Common case
+									$sqlFetchObject .= " WHERE rowid = " . (int) $value;
 								} else {
-									$res = $object->fetch('', $value); // For compatibility
+									$sqlFetchObject .= " WHERE ref = '" . $this->db->escape($value) . "'";
+								}
+
+								$obj = $this->db->getRow($sqlFetchObject);
+
+								if ($obj !== false) {
+									$objectId = $obj->rowid;
+									$res = 1;
+								} else {
+									$res = -1;
 								}
 
 								if ($res > 0) {
-									$new_array_options[$key] = $object->id;
+									$new_array_options[$key] = $objectId;
 								} else {
 									$this->error = "Id/Ref '".$value."' for object '".$object->element."' not found";
 									return -1;
 								}
+								/** END BACKPORT PR #33460 */
 							}
 						} else {
 							dol_syslog('Error bad setup of extrafield', LOG_WARNING);

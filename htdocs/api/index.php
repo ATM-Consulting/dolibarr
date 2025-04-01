@@ -242,7 +242,8 @@ if (!empty($reg[1]) && $reg[1] == 'explorer' && ($reg[2] == '/swagger.json' || $
 					// Defined if module is enabled
 					$enabled = true;
 					if (!isModEnabled($modulenameforenabled)) {
-						$enabled = false;
+						// Diff prod : Dolibarr displays only modules enabled in entity 1 but we need module enabled in other entities : temporary fix, to discuss with eldy
+						$enabled = true;
 					}
 
 					if ($enabled) {

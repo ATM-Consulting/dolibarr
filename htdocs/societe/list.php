@@ -206,6 +206,14 @@ if (!empty($conf->global->THIRDPARTY_QUICKSEARCH_ON_FIELDS)) {
 	$fieldstosearchall = dolExplodeIntoArray($conf->global->THIRDPARTY_QUICKSEARCH_ON_FIELDS);
 }
 
+/** BACKPORT #33314 */
+$parameters = ['fieldstosearchall' => $fieldstosearchall];
+$reshook = $hookmanager->executeHooks('completeFieldsToSearchAll', $parameters, $object, $action);
+if ($reshook < 0) {
+	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+}
+$fieldstosearchall = array_merge($fieldstosearchall, $hookmanager->resArray);
+/** END BACKPORT #33314 */
 
 // Define list of fields to show into list
 $checkedcustomercode = (in_array($contextpage, array('thirdpartylist', 'customerlist', 'prospectlist', 'poslist')) ? 1 : 0);
@@ -1491,10 +1499,10 @@ while ($i < min($num, $limit)) {
 		$companystatic->entity = $obj->entity;
 	}
 
-    /* BACKPORT V19 : PR #29530 */
+	/* BACKPORT V19 : PR #29530 */
 	print '<tr data-rowid="'.$companystatic->id.'" class="oddeven"';
-    /* ------------------------ */
-    if ($contextpage == 'poslist') {
+	/* ------------------------ */
+	if ($contextpage == 'poslist') {
 		print ' onclick="location.href=\'list.php?action=change&contextpage=poslist&idcustomer='.$obj->rowid.'&place='.urlencode($place).'\'"';
 	}
 	print '>';
