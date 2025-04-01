@@ -3273,18 +3273,18 @@ class ContratLigne extends CommonObjectLine
 		if (empty($this->remise_percent)) {
 			$this->remise_percent = 0;
 		}
-		// For backward compatibility
-		if (empty($this->date_start)) {
-			$this->date_start = $this->date_start;
+		// [KN]: Solypse envoie des dates au format ISO8601 et non des timestamps
+		if ($this->date_start !== null && ! is_numeric($this->date_start)) {
+			$this->date_start = strtotime($this->date_start);
 		}
-		if (empty($this->date_start_real)) {
-			$this->date_start_real = $this->date_start_real;
+		if ($this->date_end !== null && ! is_numeric($this->date_end)) {
+			$this->date_end = strtotime($this->date_end);
 		}
-		if (empty($this->date_end)) {
-			$this->date_end = $this->date_end;
+		if ($this->date_start_real !== null && ! is_numeric($this->date_start_real)) {
+			$this->date_start_real = strtotime($this->date_start_real);
 		}
-		if (empty($this->date_end_real)) {
-			$this->date_end_real = $this->date_end_real;
+		if ($this->date_end_real !== null && ! is_numeric($this->date_end_real)) {
+			$this->date_end_real = strtotime($this->date_end_real);
 		}
 
 		// Calcul du total TTC et de la TVA pour la ligne a partir de
