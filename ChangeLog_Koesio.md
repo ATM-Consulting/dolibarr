@@ -1,5 +1,6 @@
 ## Backported from 17.0 :
-- Backport develop PR #33257 : Grouped fetch and fetch optionals for every document
+- Backport develop PR #33257 : Grouped fetch and fetch optionals for every document - **03/04/2025**
+- Backport develop PR #33222 : getLines contract endpoint with sql filters and pagination - **01/04/2025**
 - Backport 17.0 PR #33505 : removed useless $prod->fetch() - **19/03/2025**
 - Backport develop PR #33460 : removed useless fetch product for a SQL request
 - Backport develop PR #33302 : hook printObjectLinesList - *2025-03-04*
