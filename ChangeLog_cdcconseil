@@ -1,3 +1,4 @@
+- Backported from 20.0 PR #33711 : on evaluation list, removed getNomUrl for label column
 - FIX/20.0/DA026307/search_extra_field_error - **01/04/2025**
 - FIX/SUPPORT/DA026290/fix_fatal_trying_update_desc_invoice_situation_2 - **25/03/2025**
 - FIX/132/DA025977/SELECT_DOLUSERS - *14/01/2025*
