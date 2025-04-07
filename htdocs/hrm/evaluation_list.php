@@ -700,15 +700,15 @@ while ($i < $imaxinloop) {
 					print ' title="'.dol_escape_htmltag($object->$key).'"';
 				}
 				print '>';
+				/** BACKPORT PR #33711 */
 				if ($key == 'status') {
 					print $object->getLibStatut(5);
 				} elseif ($key == 'rowid') {
 					print $object->showOutputField($val, $key, $object->id, '');
-				} elseif ($key == 'label') {
-					print $object->getNomUrl(1);
 				} else {
 					print $object->showOutputField($val, $key, $object->$key, '');
 				}
+				/** END BACKPORT PR #33711 */
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;
