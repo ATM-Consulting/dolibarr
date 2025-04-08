@@ -654,29 +654,69 @@ class Contrat extends CommonObject
 	 */
 	public function fetch($id, $ref = '', $ref_customer = '', $ref_supplier = '')
 	{
-		$sql = "SELECT rowid, statut, ref, fk_soc,";
-		$sql .= " ref_supplier, ref_customer,";
-		$sql .= " ref_ext,";
-		$sql .= " entity,";
-		$sql .= " date_contrat as datecontrat,";
-		$sql .= " fk_user_author,";
-		$sql .= " fk_projet as fk_project,";
-		$sql .= " fk_commercial_signature, fk_commercial_suivi,";
-		$sql .= " note_private, note_public, model_pdf, last_main_doc, extraparams";
-		$sql .= " FROM ".MAIN_DB_PREFIX."contrat";
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $conf, $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element
+			if (empty($extrafields->attributes[$this->table_element]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element]['label'])
+				&& is_array($extrafields->attributes[$this->table_element]['label'])
+				&& count($extrafields->attributes[$this->table_element]['label']) > 0
+			);
+		}
+
+		$sql = "SELECT c.rowid, c.statut, c.ref, c.fk_soc,";
+		$sql .= " c.ref_supplier, c.ref_customer,";
+		$sql .= " c.ref_ext,";
+		$sql .= " c.entity,";
+		$sql .= " c.date_contrat as datecontrat,";
+		$sql .= " c.fk_user_author,";
+		$sql .= " c.fk_projet as fk_project,";
+		$sql .= " c.fk_commercial_signature, c.fk_commercial_suivi,";
+		$sql .= " c.note_private, c.note_public, c.model_pdf, c.last_main_doc, c.extraparams";
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
+		$sql .= " FROM ".$this->db->prefix()."contrat as c";
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element.'_extrafields as ef ON c.rowid = ef.fk_object';
+		}
+
 		if (!$id) {
-			$sql .= " WHERE entity IN (".getEntity('contract').")";
+			$sql .= " WHERE c.entity IN (".getEntity('contract').")";
 		} else {
-			$sql .= " WHERE rowid = ".(int) $id;
+			$sql .= " WHERE c.rowid = ".(int) $id;
 		}
 		if ($ref_customer) {
-			$sql .= " AND ref_customer = '".$this->db->escape($ref_customer)."'";
+			$sql .= " AND c.ref_customer = '".$this->db->escape($ref_customer)."'";
 		}
 		if ($ref_supplier) {
-			$sql .= " AND ref_supplier = '".$this->db->escape($ref_supplier)."'";
+			$sql .= " AND c.ref_supplier = '".$this->db->escape($ref_supplier)."'";
 		}
 		if ($ref) {
-			$sql .= " AND ref = '".$this->db->escape($ref)."'";
+			$sql .= " AND c.ref = '".$this->db->escape($ref)."'";
 		}
 
 		dol_syslog(get_class($this)."::fetch", LOG_DEBUG);
@@ -719,11 +759,44 @@ class Contrat extends CommonObject
 					$this->last_main_doc = $obj->last_main_doc;
 					$this->extraparams = (isset($obj->extraparams) ? (array) json_decode($obj->extraparams, true) : null);
 
+					// Now process extrafields
+					$this->array_options = array();
+					if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+						foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+							if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+								$keyname = $key;
+
+								// Process date/datetime fields
+								if (!empty($extrafields->attributes[$this->table_element]) && in_array($extrafields->attributes[$this->table_element]['type'][$key], array('date', 'datetime'))) {
+									$this->array_options["options_".$key] = $this->db->jdate($obj->$keyname);
+								} else {
+									$this->array_options["options_".$key] = $obj->$keyname;
+								}
+							}
+						}
+
+						// Process computed fields
+						if (is_array($extrafields->attributes[$this->table_element]['label'])) {
+							foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+								if (!empty($extrafields->attributes[$this->table_element]) && !empty($extrafields->attributes[$this->table_element]['computed'][$key])) {
+									if (empty($conf->disable_compute)) {
+										global $objectoffield;    // We set a global variable to $objectoffield so
+										$objectoffield = $this;   // we can use it inside computed formula
+										$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element]['computed'][$key], 1, 0, '');
+									}
+								}
+							}
+						}
+					}
+
 					$this->db->free($resql);
 
-					// Retrieve all extrafields
-					// fetch optionals attributes and labels
-					$result = $this->fetch_optionals();
+					$result = 0;
+					if (!$doFetchInOneSqlRequest) {
+						// Retrieve all extrafields
+						// fetch optionals attributes and labels
+						$result = $this->fetch_optionals();
+					}
 
 					// Lines
 					if ($result >= 0 && !empty($this->table_element_line)) {
@@ -763,6 +836,29 @@ class Contrat extends CommonObject
 		// phpcs:enable
 		global $langs, $conf;
 
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element_line
+			if (empty($extrafields->attributes[$this->table_element_line]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element_line);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element_line]['label'])
+				&& is_array($extrafields->attributes[$this->table_element_line]['label'])
+				&& count($extrafields->attributes[$this->table_element_line]['label']) > 0
+			);
+		}
+
 		$this->nbofservices = 0;
 		$this->nbofserviceswait = 0;
 		$this->nbofservicesopened = 0;
@@ -797,7 +893,24 @@ class Contrat extends CommonObject
 		$sql .= " d.fk_unit,";
 		$sql .= " d.product_type as type,";
 		$sql .= " d.rang";
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
 		$sql .= " FROM ".MAIN_DB_PREFIX."contratdet as d LEFT JOIN ".MAIN_DB_PREFIX."product as p ON d.fk_product = p.rowid";
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element_line.'_extrafields as ef ON d.rowid = ef.fk_object';
+		}
+
 		$sql .= " WHERE d.fk_contrat = ".((int) $this->id);
 		if ($only_services == 1) {
 			$sql .= " AND d.product_type = 1";
@@ -873,9 +986,41 @@ class Contrat extends CommonObject
 
 				$line->rang     = $objp->rang;
 
-				// Retrieve all extrafields for contract line
-				// fetch optionals attributes and labels
-				$line->fetch_optionals();
+				// Now process extrafields
+				$this->array_options = array();
+				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+					foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+						if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+							$keyname = $key;
+
+							// Process date/datetime fields
+							if (!empty($extrafields->attributes[$this->table_element_line]) && in_array($extrafields->attributes[$this->table_element_line]['type'][$key], array('date', 'datetime'))) {
+								$this->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
+							} else {
+								$this->array_options["options_".$key] = $objp->$keyname;
+							}
+						}
+					}
+
+					// Process computed fields
+					if (is_array($extrafields->attributes[$this->table_element_line]['label'])) {
+						foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+							if (!empty($extrafields->attributes[$this->table_element_line]) && !empty($extrafields->attributes[$this->table_element_line]['computed'][$key])) {
+								if (empty($conf->disable_compute)) {
+									global $objectoffield;    // We set a global variable to $objectoffield so
+									$objectoffield = $this;   // we can use it inside computed formula
+									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
+								}
+							}
+						}
+					}
+				}
+
+				if (!$doFetchInOneSqlRequest) {
+					// Retrieve all extrafields for contract line
+					// fetch optionals attributes and labels
+					$line->fetch_optionals();
+				}
 
 				// multilangs
 				if (getDolGlobalInt('MAIN_MULTILANGS') && !empty($objp->fk_product) && !empty($loadalsotranslation)) {
@@ -3710,6 +3855,5 @@ class ContratLigne extends CommonObjectLine
 			$this->db->commit();
 			return 1;
 		}
-
 	}
 }
