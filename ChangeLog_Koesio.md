@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport develop PR #33809 : putLine contract endpoint: hidden conf to only get the updated line in the output instead of the whole contract - **10/04/2025**
 - Backport develop PR #33222 : getLines contract endpoint with sql filters and pagination - **01/04/2025**
 - Backport 17.0 PR #33505 : removed useless $prod->fetch() - **19/03/2025**
 - Backport develop PR #33460 : removed useless fetch product for a SQL request
