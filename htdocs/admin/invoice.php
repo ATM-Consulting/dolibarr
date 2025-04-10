@@ -614,7 +614,7 @@ foreach ($dirmodels as $reldir) {
 		}
 	}
 }
-exit;
+
 print '</table>';
 print '</div>';
 
