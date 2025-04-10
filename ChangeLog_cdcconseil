@@ -1,3 +1,4 @@
+- Moved sponge_btp PDF to specific CDC Conseil branch
 - Backported from 20.0 PR #33711 : on evaluation list, removed getNomUrl for label column
 - Backported DA026301 from 20.0 PR #33717 : wrong assigned user on agenda, and wrong backtopage  - **04/04/2025**
 - Backported from 20.0 PR #33713 : Fix pdf einstein automatic calculation  - **04/04/2025**
