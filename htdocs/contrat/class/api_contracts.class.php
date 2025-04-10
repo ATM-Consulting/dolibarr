@@ -438,7 +438,7 @@ class Contracts extends DolibarrApi
 		if ($updateRes > 0) {
 			if (getDolGlobalInt('API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY')) {
 				$result = $this->contractLine;
-				$result->fetch($id);
+				$result->fetch($lineid);
 				foreach ([
 					'array_languages',
 					'contacts_ids',
