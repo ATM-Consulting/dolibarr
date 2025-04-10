@@ -1,9 +1,10 @@
 ## Backported from 17.0 :
+- Backport develop PR #33771: Add hook printObjectLinesBlock in contract cards - **09/04/2025**
 - Backport develop PR #33257 : Grouped fetch and fetch optionals for every document - **03/04/2025**
 - Backport develop PR #33222 : getLines contract endpoint with sql filters and pagination - **01/04/2025**
 - Backport 17.0 PR #33505 : removed useless $prod->fetch() - **19/03/2025**
 - Backport develop PR #33460 : removed useless fetch product for a SQL request
-- Backport develop PR #33302 : hook printObjectLinesList - *2025-03-04*
+- Backport develop PR #33641 : hook printObjectLinesBlock - *2025-03-04*
 - Backport develop PR #33314 : hook completeFieldsToSearchAll on thirdparty list
 - Backport develop PR #32662 : New hooks in services_list and added global search
 - Backport 17.0 PR #32654 : Search thirdparty in services list

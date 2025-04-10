@@ -4951,9 +4951,9 @@ abstract class CommonObject
 		}
 		$extrafields->fetch_name_optionals_label($this->table_element_line);
 
-		// Backport this PR https://github.com/Dolibarr/dolibarr/pull/33302/files
+		// Backport this PR https://github.com/Dolibarr/dolibarr/pull/33641
 		$parameters = array();
-		$reshook = $hookmanager->executeHooks('printObjectLinesList', $parameters, $this, $action);
+		$reshook = $hookmanager->executeHooks('printObjectLinesBlock', $parameters, $this, $action);
 		if (empty($reshook)) {
 			$parameters = array('num'=>$num, 'dateSelector'=>$dateSelector, 'seller'=>$seller, 'buyer'=>$buyer, 'selected'=>$selected, 'table_element_line'=>$this->table_element_line);
 			$reshook = $hookmanager->executeHooks('printObjectLineTitle', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
