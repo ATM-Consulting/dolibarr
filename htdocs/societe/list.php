@@ -1499,10 +1499,10 @@ while ($i < min($num, $limit)) {
 		$companystatic->entity = $obj->entity;
 	}
 
-    /* BACKPORT V19 : PR #29530 */
+	/* BACKPORT V19 : PR #29530 */
 	print '<tr data-rowid="'.$companystatic->id.'" class="oddeven"';
-    /* ------------------------ */
-    if ($contextpage == 'poslist') {
+	/* ------------------------ */
+	if ($contextpage == 'poslist') {
 		print ' onclick="location.href=\'list.php?action=change&contextpage=poslist&idcustomer='.$obj->rowid.'&place='.urlencode($place).'\'"';
 	}
 	print '>';

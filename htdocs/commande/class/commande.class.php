@@ -1842,6 +1842,29 @@ class Commande extends CommonOrder
 			return -1;
 		}
 
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $conf, $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element
+			if (empty($extrafields->attributes[$this->table_element]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element]['label'])
+				&& is_array($extrafields->attributes[$this->table_element]['label'])
+				&& count($extrafields->attributes[$this->table_element]['label']) > 0
+			);
+		}
+
 		$sql = 'SELECT c.rowid, c.entity, c.date_creation, c.ref, c.fk_soc, c.fk_user_author, c.fk_user_valid, c.fk_user_modif, c.fk_statut';
 		$sql .= ', c.amount_ht, c.total_ht, c.total_ttc, c.total_tva, c.localtax1 as total_localtax1, c.localtax2 as total_localtax2, c.fk_cond_reglement, c.deposit_percent, c.fk_mode_reglement, c.fk_availability, c.fk_input_reason';
 		$sql .= ', c.fk_account';
@@ -1859,12 +1882,29 @@ class Commande extends CommonOrder
 		$sql .= ', cr.code as cond_reglement_code, cr.libelle as cond_reglement_libelle, cr.libelle_facture as cond_reglement_libelle_doc';
 		$sql .= ', ca.code as availability_code, ca.label as availability_label';
 		$sql .= ', dr.code as demand_reason_code';
-		$sql .= ' FROM '.MAIN_DB_PREFIX.'commande as c';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_payment_term as cr ON c.fk_cond_reglement = cr.rowid';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as p ON c.fk_mode_reglement = p.id';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_availability as ca ON c.fk_availability = ca.rowid';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_input_reason as dr ON c.fk_input_reason = dr.rowid';
-		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_incoterms as i ON c.fk_incoterms = i.rowid';
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
+		$sql .= ' FROM '.$this->db->prefix().'commande as c';
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element.'_extrafields as ef ON c.rowid = ef.fk_object';
+		}
+
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'c_payment_term as cr ON c.fk_cond_reglement = cr.rowid';
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'c_paiement as p ON c.fk_mode_reglement = p.id';
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'c_availability as ca ON c.fk_availability = ca.rowid';
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'c_input_reason as dr ON c.fk_input_reason = dr.rowid';
+		$sql .= ' LEFT JOIN '.$this->db->prefix().'c_incoterms as i ON c.fk_incoterms = i.rowid';
 
 		if ($id) {
 			$sql .= " WHERE c.rowid=".((int) $id);
@@ -1965,15 +2005,47 @@ class Commande extends CommonOrder
 
 				$this->extraparams = (array) json_decode($obj->extraparams, true);
 
+				// Now process extrafields
+				$this->array_options = array();
+				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+					foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+						if (empty($extrafields->attributes[$this->table_element]['type'][$key]) || $extrafields->attributes[$this->table_element]['type'][$key] != 'separate') {
+							$keyname = $key;
+
+							// Process date/datetime fields
+							if (!empty($extrafields->attributes[$this->table_element]) && in_array($extrafields->attributes[$this->table_element]['type'][$key], array('date', 'datetime'))) {
+								$this->array_options["options_".$key] = $this->db->jdate($obj->$keyname);
+							} else {
+								$this->array_options["options_".$key] = $obj->$keyname;
+							}
+						}
+					}
+
+					// Process computed fields
+					if (is_array($extrafields->attributes[$this->table_element]['label'])) {
+						foreach ($extrafields->attributes[$this->table_element]['label'] as $key => $val) {
+							if (!empty($extrafields->attributes[$this->table_element]) && !empty($extrafields->attributes[$this->table_element]['computed'][$key])) {
+								if (empty($conf->disable_compute)) {
+									global $objectoffield;    // We set a global variable to $objectoffield so
+									$objectoffield = $this;   // we can use it inside computed formula
+									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element]['computed'][$key], 1, 0, '');
+								}
+							}
+						}
+					}
+				}
+
 				$this->lines = array();
 
 				if ($this->statut == self::STATUS_DRAFT) {
 					$this->brouillon = 1;
 				}
 
-				// Retrieve all extrafield
-				// fetch optionals attributes and labels
-				$this->fetch_optionals();
+				if (!$doFetchInOneSqlRequest) {
+					// Retrieve all extrafield
+					// fetch optionals attributes and labels
+					$this->fetch_optionals();
+				}
 
 				$this->db->free($result);
 
@@ -2078,6 +2150,29 @@ class Commande extends CommonOrder
 
 		$this->lines = array();
 
+		$doFetchInOneSqlRequest = getDolGlobalInt('MAIN_DO_FETCH_IN_ONE_SQL_REQUEST');
+
+		if ($doFetchInOneSqlRequest) {
+			global $extrafields;
+
+			// If $extrafields is not a known object, we initialize it
+			if (!isset($extrafields) || !is_object($extrafields)) {
+				require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+				$extrafields = new ExtraFields($this->db);
+			}
+
+			// Load array of extrafields for elementype = $this->table_element_line
+			if (empty($extrafields->attributes[$this->table_element_line]['loaded'])) {
+				$extrafields->fetch_name_optionals_label($this->table_element_line);
+			}
+
+			$extraFieldsCheck = (
+				!empty($extrafields->attributes[$this->table_element_line]['label'])
+				&& is_array($extrafields->attributes[$this->table_element_line]['label'])
+				&& count($extrafields->attributes[$this->table_element_line]['label']) > 0
+			);
+		}
+
 		$sql = 'SELECT l.rowid, l.fk_product, l.fk_parent_line, l.product_type, l.fk_commande, l.label as custom_label, l.description, l.price, l.qty, l.vat_src_code, l.tva_tx, l.ref_ext,';
 		$sql .= ' l.localtax1_tx, l.localtax2_tx, l.localtax1_type, l.localtax2_type, l.fk_remise_except, l.remise_percent, l.subprice, l.fk_product_fournisseur_price as fk_fournprice, l.buy_price_ht as pa_ht, l.rang, l.info_bits, l.special_code,';
 		$sql .= ' l.total_ht, l.total_ttc, l.total_tva, l.total_localtax1, l.total_localtax2, l.date_start, l.date_end,';
@@ -2085,7 +2180,24 @@ class Commande extends CommonOrder
 		$sql .= ' l.fk_multicurrency, l.multicurrency_code, l.multicurrency_subprice, l.multicurrency_total_ht, l.multicurrency_total_tva, l.multicurrency_total_ttc,';
 		$sql .= ' p.ref as product_ref, p.description as product_desc, p.fk_product_type, p.label as product_label, p.tosell as product_tosell, p.tobuy as product_tobuy, p.tobatch as product_tobatch, p.barcode as product_barcode,';
 		$sql .= ' p.weight, p.weight_units, p.volume, p.volume_units';
+
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add extrafields columns to the SELECT clause
+			foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+				if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+					$sql .= ', ef.'.$key;
+				}
+			}
+		}
+
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'commandedet as l';
+
+		// Add extrafields table to the join if we have extrafields for this entity
+		if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+			// Add LEFT JOIN for extrafields
+			$sql .= ' LEFT JOIN '.$this->db->prefix().$this->table_element_line.'_extrafields as ef ON l.rowid = ef.fk_object';
+		}
+
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product as p ON (p.rowid = l.fk_product)';
 		$sql .= ' WHERE l.fk_commande = '.((int) $this->id);
 		if ($only_product) {
@@ -2171,7 +2283,39 @@ class Commande extends CommonOrder
 				$line->multicurrency_total_tva 	= $objp->multicurrency_total_tva;
 				$line->multicurrency_total_ttc 	= $objp->multicurrency_total_ttc;
 
-				$line->fetch_optionals();
+				// Now process extrafields
+				$this->array_options = array();
+				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
+					foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+						if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
+							$keyname = $key;
+
+							// Process date/datetime fields
+							if (!empty($extrafields->attributes[$this->table_element_line]) && in_array($extrafields->attributes[$this->table_element_line]['type'][$key], array('date', 'datetime'))) {
+								$this->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
+							} else {
+								$this->array_options["options_".$key] = $objp->$keyname;
+							}
+						}
+					}
+
+					// Process computed fields
+					if (is_array($extrafields->attributes[$this->table_element_line]['label'])) {
+						foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
+							if (!empty($extrafields->attributes[$this->table_element_line]) && !empty($extrafields->attributes[$this->table_element_line]['computed'][$key])) {
+								if (empty($conf->disable_compute)) {
+									global $objectoffield;    // We set a global variable to $objectoffield so
+									$objectoffield = $this;   // we can use it inside computed formula
+									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
+								}
+							}
+						}
+					}
+				}
+
+				if (!$doFetchInOneSqlRequest) {
+					$line->fetch_optionals();
+				}
 
 				// multilangs
 				if (getDolGlobalInt('MAIN_MULTILANGS') && !empty($objp->fk_product) && !empty($loadalsotranslation)) {
