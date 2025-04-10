@@ -1,3 +1,4 @@
+- FIX : DA026362 - Décommenter select d'assignation à une tâche dans la vue par semaine de saisi des temps - **10/04/2025**
 - FIX : DA023532 - Suppression de la colonne "Marge" de la liste des commandes fournisseur - **22/06/2023**
 - FIX : Gestion du temps consommé en jour (création et edition) - **08-11-2022**
 - FIX : Gestion du type "alldaydecimal" dans la fonction convertSecondToTime - **26-10-2022**
