@@ -1,4 +1,5 @@
 ## Backported from 17.0 :
+- Backport develop PR #33809 : putLine contract endpoint: hidden conf `API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY` to only get the updated line in the output instead of the whole contract - **10/04/2025**
 - Backport develop PR #33771: Add hook printObjectLinesBlock in contract cards - **09/04/2025**
 - Backport develop PR #33257 : Grouped fetch and fetch optionals for every document - **03/04/2025**
 - Backport develop PR #33222 : getLines contract endpoint with sql filters and pagination - **01/04/2025**
