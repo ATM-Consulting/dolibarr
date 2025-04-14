@@ -436,8 +436,14 @@ class Contracts extends DolibarrApi
 		$updateRes = $this->contractLine->update(DolibarrApiAccess::$user);
 
 		if ($updateRes > 0) {
-			$result = $this->get($id);
-			unset($result->line);
+			if (getDolGlobalInt('API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY')) {
+				$result = $this->contractLine;
+				$result->fetch($lineid);
+			}
+			else {
+				$result = $this->get($id);
+				unset($result->line);
+			}
 			return $this->_cleanObjectDatas($result);
 		}
 
