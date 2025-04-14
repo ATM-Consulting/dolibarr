@@ -987,7 +987,7 @@ class Contrat extends CommonObject
 				$line->rang     = $objp->rang;
 
 				// Now process extrafields
-				$this->array_options = array();
+				$line->array_options = array();
 				if ($doFetchInOneSqlRequest && $extraFieldsCheck) {
 					foreach ($extrafields->attributes[$this->table_element_line]['label'] as $key => $val) {
 						if (empty($extrafields->attributes[$this->table_element_line]['type'][$key]) || $extrafields->attributes[$this->table_element_line]['type'][$key] != 'separate') {
@@ -995,9 +995,9 @@ class Contrat extends CommonObject
 
 							// Process date/datetime fields
 							if (!empty($extrafields->attributes[$this->table_element_line]) && in_array($extrafields->attributes[$this->table_element_line]['type'][$key], array('date', 'datetime'))) {
-								$this->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
+								$line->array_options["options_".$key] = $this->db->jdate($objp->$keyname);
 							} else {
-								$this->array_options["options_".$key] = $objp->$keyname;
+								$line->array_options["options_".$key] = $objp->$keyname;
 							}
 						}
 					}
@@ -1009,7 +1009,7 @@ class Contrat extends CommonObject
 								if (empty($conf->disable_compute)) {
 									global $objectoffield;    // We set a global variable to $objectoffield so
 									$objectoffield = $this;   // we can use it inside computed formula
-									$this->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
+									$line->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
 								}
 							}
 						}
