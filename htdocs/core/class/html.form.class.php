@@ -1429,13 +1429,13 @@ class Form
 						if (($obj->fournisseur) && (!empty($obj->code_fournisseur))) {
 							$label .= $obj->code_fournisseur.' - ';
 						}
-						$label .= ' '.$obj->name;
+						$label .= ' '.dol_string_nohtmltag($obj->name);
 					} else {
-						$label = $obj->name;
+						$label = dol_string_nohtmltag($obj->name);
 					}
 
 					if (!empty($obj->name_alias)) {
-						$label .= ' ('.$obj->name_alias.')';
+						$label .= ' ('.dol_string_nohtmltag($obj->name_alias).')';
 					}
 
 					if ($showtype) {
