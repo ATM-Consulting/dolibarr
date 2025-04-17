@@ -1,21 +1,22 @@
-## Backported from 17.0 :
-- Backport develop PR #33809 : putLine contract endpoint: hidden conf `API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY` to only get the updated line in the output instead of the whole contract - **10/04/2025**
+## Backported from 17.0:
+- Backport develop PR #33891: FIX critical bug (extrafields of parent replaced with extrafields of line during `fetch_lines()`)
+- Backport develop PR #33809: putLine contract endpoint: hidden conf `API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY` to only get the updated line in the output instead of the whole contract - **10/04/2025**
 - Backport develop PR #33771: Add hook printObjectLinesBlock in contract cards - **09/04/2025**
-- Backport develop PR #33257 : Grouped fetch and fetch optionals for every document - **03/04/2025**
-- Backport develop PR #33222 : getLines contract endpoint with sql filters and pagination - **01/04/2025**
-- Backport 17.0 PR #33505 : removed useless $prod->fetch() - **19/03/2025**
-- Backport develop PR #33460 : removed useless fetch product for a SQL request
-- Backport develop PR #33641 : hook printObjectLinesBlock - *2025-03-04*
-- Backport develop PR #33314 : hook completeFieldsToSearchAll on thirdparty list
-- Backport develop PR #32662 : New hooks in services_list and added global search
-- Backport 17.0 PR #32654 : Search thirdparty in services list
-- Backport develop PR #32129 : New field rule for lines dates
-- Backport 17.0 PR #32247 : added error message in cron
-- Backport develop : fix abs fatal error
-- Backport develop PR 31267 : fix error in code, putline() function in api contract overwrote the data that was not updated by the api - *2024-11-25*
-- Backport 21.0 PR #31698 : management rib select in fac rec card - *2024-11-14*
-- Backport  17.0 PR #30899 : multiselect rib - *2024-10-30*
-- Backport  17.0 PR #31623 : Suspend facture rec when nb gen max is reached - *2024-10-29*
-- Backport  21.0 PR #31463 : Tab to see generated invoices on recurring 
+- Backport develop PR #33257: Grouped fetch and fetch optionals for every document - **03/04/2025**
+- Backport develop PR #33222: getLines contract endpoint with sql filters and pagination - **01/04/2025**
+- Backport 17.0 PR #33505: removed useless $prod->fetch() - **19/03/2025**
+- Backport develop PR #33460: removed useless fetch product for a SQL request
+- Backport develop PR #33641: hook printObjectLinesBlock - *2025-03-04*
+- Backport develop PR #33314: hook completeFieldsToSearchAll on thirdparty list
+- Backport develop PR #32662: New hooks in services_list and added global search
+- Backport 17.0 PR #32654: Search thirdparty in services list
+- Backport develop PR #32129: New field rule for lines dates
+- Backport 17.0 PR #32247: added error message in cron
+- Backport develop: fix abs fatal error
+- Backport develop PR 31267: fix error in code, putline() function in api contract overwrote the data that was not updated by the api - *2024-11-25*
+- Backport 21.0 PR #31698: management rib select in fac rec card - *2024-11-14*
+- Backport  17.0 PR #30899: multiselect rib - *2024-10-30*
+- Backport  17.0 PR #31623: Suspend facture rec when nb gen max is reached - *2024-10-29*
+- Backport  21.0 PR #31463: Tab to see generated invoices on recurring 
   supplier or customer invoice cards - *2024-10-23*
-- Backport  17.0 PR #31445 : Follow ExtraFields between model invoice and classic invoice - *2024-10-18*
+- Backport  17.0 PR #31445: Follow ExtraFields between model invoice and classic invoice - *2024-10-18*
