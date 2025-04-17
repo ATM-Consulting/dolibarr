@@ -1008,7 +1008,7 @@ class Contrat extends CommonObject
 							if (!empty($extrafields->attributes[$this->table_element_line]) && !empty($extrafields->attributes[$this->table_element_line]['computed'][$key])) {
 								if (empty($conf->disable_compute)) {
 									global $objectoffield;    // We set a global variable to $objectoffield so
-									$objectoffield = $this;   // we can use it inside computed formula
+									$objectoffield = $line;   // we can use it inside computed formula
 									$line->array_options['options_' . $key] = dol_eval($extrafields->attributes[$this->table_element_line]['computed'][$key], 1, 0, '2');
 								}
 							}
