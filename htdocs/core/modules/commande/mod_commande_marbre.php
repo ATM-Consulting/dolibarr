@@ -33,7 +33,7 @@ class mod_commande_marbre extends ModeleNumRefCommandes
 {
 	/**
 	 * Dolibarr version of the loaded document
-	 * @var string
+	 * @var string Version, possible values are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'''|'development'|'dolibarr'|'experimental'
 	 */
 	public $version = 'dolibarr'; // 'development', 'experimental', 'dolibarr'
 
@@ -57,7 +57,7 @@ class mod_commande_marbre extends ModeleNumRefCommandes
 	{
 		global $conf, $mysoc;
 
-		if ((float) $conf->global->MAIN_VERSION_LAST_INSTALL >= 16.0 && $mysoc->country_code != 'FR') {
+		if ((float) getDolGlobalString('MAIN_VERSION_LAST_INSTALL') >= 16.0 && $mysoc->country_code != 'FR') {
 			$this->prefix = 'SO'; // We use correct standard code "SO = Sale Order"
 		}
 	}
@@ -128,7 +128,7 @@ class mod_commande_marbre extends ModeleNumRefCommandes
 	 *
 	 *  @param	Societe		$objsoc     Object thirdparty
 	 *  @param  Commande	$object		Object we need next value for
-	 *  @return string|-1      			Value if OK, -1 if KO
+	 *  @return string|int<-1,0>		Value if OK, -1 if KO
 	 */
 	public function getNextValue($objsoc, $object)
 	{

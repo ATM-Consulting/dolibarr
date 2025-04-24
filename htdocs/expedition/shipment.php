@@ -5,6 +5,7 @@
  * Copyright (C) 2012-2015	Juanjo Menent			<jmenent@2byte.es>
  * Copyright (C) 2018-2024  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2018-2022  Philippe Grand          <philippe.grand@atoo-net.com>
+ * Copyright (C) 2024		MDW						<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +49,15 @@ if (isModEnabled("product") || isModEnabled("service")) {
 	require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 }
 
+/**
+ * @var Conf $conf
+ * @var DoliDB $db
+ * @var HookManager $hookmanager
+ * @var Societe $mysoc
+ * @var Translate $langs
+ * @var User $user
+ */
+
 // Load translation files required by the page
 $langs->loadLangs(array('orders', 'sendings', 'companies', 'bills', 'propal', 'deliveries', 'stocks', 'productbatch', 'incoterm', 'other'));
 
@@ -73,7 +83,7 @@ $extrafields = new ExtraFields($db);
 $extrafields->fetch_name_optionals_label($object->table_element);
 
 // Load object
-include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be include, not include_once
+include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be 'include', not 'include_once'
 
 // Security check
 if ($user->socid) {
@@ -92,7 +102,7 @@ $permissiondellink = $user->hasRight('expedition', 'creer'); // Used by the incl
 /*
  * Actions
  */
-
+$error = 0;
 $parameters = array('socid' => $socid);
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 if ($reshook < 0) {
@@ -158,7 +168,7 @@ if (empty($reshook)) {
 		}
 	} elseif ($action == 'set_incoterms' && isModEnabled('incoterm')) {
 		// Set incoterm
-		$result = $object->setIncoterms(GETPOSTINT('incoterm_id'), GETPOSTINT('location_incoterms'));
+		$result = $object->setIncoterms(GETPOSTINT('incoterm_id'), GETPOST('location_incoterms'));
 		if ($result < 0) {
 			setEventMessages($object->error, $object->errors, 'errors');
 		}
@@ -207,7 +217,7 @@ if (empty($reshook)) {
 
 	if ($action == 'set_thirdparty' && $permissiontoadd) {
 		$object->fetch($id);
-		$object->setValueFrom('fk_soc', $socid, '', '', 'date', '', $user, 'ORDER_MODIFY');
+		$object->setValueFrom('fk_soc', $socid, '', null, 'date', '', $user, 'ORDER_MODIFY');
 
 		header('Location: '.$_SERVER["PHP_SELF"].'?id='.$id);
 		exit();
@@ -215,6 +225,7 @@ if (empty($reshook)) {
 
 	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
 }
+
 
 /*
  * View
@@ -229,7 +240,7 @@ if (isModEnabled('project')) {
 
 $title = $object->ref." - ".$langs->trans('Shipments');
 $help_url = 'EN:Customers_Orders|FR:Commandes_Clients|ES:Pedidos de clientes|DE:Modul_Kundenaufträge';
-llxHeader('', $title, $help_url);
+llxHeader('', $title, $help_url, '', 0, 0, '', '', '', 'mod-expedition page-shipment');
 
 
 if ($id > 0 || !empty($ref)) {
@@ -244,8 +255,6 @@ if ($id > 0 || !empty($ref)) {
 
 		$author = new User($db);
 		$author->fetch($object->user_author_id);
-
-		$res = $object->fetch_optionals();
 
 		$head = commande_prepare_head($object);
 		print dol_get_fiche_head($head, 'shipping', $langs->trans("CustomerOrder"), -1, 'order');
@@ -492,11 +501,11 @@ if ($id > 0 || !empty($ref)) {
 		if ($totalWeight || $totalVolume) {
 			print '<tr><td>'.$langs->trans("CalculatedWeight").'</td>';
 			print '<td colspan="2">';
-			print showDimensionInBestUnit($totalWeight, 0, "weight", $langs, isset($conf->global->MAIN_WEIGHT_DEFAULT_ROUND) ? $conf->global->MAIN_WEIGHT_DEFAULT_ROUND : -1, isset($conf->global->MAIN_WEIGHT_DEFAULT_UNIT) ? $conf->global->MAIN_WEIGHT_DEFAULT_UNIT : 'no');
+			print showDimensionInBestUnit($totalWeight, 0, "weight", $langs, getDolGlobalInt('MAIN_WEIGHT_DEFAULT_ROUND', -1), getDolGlobalString('MAIN_WEIGHT_DEFAULT_UNIT', 'no'));
 			print '</td></tr>';
 			print '<tr><td>'.$langs->trans("CalculatedVolume").'</td>';
 			print '<td colspan="2">';
-			print showDimensionInBestUnit($totalVolume, 0, "volume", $langs, isset($conf->global->MAIN_VOLUME_DEFAULT_ROUND) ? $conf->global->MAIN_VOLUME_DEFAULT_ROUND : -1, isset($conf->global->MAIN_VOLUME_DEFAULT_UNIT) ? $conf->global->MAIN_VOLUME_DEFAULT_UNIT : 'no');
+			print showDimensionInBestUnit($totalVolume, 0, "volume", $langs, getDolGlobalInt('MAIN_VOLUME_DEFAULT_ROUND', -1), getDolGlobalString('MAIN_VOLUME_DEFAULT_UNIT', 'no'));
 			print '</td></tr>';
 		}
 
@@ -591,7 +600,8 @@ if ($id > 0 || !empty($ref)) {
 		 *  Lines or orders with quantity shipped and remain to ship
 		 *  Note: Qty shipped are already available into $object->expeditions[fk_product]
 		 */
-		print '<table id="tablelines" class="noborder noshadow" width="100%">';
+		print '<div class="div-table-responsive-no-min">';
+		print '<table id="tablelines" class="noborder noshadow centpercent">';
 
 		$sql = "SELECT cd.rowid, cd.fk_product, cd.product_type as type, cd.label, cd.description,";
 		$sql .= " cd.price, cd.tva_tx, cd.subprice,";
@@ -829,14 +839,13 @@ if ($id > 0 || !empty($ref)) {
 			$db->free($resql);
 
 			if (!$num) {
-				print '<tr '.$bc[false].'><td colspan="5">'.$langs->trans("NoArticleOfTypeProduct").'<br>';
+				print '<tr><td colspan="5"><span class="opacitymedium">'.$langs->trans("NoArticleOfTypeProduct").'</span></td></tr>';
 			}
-
-			print "</table>";
 		} else {
 			dol_print_error($db);
 		}
 
+		print "</table>";
 		print '</div>';
 
 

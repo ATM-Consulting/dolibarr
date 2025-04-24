@@ -5,7 +5,8 @@
  * Copyright (C) 2012      Juanjo Menent		<jmenent@2byte.es>
  * Copyright (C) 2013-2015 Philippe Grand	    <philippe.grand@atoo-net.com>
  * Copyright (C) 2020      Ahmad Jamaly Rabib   <rabib@metroworks.co.jp>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024		MDW						<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024		Frédéric France			<frederic.france@free.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -117,7 +118,7 @@ class modFournisseur extends DolibarrModules
 		// Add ability ODT for Supplier orders
 		$this->const[$r][0] = "SUPPLIER_ORDER_ADDON_PDF_ODT_PATH";
 		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "DOL_DATA_ROOT/doctemplates/supplier_orders";
+		$this->const[$r][2] = "DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/supplier_orders";
 		$this->const[$r][3] = '';
 		$this->const[$r][4] = 0;
 		$r++;
@@ -125,7 +126,7 @@ class modFournisseur extends DolibarrModules
 		// Add ability ODT for Supplier Invoices
 		$this->const[$r][0] = "SUPPLIER_INVOICE_ADDON_PDF_ODT_PATH";
 		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "";
+		$this->const[$r][2] = "DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/supplier_invoices";
 		$this->const[$r][3] = "";
 		$this->const[$r][4] = 0;
 		$r++;
@@ -972,13 +973,13 @@ class modFournisseur extends DolibarrModules
 
 		//ODT template for Supplier Orders
 		$src = DOL_DOCUMENT_ROOT.'/install/doctemplates/supplier_orders/template_supplier_order.odt';
-		$dirodt = DOL_DATA_ROOT.'/doctemplates/supplier_orders';
+		$dirodt = DOL_DATA_ROOT.($conf->entity > 1 ? '/'.$conf->entity : '').'/doctemplates/supplier_orders';
 		$dest = $dirodt.'/template_supplier_order.odt';
 
 		if (file_exists($src) && !file_exists($dest)) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 			dol_mkdir($dirodt);
-			$result = dol_copy($src, $dest, 0, 0);
+			$result = dol_copy($src, $dest, '0', 0);
 			if ($result < 0) {
 				$langs->load("errors");
 				$this->error = $langs->trans('ErrorFailToCopyFile', $src, $dest);
@@ -993,13 +994,13 @@ class modFournisseur extends DolibarrModules
 
 		//ODT template for Supplier Invoice
 		$src = DOL_DOCUMENT_ROOT.'/install/doctemplates/supplier_invoices/template_supplier_invoices.odt';
-		$dirodt = DOL_DATA_ROOT.'/doctemplates/supplier_invoices';
+		$dirodt = DOL_DATA_ROOT.($conf->entity > 1 ? '/'.$conf->entity : '').'/doctemplates/supplier_invoices';
 		$dest = $dirodt.'/template_supplier_invoices.odt';
 
 		if (file_exists($src) && !file_exists($dest)) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 			dol_mkdir($dirodt);
-			$result = dol_copy($src, $dest, 0, 0);
+			$result = dol_copy($src, $dest, '0', 0);
 			if ($result < 0) {
 				$langs->load("errors");
 				$this->error = $langs->trans('ErrorFailToCopyFile', $src, $dest);
