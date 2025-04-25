@@ -3715,6 +3715,7 @@ class pdf_octopus extends ModelePDFFactures
 					}
 				}
 
+				$remain_to_pay -= $rem;
 
 				$pdf->commitTransaction();
 			}
