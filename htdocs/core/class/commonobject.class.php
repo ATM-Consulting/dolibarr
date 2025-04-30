@@ -6206,11 +6206,10 @@ abstract class CommonObject
 	 *  @return int 						-1=error, O=did nothing, 1=OK
 	 *  @see insertExtraLanguages(), updateExtraField(), deleteExtraField(), setValueFrom()
 	 */
-	public function insertExtraFields($trigger = '', $userused = null)
-	{
+	public function insertExtraFields($trigger = '', $userused = null) {
 		global $conf, $langs, $user;
 
-		if (!empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) {
+		if (! empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) {
 			return 0;
 		}
 
@@ -6220,7 +6219,7 @@ abstract class CommonObject
 
 		$error = 0;
 
-		if (!empty($this->array_options)) {
+		if (! empty($this->array_options)) {
 			// Check parameters
 			$langs->load('admin');
 			require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
@@ -6230,25 +6229,26 @@ abstract class CommonObject
 			// Eliminate copied source object extra fields that do not exist in target object
 			$new_array_options = array();
 			foreach ($this->array_options as $key => $value) {
-				if (in_array(substr($key, 8), array_keys($target_extrafields))) {	// We remove the 'options_' from $key for test
+				if (in_array(substr($key, 8), array_keys($target_extrafields))) {    // We remove the 'options_' from $key for test
 					$new_array_options[$key] = $value;
-				} elseif (in_array($key, array_keys($target_extrafields))) {		// We test on $key that does not contains the 'options_' prefix
+				}
+				else if (in_array($key, array_keys($target_extrafields))) {        // We test on $key that does not contains the 'options_' prefix
 					$new_array_options['options_'.$key] = $value;
 				}
 			}
 
 			foreach ($new_array_options as $key => $value) {
-				$attributeKey      = substr($key, 8); // Remove 'options_' prefix
-				$attributeType     = $extrafields->attributes[$this->table_element]['type'][$attributeKey];
-				$attributeLabel    = $extrafields->attributes[$this->table_element]['label'][$attributeKey];
-				$attributeParam    = $extrafields->attributes[$this->table_element]['param'][$attributeKey];
+				$attributeKey = substr($key, 8); // Remove 'options_' prefix
+				$attributeType = $extrafields->attributes[$this->table_element]['type'][$attributeKey];
+				$attributeLabel = $extrafields->attributes[$this->table_element]['label'][$attributeKey];
+				$attributeParam = $extrafields->attributes[$this->table_element]['param'][$attributeKey];
 				$attributeRequired = $extrafields->attributes[$this->table_element]['required'][$attributeKey];
-				$attributeUnique   = $extrafields->attributes[$this->table_element]['unique'][$attributeKey];
+				$attributeUnique = $extrafields->attributes[$this->table_element]['unique'][$attributeKey];
 				$attrfieldcomputed = $extrafields->attributes[$this->table_element]['computed'][$attributeKey];
 
 				// If we clone, we have to clean unique extrafields to prevent duplicates.
 				// This behaviour can be prevented by external code by changing $this->context['createfromclone'] value in createFrom hook
-				if (!empty($this->context['createfromclone']) && $this->context['createfromclone'] == 'createfromclone' && !empty($attributeUnique)) {
+				if (! empty($this->context['createfromclone']) && $this->context['createfromclone'] == 'createfromclone' && ! empty($attributeUnique)) {
 					$new_array_options[$key] = null;
 				}
 
@@ -6275,33 +6275,36 @@ abstract class CommonObject
 				//dol_syslog("attributeLabel=".$attributeLabel, LOG_DEBUG);
 				//dol_syslog("attributeType=".$attributeType, LOG_DEBUG);
 
-				if (!empty($attrfieldcomputed)) {
-					if (!empty($conf->global->MAIN_STORE_COMPUTED_EXTRAFIELDS)) {
+				if (! empty($attrfieldcomputed)) {
+					if (! empty($conf->global->MAIN_STORE_COMPUTED_EXTRAFIELDS)) {
 						$value = dol_eval($attrfieldcomputed, 1, 0, '');
 						dol_syslog($langs->trans("Extrafieldcomputed")." sur ".$attributeLabel."(".$value.")", LOG_DEBUG);
 						$new_array_options[$key] = $value;
-					} else {
+					}
+					else {
 						$new_array_options[$key] = null;
 					}
 				}
 
 				switch ($attributeType) {
 					case 'int':
-						if (!is_numeric($value) && $value != '') {
+						if (! is_numeric($value) && $value != '') {
 							$this->errors[] = $langs->trans("ExtraFieldHasWrongValue", $attributeLabel);
 							return -1;
-						} elseif ($value == '') {
+						}
+						else if ($value == '') {
 							$new_array_options[$key] = null;
 						}
 						break;
 					case 'price':
 					case 'double':
 						$value = price2num($value);
-						if (!is_numeric($value) && $value != '') {
+						if (! is_numeric($value) && $value != '') {
 							dol_syslog($langs->trans("ExtraFieldHasWrongValue")." for ".$attributeLabel."(".$value."is not '".$attributeType."')", LOG_DEBUG);
 							$this->errors[] = $langs->trans("ExtraFieldHasWrongValue", $attributeLabel);
 							return -1;
-						} elseif ($value == '') {
+						}
+						else if ($value == '') {
 							$value = null;
 						}
 						//dol_syslog("double value"." sur ".$attributeLabel."(".$value." is '".$attributeType."')", LOG_DEBUG);
@@ -6323,20 +6326,23 @@ abstract class CommonObject
 								//global $action;		// $action may be 'create', 'update', 'update_extras'...
 								//var_dump($action);
 								//var_dump($this->oldcopy);exit;
-								if (is_object($this->oldcopy)) {		// If this->oldcopy is not defined, we can't know if we change attribute or not, so we must keep value
+								if (is_object($this->oldcopy)) {        // If this->oldcopy is not defined, we can't know if we change attribute or not, so we must keep value
 									//var_dump($this->oldcopy->array_options[$key]); var_dump($this->array_options[$key]);
-									if (isset($this->oldcopy->array_options[$key]) && $this->array_options[$key] == $this->oldcopy->array_options[$key]) {	// If old value crypted in database is same than submited new value, it means we don't change it, so we don't update.
+									if (isset($this->oldcopy->array_options[$key]) && $this->array_options[$key] == $this->oldcopy->array_options[$key]) {    // If old value crypted in database is same than submited new value, it means we don't change it, so we don't update.
 										$new_array_options[$key] = $this->array_options[$key]; // Value is kept
-									} else {
+									}
+									else {
 										// var_dump($algo);
 										$newvalue = dol_hash($this->array_options[$key], $algo);
 										$new_array_options[$key] = $newvalue;
 									}
-								} else {
+								}
+								else {
 									$new_array_options[$key] = $this->array_options[$key]; // Value is kept
 								}
 							}
-						} else // Common usage
+						}
+						else // Common usage
 						{
 							$new_array_options[$key] = $this->array_options[$key];
 						}
@@ -6344,7 +6350,7 @@ abstract class CommonObject
 					case 'date':
 					case 'datetime':
 						// If data is a string instead of a timestamp, we convert it
-						if (!is_numeric($this->array_options[$key]) || $this->array_options[$key] != intval($this->array_options[$key])) {
+						if (! is_numeric($this->array_options[$key]) || $this->array_options[$key] != intval($this->array_options[$key])) {
 							$this->array_options[$key] = strtotime($this->array_options[$key]);
 						}
 						$new_array_options[$key] = $this->db->idate($this->array_options[$key]);
@@ -6356,9 +6362,10 @@ abstract class CommonObject
 						$InfoFieldList = explode(":", $param_list[0]);
 						dol_include_once($InfoFieldList[1]);
 						if ($InfoFieldList[0] && class_exists($InfoFieldList[0])) {
-							if ($value == '-1') {	// -1 is key for no defined in combo list of objects
+							if ($value == '-1') {    // -1 is key for no defined in combo list of objects
 								$new_array_options[$key] = '';
-							} elseif ($value) {
+							}
+							else if ($value) {
 								/** BACKPORT PR #33460 */
 								$object = new $InfoFieldList[0]($this->db);
 
@@ -6368,7 +6375,7 @@ abstract class CommonObject
 								if (is_numeric($value)) {
 									$sqlFetchObject .= " WHERE rowid = " . (int) $value;
 								} else {
-									$sqlFetchObject .= " WHERE ref = '" . $this->db->escape($value) . "'";
+									$sqlFetchObject .= " WHERE ref = '".$this->db->escape($value)."'";
 								}
 
 								$obj = $this->db->getRow($sqlFetchObject);
@@ -6376,19 +6383,22 @@ abstract class CommonObject
 								if ($obj !== false) {
 									$objectId = $obj->rowid;
 									$res = 1;
-								} else {
+								}
+								else {
 									$res = -1;
 								}
 
 								if ($res > 0) {
 									$new_array_options[$key] = $objectId;
-								} else {
+								}
+								else {
 									$this->error = "Id/Ref '".$value."' for object '".$object->element."' not found";
 									return -1;
 								}
 								/** END BACKPORT PR #33460 */
 							}
-						} else {
+						}
+						else {
 							dol_syslog('Error bad setup of extrafield', LOG_WARNING);
 						}
 						break;
@@ -6402,62 +6412,73 @@ abstract class CommonObject
 				$table_element = 'categories'; // For compatibility
 			}
 
-			dol_syslog(get_class($this)."::insertExtraFields delete then insert", LOG_DEBUG);
+			$extrafieldsTable = $this->db->prefix().$table_element.'_extrafields';
 
-			$sql_del = "DELETE FROM ".$this->db->prefix().$table_element."_extrafields WHERE fk_object = ".((int) $this->id);
-			$this->db->query($sql_del);
-
-			$sql = "INSERT INTO ".$this->db->prefix().$table_element."_extrafields (fk_object";
-			foreach ($new_array_options as $key => $value) {
-				$attributeKey = substr($key, 8); // Remove 'options_' prefix
-				// Add field of attribut
-				if ($extrafields->attributes[$this->table_element]['type'][$attributeKey] != 'separate') { // Only for other type than separator
-					$sql .= ",".$attributeKey;
-				}
-			}
-			// We must insert a default value for fields for other entities that are mandatory to avoid not null error
-			if (!empty($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities']) && is_array($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'])) {
-				foreach ($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'] as $tmpkey => $tmpval) {
-					if (!isset($extrafields->attributes[$this->table_element]['type'][$tmpkey])) {    // If field not already added previously
-						$sql .= ",".$tmpkey;
-					}
-				}
-			}
-			$sql .= ") VALUES (".$this->id;
+			// Build fields and values for both INSERT and UPDATE
+			$insertFieldNames = ['fk_object']; // pré-rempli car fk_object n'est pas un extrafield
+			$fieldValues = [(int) $this->id];  // pré-rempli
+			$updateFields = [];
 
 			foreach ($new_array_options as $key => $value) {
 				$attributeKey = substr($key, 8); // Remove 'options_' prefix
 				// Add field of attribute
-				if ($extrafields->attributes[$this->table_element]['type'][$attributeKey] != 'separate') { // Only for other type than separator)
+				if ($extrafields->attributes[$this->table_element]['type'][$attributeKey] != 'separate') { // Only for other type than separator
+					$insertFieldNames[] = $attributeKey;
 					if ($new_array_options[$key] != '' || $new_array_options[$key] == '0') {
-						$sql .= ",'".$this->db->escape($new_array_options[$key])."'";
-					} else {
-						$sql .= ",null";
+						$fieldValues[] = "'".$this->db->escape($new_array_options[$key])."'";
+						$updateFields[] = $attributeKey." = '".$this->db->escape($new_array_options[$key])."'";
+					}
+					else {
+						$fieldValues[] = 'null';
+						$updateFields[] = $attributeKey.' = null';
 					}
 				}
 			}
-			// We must insert a default value for fields for other entities that are mandatory to avoid not null error
-			if (!empty($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities']) && is_array($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'])) {
-				foreach ($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'] as $tmpkey => $tmpval) {
-					if (!isset($extrafields->attributes[$this->table_element]['type'][$tmpkey])) {   // If field not already added previously
-						if (in_array($tmpval, array('int', 'double', 'price'))) {
-							$sql .= ", 0";
-						} else {
-							$sql .= ", ''";
+
+			$setFields = implode(', ', $updateFields);
+
+			if (getDolGlobalInt('MAIN_UPDATE_EXTRAFIELD_ROW_WHEN_POSSIBLE')
+				&& $this->db->getRow("SELECT 1 FROM {$extrafieldsTable} WHERE fk_object = {$this->id}")) {
+				dol_syslog(get_class($this).'::insertExtraFields update', LOG_DEBUG);
+				// the extrafield row exists already: we update the extrafields we know about in the current entity and we
+				// leave the rest alone.
+				$sql = "UPDATE {$extrafieldsTable} SET {$setFields} WHERE fk_object = {$this->id}";
+				$resql = $this->db->query($sql);
+			}
+			else {
+				dol_syslog(get_class($this).'::insertExtraFields delete then insert', LOG_DEBUG);
+
+				// We must insert a default value for fields for other entities that are mandatory to avoid not null error
+				if (! empty($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities']) && is_array($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'])) {
+					foreach ($extrafields->attributes[$this->table_element]['mandatoryfieldsofotherentities'] as $tmpkey => $tmpval) {
+						if (! isset($extrafields->attributes[$this->table_element]['type'][$tmpkey])) {   // If field not already added previously
+							$insertFieldNames[] = $tmpkey;
+							if (in_array($tmpval, array('int', 'double', 'price'))) {
+								$fieldValues[] = '0';
+								$updateFields[] = $tmpkey.' = 0';
+							}
+							else {
+								$fieldValues[] = "''";
+								$updateFields[] = $tmpkey." = ''";
+							}
 						}
 					}
 				}
+				$insertFields = implode(', ', $insertFieldNames);
+				$insertValues = implode(', ', $fieldValues);
+
+				$sql_del = "DELETE FROM {$extrafieldsTable} WHERE fk_object = ".((int) $this->id);
+				$this->db->query($sql_del);
+
+				$sql = 'INSERT INTO ' . $extrafieldsTable . ' (' . $insertFields . ') VALUES (' . $insertValues . ')';
+				$resql = $this->db->query($sql);
 			}
-
-			$sql .= ")";
-
-			$resql = $this->db->query($sql);
-			if (!$resql) {
+			if (! $resql) {
 				$this->error = $this->db->lasterror();
 				$error++;
 			}
 
-			if (!$error && $trigger) {
+			if (! $error && $trigger) {
 				// Call trigger
 				$this->context = array('extrafieldaddupdate'=>1);
 				$result = $this->call_trigger($trigger, $userused);
@@ -6470,17 +6491,19 @@ abstract class CommonObject
 			if ($error) {
 				$this->db->rollback();
 				return -1;
-			} else {
+			}
+			else {
 				$this->db->commit();
 				return 1;
 			}
-		} else {
+		}
+		else {
 			return 0;
 		}
 	}
 
 	/**
-	 *	Add/Update all extra fields values for the current object.
+	 *    Add/Update all extra fields values for the current object.
 	 *  Data to describe values to insert/update are stored into $this->array_options=array('options_codeforfield1'=>'valueforfield1', 'options_codeforfield2'=>'valueforfield2', ...)
 	 *  This function delete record with all extrafields and insert them again from the array $this->array_options.
 	 *
