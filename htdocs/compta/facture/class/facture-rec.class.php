@@ -1333,7 +1333,7 @@ class FactureRec extends CommonInvoice
 	 */
 	public function createRecurringInvoices($restrictioninvoiceid = 0, $forcevalidation = 0, $notrigger = 0)
 	{
-		global $conf, $langs, $db, $user, $hookmanager;
+		global $conf, $langs, $user, $hookmanager;
 
 		$error = 0;
 		$nb_create = 0;
@@ -1387,6 +1387,9 @@ class FactureRec extends CommonInvoice
 
 				$this->db->begin();
 
+				// BACKPORT V22 - Commit 0b8324f
+				$errorforinvoice = 0;
+				// FIN BACKPORT V22 - Commit 0b8324f
 				$invoiceidgenerated = 0;
 
 				$facture = null;
@@ -1428,7 +1431,9 @@ class FactureRec extends CommonInvoice
 					if ($invoiceidgenerated <= 0) {
 						$this->errors = $facture->errors;
 						$this->error = $facture->error;
-						$error++;
+						// BACKPORT V22 - Commit 0b8324f
+						$errorforinvoice++;
+						// FIN BACKPORT V22 - Commit 0b8324f
 					}
 
 
@@ -1440,14 +1445,18 @@ class FactureRec extends CommonInvoice
 							$error++;
 						}
 					}
-					if (!$error && $facturerec->generate_pdf) {
+					// BACKPORT V22 - Commit 0b8324f
+					if (!$errorforinvoice && $facturerec->generate_pdf) {
+						// fin BACKPORT V22 - Commit 0b8324f
 						// We refresh the object in order to have all necessary data (like date_lim_reglement)
 						$facture->fetch($facture->id);
 						$result = $facture->generateDocument($facturerec->model_pdf, $langs);
 						if ($result <= 0) {
 							$this->errors = $facture->errors;
 							$this->error = $facture->error;
-							$error++;
+							// BACKPORT V22 - Commit 0b8324f
+							$errorforinvoice++;
+							// fin BACKPORT V22 - Commit 0b8324f
 						}
 					}
 					if (!$error && !$notrigger) {
@@ -1483,6 +1492,9 @@ class FactureRec extends CommonInvoice
 					'cpt'        => $i,
 					'total'      => $num,
 					'errorCount' => $error,
+					// BACKPORT V22 - Commit 0b8324f
+					'errorForInvoice' => $errorforinvoice,
+					// fin BACKPORT V22 - Commit 0b8324f
 					'invoiceidgenerated' => $invoiceidgenerated,
 					'facturerec' => $facturerec, // it's an object which PHP passes by "reference", so modifiable by hooks.
 					'this'       => $this, // it's an object which PHP passes by "reference", so modifiable by hooks.
