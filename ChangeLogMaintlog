@@ -1,5 +1,8 @@
 # CHANGELOG 19.0 MAINTLOG FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
+* 06/05/25 *
+- FIX : DA026383 - Error in BDD saving 
+
 * 24/07/24 *
 - NEW : DA025205 - BACKPORT de la [PR Standard](https://github.com/Dolibarr/dolibarr/pull/30257).
 
