@@ -1,3 +1,4 @@
+- FIX: #DA026519 - input hidden did not work properly on form mail of ticket module
 - FIX create/edit ticket forms
 - Backport from 20.0 :
   - Added hook into getElementProperties to handle $element_properties array
