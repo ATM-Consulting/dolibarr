@@ -688,7 +688,7 @@ print '</td>';
 print '</tr>';
 
 // Message header
-$mail_intro = getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', '');
+$mail_intro = htmlspecialchars_decode(getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', ''));
 print '<tr class="oddeven"><td>'.$langs->trans("TicketMessageMailIntro");
 print '</td><td>';
 require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
@@ -700,7 +700,7 @@ print $formcategory->textwithpicto('', $langs->trans("TicketMessageMailIntroHelp
 print '</td></tr>';
 
 // Message footer
-$mail_signature = getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+$mail_signature = htmlspecialchars_decode(getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE'));
 print '<tr class="oddeven"><td>'.$langs->trans("TicketMessageMailFooter").'</label>';
 print '</td><td>';
 require_once DOL_DOCUMENT_ROOT.'/core/class/doleditor.class.php';
