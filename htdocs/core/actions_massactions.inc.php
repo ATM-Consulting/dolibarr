@@ -1726,6 +1726,9 @@ if (!$error && ($massaction == 'approveleave' || ($action == 'approveleave' && $
 
 				$objecttmp->date_valid = dol_now();
 				$objecttmp->fk_user_valid = $user->id;
+				// backport - #34231 - va être mergé en V20.0 ( à supprimer en v23.0)
+				$objecttmp->date_approval = dol_now();
+				$objecttmp->fk_user_approve = $user->id;
 				$objecttmp->status = Holiday::STATUS_APPROVED;
 				$objecttmp->statut = $objecttmp->status;	// deprecated
 
