@@ -196,7 +196,7 @@ if (empty($reshook)) {
 		}
 		$action = 'view';
 	}
-
+	// backport : PR -FIX|Fix # issue when you try to attach of file on form ticket
 	if (($action == 'add' && GETPOST('save', 'alpha') || ($action == 'update' && $object->status < Ticket::STATUS_CLOSED)) && $permissiontoadd) {
 		$ifErrorAction = ($action == 'add' ? 'create' : 'edit');	// Test on permission not required here
 		if ($action == 'add') {		// Test on permission already done
