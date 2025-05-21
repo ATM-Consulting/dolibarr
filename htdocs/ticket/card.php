@@ -196,7 +196,7 @@ if (empty($reshook)) {
 		}
 		$action = 'view';
 	}
-	// backport : PR -FIX|Fix # issue when you try to attach of file on form ticket
+	// backport : PR #34227 - va être mergé en V20.0 ( à supprimer  lors du passge en V23.0 )
 	if (($action == 'add' && GETPOST('save', 'alpha') || ($action == 'update' && $object->status < Ticket::STATUS_CLOSED)) && $permissiontoadd) {
 		$ifErrorAction = ($action == 'add' ? 'create' : 'edit');	// Test on permission not required here
 		if ($action == 'add') {		// Test on permission already done
