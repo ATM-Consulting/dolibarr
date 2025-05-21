@@ -1,3 +1,4 @@
+- FIX : #DA026469 -  Correction d’un problème où le bouton "Joindre un fichier" lors de la création d’un ticket déclenchait la création du ticket au lieu de permettre l’ajout de fichiers.
 - FIX: #DA026519 - input hidden did not work properly on form mail of ticket module
 - FIX create/edit ticket forms
 - Backport from 20.0 :
