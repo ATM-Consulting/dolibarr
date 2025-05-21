@@ -1553,7 +1553,9 @@ if ($action == 'create') {
 	$soc->fetch($object->socid);
 
 	$head = supplier_proposal_prepare_head($object);
-	print dol_get_fiche_head($head, 'comm', $langs->trans('CommRequest'), -1, 'supplier_proposal');
+	//TODO------------- START BACKPORT DOLIBARR V22 / DRAG&DROP -------------------------------------------------
+	print dol_get_fiche_head($head, 'comm', $langs->trans('CommRequest'), -1, 'supplier_proposal', 0, '', '', 0, '', 1);
+	//TODO------------- END BACKPORT DOLIBARR V22 / DRAG&DROP ---------------------------------------------------
 
 	$formconfirm = '';
 
