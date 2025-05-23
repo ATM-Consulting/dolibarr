@@ -1333,7 +1333,7 @@ class FactureRec extends CommonInvoice
 	 */
 	public function createRecurringInvoices($restrictioninvoiceid = 0, $forcevalidation = 0, $notrigger = 0)
 	{
-		global $conf, $langs, $user, $hookmanager;
+		global $conf, $langs, $user, $db, $hookmanager;
 
 		$error = 0;
 		$nb_create = 0;
