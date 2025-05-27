@@ -67,11 +67,15 @@ class Contracts extends DolibarrApi
 	 * Return an array with contract informations
 	 *
 	 * @param       int         $id         ID of contract
+	 // BACKPORT PR 34293
+	 * @param 		string 		$properties Restrict the data returned to these properties. Ignored if empty. Comma separated list of properties names
+	 * @param 		bool 		$lines 		true or false to display or hide lines
+	 // FIN BACKPORT PR 34293
 	 * @return 	array|mixed data without useless information
 	 *
 	 * @throws 	RestException
 	 */
-	public function get($id)
+	public function get($id, $properties = '', $lines = true)
 	{
 		if (!DolibarrApiAccess::$user->rights->contrat->lire) {
 			throw new RestException(401);
@@ -87,7 +91,14 @@ class Contracts extends DolibarrApi
 		}
 
 		$this->contract->fetchObjectLinked();
-		return $this->_cleanObjectDatas($this->contract);
+
+		// BACKPORT PR 34293
+		if ($lines == false) {
+			unset($this->contract->lines);
+		}
+
+		return $this->_filterObjectProperties($this->_cleanObjectDatas($this->contract), $properties);
+		// FIN BACKPORT PR 34293
 	}
 
 
@@ -103,12 +114,14 @@ class Contracts extends DolibarrApi
 	 * @param int		       $page		        Page number
 	 * @param string   	       $thirdparty_ids	    Thirdparty ids to filter contracts of (example '1' or '1,2,3') {@pattern /^[0-9,]*$/i}
 	 * @param string           $sqlfilters          Other criteria to filter answers separated by a comma. Syntax example "(t.ref:like:'SO-%') and (t.date_creation:<:'20160101')"
+	 * @param string 		   $properties 			Restrict the data returned to these properties. Ignored if empty. Comma separated list of properties names
+	 * @param bool 			   $lines 				true or false to display or hide lines
 	 * @return  array                               Array of contract objects
 	 *
 	 * @throws RestException 404 Not found
 	 * @throws RestException 503 Error
 	 */
-	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $sqlfilters = '')
+	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $sqlfilters = '', $properties = '', $lines = true)
 	{
 		global $db, $conf;
 
@@ -181,7 +194,12 @@ class Contracts extends DolibarrApi
 				$obj = $this->db->fetch_object($result);
 				$contrat_static = new Contrat($this->db);
 				if ($contrat_static->fetch($obj->rowid)) {
-					$obj_ret[] = $this->_cleanObjectDatas($contrat_static);
+					// BACKPORT PR 34293
+					if ($lines == false) {
+						unset($contrat_static->lines);
+					}
+					$obj_ret[] = $this->_filterObjectProperties($this->_cleanObjectDatas($contrat_static), $properties);
+					// FIN BACKPORT PR 34293
 				}
 				$i++;
 			}
