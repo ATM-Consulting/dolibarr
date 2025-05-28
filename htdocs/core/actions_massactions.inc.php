@@ -792,7 +792,7 @@ if (!$error && $massaction == 'cancelorders') {
 			continue;
 		}
 
-		if ($cmd->statut != Commande::STATUS_VALIDATED) {
+		if ($cmd->status != Commande::STATUS_VALIDATED) {
 			$langs->load('errors');
 			setEventMessages($langs->trans("ErrorObjectMustHaveStatusValidToBeCanceled", $cmd->ref), null, 'errors');
 			$error++;
@@ -1627,7 +1627,7 @@ if (!$error && $action == 'confirm_edit_value_extrafields' && $confirm == 'yes' 
 	}
 }
 
-if (!$error && ($massaction == 'affectcommercial' || ($action == 'affectcommercial' && $confirm == 'yes')) && $permissiontoadd) {
+if (!$error && ($massaction == 'assignsalerepresentative' || ($action == 'assignsalerepresentative' && $confirm == 'yes')) && $permissiontoadd) {
 	$db->begin();
 
 	$objecttmp = new $objectclass($db);
