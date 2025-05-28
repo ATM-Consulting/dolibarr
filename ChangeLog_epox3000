@@ -1,2 +1,3 @@
 ***** ChangeLog for epoxy_3000  *****
 FIX : DA026578 - Lignes désordonnées au clone d'une commande
+FIX: Modification du comportment de saisi des tâches afin de pouvoir saisir du temps sur un projet même si le projet ne contient pas de contact assigné - **28/05/2025**
