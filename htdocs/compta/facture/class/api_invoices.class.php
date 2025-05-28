@@ -67,13 +67,25 @@ class Invoices extends DolibarrApi
 	 *
 	 * @param 	int 	$id           ID of invoice
 	 * @param   int     $contact_list 0:Return array contains all properties, 1:Return array contains just id, -1: Do not return contacts/adddesses
+	 // BACKPORT PR 34293
+	 * @param 	string 	$properties Restrict the data returned to these properties. Ignored if empty. Comma separated list of properties names
+	 * @param 	bool 	$withLines true or false to display or hide lines
+	 // FIN BACKPORT PR 34293
 	 * @return 	array|mixed data without useless information
 	 *
 	 * @throws 	RestException
 	 */
-	public function get($id, $contact_list = 1)
+	public function get($id, $contact_list = 1, $properties = '', $withLines = true)
 	{
-		return $this->_fetch($id, '', '', $contact_list);
+		// BACKPORT PR 34293
+		$invoice = $this->_fetch($id, '', '', $contact_list);
+
+		if (!$withLines) {
+			unset($invoice->lines);
+		}
+
+		return $this->_filterObjectProperties($invoice, $properties);
+		// FIN BACKPORT PR 34293
 	}
 
 	/**
@@ -171,12 +183,16 @@ class Invoices extends DolibarrApi
 	 * @param string   	$thirdparty_ids	  Thirdparty ids to filter orders of (example '1' or '1,2,3') {@pattern /^[0-9,]*$/i}
 	 * @param string	$status		      Filter by invoice status : draft | unpaid | paid | cancelled
 	 * @param string    $sqlfilters       Other criteria to filter answers separated by a comma. Syntax example "(t.ref:like:'SO-%') and (t.date_creation:<:'20160101')"
+	 // BACKPORT PR 34293
+	 * @param string 	$properties 	  Restrict the data returned to these properties. Ignored if empty. Comma separated list of properties names
+	 * @param bool 		$withLines 		  true or false to display or hide lines
+	 // FIN BACKPORT PR 34293
 	 * @return array                      Array of invoice objects
 	 *
 	 * @throws RestException 404 Not found
 	 * @throws RestException 503 Error
 	 */
-	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $status = '', $sqlfilters = '')
+	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $status = '', $sqlfilters = '', $properties = '', $withLines = true)
 	{
 		global $db, $conf;
 
@@ -273,7 +289,13 @@ class Invoices extends DolibarrApi
 					if (is_array($tmparray)) {
 						$invoice_static->contacts_ids = $tmparray;
 					}
-					$obj_ret[] = $this->_cleanObjectDatas($invoice_static);
+					// BACKPORT PR 34293
+					if (!$withLines) {
+						unset($invoice_static->lines);
+					}
+
+					$obj_ret[] = $this->_filterObjectProperties($this->_cleanObjectDatas($invoice_static), $properties);
+					// FIN BACKPORT PR 34293
 				}
 				$i++;
 			}
