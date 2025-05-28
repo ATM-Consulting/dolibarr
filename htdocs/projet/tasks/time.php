@@ -210,11 +210,13 @@ if ($action == 'addtimespent' && $user->hasRight('projet', 'time')) {
 		setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentitiesnoconv("Duration")), null, 'errors');
 		$error++;
 	}
-	if (!GETPOSTINT("userid")) {
-		$langs->load("errors");
-		setEventMessages($langs->trans('ErrorUserNotAssignedToTask'), null, 'errors');
-		$error++;
-	}
+
+	// ------------------- spé epoxy 3000 --------------------
+//	if (!GETPOSTINT("userid")) {
+//		$langs->load("errors");
+//		setEventMessages($langs->trans('ErrorUserNotAssignedToTask'), null, 'errors');
+//		$error++;
+//	}
 
 	if (!$error) {
 		if ($id || $ref) {
@@ -1592,7 +1594,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as prod ON prod.rowid = t.fk_product";
 		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."projet_task as pt ON pt.rowid = t.fk_element";
 		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = pt.fk_projet";
-		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."user as u ON t.fk_user = u.rowid";
+		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."user as u ON t.fk_user = u.rowid";
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON s.rowid = p.fk_soc";
 
 		// Add table from hooks
