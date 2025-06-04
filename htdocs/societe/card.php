@@ -409,29 +409,6 @@ if (empty($reshook)) {
 	&& ($action == 'add' || $action == 'update') && $user->rights->societe->creer) {
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 
-		if (!GETPOST('name')) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("ThirdPartyName")), null, 'errors');
-			$error++;
-		}
-		if (GETPOST('client', 'int') && GETPOST('client', 'int') < 0) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("ProspectCustomer")), null, 'errors');
-			$error++;
-		}
-		if (GETPOSTISSET('fournisseur') && GETPOST('fournisseur', 'int') < 0) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Supplier")), null, 'errors');
-			$error++;
-		}
-
-		if (!empty($conf->mailing->enabled) && !empty($conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST('contact_no_email', 'int')==-1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email")), null, 'errors');
-		}
-
-		if (!empty($conf->mailing->enabled) && GETPOST("private", 'int') == 1 && !empty($conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST('contact_no_email', 'int')==-1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email")), null, 'errors');
-		}
-
 		if (!$error) {
 			if ($action == 'update') {
 				$ret = $object->fetch($socid);
@@ -547,6 +524,8 @@ if (empty($reshook)) {
 			if ($ret < 0) {
 				 $error++;
 			}
+
+			$error += $object->validateMandatoryFields($errors);
 
 			// Fill array 'array_languages' with data from add form
 			$ret = $object->setValuesForExtraLanguages();

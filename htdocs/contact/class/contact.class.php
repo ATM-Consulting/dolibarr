@@ -2191,10 +2191,12 @@ class Contact extends CommonObject
 				$error++;
 				$label = isset($this->fields[$fieldToCheck]['label']) ? $langs->transnoentities($this->fields[$fieldToCheck]['label']) : $langs->trans($fieldToCheck);
 				$errors[] = $langs->trans("ErrorFieldRequired", $label);
-			} elseif ($mandatoryField === 'email' && !isValidEmail($this->email)) {
-				$error++;
-				$errors[] = $langs->trans("ErrorBadEMail", $this->email);
 			}
+		}
+
+		if ((!empty($this->email) && !isValidEmail($this->email)) || empty($this->email)) {
+			$error++;
+			$errors[] = $langs->trans("ErrorBadEMail", $this->email);
 		}
 
 		if (!empty($conf->mailing->enabled)

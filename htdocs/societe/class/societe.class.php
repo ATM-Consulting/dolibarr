@@ -181,7 +181,7 @@ class Societe extends CommonObject
 		'email' =>array('type'=>'varchar(128)', 'label'=>'Email', 'enabled'=>1, 'visible'=>-1, 'position'=>115),
 		'socialnetworks' =>array('type'=>'text', 'label'=>'Socialnetworks', 'enabled'=>1, 'visible'=>-1, 'position'=>120),
 		'fk_effectif' =>array('type'=>'integer', 'label'=>'Workforce', 'enabled'=>1, 'visible'=>-1, 'position'=>170),
-		'fk_typent' =>array('type'=>'integer', 'label'=>'TypeOfCompany', 'enabled'=>1, 'visible'=>-1, 'position'=>175, 'csslist'=>'minwidth200'),
+		'fk_typent' =>array('type'=>'integer', 'label'=>'ThirdPartyType', 'enabled'=>1, 'visible'=>-1, 'position'=>175, 'csslist'=>'minwidth200'),
 		'fk_forme_juridique' =>array('type'=>'integer', 'label'=>'JuridicalStatus', 'enabled'=>1, 'visible'=>-1, 'position'=>180),
 		'fk_currency' =>array('type'=>'varchar(3)', 'label'=>'Currency', 'enabled'=>1, 'visible'=>-1, 'position'=>185),
 		'siren' =>array('type'=>'varchar(128)', 'label'=>'Idprof1', 'enabled'=>1, 'visible'=>-1, 'position'=>190),
@@ -4935,5 +4935,100 @@ class Societe extends CommonObject
 		$this->partnerships[] = array();
 
 		return 1;
+	}
+
+	/**
+	 * Check if mandatory fields are correctly filled.
+	 *
+	 * @param array $errors
+	 * @return int
+	 */
+	public function validateMandatoryFields(array &$errors): int
+	{
+		global $langs;
+
+		$error = 0;
+
+		$mandatoryFields = [
+			'name', 'client', 'zipcode', 'state_id'
+		];
+
+		$defaultValuesStatic = new DefaultValues($this->db);
+		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
+			'type' => 'mandatory',
+			'page' => 'societe/card.php'
+		]);
+
+		$activeSocialKeys = [];
+
+		$socialNetworks = getArrayOfSocialNetworks();
+
+		foreach ($socialNetworks as $socialNetwork => $data) {
+			if (!empty($data['active']) && $data['active'] == 1) {
+				$activeSocialKeys[] = $socialNetwork;
+			}
+		}
+
+		foreach ($defaultValues as $defaultValue) {
+			if (!empty($defaultValue->param)) {
+				$mandatoryFields[] = $defaultValue->param;
+			}
+		}
+
+		$mandatoryFields = array_unique($mandatoryFields);
+
+		$mandatoryFieldsWithSocials = $mandatoryFields;
+
+		$mandatoryFields = array_filter($mandatoryFields, function ($field) {
+			return !array_key_exists($field, getArrayOfSocialNetworks());
+		});
+
+		foreach ($activeSocialKeys as $activeSocialKey) {
+			if (in_array($activeSocialKey, $mandatoryFieldsWithSocials, true)) {
+				if (array_key_exists($activeSocialKey, $this->socialnetworks) && empty($this->socialnetworks[$activeSocialKey])) {
+					$error++;
+					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
+				} elseif (!array_key_exists($activeSocialKey, $this->socialnetworks)) {
+					$error++;
+					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
+				}
+			}
+		}
+
+		foreach ($mandatoryFields as $mandatoryField) {
+			$fieldToCheck = $mandatoryField;
+
+			if ($fieldToCheck === 'zipcode') $fieldToCheck = 'zip';
+
+			if (!property_exists($this, $fieldToCheck)) continue;
+
+			$value = $this->{$fieldToCheck} ? $this->{$fieldToCheck} : ($this->socialnetworks[$fieldToCheck] ?? null);
+
+			if ($value === null || $value === '' || (is_numeric($value) && $value <= 0)) {
+				if ($fieldToCheck === 'state_id') $fieldToCheck = 'fk_departement';
+				if ($fieldToCheck === 'name') $fieldToCheck = 'nom';
+				if ($fieldToCheck === 'typent_id') $fieldToCheck = 'fk_typent';
+
+				$error++;
+				$label = isset($this->fields[$fieldToCheck]['label']) ? $langs->transnoentities($this->fields[$fieldToCheck]['label']) : $langs->trans($fieldToCheck);
+				$errors[] = $langs->trans("ErrorFieldRequired", $label);
+			}
+		}
+
+		if (!empty($this->email) && !isValidEmail($this->email)) {
+			$error++;
+			$errors[] = $langs->trans("ErrorBadEMail", $this->email);
+		}
+
+		if (!empty($conf->mailing->enabled)
+			&& getDolGlobalString('MAILING_CONTACT_DEFAULT_BULK_STATUS') == 2
+			&& $this->no_email == -1
+			&& !empty($this->email)
+		) {
+			$error++;
+			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+		}
+
+		return $error;
 	}
 }
