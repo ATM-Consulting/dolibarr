@@ -246,24 +246,29 @@ if (empty($reshook)) {
 			$action = 'create';
 		}
 
-		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && $object->no_email == -1 && !empty($object->email)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+		$error += $resValidateFields = $object->validateMandatoryFields($errors);
+		if ($resValidateFields) {
 			$action = 'create';
 		}
 
-		if (!empty($object->email) && !isValidEMail($object->email)) {
-			$langs->load("errors");
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
-			$action = 'create';
-		}
-
-		if (empty($object->lastname)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("Lastname").' / '.$langs->transnoentities("Label"));
-			$action = 'create';
-		}
+//		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && $object->no_email == -1 && !empty($object->email)) {
+//			$error++;
+//			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+//			$action = 'create';
+//		}
+//
+//		if (empty($object->email) || (!empty($object->email) && !isValidEMail($object->email))) {
+//			$langs->load("errors");
+//			$error++;
+//			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
+//			$action = 'create';
+//		}
+//
+//		if (empty($object->lastname)) {
+//			$error++;
+//			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("Lastname").' / '.$langs->transnoentities("Label"));
+//			$action = 'create';
+//		}
 
 		if (empty($error)) {
 			$id = $object->create($user);
@@ -334,23 +339,23 @@ if (empty($reshook)) {
 	}
 
 	if ($action == 'update' && empty($cancel) && !empty($permissiontoadd)) {
-		if (!GETPOST("lastname", 'alpha')) {
-			$error++; $errors = array($langs->trans("ErrorFieldRequired", $langs->transnoentities("Name").' / '.$langs->transnoentities("Label")));
-			$action = 'edit';
-		}
-
-		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST("no_email", "int") == -1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
-			$action = 'edit';
-		}
-
-		if (!empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL)) && !isValidEMail(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$langs->load("errors");
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
-			$action = 'edit';
-		}
+//		if (!GETPOST("lastname", 'alpha')) {
+//			$error++; $errors = array($langs->trans("ErrorFieldRequired", $langs->transnoentities("Name").' / '.$langs->transnoentities("Label")));
+//			$action = 'edit';
+//		}
+//
+//		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST("no_email", "int") == -1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
+//			$error++;
+//			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+//			$action = 'edit';
+//		}
+//
+//		if (!empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL)) && !isValidEMail(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
+//			$langs->load("errors");
+//			$error++;
+//			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
+//			$action = 'edit';
+//		}
 
 		if (!$error) {
 			$contactid = GETPOST("contactid", 'int');
@@ -448,6 +453,11 @@ if (empty($reshook)) {
 			$ret = $extrafields->setOptionalsFromPost(null, $object, '@GETPOSTISSET');
 			if ($ret < 0) {
 				$error++;
+			}
+
+			$error += $resValidateFields = $object->validateMandatoryFields($errors);
+			if ($resValidateFields) {
+				$action = 'edit';
 			}
 
 			if (!$error) {

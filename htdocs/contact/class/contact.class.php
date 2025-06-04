@@ -99,7 +99,7 @@ class Contact extends CommonObject
 		'address' =>array('type'=>'varchar(255)', 'label'=>'Address', 'enabled'=>1, 'visible'=>-1, 'position'=>55),
 		'zip' =>array('type'=>'varchar(25)', 'label'=>'Zip', 'enabled'=>1, 'visible'=>1, 'position'=>60),
 		'town' =>array('type'=>'text', 'label'=>'Town', 'enabled'=>1, 'visible'=>-1, 'position'=>65),
-		'fk_departement' =>array('type'=>'integer', 'label'=>'Fk departement', 'enabled'=>1, 'visible'=>3, 'position'=>70),
+		'fk_departement' =>array('type'=>'integer', 'label'=>'State', 'enabled'=>1, 'visible'=>3, 'position'=>70),
 		'fk_pays' =>array('type'=>'integer', 'label'=>'Fk pays', 'enabled'=>1, 'visible'=>3, 'position'=>75),
 		'fk_soc' =>array('type'=>'integer', 'label'=>'ThirdParty', 'enabled'=>1, 'visible'=>1, 'position'=>77, 'searchall'=>1),
 		'birthday' =>array('type'=>'date', 'label'=>'Birthday', 'enabled'=>1, 'visible'=>3, 'position'=>80),
@@ -2117,5 +2117,95 @@ class Contact extends CommonObject
 			}
 		}
 		return 0;
+	}
+
+	/**
+	 * Check if mandatory fields are correctly filled.
+	 *
+	 * @param array $errors
+	 * @return int
+	 */
+	public function validateMandatoryFields(array &$errors): int
+	{
+		global $langs;
+
+		$error = 0;
+
+		$mandatoryFields = [
+			'lastname', 'email', 'zipcode', 'town', 'state_id'
+		];
+
+		$defaultValuesStatic = new DefaultValues($this->db);
+		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
+			'type' => 'mandatory',
+			'page' => 'contact/card.php'
+		]);
+
+		$activeSocialKeys = [];
+
+		$socialNetworks = getArrayOfSocialNetworks();
+
+		foreach ($socialNetworks as $socialNetwork => $data) {
+			if (!empty($data['active']) && $data['active'] == 1) {
+				$activeSocialKeys[] = $socialNetwork;
+			}
+		}
+
+		foreach ($defaultValues as $defaultValue) {
+			if (!empty($defaultValue->param)) {
+				$mandatoryFields[] = $defaultValue->param;
+			}
+		}
+
+		$mandatoryFieldsWithSocials = array_unique($mandatoryFields);
+
+		$mandatoryFields = array_filter($mandatoryFields, function ($field) {
+			return !array_key_exists($field, getArrayOfSocialNetworks());
+		});
+
+		foreach ($activeSocialKeys as $activeSocialKey) {
+			if (in_array($activeSocialKey, $mandatoryFieldsWithSocials, true)) {
+				if (array_key_exists($activeSocialKey, $this->socialnetworks) && empty($this->socialnetworks[$activeSocialKey])) {
+					$error++;
+					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
+				} elseif (!array_key_exists($activeSocialKey, $this->socialnetworks)) {
+					$error++;
+					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
+				}
+			}
+		}
+
+		foreach ($mandatoryFields as $mandatoryField) {
+			$fieldToCheck = $mandatoryField;
+
+			if ($fieldToCheck === 'zipcode') $fieldToCheck = 'zip';
+
+			if (!property_exists($this, $fieldToCheck)) continue;
+
+			$value = $this->{$fieldToCheck} ? $this->{$fieldToCheck} : ($this->socialnetworks[$fieldToCheck] ?? null);
+
+			if (!isset($value) || empty($value)) {
+				if ($fieldToCheck === 'state_id') $fieldToCheck = 'fk_departement';
+				if ($fieldToCheck === 'phone_pro') $fieldToCheck = 'phone';
+
+				$error++;
+				$label = isset($this->fields[$fieldToCheck]['label']) ? $langs->transnoentities($this->fields[$fieldToCheck]['label']) : $langs->trans($fieldToCheck);
+				$errors[] = $langs->trans("ErrorFieldRequired", $label);
+			} elseif ($mandatoryField === 'email' && !isValidEmail($this->email)) {
+				$error++;
+				$errors[] = $langs->trans("ErrorBadEMail", $this->email);
+			}
+		}
+
+		if (!empty($conf->mailing->enabled)
+			&& getDolGlobalString('MAILING_CONTACT_DEFAULT_BULK_STATUS') == 2
+			&& $this->no_email == -1
+			&& !empty($this->email)
+		) {
+			$error++;
+			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+		}
+
+		return $error;
 	}
 }
