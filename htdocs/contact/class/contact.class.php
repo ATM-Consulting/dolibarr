@@ -2133,7 +2133,7 @@ class Contact extends CommonObject
 
 		$error = 0;
 
-		$mandatoryFields = ['lastname', 'email', 'zipcode', 'town', 'state_id'];
+		$mandatoryFields = ['lastname'];
 
 		$defaultValuesStatic = new DefaultValues($this->db);
 		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [

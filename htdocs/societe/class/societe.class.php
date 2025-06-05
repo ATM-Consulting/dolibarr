@@ -4951,7 +4951,7 @@ class Societe extends CommonObject
 
 		$error = 0;
 
-		$mandatoryFields = ['name', 'client', 'zipcode', 'state_id'];
+		$mandatoryFields = ['name', 'client'];
 
 		$defaultValuesStatic = new DefaultValues($this->db);
 		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
