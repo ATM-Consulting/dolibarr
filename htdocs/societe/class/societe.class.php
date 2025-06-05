@@ -4947,11 +4947,11 @@ class Societe extends CommonObject
 	{
 		global $langs;
 
+		$langs->load("errors");
+
 		$error = 0;
 
-		$mandatoryFields = [
-			'name', 'client', 'zipcode', 'state_id'
-		];
+		$mandatoryFields = ['name', 'client', 'zipcode', 'state_id'];
 
 		$defaultValuesStatic = new DefaultValues($this->db);
 		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
@@ -4959,32 +4959,24 @@ class Societe extends CommonObject
 			'page' => 'societe/card.php'
 		]);
 
-		$activeSocialKeys = [];
-
-		$socialNetworks = getArrayOfSocialNetworks();
-
-		foreach ($socialNetworks as $socialNetwork => $data) {
-			if (!empty($data['active']) && $data['active'] == 1) {
-				$activeSocialKeys[] = $socialNetwork;
-			}
-		}
-
 		foreach ($defaultValues as $defaultValue) {
 			if (!empty($defaultValue->param)) {
 				$mandatoryFields[] = $defaultValue->param;
 			}
 		}
 
-		$mandatoryFields = array_unique($mandatoryFields);
+		$socialNetworks = getArrayOfSocialNetworks();
 
-		$mandatoryFieldsWithSocials = $mandatoryFields;
+		$activeSocialKeys = array_keys(array_filter($socialNetworks, fn($data) => !empty($data['active']) && $data['active'] == 1));
 
-		$mandatoryFields = array_filter($mandatoryFields, function ($field) {
-			return !array_key_exists($field, getArrayOfSocialNetworks());
+		$allMandatoryFields = array_unique($mandatoryFields);
+
+		$mandatoryFields = array_filter($allMandatoryFields, function ($field) use ($socialNetworks) {
+			return !array_key_exists($field, $socialNetworks);
 		});
 
 		foreach ($activeSocialKeys as $activeSocialKey) {
-			if (in_array($activeSocialKey, $mandatoryFieldsWithSocials, true)) {
+			if (in_array($activeSocialKey, $allMandatoryFields, true)) {
 				if (array_key_exists($activeSocialKey, $this->socialnetworks) && empty($this->socialnetworks[$activeSocialKey])) {
 					$error++;
 					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
@@ -4995,23 +4987,26 @@ class Societe extends CommonObject
 			}
 		}
 
-		foreach ($mandatoryFields as $mandatoryField) {
-			$fieldToCheck = $mandatoryField;
+		foreach ($mandatoryFields as $field) {
+			$property = $field === 'zipcode' ? 'zip' : $field;
 
-			if ($fieldToCheck === 'zipcode') $fieldToCheck = 'zip';
+			if (!property_exists($this, $property)) continue;
 
-			if (!property_exists($this, $fieldToCheck)) continue;
+			$value = $this->{$property} ?? $this->socialnetworks[$property] ?? null;
 
-			$value = $this->{$fieldToCheck} ? $this->{$fieldToCheck} : ($this->socialnetworks[$fieldToCheck] ?? null);
+			if ($value === null || $value === '' || (is_numeric($value) && $value < 0)) {
+				$fieldKey = match ($property) {
+					'state_id' => 'fk_departement',
+					'name' => 'nom',
+					'typent_id' => 'fk_typent',
+					default => $property
+				};
 
-			if ($value === null || $value === '' || (is_numeric($value) && $value <= 0)) {
-				if ($fieldToCheck === 'state_id') $fieldToCheck = 'fk_departement';
-				if ($fieldToCheck === 'name') $fieldToCheck = 'nom';
-				if ($fieldToCheck === 'typent_id') $fieldToCheck = 'fk_typent';
+				$label = $this->fields[$fieldKey]['label'] ?? $fieldKey;
+				$labelTranslated = $langs->transnoentities($label);
 
 				$error++;
-				$label = isset($this->fields[$fieldToCheck]['label']) ? $langs->transnoentities($this->fields[$fieldToCheck]['label']) : $langs->trans($fieldToCheck);
-				$errors[] = $langs->trans("ErrorFieldRequired", $label);
+				$errors[] = $langs->trans("ErrorFieldRequired", $labelTranslated);
 			}
 		}
 

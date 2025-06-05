@@ -541,11 +541,6 @@ if (empty($reshook)) {
 
 			// Check parameters
 			if (!GETPOST('cancel', 'alpha')) {
-				if (!empty($object->email) && !isValidEMail($object->email)) {
-					$langs->load("errors");
-					$error++;
-					setEventMessages('', $langs->trans("ErrorBadEMail", $object->email), 'errors');
-				}
 				if (!empty($object->url) && !isValidUrl($object->url)) {
 					$langs->load("errors");
 					setEventMessages('', $langs->trans("ErrorBadUrl", $object->url), 'errors');
