@@ -1586,6 +1586,28 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	}
+
+	if ($action == 'create' || $action == 'edit') {
+		?>
+		<script type="text/javascript">
+			function removeAllRequiredAttributes() {
+				const allRequired = document.querySelectorAll('[required]');
+				allRequired.forEach(el => el.removeAttribute('required'));
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				removeAllRequiredAttributes();
+
+				let repeatCount = 0;
+				const interval = setInterval(function () {
+					removeAllRequiredAttributes();
+					repeatCount++;
+					if (repeatCount > 10) clearInterval(interval);
+				}, 200);
+			});
+		</script>
+		<?php
+	}
 }
 
 

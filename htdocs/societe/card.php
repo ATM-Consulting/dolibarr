@@ -2067,6 +2067,8 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print '</script>'."\n";
 			}
 
+			dol_htmloutput_mesg(is_numeric($error) ? '' : $error, $errors, 'error');
+
 			print '<form enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?socid='.$object->id.'" method="post" name="formsoc">';
 			print '<input type="hidden" name="action" value="update">';
 			print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -3162,6 +3164,28 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 		$trackid = 'thi'.$object->id;
 
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
+	}
+
+	if ($action == 'create' || $action == 'edit') {
+		?>
+		<script type="text/javascript">
+			function removeAllRequiredAttributes() {
+				const allRequired = document.querySelectorAll('[required]');
+				allRequired.forEach(el => el.removeAttribute('required'));
+			}
+
+			document.addEventListener('DOMContentLoaded', function () {
+				removeAllRequiredAttributes();
+
+				let repeatCount = 0;
+				const interval = setInterval(function () {
+					removeAllRequiredAttributes();
+					repeatCount++;
+					if (repeatCount > 10) clearInterval(interval);
+				}, 200);
+			});
+		</script>
+		<?php
 	}
 }
 // End of page
