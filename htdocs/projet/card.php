@@ -542,14 +542,35 @@ if (empty($reshook)) {
 			// Load new object
 			$newobject = new Project($db);
 			$newobject->fetch($result);
-			$newobject->fetch_optionals();
-			$newobject->fetch_thirdparty(); // Load new object
-			$object = $newobject;
-			$action = 'view';
-			$comefromclone = true;
 
 			setEventMessages($langs->trans("ProjectCreatedInDolibarr", $newobject->ref), "", 'mesgs');
-			//var_dump($newobject); exit;
+
+			header('Location: '.$_SERVER['PHP_SELF'].'?id='.$result.'&action=edit&comefromclone=1');
+			exit;
+		}
+	}
+
+	// Quick edit for extrafields
+	if ($action == 'update_extras' && $permissiontoadd) {
+		$object->oldcopy = dol_clone($object, 2);
+
+		// Fill array 'array_options' with data from update form
+		$ret = $extrafields->setOptionalsFromPost(null, $object, GETPOST('attribute', 'restricthtml'));
+		if ($ret < 0) {
+			$error++;
+		}
+
+		if (!$error) {
+			// Actions on extra fields
+			$result = $object->insertExtraFields('PROJECT_MODIFY');
+			if ($result < 0) {
+				setEventMessages($object->error, $object->errors, 'errors');
+				$error++;
+			}
+		}
+
+		if ($error) {
+			$action = 'edit_extras';
 		}
 	}
 

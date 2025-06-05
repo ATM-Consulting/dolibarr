@@ -355,12 +355,12 @@ class Asset extends CommonObject
 			if ($res < 0) {
 				return -1;
 			} elseif ($res > 0) {
-				$this->fields['date_acquisition']['noteditable'] = '1';
-				$this->fields['date_start']['noteditable'] = '1';
-				$this->fields['acquisition_value_ht']['noteditable'] = '1';
-				$this->fields['recovered_vat']['noteditable'] = '1';
-				$this->fields['reversal_date']['noteditable'] = '1';
-				$this->fields['reversal_amount_ht']['noteditable'] = '1';
+				$this->fields['date_acquisition']['noteditable'] = 1;
+				$this->fields['date_start']['noteditable'] = 1;
+				$this->fields['acquisition_value_ht']['noteditable'] = 1;
+				$this->fields['recovered_vat']['noteditable'] = 1;
+				$this->fields['reversal_date']['noteditable'] = 1;
+				$this->fields['reversal_amount_ht']['noteditable'] = 1;
 			}
 		}
 		return $result;
@@ -814,6 +814,10 @@ class Asset extends CommonObject
 			return -1;
 		}
 
+		if (! empty($this->not_depreciated)) {
+			return 1;
+		}
+
 		// Get depreciation options
 		//---------------------------
 		require_once DOL_DOCUMENT_ROOT . '/asset/class/assetdepreciationoptions.class.php';
@@ -995,7 +999,7 @@ class Asset extends CommonObject
 				//-----------------------------------------------------
 				$nb_days_in_year = getDolGlobalInt('ASSET_DEPRECIATION_DURATION_PER_YEAR', 365);
 				$nb_days_in_month = getDolGlobalInt('ASSET_DEPRECIATION_DURATION_PER_MONTH', 30);
-				$period_amount = (float) price2num($depreciation_period_amount / $fields['duration'], 'MT');
+				$period_amount = (float) ($fields['duration'] > 0 ? price2num($depreciation_period_amount / $fields['duration'], 'MT') : 0);
 				$first_period_found = false;
 				// TODO fix declaration of $begin_period
 				$first_period_date = isset($begin_period) && $begin_period > $fiscal_period_start ? $begin_period : $fiscal_period_start;

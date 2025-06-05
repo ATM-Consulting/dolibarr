@@ -179,7 +179,7 @@ class AssetDepreciationOptions extends CommonObject
 				$this->{$field_key} = $this->deprecation_options[$mode][$field_key] ?? null;
 			}
 
-			$this->fields['rowid'] = array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 0, 'noteditable' => '1', 'index' => 1, 'css' => 'left', 'comment' => "Id");
+			$this->fields['rowid'] = array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'position' => 1, 'notnull' => 1, 'visible' => 0, 'noteditable' => 1, 'index' => 1, 'css' => 'left', 'comment' => "Id");
 			if (empty($class_type)) {
 				$this->fields['fk_asset'] = array('type' => 'integer:Asset:asset/class/asset.class.php:1:status=1 AND entity IN (__SHARED_ENTITIES__)', 'label' => 'Asset', 'enabled' => '1', 'position' => 0, 'notnull' => 0, 'visible' => 0, 'index' => 1, 'validate' => '1',);
 			} else {
@@ -291,7 +291,7 @@ class AssetDepreciationOptions extends CommonObject
 		foreach ($this->deprecation_options_fields as $mode_key => $mode_info) {
 			if (!empty($mode_info['enabled_field'])) {
 				$info = explode(':', $mode_info['enabled_field']);
-				if ($deprecation_options[$info[0]][$info[1]] != $info[2]) {
+				if (!empty($this->deprecation_options[$info[0]][$info[1]]) && $deprecation_options[$info[0]][$info[1]] != $info[2]) {
 					unset($deprecation_options[$info[0]][$info[1]]);
 				}
 			}
@@ -477,7 +477,7 @@ class AssetDepreciationOptions extends CommonObject
 			if (!$error && !empty($this->deprecation_options[$mode_key])) {
 				if (!empty($mode_info['enabled_field'])) {
 					$info = explode(':', $mode_info['enabled_field']);
-					if ($this->deprecation_options[$info[0]][$info[1]] != $info[2]) {
+					if (!empty($this->deprecation_options[$info[0]][$info[1]]) && $this->deprecation_options[$info[0]][$info[1]] != $info[2]) {
 						continue;
 					}
 				}

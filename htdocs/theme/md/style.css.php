@@ -1900,7 +1900,7 @@ div.ticketpublicarealist>form>div.div-table-responsive {
 }
 
 .flexcontainer {
-	<?php if (in_array($conf->browser->name, array('chrome', 'firefox'))) {
+	<?php if (in_array($conf->browser->name, array('chrome', 'firefox', 'safari'))) {
 		echo 'display: inline-flex;'."\n";
 	} ?>
 	flex-flow: row wrap;
@@ -6158,6 +6158,9 @@ a.cke_dialog_ui_button_ok span {
 }
 a.cke_button, a.cke_combo_button {
 	height: 18px !important;
+}
+div.cke_notifications_area .cke_notification_warning {
+	visibility: hidden;
 }
 
 

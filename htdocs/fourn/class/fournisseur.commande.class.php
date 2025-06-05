@@ -1529,6 +1529,7 @@ class CommandeFournisseur extends CommonOrder
 			$this->multicurrency_tx = 1;
 		}
 
+		// We set order into draft status
 		$this->statut = self::STATUS_DRAFT;	// deprecated
 		$this->status = self::STATUS_DRAFT;
 
@@ -1683,8 +1684,13 @@ class CommandeFournisseur extends CommonOrder
 						// End call triggers
 					}
 
-					$this->db->commit();
-					return $this->id;
+					if (!$error) {
+						$this->db->commit();
+						return $this->id;
+					} else {
+						$this->db->rollback();
+						return -4;
+					}
 				} else {
 					$this->error = $this->db->lasterror();
 					$this->db->rollback();
@@ -2380,35 +2386,52 @@ class CommandeFournisseur extends CommonOrder
 		}
 
 		$main = $this->db->prefix().'commande_fournisseurdet';
-		$ef = $main."_extrafields";
-		$sql = "DELETE FROM $ef WHERE fk_object IN (SELECT rowid FROM $main WHERE fk_commande = ".((int) $this->id).")";
-		dol_syslog(get_class($this)."::delete extrafields lines", LOG_DEBUG);
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
+
+		if (!$error) {
+			$sql1 = "UPDATE ".$this->db->prefix()."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
+			dol_syslog(__METHOD__." linked order lines", LOG_DEBUG);
+			if (!$this->db->query($sql1)) {
+				$error++;
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+			}
 		}
 
-		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseurdet WHERE fk_commande =".((int) $this->id);
-		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
-		}
-
-		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseur WHERE rowid =".((int) $this->id);
-		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
-		if ($resql = $this->db->query($sql)) {
-			if ($this->db->affected_rows($resql) < 1) {
+		if (!$error) {
+			$ef = $main."_extrafields";
+			$sql = "DELETE FROM ".$this->db->sanitize($ef)." WHERE fk_object IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
+			dol_syslog(get_class($this)."::delete extrafields lines", LOG_DEBUG);
+			if (!$this->db->query($sql)) {
 				$this->error = $this->db->lasterror();
 				$this->errors[] = $this->db->lasterror();
 				$error++;
 			}
-		} else {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
+		}
+
+		if (!$error) {
+			$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseurdet WHERE fk_commande = ".((int) $this->id);
+			dol_syslog(get_class($this)."::delete", LOG_DEBUG);
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+				$error++;
+			}
+		}
+
+		if (!$error) {
+			$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseur WHERE rowid = ".((int) $this->id);
+			dol_syslog(get_class($this)."::delete", LOG_DEBUG);
+			if ($resql = $this->db->query($sql)) {
+				if ($this->db->affected_rows($resql) < 1) {
+					$this->error = $this->db->lasterror();
+					$this->errors[] = $this->db->lasterror();
+					$error++;
+				}
+			} else {
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+				$error++;
+			}
 		}
 
 		// Remove extrafields
@@ -3055,6 +3078,8 @@ class CommandeFournisseur extends CommonOrder
 				$this->db->commit();
 				return $result;
 			} else {
+				$this->errors[] = $this->line->error;
+				$this->errors = array_merge($this->errors, $this->line->errors);
 				$this->error = $this->db->lasterror();
 				$this->db->rollback();
 				return -1;
@@ -3093,7 +3118,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql .= $this->db->order("rowid", "ASC");
 		$sql .= $this->db->plimit(1);
 		$resql = $this->db->query($sql);
-		if ($resql) {
+		if ($resql && $this->db->num_rows($resql)) {
 			$obj = $this->db->fetch_object($resql);
 			$prodid = $obj->rowid;
 		}
@@ -3206,7 +3231,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql = "SELECT count(co.rowid) as nb";
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseur as co";
 		$sql .= " LEFT JOIN ".$this->db->prefix()."societe as s ON co.fk_soc = s.rowid";
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir") && !$user->socid) {
 			$sql .= " LEFT JOIN ".$this->db->prefix()."societe_commerciaux as sc ON s.rowid = sc.fk_soc";
 			$sql .= " WHERE sc.fk_user = ".((int) $user->id);
 			$clause = "AND";
@@ -3242,7 +3267,7 @@ class CommandeFournisseur extends CommonOrder
 
 		$sql = "SELECT c.rowid, c.date_creation as datec, c.date_commande, c.fk_statut, c.date_livraison as delivery_date, c.total_ht";
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseur as c";
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir") && !$user->socid) {
 			$sql .= " JOIN ".$this->db->prefix()."societe_commerciaux as sc ON c.fk_soc = sc.fk_soc AND sc.fk_user = ".((int) $user->id);
 		}
 		$sql .= " WHERE c.entity = ".$conf->entity;
@@ -3400,6 +3425,7 @@ class CommandeFournisseur extends CommonOrder
 
 	/**
 	 * Returns the rights used for this class
+	 *
 	 * @return int
 	 */
 	public function getRights()
@@ -3540,14 +3566,22 @@ class CommandeFournisseur extends CommonOrder
 
 					// Build array with quantity deliverd by product
 					foreach ($supplierorderdispatch->lines as $line) {
-						$qtydelivered[$line->fk_product] += $line->qty;
+						if (array_key_exists($line->fk_product, $qtydelivered)) {
+							$qtydelivered[$line->fk_product] += $line->qty;
+						} else {
+							$qtydelivered[$line->fk_product] = $line->qty;
+						}
 					}
 					foreach ($this->lines as $line) {
 						// Exclude lines not qualified for shipment, similar code is found into interface_20_modWrokflow for customers
 						if (!getDolGlobalString('STOCK_SUPPORTS_SERVICES') && $line->product_type > 0) {
 							continue;
 						}
-						$qtywished[$line->fk_product] += $line->qty;
+						if (array_key_exists($line->fk_product, $qtywished)) {
+							$qtywished[$line->fk_product] += $line->qty;
+						} else {
+							$qtywished[$line->fk_product] = $line->qty;
+						}
 					}
 
 					//Compare array
@@ -4081,6 +4115,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
 			return -2;
 		}
 	}
+
 	/**
 	 *	Update the line object into db
 	 *

@@ -379,10 +379,12 @@ class CMailFile
 
 		// Verify if $to, $addr_cc and addr_bcc have unwanted addresses
 		if (getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO')) {
+			// Parse to, cc and bcc to remove MAIN_MAIL_FORCE_NOT_SENDING_TO
+			$listofemailstonotsendto = explode(',', getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO'));
+
 			//Verify for $to
 			$replaceto = false;
 			$tabto = explode(",", $to);
-			$listofemailstonotsendto = explode(',', getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO'));
 			foreach ($tabto as $key => $addrto) {
 				$addrto = array_keys($this->getArrayAddress($addrto));
 				if (in_array($addrto[0], $listofemailstonotsendto)) {
@@ -687,7 +689,7 @@ class CMailFile
 
 			if (!empty($this->errors_to)) {
 				try {
-					$headers->addTextHeader('Errors-To', $this->getArrayAddress($this->errors_to));
+					$headers->addTextHeader('Errors-To', $this->getValidAddress($this->errors_to, 0));
 				} catch (Exception $e) {
 					$this->errors[] = $e->getMessage();
 				}
@@ -762,7 +764,6 @@ class CMailFile
 					$this->errors[] = $e->getMessage();
 				}
 			}
-			//if (!empty($this->errors_to)) $this->message->setErrorsTo($this->getArrayAddress($this->errors_to));
 			if (isset($this->deliveryreceipt) && $this->deliveryreceipt == 1) {
 				try {
 					$this->message->setReadReceiptTo($this->getArrayAddress($this->addr_from));

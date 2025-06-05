@@ -1144,7 +1144,7 @@ class EmailCollector extends CommonObject
 				} else {
 					$keyforprovider = '';
 				}
-				$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
+				$keyforsupportedoauth2array = preg_replace('/-.*$/', '', strtoupper($keyforsupportedoauth2array));
 				$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
 				if (!empty($supportedoauth2array)) {
@@ -1185,11 +1185,22 @@ class EmailCollector extends CommonObject
 						$serviceFactory = new \OAuth\ServiceFactory();
 						$oauthname = explode('-', $OAUTH_SERVICENAME);
 						// ex service is Google-Emails we need only the first part Google
-						$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, array());
+
+						$scopes = array();
+						if (preg_match('/^Microsoft/', $OAUTH_SERVICENAME)) {
+							//$extraparams = $tokenobj->getExtraParams();
+							$tmp = explode('-', $OAUTH_SERVICENAME);
+							$scopes = explode(',', getDolGlobalString('OAUTH_'.strtoupper($tmp[0]).(empty($tmp[1]) ? '' : '-'.$tmp[1]).'_SCOPE'));
+						}
+
+						$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, $scopes);
+
 						'@phan-var-force  OAuth\OAuth2\Service\AbstractService|OAuth\OAuth1\Service\AbstractService $apiService'; // createService is only ServiceInterface
-						// We have to save the token because Google give it only once
+
 						$refreshtoken = $tokenobj->getRefreshToken();
 						$tokenobj = $apiService->refreshAccessToken($tokenobj);
+
+						// We have to save the token because answer give it only once
 						$tokenobj->setRefreshToken($refreshtoken);
 						$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
 					}
@@ -1818,7 +1829,7 @@ class EmailCollector extends CommonObject
 						// Note: we can have
 						// Message-ID=A, In-Reply-To=B, References=B and message can BE an answer or NOT (a transfer rewritten)
 						$isanswer = 0;
-						if (preg_match('/Re\s*:\s+/i', $headers['Subject'])) {
+						if (preg_match('/^(回复|回覆|SV|Antw|VS|RE|Re|AW|Aw|ΑΠ|השב| תשובה | הועבר|Vá|R|RIF|BLS|Atb|RES|Odp|பதில்|YNT|ATB)\s*:\s+/i', $headers['Subject'])) {
 							$isanswer = 1;
 						}
 						//if ($headers['In-Reply-To'] != $headers['Message-ID'] && empty($headers['References'])) $isanswer = 1;	// If in-reply-to differs of message-id, this is a reply
@@ -1887,7 +1898,7 @@ class EmailCollector extends CommonObject
 					if ($imapemail->hasHTMLBody()) {
 						$htmlmsg = $imapemail->getHTMLBody();
 					}
-					if ($imapemail->hasTextBody()) {
+					if ($imapemail->hasTextBody() && $imapemail->getTextBody() != "\n") {
 						$plainmsg = $imapemail->getTextBody();
 					}
 					if ($imapemail->hasAttachments()) {
@@ -2601,6 +2612,7 @@ class EmailCollector extends CommonObject
 											// Search into contacts of thirdparties to try to guess the thirdparty to use
 											$resultContact = $contactstatic->findNearest(0, '', '', '', $emailtouseforthirdparty, '', 0);
 											if ($resultContact > 0) {
+												$contactstatic->fetch($resultContact);
 												$idtouseforthirdparty = $contactstatic->socid;
 												$result = $thirdpartystatic->fetch($idtouseforthirdparty);
 												if ($result > 0) {
@@ -2861,7 +2873,7 @@ class EmailCollector extends CommonObject
 										$this->errors = $actioncomm->errors;
 									} else {
 										if ($fk_element_type == "ticket" && is_object($objectemail)) {
-											if ($objectemail->status == Ticket::STATUS_CLOSED || $objectemail->status == Ticket::STATUS_CANCELED) {
+											if ($objectemail->status == Ticket::STATUS_CLOSED || $objectemail->status == Ticket::STATUS_CANCELED || $objectemail->status == Ticket::STATUS_NEED_MORE_INFO || $objectemail->status == Ticket::STATUS_WAITING) {
 												if ($objectemail->fk_user_assign != null) {
 													$res = $objectemail->setStatut(Ticket::STATUS_ASSIGNED);
 												} else {
@@ -3334,6 +3346,13 @@ class EmailCollector extends CommonObject
 										$tickettocreate->context['actionmsg'] = $langs->trans("ActionAC_EMAIL_IN").' - '.$langs->trans("TICKET_CREATEInDolibarr");
 										//$tickettocreate->email_fields_no_propagate_in_actioncomm = 0;
 
+										// Add sender to context array to make sure that confirmation e-mail can be sent by trigger script
+										$sender_contact = new Contact($this->db);
+										$sender_contact->fetch(0, null, '', $from);
+										if (!empty($sender_contact->id)) {
+											$tickettocreate->context['contactid'] = $sender_contact->id;
+										}
+
 										$result = $tickettocreate->create($user);
 										if ($result <= 0) {
 											$errorforactions++;
@@ -3349,7 +3368,7 @@ class EmailCollector extends CommonObject
 													foreach ($attachments as $attachment) {
 														// $attachment->save($destdir.'/');
 														$typeattachment = (string) $attachment->getDisposition();
-														$filename = $attachment->getFilename();
+														$filename = $attachment->getName();
 														$content = $attachment->getContent();
 														$this->saveAttachment($destdir, $filename, $content);
 													}
