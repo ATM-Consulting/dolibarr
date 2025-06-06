@@ -2554,6 +2554,9 @@ function pdf_getLinkedObjects(&$object, $outputlangs)
 			$outputlangs->load('orders');
 
 			if (count($objects) > 1 && count($objects) <= (getDolGlobalInt("MAXREFONDOC") ? getDolGlobalInt("MAXREFONDOC") : 10)) {
+				/*
+				* BACKPORT V22 : Ajout de la conf suivante dans la condition : PDF_HIDE_LINKED_OBJECT_IN_PUBLIC_NOTE
+				*/
 				if (empty($object->context['DolPublicNoteAppendedGetLinkedObjects']) && !getDolGlobalString("PDF_HIDE_LINKED_OBJECT_IN_PUBLIC_NOTE")) { // Check if already appended before add to avoid repeat data
 					$object->note_public = dol_concatdesc($object->note_public, $outputlangs->transnoentities("RefOrder").' :');
 					foreach ($objects as $elementobject) {
