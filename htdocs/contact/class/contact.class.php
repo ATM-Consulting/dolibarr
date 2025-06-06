@@ -2119,6 +2119,7 @@ class Contact extends CommonObject
 		return 0;
 	}
 
+	// SPE TRIGANO
 	/**
 	 * Check if mandatory fields are correctly filled.
 	 *
@@ -2127,80 +2128,7 @@ class Contact extends CommonObject
 	 */
 	public function validateMandatoryFields(array &$errors): int
 	{
-		global $langs;
-
-		$langs->load("errors");
-
-		$error = 0;
-
-		$mandatoryFields = ['lastname'];
-
-		$defaultValuesStatic = new DefaultValues($this->db);
-		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
-			'type' => 'mandatory',
-			'page' => 'contact/card.php'
-		]);
-
-		foreach ($defaultValues as $defaultValue) {
-			if (!empty($defaultValue->param)) {
-				$mandatoryFields[] = $defaultValue->param;
-			}
-		}
-
-		$socialNetworks = getArrayOfSocialNetworks();
-		$activeSocialKeys = array_keys(array_filter($socialNetworks, fn($data) => !empty($data['active']) && $data['active'] == 1));
-
-		$allMandatoryFields = array_unique($mandatoryFields);
-
-		$mandatoryFields = array_filter($allMandatoryFields, function ($field) use ($socialNetworks) {
-			return !array_key_exists($field, $socialNetworks);
-		});
-
-		foreach ($activeSocialKeys as $activeSocialKey) {
-			if (in_array($activeSocialKey, $allMandatoryFields, true)) {
-				if (array_key_exists($activeSocialKey, $this->socialnetworks) && empty($this->socialnetworks[$activeSocialKey])) {
-					$error++;
-					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
-				} elseif (!array_key_exists($activeSocialKey, $this->socialnetworks)) {
-					$error++;
-					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
-				}
-			}
-		}
-
-		foreach ($mandatoryFields as $field) {
-			$property = $field === 'zipcode' ? 'zip' : $field;
-
-			if (!property_exists($this, $property)) continue;
-
-			$value = $this->{$property} ?? $this->socialnetworks[$property] ?? null;
-
-			if (empty($value)) {
-				if ($property === 'state_id') $property = 'fk_departement';
-				if ($property === 'phone_pro') $property = 'phone';
-
-				$label = $this->fields[$property]['label'] ?? $property;
-				$labelTranslated = $langs->transnoentities($label);
-
-				$error++;
-				$errors[] = $langs->trans("ErrorFieldRequired", $labelTranslated);
-			}
-		}
-
-		if (!empty($this->email) && !isValidEmail($this->email)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", $this->email);
-		}
-
-		if (!empty($conf->mailing->enabled)
-			&& getDolGlobalString('MAILING_CONTACT_DEFAULT_BULK_STATUS') == 2
-			&& $this->no_email == -1
-			&& !empty($this->email)
-		) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
-		}
-
-		return $error;
+		return $this->validateMandatoryFieldsCommon($errors, ['lastname'], 'contact/card.php');
 	}
+	// END SPE TRIGANO
 }

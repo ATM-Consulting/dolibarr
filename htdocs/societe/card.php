@@ -525,7 +525,9 @@ if (empty($reshook)) {
 				 $error++;
 			}
 
+			// SPE TRIGANO
 			$error += $object->validateMandatoryFields($errors);
+			// END SPE TRIGANO
 
 			// Fill array 'array_languages' with data from add form
 			$ret = $object->setValuesForExtraLanguages();

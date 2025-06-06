@@ -418,10 +418,12 @@ if (empty($reshook)) {
 				$error++;
 			}
 
+			// SPE TRIGANO
 			$error += $resValidateFields = $object->validateMandatoryFields($errors);
 			if ($resValidateFields) {
 				$action = 'edit';
 			}
+			// END SPE TRIGANO
 
 			if (!$error) {
 				$result = $object->update($contactid, $user);

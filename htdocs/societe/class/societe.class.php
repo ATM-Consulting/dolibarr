@@ -4937,6 +4937,7 @@ class Societe extends CommonObject
 		return 1;
 	}
 
+	// SPE TRIGANO
 	/**
 	 * Check if mandatory fields are correctly filled.
 	 *
@@ -4945,85 +4946,7 @@ class Societe extends CommonObject
 	 */
 	public function validateMandatoryFields(array &$errors): int
 	{
-		global $langs;
-
-		$langs->load("errors");
-
-		$error = 0;
-
-		$mandatoryFields = ['name', 'client'];
-
-		$defaultValuesStatic = new DefaultValues($this->db);
-		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
-			'type' => 'mandatory',
-			'page' => 'societe/card.php'
-		]);
-
-		foreach ($defaultValues as $defaultValue) {
-			if (!empty($defaultValue->param)) {
-				$mandatoryFields[] = $defaultValue->param;
-			}
-		}
-
-		$socialNetworks = getArrayOfSocialNetworks();
-
-		$activeSocialKeys = array_keys(array_filter($socialNetworks, fn($data) => !empty($data['active']) && $data['active'] == 1));
-
-		$allMandatoryFields = array_unique($mandatoryFields);
-
-		$mandatoryFields = array_filter($allMandatoryFields, function ($field) use ($socialNetworks) {
-			return !array_key_exists($field, $socialNetworks);
-		});
-
-		foreach ($activeSocialKeys as $activeSocialKey) {
-			if (in_array($activeSocialKey, $allMandatoryFields, true)) {
-				if (array_key_exists($activeSocialKey, $this->socialnetworks) && empty($this->socialnetworks[$activeSocialKey])) {
-					$error++;
-					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
-				} elseif (!array_key_exists($activeSocialKey, $this->socialnetworks)) {
-					$error++;
-					$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$activeSocialKey]['label']);
-				}
-			}
-		}
-
-		foreach ($mandatoryFields as $field) {
-			$property = $field === 'zipcode' ? 'zip' : $field;
-
-			if (!property_exists($this, $property)) continue;
-
-			$value = $this->{$property} ?? $this->socialnetworks[$property] ?? null;
-
-			if ($value === null || $value === '' || (is_numeric($value) && $value < 0)) {
-				$fieldKey = match ($property) {
-					'state_id' => 'fk_departement',
-					'name' => 'nom',
-					'typent_id' => 'fk_typent',
-					default => $property
-				};
-
-				$label = $this->fields[$fieldKey]['label'] ?? $fieldKey;
-				$labelTranslated = $langs->transnoentities($label);
-
-				$error++;
-				$errors[] = $langs->trans("ErrorFieldRequired", $labelTranslated);
-			}
-		}
-
-		if (!empty($this->email) && !isValidEmail($this->email)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", $this->email);
-		}
-
-		if (!empty($conf->mailing->enabled)
-			&& getDolGlobalString('MAILING_CONTACT_DEFAULT_BULK_STATUS') == 2
-			&& $this->no_email == -1
-			&& !empty($this->email)
-		) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
-		}
-
-		return $error;
+		return $this->validateMandatoryFieldsCommon($errors, ['name', 'client'], 'societe/card.php');
 	}
+	// END SPE TRIGANO
 }
