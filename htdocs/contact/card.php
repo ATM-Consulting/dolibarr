@@ -246,24 +246,12 @@ if (empty($reshook)) {
 			$action = 'create';
 		}
 
-		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && $object->no_email == -1 && !empty($object->email)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+		// SPE TRIGANO
+		$error += $resValidateFields = $object->validateMandatoryFields($errors);
+		if ($resValidateFields) {
 			$action = 'create';
 		}
-
-		if (!empty($object->email) && !isValidEMail($object->email)) {
-			$langs->load("errors");
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
-			$action = 'create';
-		}
-
-		if (empty($object->lastname)) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("Lastname").' / '.$langs->transnoentities("Label"));
-			$action = 'create';
-		}
+		// END SPE TRIGANO
 
 		if (empty($error)) {
 			$id = $object->create($user);
@@ -334,24 +322,6 @@ if (empty($reshook)) {
 	}
 
 	if ($action == 'update' && empty($cancel) && !empty($permissiontoadd)) {
-		if (!GETPOST("lastname", 'alpha')) {
-			$error++; $errors = array($langs->trans("ErrorFieldRequired", $langs->transnoentities("Name").' / '.$langs->transnoentities("Label")));
-			$action = 'edit';
-		}
-
-		if (!empty($conf->mailing->enabled) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST("no_email", "int") == -1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
-			$action = 'edit';
-		}
-
-		if (!empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL)) && !isValidEMail(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$langs->load("errors");
-			$error++;
-			$errors[] = $langs->trans("ErrorBadEMail", GETPOST('email', 'alpha'));
-			$action = 'edit';
-		}
-
 		if (!$error) {
 			$contactid = GETPOST("contactid", 'int');
 			$object->fetch($contactid);
@@ -449,6 +419,13 @@ if (empty($reshook)) {
 			if ($ret < 0) {
 				$error++;
 			}
+
+			// SPE TRIGANO
+			$error += $resValidateFields = $object->validateMandatoryFields($errors);
+			if ($resValidateFields) {
+				$action = 'edit';
+			}
+			// END SPE TRIGANO
 
 			if (!$error) {
 				$result = $object->update($contactid, $user);
@@ -1613,6 +1590,14 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	}
+
+	// SPE TRIGANO
+	if ($action == 'create' || $action == 'edit') {
+		?>
+		<script type="text/javascript" src="<?= dol_buildpath('/clitrigano/js/removeRequiredFields.js', 1); ?>" />
+		<?php
+	}
+	// END SPE TRIGANO
 }
 
 

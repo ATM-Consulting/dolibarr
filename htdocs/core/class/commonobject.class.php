@@ -10039,4 +10039,203 @@ abstract class CommonObject
 		$this->db->commit();
 		return true;
 	}
+
+	// SPE TRIGANO
+
+	/**
+	 * @param array $errors
+	 * @param array $baseMandatoryFields
+	 * @param string $page
+	 * @return int
+	 */
+	protected function validateMandatoryFieldsCommon(array &$errors, array $baseMandatoryFields, string $page): int
+	{
+		global $langs;
+
+		$langs->load("errors");
+		$error = 0;
+
+		$mandatoryFields = $this->getMandatoryFields($baseMandatoryFields, $page);
+
+		$error += $this->validateSocialNetworks($errors, $mandatoryFields['social']);
+
+		$error += $this->validateStandardFields($errors, $mandatoryFields['standard']);
+
+		$error += $this->validateEmail($errors);
+
+		$error += $this->validateMailingSettings($errors);
+
+		return $error;
+	}
+
+	/**
+	 * @param array $baseMandatoryFields
+	 * @param string $page
+	 * @return array
+	 */
+	private function getMandatoryFields(array $baseMandatoryFields, string $page): array
+	{
+		$mandatoryFields = $baseMandatoryFields;
+
+		$defaultValuesStatic = new DefaultValues($this->db);
+		$defaultValues = $defaultValuesStatic->fetchAll('', '', '', '', [
+			'type' => 'mandatory',
+			'page' => $page
+		]);
+
+		foreach ($defaultValues as $defaultValue) {
+			if (!empty($defaultValue->param)) {
+				$mandatoryFields[] = $defaultValue->param;
+			}
+		}
+
+		$socialNetworks = getArrayOfSocialNetworks();
+		$activeSocialKeys = array_keys(array_filter($socialNetworks, fn($data) => !empty($data['active']) && $data['active'] == 1));
+
+		$allMandatoryFields = array_unique($mandatoryFields);
+
+		$standardFields = array_filter($allMandatoryFields, function ($field) use ($socialNetworks) {
+			return !array_key_exists($field, $socialNetworks);
+		});
+
+		$socialFields = array_intersect($activeSocialKeys, $allMandatoryFields);
+
+		return [
+			'standard' => $standardFields,
+			'social' => $socialFields
+		];
+	}
+
+	/**
+	 * @param array $errors
+	 * @param array $socialFields
+	 * @return int
+	 */
+	private function validateSocialNetworks(array &$errors, array $socialFields): int
+	{
+		global $langs;
+
+		$error = 0;
+		$socialNetworks = getArrayOfSocialNetworks();
+
+		foreach ($socialFields as $socialField) {
+			if (array_key_exists($socialField, $this->socialnetworks) && empty($this->socialnetworks[$socialField])) {
+				$error++;
+				$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$socialField]['label']);
+			} elseif (!array_key_exists($socialField, $this->socialnetworks)) {
+				$error++;
+				$errors[] = $langs->trans("ErrorFieldRequired", $socialNetworks[$socialField]['label']);
+			}
+		}
+
+		return $error;
+	}
+
+	/**
+	 * @param array $errors
+	 * @param array $standardFields
+	 * @return int
+	 */
+	private function validateStandardFields(array &$errors, array $standardFields): int
+	{
+		global $langs;
+
+		$error = 0;
+
+		foreach ($standardFields as $field) {
+			$property = $field === 'zipcode' ? 'zip' : $field;
+
+			if (!property_exists($this, $property)) continue;
+
+			$value = $this->{$property} ?? $this->socialnetworks[$property] ?? null;
+
+			if ($this->isEmptyMandatoryValue($value)) {
+				$fieldKey = $this->getFieldKey($property);
+				$label = $this->fields[$fieldKey]['label'] ?? $fieldKey;
+				$labelTranslated = $langs->transnoentities($label);
+
+				$error++;
+				$errors[] = $langs->trans("ErrorFieldRequired", $labelTranslated);
+			}
+		}
+
+		return $error;
+	}
+
+	/**
+	 * @param mixed $value
+	 * @return bool
+	 */
+	private function isEmptyMandatoryValue($value): bool
+	{
+		if (get_class($this) === 'Societe') {
+			return $value === null || $value === '' || (is_numeric($value) && $value < 0);
+		}
+
+		return empty($value);
+	}
+
+	/**
+	 * @param string $property
+	 * @return string
+	 */
+	private function getFieldKey(string $property): string
+	{
+		if (get_class($this) === 'Societe') {
+			return match ($property) {
+				'state_id' => 'fk_departement',
+				'name' => 'nom',
+				'typent_id' => 'fk_typent',
+				default => $property
+			};
+		} else {
+			return match ($property) {
+				'state_id' => 'fk_departement',
+				'phone_pro' => 'phone',
+				default => $property
+			};
+		}
+	}
+
+	/**
+	 * @param array $errors
+	 * @return int
+	 */
+	private function validateEmail(array &$errors): int
+	{
+		global $langs;
+
+		$error = 0;
+
+		if (!empty($this->email) && !isValidEmail($this->email)) {
+			$error++;
+			$errors[] = $langs->trans("ErrorBadEMail", $this->email);
+		}
+
+		return $error;
+	}
+
+	/**
+	 * @param array $errors
+	 * @return int
+	 */
+	private function validateMailingSettings(array &$errors): int
+	{
+		global $langs, $conf;
+
+		$error = 0;
+
+		if (!empty($conf->mailing->enabled)
+			&& getDolGlobalString('MAILING_CONTACT_DEFAULT_BULK_STATUS') == 2
+			&& $this->no_email == -1
+			&& !empty($this->email)
+		) {
+			$error++;
+			$errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email"));
+		}
+
+		return $error;
+	}
+
+	// END SPE TRIGANO
 }

@@ -99,7 +99,7 @@ class Contact extends CommonObject
 		'address' =>array('type'=>'varchar(255)', 'label'=>'Address', 'enabled'=>1, 'visible'=>-1, 'position'=>55),
 		'zip' =>array('type'=>'varchar(25)', 'label'=>'Zip', 'enabled'=>1, 'visible'=>1, 'position'=>60),
 		'town' =>array('type'=>'text', 'label'=>'Town', 'enabled'=>1, 'visible'=>-1, 'position'=>65),
-		'fk_departement' =>array('type'=>'integer', 'label'=>'Fk departement', 'enabled'=>1, 'visible'=>3, 'position'=>70),
+		'fk_departement' =>array('type'=>'integer', 'label'=>'State', 'enabled'=>1, 'visible'=>3, 'position'=>70),
 		'fk_pays' =>array('type'=>'integer', 'label'=>'Fk pays', 'enabled'=>1, 'visible'=>3, 'position'=>75),
 		'fk_soc' =>array('type'=>'integer', 'label'=>'ThirdParty', 'enabled'=>1, 'visible'=>1, 'position'=>77, 'searchall'=>1),
 		'birthday' =>array('type'=>'date', 'label'=>'Birthday', 'enabled'=>1, 'visible'=>3, 'position'=>80),
@@ -2118,4 +2118,17 @@ class Contact extends CommonObject
 		}
 		return 0;
 	}
+
+	// SPE TRIGANO
+	/**
+	 * Check if mandatory fields are correctly filled.
+	 *
+	 * @param array $errors
+	 * @return int
+	 */
+	public function validateMandatoryFields(array &$errors): int
+	{
+		return $this->validateMandatoryFieldsCommon($errors, ['lastname'], 'contact/card.php');
+	}
+	// END SPE TRIGANO
 }

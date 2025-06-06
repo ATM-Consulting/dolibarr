@@ -409,29 +409,6 @@ if (empty($reshook)) {
 	&& ($action == 'add' || $action == 'update') && $user->rights->societe->creer) {
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
 
-		if (!GETPOST('name')) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("ThirdPartyName")), null, 'errors');
-			$error++;
-		}
-		if (GETPOST('client', 'int') && GETPOST('client', 'int') < 0) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("ProspectCustomer")), null, 'errors');
-			$error++;
-		}
-		if (GETPOSTISSET('fournisseur') && GETPOST('fournisseur', 'int') < 0) {
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Supplier")), null, 'errors');
-			$error++;
-		}
-
-		if (!empty($conf->mailing->enabled) && !empty($conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST('contact_no_email', 'int')==-1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email")), null, 'errors');
-		}
-
-		if (!empty($conf->mailing->enabled) && GETPOST("private", 'int') == 1 && !empty($conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS) && $conf->global->MAILING_CONTACT_DEFAULT_BULK_STATUS == 2 && GETPOST('contact_no_email', 'int')==-1 && !empty(GETPOST('email', 'custom', 0, FILTER_SANITIZE_EMAIL))) {
-			$error++;
-			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentities("No_Email")), null, 'errors');
-		}
-
 		if (!$error) {
 			if ($action == 'update') {
 				$ret = $object->fetch($socid);
@@ -548,6 +525,10 @@ if (empty($reshook)) {
 				 $error++;
 			}
 
+			// SPE TRIGANO
+			$error += $object->validateMandatoryFields($errors);
+			// END SPE TRIGANO
+
 			// Fill array 'array_languages' with data from add form
 			$ret = $object->setValuesForExtraLanguages();
 			if ($ret < 0) {
@@ -562,11 +543,6 @@ if (empty($reshook)) {
 
 			// Check parameters
 			if (!GETPOST('cancel', 'alpha')) {
-				if (!empty($object->email) && !isValidEMail($object->email)) {
-					$langs->load("errors");
-					$error++;
-					setEventMessages('', $langs->trans("ErrorBadEMail", $object->email), 'errors');
-				}
 				if (!empty($object->url) && !isValidUrl($object->url)) {
 					$langs->load("errors");
 					setEventMessages('', $langs->trans("ErrorBadUrl", $object->url), 'errors');
@@ -2093,6 +2069,10 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print '</script>'."\n";
 			}
 
+			// SPE TRIGANO
+			dol_htmloutput_mesg(is_numeric($error) ? '' : $error, $errors, 'error');
+			// END SPE TRIGANO
+
 			print '<form enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?socid='.$object->id.'" method="post" name="formsoc">';
 			print '<input type="hidden" name="action" value="update">';
 			print '<input type="hidden" name="token" value="'.newToken().'">';
@@ -3189,6 +3169,14 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	}
+
+	// SPE TRIGANO
+	if ($action == 'create' || $action == 'edit') {
+		?>
+		<script type="text/javascript" src="<?= dol_buildpath('/clitrigano/js/removeRequiredFields.js', 1); ?>" />
+		<?php
+	}
+	// END SPE TRIGANO
 }
 // End of page
 llxFooter();
