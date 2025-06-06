@@ -2069,7 +2069,9 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print '</script>'."\n";
 			}
 
+			// SPE TRIGANO
 			dol_htmloutput_mesg(is_numeric($error) ? '' : $error, $errors, 'error');
+			// END SPE TRIGANO
 
 			print '<form enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"].'?socid='.$object->id.'" method="post" name="formsoc">';
 			print '<input type="hidden" name="action" value="update">';
@@ -3168,11 +3170,13 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	}
 
+	// SPE TRIGANO
 	if ($action == 'create' || $action == 'edit') {
 		?>
 		<script type="text/javascript" src="<?= dol_buildpath('/clitrigano/js/removeRequiredFields.js', 1); ?>" />
 		<?php
 	}
+	// END SPE TRIGANO
 }
 // End of page
 llxFooter();

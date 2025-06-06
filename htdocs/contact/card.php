@@ -246,10 +246,12 @@ if (empty($reshook)) {
 			$action = 'create';
 		}
 
+		// SPE TRIGANO
 		$error += $resValidateFields = $object->validateMandatoryFields($errors);
 		if ($resValidateFields) {
 			$action = 'create';
 		}
+		// END SPE TRIGANO
 
 		if (empty($error)) {
 			$id = $object->create($user);
@@ -1589,11 +1591,13 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 		include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	}
 
+	// SPE TRIGANO
 	if ($action == 'create' || $action == 'edit') {
 		?>
 		<script type="text/javascript" src="<?= dol_buildpath('/clitrigano/js/removeRequiredFields.js', 1); ?>" />
 		<?php
 	}
+	// END SPE TRIGANO
 }
 
 
