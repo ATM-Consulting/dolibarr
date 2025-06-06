@@ -3170,23 +3170,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 
 	if ($action == 'create' || $action == 'edit') {
 		?>
-		<script type="text/javascript">
-			function removeAllRequiredAttributes() {
-				const allRequired = document.querySelectorAll('[required]');
-				allRequired.forEach(el => el.removeAttribute('required'));
-			}
-
-			document.addEventListener('DOMContentLoaded', function () {
-				removeAllRequiredAttributes();
-
-				let repeatCount = 0;
-				const interval = setInterval(function () {
-					removeAllRequiredAttributes();
-					repeatCount++;
-					if (repeatCount > 10) clearInterval(interval);
-				}, 200);
-			});
-		</script>
+		<script type="text/javascript" src="<?= dol_buildpath('/clitrigano/js/removeRequiredFields.js', 1); ?>" />
 		<?php
 	}
 }
