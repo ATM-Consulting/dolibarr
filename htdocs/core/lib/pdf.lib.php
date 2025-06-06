@@ -2621,7 +2621,10 @@ function pdf_getLinkedObjects(&$object, $outputlangs)
 					}
 				}
 
-				if (empty($object->context['DolPublicNoteAppendedGetLinkedObjects']) && !getDolGlobalString("hideLinkedObjectInPublicNotePDF")) { // Check if already appended before add to avoid repeat data
+                                /*
+                                * BACKPORT V22 : Ajout de la conf suivante dans la condition : PDF_HIDE_LINKED_OBJECT_IN_PUBLIC_NOTE
+                                */
+				if (empty($object->context['DolPublicNoteAppendedGetLinkedObjects']) && !getDolGlobalString("PDF_HIDE_LINKED_OBJECT_IN_PUBLIC_NOTE")) { // Check if already appended before add to avoid repeat data
 					$object->note_public = dol_concatdesc($object->note_public, $refListsTxt);
 				}
 			} elseif (count($objects) == 1) {
