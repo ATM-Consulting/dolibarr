@@ -378,7 +378,7 @@ class Reception extends CommonObject
 		$sql .= ', e.fk_incoterms, e.location_incoterms';
 		$sql .= ', i.libelle as label_incoterms';
 		$sql .= " FROM ".MAIN_DB_PREFIX."reception as e";
-		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."element_element as el ON el.fk_target = e.rowid AND el.targettype = '".$this->db->escape($this->element)."'";
+		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."element_element as el ON el.fk_target = e.rowid AND el.targettype = '".$this->db->escape($this->element)."' AND el.sourcetype = 'order_supplier'";
 		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_incoterms as i ON e.fk_incoterms = i.rowid';
 		$sql .= " WHERE e.entity IN (".getEntity('reception').")";
 		if ($id) {
@@ -1060,7 +1060,7 @@ class Reception extends CommonObject
 		$this->db->begin();
 
 		// Stock control
-		if (isModEnabled('stock') && !getDolGlobalInt('STOCK_CALCULATE_ON_RECEPTION') && $this->statut > 0) {
+		if (isModEnabled('stock') && ((getDolGlobalInt('STOCK_CALCULATE_ON_RECEPTION') && $this->status > self::STATUS_DRAFT) || (getDolGlobalInt('STOCK_CALCULATE_ON_RECEPTION_CLOSE') && $this->status == self::STATUS_CLOSED))) {
 			require_once DOL_DOCUMENT_ROOT."/product/stock/class/mouvementstock.class.php";
 
 			$langs->load("agenda");

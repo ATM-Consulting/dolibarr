@@ -962,6 +962,7 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 	'@phan-var-force string $paramname';
 	if (!is_array($out) && empty($_POST[$paramname]) && empty($noreplace)) {
 		$reg = array();
+		$regreplace  = array();
 		$maxloop = 20;
 		$loopnb = 0; // Protection against infinite loop
 		while (preg_match('/__([A-Z0-9]+_?[A-Z0-9]+)__/i', $out, $reg) && ($loopnb < $maxloop)) {    // Detect '__ABCDEF__' as key 'ABCDEF' and '__ABC_DEF__' as key 'ABC_DEF'. Detection is also correct when 2 vars are side by side.
@@ -1010,10 +1011,16 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 			} elseif ($reg[1] == 'ID') {
 				$newout = '__ID__';     // We keep __ID__ we find into backtopage url
 			} else {
-				$newout = ''; // Key not found, we replace with empty string
+				$newout = 'REGREPLACE_'.$loopnb; // Key not found, we replace with temporary string to reload later
+				$regreplace[$loopnb] = $reg[0];
 			}
 			//var_dump('__'.$reg[1].'__ -> '.$newout);
 			$out = preg_replace('/__'.preg_quote($reg[1], '/').'__/', $newout, $out);
+		}
+		if (!empty($regreplace)) {
+			foreach ($regreplace as $key => $value) {
+				$out = preg_replace('/REGREPLACE_'.$key.'/', $value, $out);
+			}
 		}
 	}
 
@@ -10404,14 +10411,16 @@ function dol_eval($s, $returnvalue = 1, $hideerrors = 1, $onlysimplestring = '1'
 				return '';
 			}
 		}
-		if (strpos($s, '::') !== false) {
+
+		if (!getDolGlobalString('MAIN_ALLOW_DOUBLE_COLON_IN_DOL_EVAL') && strpos($s, '::') !== false) {
 			if ($returnvalue) {
-				return 'Bad string syntax to evaluate (double : char is forbidden): '.$s;
+				return 'Bad string syntax to evaluate (double : char is forbidden without setting MAIN_ALLOW_DOUBLE_COLON_IN_DOL_EVAL): '.$s;
 			} else {
-				dol_syslog('Bad string syntax to evaluate (double : char is forbidden): '.$s, LOG_WARNING);
+				dol_syslog('Bad string syntax to evaluate (double : char is forbidden without setting MAIN_ALLOW_DOUBLE_COLON_IN_DOL_EVAL): '.$s, LOG_WARNING);
 				return '';
 			}
 		}
+
 		if (strpos($s, '`') !== false) {
 			if ($returnvalue) {
 				return 'Bad string syntax to evaluate (backtick char is forbidden): '.$s;
@@ -10420,12 +10429,16 @@ function dol_eval($s, $returnvalue = 1, $hideerrors = 1, $onlysimplestring = '1'
 				return '';
 			}
 		}
-		if (preg_match('/[^0-9]+\.[^0-9]+/', $s)) {	// We refuse . if not between 2 numbers
-			if ($returnvalue) {
-				return 'Bad string syntax to evaluate (dot char is forbidden): '.$s;
-			} else {
-				dol_syslog('Bad string syntax to evaluate (dot char is forbidden): '.$s, LOG_WARNING);
-				return '';
+
+		// Disallow also concat
+		if (getDolGlobalString('MAIN_DISALLOW_STRING_OBFUSCATION_IN_DOL_EVAL')) {
+			if (preg_match('/[^0-9]+\.[^0-9]+/', $s)) {    // We refuse . if not between 2 numbers
+				if ($returnvalue) {
+					return 'Bad string syntax to evaluate (dot char is forbidden): '.$s;
+				} else {
+					dol_syslog('Bad string syntax to evaluate (dot char is forbidden): '.$s, LOG_WARNING);
+					return '';
+				}
 			}
 		}
 
@@ -11371,7 +11384,12 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 
 	$value = preg_replace('/\s*\|\s*/', '|', $value);
 
-	$crits = explode(' ', $value);
+	//natural mode search type 3 allow spaces into search ...
+	if ($mode == 3 || $mode == -3) {
+		$crits = explode(',', $value);
+	} else {
+		$crits = explode(' ', $value);
+	}
 	$res = '';
 	if (!is_array($fields)) {
 		$fields = array($fields);
@@ -11432,7 +11450,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 							$listofcodes .= "'".$db->escape($val)."'";
 						}
 					}
-					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1).")";
+					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1, 0, 1).")";
 					$i2++; // a criteria for 1 more field was added to string
 				}
 				if ($mode == -3) {

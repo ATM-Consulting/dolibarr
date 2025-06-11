@@ -99,7 +99,7 @@ $origin = GETPOST('origin', 'alpha');
 $originid = (GETPOSTINT('originid') ? GETPOSTINT('originid') : GETPOSTINT('origin_id')); // For backward compatibility
 $fac_rec = GETPOSTINT('fac_rec');
 $facid = GETPOSTINT('facid');
-$ref_client = GETPOSTINT('ref_client');
+$ref_client = GETPOST('ref_client', 'alpha');
 $rank = (GETPOSTINT('rank') > 0) ? GETPOSTINT('rank') : -1;
 $projectid = (GETPOSTINT('projectid') ? GETPOSTINT('projectid') : 0);
 $selectedLines = GETPOST('toselect', 'array');
@@ -669,7 +669,7 @@ if (empty($reshook)) {
 		$object->setValueFrom('ref', GETPOST('ref'), '', 0, '', '', $user, 'BILL_MODIFY');
 	} elseif ($action == 'setref_client' && $usercancreate) {
 		$object->fetch($id);
-		$object->set_ref_client(GETPOST('ref_client'));
+		$object->set_ref_client(GETPOST('ref_client', 'alpha'));
 	} elseif ($action == 'confirm_valid' && $confirm == 'yes' && $usercanvalidate) {
 		// Classify to validated
 		$idwarehouse = GETPOSTINT('idwarehouse');
@@ -2760,7 +2760,7 @@ if (empty($reshook)) {
 		// Invoice situation
 		if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
 			$previousprogress = $line->get_allprev_progress($line->fk_facture);
-			$fullprogress = price2num(GETPOST('progress', 'alpha'), 2);
+			$fullprogress = (float) price2num(GETPOST('progress', 'alpha'), 2);
 
 			if ($fullprogress < $previousprogress) {
 				$error++;
