@@ -1829,9 +1829,13 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 				}
 				print $form->select_dolusers((GETPOSTINT('userid') ? GETPOSTINT('userid') : $userid), 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, $langs->trans("ResourceNotAssignedToProject"), 'minwidth150imp maxwidth200');
 			} else {
-				if ($nboftasks) {
+				// SPÉ EPOXY3000 DA026614 ajout de la possiblilité de selectionner  un utilisateur même si il n'y a pas de contact assigné au projet
+				$userid = $user->id;
+				print $form->select_dolusers((GETPOSTINT('userid') ? GETPOSTINT('userid') : $userid), 'userid', 0, '', 0, '', $contactsofproject, 0, 0, 0, '', 0, $langs->trans("ResourceNotAssignedToProject"), 'minwidth150imp maxwidth200');
+				/*if ($nboftasks) {
 					print img_error($langs->trans('FirstAddRessourceToAllocateTime')) . ' ' . $langs->trans('FirstAddRessourceToAllocateTime');
-				}
+				}*/
+				// --
 			}
 			print '</td>';
 
@@ -2300,12 +2304,15 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 					if (!in_array($task_time->fk_user, $contactsoftask)) {
 						$contactsoftask[] = $task_time->fk_user;
 					}
+					// SPÉ EPOXY3000 DA026614 editmode
 					if (count($contactsoftask) > 0) {
 						print img_object('', 'user', 'class="pictofixedwidth hideonsmartphone"');
 						print $form->select_dolusers($task_time->fk_user, 'userid_line', 0, null, 0, '', $contactsoftask, '0', 0, 0, '', 0, '', 'minwidth100 maxwidth100');	// maxwidth must be lowed than minwidth of the td
 					} else {
-						print img_error($langs->trans('FirstAddRessourceToAllocateTime')) . $langs->trans('FirstAddRessourceToAllocateTime');
+						print $form->select_dolusers($task_time->fk_user, 'userid_line', 0, null, 0, '', [], '0', 0, 0, '', 0, '', 'minwidth100 maxwidth100');	// maxwidth must be lowed than minwidth of the td
+						//print img_error($langs->trans('FirstAddRessourceToAllocateTime')) . $langs->trans('FirstAddRessourceToAllocateTime');
 					}
+					// -- SPÉ EPOXY3000 DA026614 editmode
 				} else {
 					$userstatic->id = $task_time->fk_user;
 					$userstatic->lastname = $task_time->lastname;
