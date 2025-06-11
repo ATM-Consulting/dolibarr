@@ -43,7 +43,7 @@ class InterfaceWorkflowManager extends DolibarrTriggers
 	public function __construct($db)
 	{
 		$this->db = $db;
-
+		$this->errors = [];
 		$this->name = preg_replace('/^Interface/i', '', get_class($this));
 		$this->family = "core";
 		$this->description = "Triggers of this module allows to manage workflows";
