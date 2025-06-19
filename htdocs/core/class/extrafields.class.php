@@ -116,9 +116,6 @@ class ExtraFields
 	public function __construct($db)
 	{
 		$this->db = $db;
-		$this->error = '';
-		$this->errors = array();
-		$this->attributes = array();
 	}
 
 	/**
@@ -1190,7 +1187,7 @@ class ExtraFields
 				// search filter on a date extrafield shows two inputs to select a date range
 				$prefill = array(
 					'start' => isset($value['start']) ? $value['start'] : '',
-					'end'   => isset($value['end'])   ? $value['end']   : ''
+					'end' => isset($value['end']) ? $value['end'] : ''
 				);
 				$out = '<div ' . ($moreparam ? $moreparam : '') . '><div class="nowrap">';
 				$out .= $form->selectDate($prefill['start'], $keyprefix.$key.$keysuffix.'_start', 0, 0, 1, '', 1, 0, 0, '', '', '', '', 1, '', $langs->trans("From"));
@@ -1201,7 +1198,7 @@ class ExtraFields
 				// TODO Must also support $moreparam
 				$out = $form->selectDate($value, $keyprefix.$key.$keysuffix, $showtime, $showtime, $required, '', 1, (($keyprefix != 'search_' && $keyprefix != 'search_options_') ? 1 : 0), 0, 1);
 			}
-		} elseif (in_array($type, array('datetime'))) {
+		} elseif (in_array($type, array('datetime', 'datetimegmt'))) {
 			$tmp = explode(',', $size);
 			$newsize = $tmp[0];
 			$showtime = 1;
