@@ -195,11 +195,12 @@ class Mailing extends CommonObject
 		$this->labelStatus[2] = 'MailingStatusSentPartialy';
 		$this->labelStatus[3] = 'MailingStatusSentCompletely';
 
+		$this->statut_dest[-1] = 'MailingStatusError';
 		$this->statut_dest[0] = 'MailingStatusNotSent';
 		$this->statut_dest[1] = 'MailingStatusSent';
 		$this->statut_dest[2] = 'MailingStatusRead';
 		$this->statut_dest[3] = 'MailingStatusReadAndUnsubscribe'; // Read but ask to not be contacted anymore
-		$this->statut_dest[-1] = 'MailingStatusError';
+		$this->statut_dest[4] = 'MailingStatusReadAndClicked';
 	}
 
 	/**
@@ -966,11 +967,13 @@ class Mailing extends CommonObject
 		$labelStatus[1] = $langs->transnoentitiesnoconv('MailingStatusSent');
 		$labelStatus[2] = $langs->transnoentitiesnoconv('MailingStatusRead');
 		$labelStatus[3] = $langs->transnoentitiesnoconv('MailingStatusNotContact');
+		$labelStatus[4] = $langs->trans('MailingStatusReadAndClicked');
 		$labelStatusShort[-1] = $langs->transnoentitiesnoconv('MailingStatusError');
 		$labelStatusShort[0] = $langs->transnoentitiesnoconv('MailingStatusNotSent');
 		$labelStatusShort[1] = $langs->transnoentitiesnoconv('MailingStatusSent');
 		$labelStatusShort[2] = $langs->transnoentitiesnoconv('MailingStatusRead');
 		$labelStatusShort[3] = $langs->transnoentitiesnoconv('MailingStatusNotContact');
+		$labelStatusShort[4] = $langs->trans('MailingStatusReadAndClicked');
 
 		$statusType = 'status'.$status;
 		if ($status == -1) {

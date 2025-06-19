@@ -17,6 +17,11 @@ if (!empty($search_array_options) && is_array($search_array_options)) {	// $extr
 	foreach ($search_array_options as $key => $val) {
 		$crit = $val;
 		$tmpkey = preg_replace('/'.$search_options_pattern.'/', '', $key);
+		/*
+		* SPE SGP
+		* Gestion de la recherche multiple sur les extrafields multiselect
+		*/
+		$behaviour = GETPOST($search_options_pattern.$tmpkey.'_AND', 'bool');
 		if (is_array($val) && array_key_exists('start', $val) && array_key_exists('end', $val)) {
 			// date range from list filters is stored as array('start' => <timestamp>, 'end' => <timestamp>)
 			// start date
@@ -51,6 +56,9 @@ if (!empty($search_array_options) && is_array($search_array_options)) {	// $extr
 
 				$param .= '&'.$search_options_pattern.$tmpkey.'='.urlencode($val);
 			}
+		}
+		if (! empty($behaviour)) {
+			$param .= '&'.$search_options_pattern.$tmpkey.'_AND='.urlencode($behaviour);
 		}
 	}
 }

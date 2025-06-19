@@ -183,6 +183,7 @@ OutGoingEmailSetupForEmailing=Emails sortants (%s)
 DefaultOutgoingEmailSetup=Même configuration que la configuration globale des e-mails sortants
 Information=Information
 ContactsWithThirdpartyFilter=Contacts ayant pour tiers
+MailingStatusReadAndClicked=Lu et cliqué
 Unanswered=Sans réponse
 Answered=Répondu
 IsNotAnAnswer=N'est pas une réponse (est un e-mail initial)
