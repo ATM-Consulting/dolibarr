@@ -113,6 +113,7 @@ MultiPricesAbility=Plusieurs niveaux de prix par produit/service (chaque client 
 MultiPricesNumPrices=Nombre de prix
 DefaultPriceType=Base des prix par défaut (avec ou hors taxes) lors de l’ajout de nouveaux prix de vente
 AssociatedProductsAbility=Activer les kits (ensemble de plusieurs produits)
+OrderPhotoByPosition
 VariantsAbility=Activer les variantes (variantes de produits, par exemple couleur, taille,...)
 AssociatedProducts=Kits
 AssociatedProductsNumber=Nombre de sous-produits constituant ce kit

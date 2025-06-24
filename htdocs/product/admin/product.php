@@ -623,6 +623,15 @@ if (isModEnabled("supplier_order") || isModEnabled("supplier_invoice")) {
 	print '</tr>';
 }
 
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("OrderPhotoByPosition").'</td>';
+print '<td class="right">';
+print ajax_constantonoff("OrderPhotoByPosition", array(), $conf->entity, 0, 0, 1, 0);
+//print $form->selectyesno("orderPhotoByPosition", $conf->global->orderPhotoByPosition, 1);
+print '</td>';
+print '</tr>';
+
+
 print '</table>';
 print '</div>';
 

@@ -1326,8 +1326,13 @@ class FormFile
 				completeFileArrayWithDatabaseInfo($filearray, $relativedir);
 
 				//var_dump($sortfield.' - '.$sortorder);
-				if ($sortfield && $sortorder) {	// If $sortfield is for example 'position_name', we will sort on the property 'position_name' (that is concat of position+name)
-					$filearray = dol_sort_array($filearray, $sortfield, $sortorder);
+				if ($sortfield && $sortorder) {    // If $sortfield is for example 'position_name', we will sort on the property 'position_name' (that is concat of position+name)
+					if (getDolGlobalInt('OrderPhotoByPosition')) {
+						$filearray = dol_sort_array($filearray, 'position', $sortorder);
+
+					} else {
+						$filearray = dol_sort_array($filearray, $sortfield, $sortorder);
+					}
 				}
 			}
 
