@@ -1,0 +1,24 @@
+# ProductBATCH language file - en_US - ProductBATCH
+ManageLotSerial=Използване на партиден / сериен №
+ProductStatusOnBatch=Да (изисква се партиден / сериен №)
+ProductStatusNotOnBatch=Не (не се изисква партиден / сериен №)
+ProductStatusOnBatchShort=Да
+ProductStatusNotOnBatchShort=Не
+Batch=Партиден / Сериен №
+atleast1batchfield=Дата на годност, дата на продажба или партиден / сериен №
+batch_number=Партиден / Сериен №
+BatchNumberShort=Партиден / Сериен №
+EatByDate=Дата на годност
+SellByDate=Дата на продажба
+DetailBatchNumber=Детайли за Партиден / Сериен №
+printBatch=Партиден / Сериен №: %s
+printEatby=Годно до: %s
+printSellby=Продадено на: %s
+printQty=Кол.: %d
+AddDispatchBatchLine=Добавяне на ред със срок на годност
+WhenProductBatchModuleOnOptionAreForced=Когато модула Партиден / Сериен № е включен, автоматичното намаляване на наличности е форсирано на "Намаляване на реалните запаси при валидиране на доставката", а автоматичното увеличаване е форсирано на "Увеличаване на реалните запаси при ръчно разпределяне в складовете" и не може да бъде променяно. Други опции могат да бъдат дефинирани, ако е желаете.
+ProductDoesNotUseBatchSerial=Този продукт не използва партиден / сериен №
+ProductLotSetup=Настройка на модул партиден / сериен №
+ShowCurrentStockOfLot=Показване на текуща наличност за продукт / партида
+ShowLogOfMovementIfLot=Показване на движения за продукт / партида
+StockDetailPerBatch=Наличност по партида
