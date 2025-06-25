@@ -452,7 +452,7 @@ class InterfaceWorkflowManager extends DolibarrTriggers
 							if (!getDolGlobalString('STOCK_SUPPORTS_SERVICES') && $orderline->product_type > 0) {
 								continue;
 							}
-							if (isset($qtyordred[$shippingline->fk_product])) {
+							if (isset($qtyordred[$orderline->fk_product])) {
 								$qtyordred[$orderline->fk_product] += $orderline->qty;
 							} else {
 								$qtyordred[$orderline->fk_product] = $orderline->qty;
