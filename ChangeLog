@@ -2,6 +2,109 @@
 English Dolibarr ChangeLog
 --------------------------------------------------------------
 
+***** ChangeLog for 20.0.4 compared to 20.0.3 *****
+FIX: $this->origin_object can not be instance of CommandeFournisseur if it is already an instanceof CommonObject
+FIX: 17.0 API endpoints "PUT": prevent overwriting all extrafields if only some are supplied in the request cf. PR #29237
+FIX: 17.0 - collisions in cache for dol_getIdFromCode
+FIX: #18713
+FIX: 20.0 - PHP8 fatal when creating a reception unless corresponding PDF model is enabled
+FIX: #21294 Stock import sql query
+FIX: #26250 fatal error on kit
+FIX: #28702
+FIX: #29624 - substitution of __DATE_DELIVERY__
+FIX: #32113
+FIX: #32186
+FIX: #32339 Delete a loan settlement is partial
+FIX: #32387
+FIX: #32477 Loan - Insurance amount need decimals
+FIX: #32611
+FIX: #32736 + avoid php warning
+FIX: #32743
+FIX: #32765 JS Error: Uncaught TypeError
+FIX: #32801 VAT type is inverted in form VAT selector
+FIX: #32840
+FIX: #32843
+FIX: #32880 - Tags are using a special rendering.
+FIX: add other fields
+FIX: autofill price with multicurrency on supplier doc
+FIX: avoid phan error
+FIX: avoid php8 warnings
+FIX: avoid warning with the new Dolistore website
+FIX: backport from develop to avoid php warning
+FIX: Bad calculation of the theoretical stock. Did not take into account
+FIX: bad dispatched quantities for batches on shipment card
+FIX: Brian is in the kitchen
+FIX: broken feature, compatibility with "Default search filters"
+FIX: broken feature with check $pa_ht_isemptystring
+FIX: Bug on select user on time.php (all project list)
+FIX: can not delete files in task card
+FIX: Check "$search_sale" only if it's an internal user
+FIX: clean unique extrafields when create product combination
+FIX: code not visible correctly into view of dictionary
+FIX: compatibility between next_prev_filter and hook return
+FIX: compatibility with multicompany
+FIX: Complete path was started in #17243 for pdf_cannelle
+FIX: Continue for eagle_proforma
+FIX: country id is not saved when we provide country_code only
+FIX: #CVE-2024-34051
+FIX: delete supplier order when at least one line linked to customer order line
+FIX: display error when loan can't be deleted
+FIX: display full tree on shipment card when a kit contains a same component in other sub-kit
+FIX: DROP INDEX IF EXISTS is not possible !
+FIX: extrafields lost during creation from rec invoice
+FIX: FEC import
+FIX: Fiscal year - missing translation on status
+FIX: Fix return value of hook sendMail when hook return -1 who must be return false in sendfile() function
+FIX: GETPOST('private_message')
+FIX: glob is better for search files with wildcard + avoid warning
+FIX: if $force_entity = 0 ($force_entity != 'default') = false
+FIX: Loan - Insurance amount need decimals
+FIX: Many status on invoice linked object block
+FIX: merge problem
+FIX: missing company name if donation is linked to third party
+FIX: missing default values if $objsrc or $soc fields are empty
+FIX: missing edit extrafields inline for member card
+FIX: missing quick edit for extrafields
+FIX: more bugs and warnings
+FIX: Multilangs : PDF lines description
+FIX: Must not have both thirdparty and member.
+FIX: ODT substitution when many HTML tags in string
+FIX: on the road again
+FIX: pdf_cannelle (supplier_invoice) add background - Complete #17243
+FIX: Prices didn't update when clone a propale with update prices
+FIX: product variants copy: also copy multiprice variations
+FIX: refactorize (maybe broken feature for not received completely)
+FIX: remove debug trace
+FIX: remove socid when cloning a project without third parties
+FIX: removes traces of <<<HEAD conflicts following the postponement of branch 13 modifications (#32014)
+FIX: remove unused code
+FIX: same broken feature for propal and invoice
+FIX: select 2 no record found translate
+FIX: selectcontact is loading all contacts if socid is empty and MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT is not set
+FIX: selectcontact is loading all contacts when update event
+FIX: select group and severity search fields on ticket list
+FIX: send email to assigned user on ticket create
+FIX: sql error with the new sql forge filter
+FIX: sql "order by" is defined twice
+FIX: status ticket update for new message
+FIX: swap tests
+FIX: switch on/off status of a page of the second website.
+FIX: There were many status indicator in the invoice linked object block (propal card)
+FIX: uniformize code
+FIX: units used scale and scale is an integer
+FIX: wrong alias table
+FIX: wrong file path + avoid warning
+FIX: wrong filter format
+FIX: wrong "fournisseur" var value checking
+FIX: wrong left margin
+FIX: wrong message on update shipment
+FIX: wrong ODT path for multicompany
+FIX: wrong path for odt models
+FIX: wrong search filter, empty product unit is "none"
+FIX: wrong update function parameter
+FIX: some wrong var type
+FIX: some wrong var name
+
 ***** ChangeLog for 20.0.3 compared to 20.0.2 *****
 FIX: 17.0 - missing error handling for FactureRec::fetch in card-rec.php
 FIX: 17.0 - warnings due to uninitialized variables + delete code that doesn't apply to recurring invoices (AFAIK, there is no recurring credit note feature)
@@ -755,7 +858,6 @@ SEC: Add a protection against installation of external module bypassing
 SEC: A user with export permission can export module data without permissions on module.
 
 ***** ChangeLog for 19.0.1 compared to 19.0.0 *****
-
 FIX: 16.0 - parent company gets emptied when updating a third party from the card in edit mode (#28269)
 FIX: 17.0: $num doesn't take trigger-modified newref into account, leading to inconsistencies if BILL_SUPPLIER_VALIDATE changes the invoice's ref (#28684)
 FIX: #22948
@@ -984,6 +1086,12 @@ NEW: use account address in sepa mandate (#23642)
 NEW: VAT rate - Add entity
 NEW: Website: Support of js into the Dolibarr server preview
 NEW: When an user unset the batch management of products, transformation of each batch stock movement in global stock movement
+NEW: PDF Generation for each Human Resource Evaluations.
+
+SEC: #25512 applicative anti bruteforce - security on too many login attempts (#25520)
+SEC: Add action confirm_... as sensitive to need a CSRF token
+SEC: Disable not used PHP streams
+SEC: Add option MAIN_RESTRICTHTML_ONLY_VALID_HTML_TIDY
 
 
 For developers or integrators:
@@ -1077,6 +1185,70 @@ The following changes may create regressions for some external modules, but were
 * The delete() method of AdherentType, Contact, Delivery, MultiCurrency, CurrencyRate now need $user as first parameter.
 * A very high number of class properties (with old name in french) are now deprecated in favor of the property name in english.
 * The load of hook context productdao has been removed before calling loadvirtualstock. Modules must use the context of main parent page or 'all' for all cases.
+
+
+***** ChangeLog for 18.0.7 compared to 18.0.6 *****
+FIX: 17.0 API endpoints "PUT": prevent overwriting all extrafields if only some are supplied in the request cf. PR #29237
+FIX: 17.0 - collisions in cache for dol_getIdFromCode
+FIX: 17.0 - missing error handling for FactureRec::fetch in card-rec.php
+FIX: 17.0: warnings due to uninitialized variables + delete code that doesn't apply to recurring invoices (AFAIK, there is no recurring credit note feature)
+FIX: #21294 Stock import sql query
+FIX: #26250 fatal error on kit
+FIX: #32339 Delete a loan settlement is partial
+FIX: #33038 drag and drop files are not prefixed with object reference
+FIX: #33117 accountancy export Quadratus when doc ref is less than 10 char
+FIX: #33145 wrong label status buy on product tooltip
+FIX: accountancy export Quadratus when doc ref is less than 10 char
+FIX: bad dispatched quantities for batches on shipment card
+FIX: bank payment rejection on SEPA (backport commit 100a657) (#33838)
+FIX: calculate start date of cloned task from cloned project (#31799)
+FIX: can not delete files in task card
+FIX: close all services on contract will close all lines (#33466)
+FIX: compatibility with multicompany
+FIX: constant PAYMENTBYBANKTRANSFER_ADDDAYS was never saved (#33799)
+FIX: Count on supplier invoice list does not match count in DB (#33351)
+FIX: #CVE-2024-34051
+FIX: delete supplier order line when linked to customer order line
+FIX: delete supplier order when at least one line linked to customer order line
+FIX: display error when loan can't be deleted
+FIX: display full tree on shipment card when a kit contains a same component in other sub-kit
+FIX: Fix case when the value of a extrafields of the type 'boolean', 'select' or other have an option with a value equal to '0'.
+FIX: Fix return value of hook sendMail when hook return -1 who must be return false in sendfile() function
+FIX: GETPOST('private_message')
+FIX: in projet/element.php total_time is always back to 0
+FIX: invoice creation : use dol_include_once instead of require_once to allow external modules
+FIX: invoice creation : use dol_include_once instead of require_once to allow external modules.
+FIX: issue #28222 Edit date extrafield displayed on all on lines (#31914)
+FIX: Many status on invoice linked object block
+FIX: Multilangs : PDF lines description
+FIX: ODT substitution when many HTML tags in string
+FIX: old copy not needed in supplier order create method (#31733)
+FIX: PAIEMENT Wrong field displayed for DateChequeReceived (#33390)
+FIX: phpcs
+FIX: product variants copy: also copy multiprice variations
+FIX: qual
+FIX: removes traces of <<<HEAD conflicts following the postponement of branch 13 modifications (#32014)
+FIX: Replace compromised tj-actions/changed-files (#33481)
+FIX: selectcontact is loading all contacts if socid is empty and MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT is not set
+FIX: selectcontact is loading all contacts when update event
+FIX: select group and severity search fields on ticket list
+FIX: send email to assigned user on ticket create
+FIX: send mail to BCC when email formatted as Fullname <email> (#31983)
+FIX: Show true error when send notify email at validate expense report
+FIX: status ticket update for new message
+FIX: swiftmailer: correctly set errors-to header (#31826)
+FIX: TakePos barcode rule (#31857)
+FIX: There were many status indicator in the invoice linked object block (propal card)
+FIX(ticket): Notification email without public interface
+FIX: Update on a sold line of bank entries set the type to empty, now it's fixed #22539 (#31888)
+FIX: update status on create supplier order for trigger (#31642)
+FIX: use tax with code on supplier order line give tax code missing in supplier invoice (#32018)
+FIX: use vat with code on supplier order result code missing in supplier invoice
+FIX: warehouse list: broken status filter (#33667)
+FIX: warnings (#33423)
+FIX: wrong left margin (v18 to develop ?)
+FIX: wrong message on update shipment
+FIX: wrong update function parameter
 
 
 ***** ChangeLog for 18.0.6 compared to 18.0.5 *****

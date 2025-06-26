@@ -479,6 +479,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql .= " cr.code as cond_reglement_code, cr.libelle as cond_reglement_label, cr.libelle_facture as cond_reglement_doc,";
 		$sql .= " p.code as mode_reglement_code, p.libelle as mode_reglement_libelle";
 		$sql .= ', c.fk_incoterms, c.location_incoterms';
+		$sql .= ', c.last_main_doc';
 		$sql .= ', i.libelle as label_incoterms';
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseur as c";
 		$sql .= " LEFT JOIN ".$this->db->prefix()."c_payment_term as cr ON c.fk_cond_reglement = cr.rowid";
@@ -516,6 +517,7 @@ class CommandeFournisseur extends CommonOrder
 			$this->statut = $obj->status;	// deprecated
 			$this->status = $obj->status;
 			$this->billed = $obj->billed;
+			$this->last_main_doc = $obj->last_main_doc;
 			$this->user_author_id = $obj->user_author_id;
 			$this->user_validation_id = $obj->user_validation_id;
 			$this->user_approve_id = $obj->user_approve_id;
@@ -1684,8 +1686,13 @@ class CommandeFournisseur extends CommonOrder
 						// End call triggers
 					}
 
-					$this->db->commit();
-					return $this->id;
+					if (!$error) {
+						$this->db->commit();
+						return $this->id;
+					} else {
+						$this->db->rollback();
+						return -4;
+					}
 				} else {
 					$this->error = $this->db->lasterror();
 					$this->db->rollback();
@@ -2381,35 +2388,52 @@ class CommandeFournisseur extends CommonOrder
 		}
 
 		$main = $this->db->prefix().'commande_fournisseurdet';
-		$ef = $main."_extrafields";
-		$sql = "DELETE FROM $ef WHERE fk_object IN (SELECT rowid FROM $main WHERE fk_commande = ".((int) $this->id).")";
-		dol_syslog(get_class($this)."::delete extrafields lines", LOG_DEBUG);
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
+
+		if (!$error) {
+			$sql1 = "UPDATE ".$this->db->prefix()."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
+			dol_syslog(__METHOD__." linked order lines", LOG_DEBUG);
+			if (!$this->db->query($sql1)) {
+				$error++;
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+			}
 		}
 
-		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseurdet WHERE fk_commande =".((int) $this->id);
-		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
-		if (!$this->db->query($sql)) {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
-		}
-
-		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseur WHERE rowid =".((int) $this->id);
-		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
-		if ($resql = $this->db->query($sql)) {
-			if ($this->db->affected_rows($resql) < 1) {
+		if (!$error) {
+			$ef = $main."_extrafields";
+			$sql = "DELETE FROM ".$this->db->sanitize($ef)." WHERE fk_object IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
+			dol_syslog(get_class($this)."::delete extrafields lines", LOG_DEBUG);
+			if (!$this->db->query($sql)) {
 				$this->error = $this->db->lasterror();
 				$this->errors[] = $this->db->lasterror();
 				$error++;
 			}
-		} else {
-			$this->error = $this->db->lasterror();
-			$this->errors[] = $this->db->lasterror();
-			$error++;
+		}
+
+		if (!$error) {
+			$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseurdet WHERE fk_commande = ".((int) $this->id);
+			dol_syslog(get_class($this)."::delete", LOG_DEBUG);
+			if (!$this->db->query($sql)) {
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+				$error++;
+			}
+		}
+
+		if (!$error) {
+			$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseur WHERE rowid = ".((int) $this->id);
+			dol_syslog(get_class($this)."::delete", LOG_DEBUG);
+			if ($resql = $this->db->query($sql)) {
+				if ($this->db->affected_rows($resql) < 1) {
+					$this->error = $this->db->lasterror();
+					$this->errors[] = $this->db->lasterror();
+					$error++;
+				}
+			} else {
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+				$error++;
+			}
 		}
 
 		// Remove extrafields
@@ -3056,6 +3080,8 @@ class CommandeFournisseur extends CommonOrder
 				$this->db->commit();
 				return $result;
 			} else {
+				$this->errors[] = $this->line->error;
+				$this->errors = array_merge($this->errors, $this->line->errors);
 				$this->error = $this->db->lasterror();
 				$this->db->rollback();
 				return -1;
@@ -3207,7 +3233,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql = "SELECT count(co.rowid) as nb";
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseur as co";
 		$sql .= " LEFT JOIN ".$this->db->prefix()."societe as s ON co.fk_soc = s.rowid";
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir") && !$user->socid) {
 			$sql .= " LEFT JOIN ".$this->db->prefix()."societe_commerciaux as sc ON s.rowid = sc.fk_soc";
 			$sql .= " WHERE sc.fk_user = ".((int) $user->id);
 			$clause = "AND";
@@ -3243,7 +3269,7 @@ class CommandeFournisseur extends CommonOrder
 
 		$sql = "SELECT c.rowid, c.date_creation as datec, c.date_commande, c.fk_statut, c.date_livraison as delivery_date, c.total_ht";
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseur as c";
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir") && !$user->socid) {
 			$sql .= " JOIN ".$this->db->prefix()."societe_commerciaux as sc ON c.fk_soc = sc.fk_soc AND sc.fk_user = ".((int) $user->id);
 		}
 		$sql .= " WHERE c.entity = ".$conf->entity;
@@ -4091,6 +4117,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
 			return -2;
 		}
 	}
+
 	/**
 	 *	Update the line object into db
 	 *

@@ -298,11 +298,16 @@ if (empty($reshook)) {
 				$payment->num_payment = $invoice->ref;
 
 				if ($pay != "delayed") {
-					$payment->create($user);
-					$res = $payment->addPaymentToBank($user, 'payment', '(CustomerInvoicePayment)', $bankaccount, '', '');
-					if ($res < 0) {
+					$result = $payment->create($user);	// This set $payment->amount
+					if ($result < 0) {
 						$error++;
-						dol_htmloutput_errors($langs->trans('ErrorNoPaymentDefined'), $payment->errors, 1);
+						dol_htmloutput_errors($payment->error, $payment->errors, 1);
+					} else {
+						$res = $payment->addPaymentToBank($user, 'payment', '(CustomerInvoicePayment)', $bankaccount, '', '');
+						if ($res < 0) {
+							$error++;
+							dol_htmloutput_errors($langs->trans('ErrorNoPaymentDefined'), $payment->errors, 1);
+						}
 					}
 					$remaintopay = $invoice->getRemainToPay(); // Recalculate remain to pay after the payment is recorded
 				} elseif (getDolGlobalInt("TAKEPOS_DELAYED_TERMS")) {

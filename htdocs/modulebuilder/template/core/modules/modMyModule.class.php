@@ -385,7 +385,7 @@ class modMyModule extends DolibarrModules
 
 
 		// Exports profiles provided by this module
-		$r = 1;
+		$r = 0;
 		/* BEGIN MODULEBUILDER EXPORT MYOBJECT */
 		/*
 		$langs->load("mymodule@mymodule");
@@ -416,7 +416,7 @@ class modMyModule extends DolibarrModules
 		/* END MODULEBUILDER EXPORT MYOBJECT */
 
 		// Imports profiles provided by this module
-		$r = 1;
+		$r = 0;
 		/* BEGIN MODULEBUILDER IMPORT MYOBJECT */
 		/*
 		$langs->load("mymodule@mymodule");
@@ -496,7 +496,7 @@ class modMyModule extends DolibarrModules
 			}
 			if ($myTmpObjectArray['includerefgeneration']) {
 				$src = DOL_DOCUMENT_ROOT.'/install/doctemplates/'.$moduledir.'/template_myobjects.odt';
-				$dirodt = DOL_DATA_ROOT.'/doctemplates/'.$moduledir;
+				$dirodt = DOL_DATA_ROOT.($conf->entity > 1 ? '/'.$conf->entity : '').'/doctemplates/'.$moduledir;
 				$dest = $dirodt.'/template_myobjects.odt';
 
 				if (file_exists($src) && !file_exists($dest)) {

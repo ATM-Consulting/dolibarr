@@ -2861,7 +2861,7 @@ class Propal extends CommonObject
 
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -3384,7 +3384,7 @@ class Propal extends CommonObject
 		}
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -3561,7 +3561,7 @@ class Propal extends CommonObject
 
 		// If the internal user must only see his customers, force searching by him
 		$search_sale = 0;
-		if (!$user->hasRight('societe', 'client', 'voir')) {
+		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = $user->id;
 		}
 		// Search on sale representative
@@ -4383,8 +4383,17 @@ class PropaleLigne extends CommonObjectLine
 				// End call triggers
 			}
 
-			$this->db->commit();
-			return 1;
+			if (!$error) {
+				$this->db->commit();
+				return 1;
+			}
+
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(get_class($this)."::insert ".$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
+			$this->db->rollback();
+			return -1 * $error;
 		} else {
 			$this->error = $this->db->error()." sql=".$sql;
 			$this->db->rollback();
@@ -4586,8 +4595,17 @@ class PropaleLigne extends CommonObjectLine
 				// End call triggers
 			}
 
-			$this->db->commit();
-			return 1;
+			if (!$error) {
+				$this->db->commit();
+				return 1;
+			}
+
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(get_class($this)."::update ".$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
+			$this->db->rollback();
+			return -1 * $error;
 		} else {
 			$this->error = $this->db->error();
 			$this->db->rollback();

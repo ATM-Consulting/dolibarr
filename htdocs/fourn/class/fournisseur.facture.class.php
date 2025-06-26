@@ -1060,10 +1060,12 @@ class FactureFournisseur extends CommonInvoice
 
 					$line->id               = $obj->rowid;
 					$line->rowid            = $obj->rowid;
+
 					$line->description      = $obj->line_desc;
 					$line->desc             = $obj->line_desc;
-					$line->date_start       = $obj->date_start;
-					$line->date_end         = $obj->date_end;
+					$line->date_start       = $this->db->jdate($obj->date_start);
+					$line->date_end         = $this->db->jdate($obj->date_end);
+
 					$line->product_ref      = $obj->product_ref;
 					$line->ref              = $obj->product_ref;
 					$line->ref_supplier		= $obj->ref_supplier;
@@ -2490,6 +2492,7 @@ class FactureFournisseur extends CommonInvoice
 
 		if ($res < 1) {
 			$this->errors[] = $line->error;
+			$this->errors = array_merge($this->errors, $line->errors);
 		} else {
 			// Update total price into invoice record
 			$res = $this->update_price('1', 'auto', 0, $this->thirdparty);
@@ -2703,7 +2706,7 @@ class FactureFournisseur extends CommonInvoice
 
 		$sql = 'SELECT ff.rowid, ff.date_lim_reglement as datefin, ff.fk_statut as status, ff.total_ht, ff.total_ttc';
 		$sql .= ' FROM '.MAIN_DB_PREFIX.'facture_fourn as ff';
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir")) {
 			$sql .= " JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON ff.fk_soc = sc.fk_soc AND sc.fk_user = ".((int) $user->id);
 		}
 		$sql .= ' WHERE ff.paye = 0';
@@ -3123,7 +3126,7 @@ class FactureFournisseur extends CommonInvoice
 		$sql = "SELECT count(f.rowid) as nb";
 		$sql .= " FROM ".MAIN_DB_PREFIX."facture_fourn as f";
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON f.fk_soc = s.rowid";
-		if (!$user->hasRight("societe", "client", "voir") && !$user->socid) {
+		if (empty($user->socid) && !$user->hasRight("societe", "client", "voir")) {
 			$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe_commerciaux as sc ON s.rowid = sc.fk_soc";
 			$sql .= " WHERE sc.fk_user = ".((int) $user->id);
 			$clause = "AND";
@@ -4031,10 +4034,11 @@ class SupplierInvoiceLine extends CommonObjectLine
 		$this->id = $obj->rowid;
 		$this->rowid = $obj->rowid;
 		$this->fk_facture_fourn = $obj->fk_facture_fourn;
+
 		$this->description		= $obj->line_desc;
 		$this->desc				= $obj->line_desc;
-		$this->date_start = $obj->date_start;
-		$this->date_end = $obj->date_end;
+		$this->date_start = $this->db->jdate($obj->date_start);
+		$this->date_end = $this->db->jdate($obj->date_end);
 		$this->product_ref		= $obj->product_ref;
 		$this->ref_supplier		= $obj->ref_supplier;
 		$this->product_desc		= $obj->product_desc;
@@ -4478,8 +4482,18 @@ class SupplierInvoiceLine extends CommonObjectLine
 				// End call triggers
 			}
 
-			$this->db->commit();
-			return $this->id;
+			if (!$error) {
+				$this->db->commit();
+				return $this->id;
+			}
+
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(get_class($this)."::insert ".$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
+
+			$this->db->rollback();
+			return -1 * $error;
 		} else {
 			$this->error = $this->db->error();
 			$this->db->rollback();

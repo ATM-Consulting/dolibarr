@@ -1311,12 +1311,12 @@ class Product extends CommonObject
 				$sql .= ", accountancy_code_sell_export= '" . $this->db->escape($this->accountancy_code_sell_export) . "'";
 			}
 			$sql .= ", desiredstock = ".((isset($this->desiredstock) && is_numeric($this->desiredstock)) ? (float) $this->desiredstock : "null");
-			$sql .= ", cost_price = ".($this->cost_price != '' ? $this->db->escape($this->cost_price) : 'null');
+			$sql .= ", cost_price = ".($this->cost_price != '' ? ((float) $this->cost_price) : 'null');
 			$sql .= ", fk_unit= ".(!$this->fk_unit ? 'NULL' : (int) $this->fk_unit);
 			$sql .= ", price_autogen = ".(!$this->price_autogen ? 0 : 1);
 			$sql .= ", fk_price_expression = ".($this->fk_price_expression != 0 ? (int) $this->fk_price_expression : 'NULL');
-			$sql .= ", fk_user_modif = ".($user->id > 0 ? $user->id : 'NULL');
-			$sql .= ", mandatory_period = ".($this->mandatory_period);
+			$sql .= ", fk_user_modif = ".($user->id > 0 ? (int) $user->id : 'NULL');
+			$sql .= ", mandatory_period = ".((int) $this->mandatory_period);
 			// stock field is not here because it is a denormalized value from product_stock.
 			$sql .= " WHERE rowid = ".((int) $id);
 
@@ -2375,7 +2375,7 @@ class Product extends CommonObject
 				}
 			} else {
 				$price = (float) price2num($newprice, 'MU');
-				$price_ttc = ($newnpr != 1) ? price2num($newprice) * (1 + ($newvat / 100)) : $price;
+				$price_ttc = ($newnpr != 1) ? (float) price2num($newprice) * (1 + ($newvat / 100)) : $price;
 				$price_ttc = (float) price2num($price_ttc, 'MU');
 
 				if ($newminprice !== '' || $newminprice === 0) {
@@ -5198,8 +5198,6 @@ class Product extends CommonObject
 	 */
 	public function getChildsArbo($id, $firstlevelonly = 0, $level = 1, $parents = array())
 	{
-		global $alreadyfound;
-
 		if (empty($id)) {
 			return array();
 		}
@@ -5216,9 +5214,6 @@ class Product extends CommonObject
 
 		dol_syslog(get_class($this).'::getChildsArbo id='.$id.' level='.$level. ' parents='.(is_array($parents) ? implode(',', $parents) : $parents), LOG_DEBUG);
 
-		if ($level == 1) {
-			$alreadyfound = array($id => 1); // We init array of found object to start of tree, so if we found it later (should not happened), we stop immediately
-		}
 		// Protection against infinite loop
 		if ($level > 30) {
 			return array();
@@ -5227,14 +5222,16 @@ class Product extends CommonObject
 		$res = $this->db->query($sql);
 		if ($res) {
 			$prods = array();
+			if ($this->db->num_rows($res) > 0) {
+				$parents[] = $id;
+			}
+
 			while ($rec = $this->db->fetch_array($res)) {
-				if (!empty($alreadyfound[$rec['rowid']])) {
+				if (in_array($rec['id'], $parents)) {
 					dol_syslog(get_class($this).'::getChildsArbo the product id='.$rec['rowid'].' was already found at a higher level in tree. We discard to avoid infinite loop', LOG_WARNING);
-					if (in_array($rec['id'], $parents)) {
-						continue; // We discard this child if it is already found at a higher level in tree in the same branch.
-					}
+					continue; // We discard this child if it is already found at a higher level in tree in the same branch.
 				}
-				$alreadyfound[$rec['rowid']] = 1;
+
 				$prods[$rec['rowid']] = array(
 					0 => $rec['rowid'],
 					1 => $rec['qty'],
@@ -5248,7 +5245,6 @@ class Product extends CommonObject
 				//$prods[$this->db->escape($rec['label'])]= array(0=>$rec['id'],1=>$rec['qty'],2=>$rec['fk_product_type']);
 				//$prods[$this->db->escape($rec['label'])]= array(0=>$rec['id'],1=>$rec['qty']);
 				if (empty($firstlevelonly)) {
-					$parents[] = $rec['rowid'];
 					$listofchilds = $this->getChildsArbo($rec['rowid'], 0, $level + 1, $parents);
 					foreach ($listofchilds as $keyChild => $valueChild) {
 						$prods[$rec['rowid']]['childs'][$keyChild] = $valueChild;
@@ -6775,6 +6771,56 @@ class Product extends CommonObject
 		$return .= '</div>';
 		$return .= '</div>';
 		return $return;
+	}
+
+	/**
+	 * Enriches a list of physical files with additional metadata retrieved from the database
+	 * (such as position, label, cover, etc.) and sorts the array according to the specified criteria.
+	 *
+	 * @param array  $filearray   Array of physical files (as returned by dol_dir_list).
+	 * @param string $modulepart  The Dolibarr module part (e.g., 'produit').
+	 * @param string $sortfield   The field used for sorting (e.g., 'position_name', 'name').
+	 * @param string $sortorder   The sorting order ('ASC' or 'DESC').
+	 * @return array              Array of files enriched with database metadata and sorted accordingly.
+	 */
+	public function enrichFileArrayWithDatabaseInfos($filearray, $modulepart = 'produit', $sortfield = 'position_name', $sortorder = 'ASC')
+	{
+
+		$relativedir = get_exdir(0, 0, 0, 0, $this, $modulepart);
+		$relativedir = preg_replace('/^[\\/]/', '', $relativedir);
+		$relativedir = preg_replace('/[\\/]$/', '', $relativedir);
+		$filearrayindatabase = dol_dir_list_in_database($modulepart.'/'.$relativedir);
+
+		foreach ($filearray as $key => $val) {
+			$tmpfilename = preg_replace('/\.noexe$/', '', $filearray[$key]['name']);
+			$found = 0;
+			foreach ($filearrayindatabase as $key2 => $val2) {
+				if (($filearrayindatabase[$key2]['path'] == $filearray[$key]['path']) && ($filearrayindatabase[$key2]['name'] == $tmpfilename)) {
+					$filearray[$key]['position_name'] = ($filearrayindatabase[$key2]['position'] ? $filearrayindatabase[$key2]['position'] : '0') . '_' . $filearrayindatabase[$key2]['name'];
+					$filearray[$key]['position'] = $filearrayindatabase[$key2]['position'];
+					$filearray[$key]['cover'] = $filearrayindatabase[$key2]['cover'];
+					$filearray[$key]['keywords'] = $filearrayindatabase[$key2]['keywords'];
+					$filearray[$key]['acl'] = $filearrayindatabase[$key2]['acl'];
+					$filearray[$key]['rowid'] = $filearrayindatabase[$key2]['rowid'];
+					$filearray[$key]['label'] = $filearrayindatabase[$key2]['label'];
+					$filearray[$key]['share'] = $filearrayindatabase[$key2]['share'];
+					$found = 1;
+					break;
+				}
+			}
+		}
+
+		if (count($filearray)) {
+			if ($sortfield && $sortorder) {
+				if (getDolGlobalInt('OrderPhotoByPosition')) {
+					$filearray = dol_sort_array($filearray, 'position', $sortorder);
+				} else {
+					$filearray = dol_sort_array($filearray, $sortfield, $sortorder);
+				}
+			}
+		}
+
+		return $filearray;
 	}
 }
 

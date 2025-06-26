@@ -701,7 +701,7 @@ abstract class CommonObject
 	public $user_creation;
 
 	/**
-	 * @var int			User id author/creation
+	 * @var int|null	User id author/creation
 	 */
 	public $user_creation_id;
 
@@ -4952,7 +4952,7 @@ abstract class CommonObject
 	 */
 	public function getTotalDiscount()
 	{
-		if (!empty($this->table_element_line)) {
+		if (!empty($this->table_element_line) && ($this->table_element_line != 'expeditiondet')) {
 			$total_discount = 0.00;
 
 			$sql = "SELECT subprice as pu_ht, qty, remise_percent, total_ht";
@@ -5487,16 +5487,12 @@ abstract class CommonObject
 			}
 			$this->tpl['label'] .= $discount->getNomUrl(0, 'discount');
 		} elseif (!empty($line->fk_product)) {
-			$productstatic = new Product($this->db);
-			$productstatic->id = $line->fk_product;
-			$productstatic->ref = $line->ref;
-			$productstatic->type = $line->fk_product_type;
-			if (empty($productstatic->ref)) {
+			if (empty($line->product)) {
 				$line->fetch_product();
-				$productstatic = $line->product;
 			}
+			$productstatic = $line->product;
 
-			$this->tpl['label'] .= $productstatic->getNomUrl(1);
+			$this->tpl['label'] .= (is_object($productstatic) ? $productstatic->getNomUrl(1) : $line->ref);
 			$this->tpl['label'] .= ' - '.(!empty($line->label) ? $line->label : $line->product_label);
 			// Dates
 			if ($line->product_type == 1 && ($date_start || $date_end)) {
@@ -7589,6 +7585,7 @@ abstract class CommonObject
 
 			$tmpselect = '';
 			$nbchoice = 0;
+
 			foreach ($param['options'] as $keyb => $valb) {
 				if ((string) $keyb == '') {
 					continue;
@@ -7607,7 +7604,7 @@ abstract class CommonObject
 			}
 
 			$out .= '<select class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" '.($moreparam ? $moreparam : '').'>';
-			if ((!isset($this->fields[$key]['default'])) || ($this->fields[$key]['notnull'] != 1) || $nbchoice >= 2) {
+			if ((!isset($this->fields[$key]['default'])) || empty($this->fields[$key]['notnull']) || ($this->fields[$key]['notnull'] != 1) || $nbchoice >= 2) {
 				$out .= '<option value="0">&nbsp;</option>';
 			}
 			$out .= $tmpselect;
@@ -9531,7 +9528,11 @@ abstract class CommonObject
 
 		if (count($filearray)) {
 			if ($sortfield && $sortorder) {
-				$filearray = dol_sort_array($filearray, $sortfield, $sortorder);
+				if (getDolGlobalInt('OrderPhotoByPosition')) {
+					$filearray = dol_sort_array($filearray, 'position', $sortorder);
+				} else {
+					$filearray = dol_sort_array($filearray, $sortfield, $sortorder);
+				}
 			}
 
 			foreach ($filearray as $key => $val) {
@@ -10059,9 +10060,9 @@ abstract class CommonObject
 	/**
 	 * Create object in the database
 	 *
-	 * @param  User		$user		User that creates
-	 * @param  int<0,1>	$notrigger	0=launch triggers after, 1=disable triggers
-	 * @return int<-1,max>			Return integer <0 if KO, Id of created object if OK
+	 * @param  User			$user		User that creates
+	 * @param  int<0,1>		$notrigger	0=launch triggers after, 1=disable triggers
+	 * @return int<-1,max>				Return integer <0 if KO, Id of created object if OK
 	 */
 	public function createCommon(User $user, $notrigger = 0)
 	{
@@ -10080,6 +10081,7 @@ abstract class CommonObject
 		if (array_key_exists('date_creation', $fieldvalues) && empty($fieldvalues['date_creation'])) {
 			$fieldvalues['date_creation'] = $this->db->idate($now);
 		}
+		// For backward compatibility, if a property ->fk_user_creat exists and not filled.
 		if (array_key_exists('fk_user_creat', $fieldvalues) && !($fieldvalues['fk_user_creat'] > 0)) {
 			$fieldvalues['fk_user_creat'] = $user->id;
 			$this->fk_user_creat = $user->id;
@@ -10198,7 +10200,7 @@ abstract class CommonObject
 		}
 
 		// Create lines
-		if (!empty($this->table_element_line) && !empty($this->fk_element)) {
+		if (!empty($this->table_element_line) && !empty($this->fk_element) && !empty($this->lines)) {
 			foreach ($this->lines as $line) {
 				$keyforparent = $this->fk_element;
 				$line->$keyforparent = $this->id;

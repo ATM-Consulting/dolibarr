@@ -623,6 +623,14 @@ if (isModEnabled("supplier_order") || isModEnabled("supplier_invoice")) {
 	print '</tr>';
 }
 
+print '<tr class="oddeven">';
+print '<td>'.$langs->trans("OrderPhotoByPosition").'</td>';
+print '<td class="right">';
+print ajax_constantonoff("OrderPhotoByPosition", array(), $conf->entity, 0, 0, 1, 0);
+//print $form->selectyesno("orderPhotoByPosition", $conf->global->orderPhotoByPosition, 1);
+print '</td>';
+print '</tr>';
+
 print '</table>';
 print '</div>';
 
@@ -657,7 +665,7 @@ if (empty($conf->use_javascript_ajax)) {
 		'2' => $langs->trans("Yes").' ('.$langs->trans("NumberOfKeyToSearch", 2).')',
 		'3' => $langs->trans("Yes").' ('.$langs->trans("NumberOfKeyToSearch", 3).')',
 	);
-	print $form->selectarray("activate_usesearchtoselectproduct", $arrval, $conf->global->PRODUIT_USE_SEARCH_TO_SELECT);
+	print $form->selectarray("activate_usesearchtoselectproduct", $arrval, getDolGlobalString('PRODUIT_USE_SEARCH_TO_SELECT'), 0, 0, 0, '', 0, 0, 0, '', 'minwidth400');
 	print '</td>';
 }
 print '</tr>';
