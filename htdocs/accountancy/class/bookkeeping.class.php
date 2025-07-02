@@ -232,7 +232,9 @@ class BookKeeping extends CommonObject
 		}
 		if (isset($this->doc_ref)) {
 			$this->doc_ref = trim($this->doc_ref);
-			$this->doc_ref = dol_trunc($this->doc_ref, 300); // We limit to 300 chars to avoid problems with too long ref in DB
+			# SPE ATM
+			$this->doc_ref = substr($this->doc_ref, 0, 300); // We limit to 300 chars to avoid problems with too long ref in DB
+			# END SPE ATM
 		}
 		if (isset($this->fk_doc)) {
 			$this->fk_doc = (int) $this->fk_doc;
