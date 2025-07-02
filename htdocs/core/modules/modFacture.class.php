@@ -732,8 +732,8 @@ class modFacture extends DolibarrModules
 
 		}
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as c on s.fk_pays = c.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as cd on s.fk_departement = cd.rowid,';
-		$this->export_sql_end[$r] .= ' '. $db->prefix() .'facture as f';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as cd on s.fk_departement = cd.rowid';
+		$this->export_sql_end[$r] .= ' JOIN '. $db->prefix() .'facture as f'; // spé alphadiab
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'projet as pj ON f.fk_projet = pj.rowid';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uc ON f.fk_user_author = uc.rowid';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uv ON f.fk_user_valid = uv.rowid';
@@ -840,29 +840,31 @@ class modFacture extends DolibarrModules
 		$keyforaliasextra = 'extra';
 		include DOL_DOCUMENT_ROOT.'/core/extrafieldsinexport.inc.php';
 		$this->export_sql_start[$r] = 'SELECT DISTINCT ';
-		$this->export_sql_end[$r]  = ' FROM '.MAIN_DB_PREFIX.'societe as s';
-		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
-			$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
-			// ------spé alphadiab ---------
-			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'user as ucomm ON sc.fk_user = ucomm.rowid';
-			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie_societe as cs ON cs.fk_soc = s.rowid';
-			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
-			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
-			$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
-			// ------spé alphadiab ---------
-		}
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_country as c on s.fk_pays = c.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_departements as cd on s.fk_departement = cd.rowid,';
-		$this->export_sql_end[$r] .= ' '.MAIN_DB_PREFIX.'facture as f';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'projet as pj ON f.fk_projet = pj.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as uc ON f.fk_user_author = uc.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as uv ON f.fk_user_valid = uv.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'facture_extrafields as extra ON f.rowid = extra.fk_object';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'paiement_facture as pf ON pf.fk_facture = f.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'paiement as p ON pf.fk_paiement = p.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_paiement as pt ON pt.id = p.fk_paiement';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'bank as b ON b.rowid = p.fk_bank';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'bank_account as ba ON ba.rowid = b.fk_account';
+		$this->export_sql_end[$r]  = ' FROM '. $db->prefix() .'societe as s';
+		// ------spé alphadiab ---------
+		// we keep it if rollback is needed
+		//if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
+		//	$this->export_sql_end[$r] .= ' LEFT JOIN '.$db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
+		//}
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as ucomm ON sc.fk_user = ucomm.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_soc = s.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
+		// ------spé alphadiab ---------
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as c on s.fk_pays = c.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as cd on s.fk_departement = cd.rowid,';
+		$this->export_sql_end[$r] .= ' '. $db->prefix() .'facture as f';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'projet as pj ON f.fk_projet = pj.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uc ON f.fk_user_author = uc.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uv ON f.fk_user_valid = uv.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'facture_extrafields as extra ON f.rowid = extra.fk_object';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'paiement_facture as pf ON pf.fk_facture = f.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'paiement as p ON pf.fk_paiement = p.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_paiement as pt ON pt.id = p.fk_paiement';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'bank as b ON b.rowid = p.fk_bank';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'bank_account as ba ON ba.rowid = b.fk_account';
 		$this->export_sql_end[$r] .= ' WHERE f.fk_soc = s.rowid';
 		$this->export_sql_end[$r] .= ' AND f.entity IN ('.getEntity('invoice').')';
 		// ------spé alphadiab ---------

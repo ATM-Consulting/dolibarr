@@ -497,35 +497,33 @@ $sql = preg_replace('/,\s*$/', '', $sql);
 //$sqlfields = $sql; // $sql fields to remove for count total
 // ----- spé alphadiab ---------
 
-$sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
+$sql .= ' FROM '. $db->prefix() .'product as p';
 if (isModEnabled('workstation')) {
-	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "workstation_workstation as ws ON (p.fk_default_workstation = ws.rowid)";
+	$sql .= " LEFT JOIN " .  $db->prefix()  . "workstation_workstation as ws ON (p.fk_default_workstation = ws.rowid)";
 }
 if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
-	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "product_perentity as ppe ON ppe.fk_product = p.rowid AND ppe.entity = " . ((int) $conf->entity);
+	$sql .= " LEFT JOIN " .  $db->prefix()  . "product_perentity as ppe ON ppe.fk_product = p.rowid AND ppe.entity = " . ((int) $conf->entity);
 }
 if (!empty($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
-	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_extrafields as ef on (p.rowid = ef.fk_object)";
+	$sql .= " LEFT JOIN ". $db->prefix() ."product_extrafields as ef on (p.rowid = ef.fk_object)";
 }
 
 // ----- spé alphadiab ---------
-
-$sql = " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+$sql .= " LEFT JOIN ". $db->prefix() ."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
 // we keep it for rollback if needed
-//$linktopfp = " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+//$linktopfp = " LEFT JOIN ". $db->prefix() ."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
 //$sql .= $linktopfp;
-
 // ----- spé alphadiab ---------
 
 // multilang
 if (getDolGlobalInt('MAIN_MULTILANGS')) {
-	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_lang as pl ON pl.fk_product = p.rowid AND pl.lang = '".$db->escape($langs->getDefaultLang())."'";
+	$sql .= " LEFT JOIN ". $db->prefix() ."product_lang as pl ON pl.fk_product = p.rowid AND pl.lang = '".$db->escape($langs->getDefaultLang())."'";
 }
 if (isModEnabled('variants')) {
-	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_attribute_combination pac ON pac.fk_product_child = p.rowid";
+	$sql .= " LEFT JOIN ". $db->prefix() ."product_attribute_combination pac ON pac.fk_product_child = p.rowid";
 }
 if (getDolGlobalString('PRODUCT_USE_UNITS')) {
-	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_units cu ON cu.rowid = p.fk_unit";
+	$sql .= " LEFT JOIN ". $db->prefix() ."c_units cu ON cu.rowid = p.fk_unit";
 }
 
 // Add table from hooks
@@ -543,7 +541,7 @@ if ($search_all) {
 	$sql .= ' AND (';
 	$sql .= natural_search(array_keys($newfieldstosearchall), $search_all, 0, 1);
 	// Search also into a supplier reference 'pfp.ref_fourn'="RefSupplier"
-	$sql .= ' OR EXISTS (SELECT rowid FROM '.MAIN_DB_PREFIX.'product_fournisseur_price as pfp WHERE pfp.fk_product = p.rowid';
+	$sql .= ' OR EXISTS (SELECT rowid FROM '. $db->prefix() .'product_fournisseur_price as pfp WHERE pfp.fk_product = p.rowid';
 	$sql .= ' AND ('.natural_search('pfp.ref_fourn', $search_all, 0, 1);
 	if (isModEnabled('barcode')) {
 		// Search also into a supplier barcode 'pfp.barcode'='GencodBuyPrice';
@@ -607,17 +605,17 @@ if (!empty($searchCategoryProductList)) {
 	$listofcategoryid = '';
 	foreach ($searchCategoryProductList as $searchCategoryProduct) {
 		if (intval($searchCategoryProduct) == -2) {
-			$searchCategoryProductSqlList[] = "NOT EXISTS (SELECT ck.fk_product FROM ".MAIN_DB_PREFIX."categorie_product as ck WHERE p.rowid = ck.fk_product)";
+			$searchCategoryProductSqlList[] = "NOT EXISTS (SELECT ck.fk_product FROM ". $db->prefix() ."categorie_product as ck WHERE p.rowid = ck.fk_product)";
 		} elseif (intval($searchCategoryProduct) > 0) {
 			if ($searchCategoryProductOperator == 0) {
-				$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ".MAIN_DB_PREFIX."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie = ".((int) $searchCategoryProduct).")";
+				$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ". $db->prefix() ."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie = ".((int) $searchCategoryProduct).")";
 			} else {
 				$listofcategoryid .= ($listofcategoryid ? ', ' : '') .((int) $searchCategoryProduct);
 			}
 		}
 	}
 	if ($listofcategoryid) {
-		$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ".MAIN_DB_PREFIX."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie IN (".$db->sanitize($listofcategoryid)."))";
+		$searchCategoryProductSqlList[] = " EXISTS (SELECT ck.fk_product FROM ". $db->prefix() ."categorie_product as ck WHERE p.rowid = ck.fk_product AND ck.fk_categorie IN (".$db->sanitize($listofcategoryid)."))";
 	}
 	if ($searchCategoryProductOperator == 1) {
 		if (!empty($searchCategoryProductSqlList)) {
@@ -728,7 +726,7 @@ if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
 	}
 
 	// ----- spé alphadiab ---------
-		$sql .= $db->plimit($limit + 1, $offset);
+//		$sql .= $db->plimit($limit + 1, $offset);
 		// we keep it for rollback if needed
 		//$db->free($resql);
 		$db->free($sql);
@@ -1581,7 +1579,7 @@ while ($i < $imaxinloop) {
 	// Multilangs
 	if (getDolGlobalInt('MAIN_MULTILANGS')) {  // If multilang is enabled
 		$sql = "SELECT label";
-		$sql .= " FROM ".MAIN_DB_PREFIX."product_lang";
+		$sql .= " FROM ". $db->prefix() ."product_lang";
 		$sql .= " WHERE fk_product = ".((int) $obj->rowid);
 		$sql .= " AND lang = '".$db->escape($langs->getDefaultLang())."'";
 		$sql .= " LIMIT 1";
@@ -2027,7 +2025,7 @@ while ($i < $imaxinloop) {
 				// Make 1 request for all price levels (without filter on price_level) and saved result into an cache array
 				// then reuse the cache array if we need prices for other price levels
 				$sqlp = "SELECT p.rowid, p.fk_product, p.price, p.price_ttc, p.price_level, p.date_price, p.price_base_type";
-				$sqlp .= " FROM ".MAIN_DB_PREFIX."product_price as p";
+				$sqlp .= " FROM ". $db->prefix() ."product_price as p";
 				$sqlp .= " WHERE fk_product = ".((int) $obj->rowid);
 				$sqlp .= " ORDER BY p.date_price DESC, p.rowid DESC, p.price_level ASC";
 				$resultp = $db->query($sqlp);
