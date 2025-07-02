@@ -9819,12 +9819,10 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 
 	$value = preg_replace('/\s*\|\s*/', '|', $value);
 
-	//natural mode search type 3 allow spaces into search ...
-	if ($mode == 3 || $mode == -3) {
-		$crits = explode(',', $value);
-	} else {
-		$crits = explode(' ', $value);
-	}
+	//Retour en arrière d'un fix standard qui n'est pas bon mais qui a l'air d'être corrigé dans les versions suivantes (en attendant la MDV car la 17 n'est plus maintenue)
+	//Ce fix concernait le cas où il y a des espaces dans ce qu'on cherche, ce qui n'est pas le cas pour Koesio
+	$crits = explode(' ', $value);
+
 	$res = '';
 	if (!is_array($fields)) {
 		$fields = array($fields);
