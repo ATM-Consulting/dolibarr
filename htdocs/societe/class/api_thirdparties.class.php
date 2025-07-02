@@ -1374,7 +1374,10 @@ class Thirdparties extends DolibarrApi
 	 */
 	public function getCompanyBankAccount($id)
 	{
-		if (!DolibarrApiAccess::$user->hasRight('societe', 'lire')) {
+		// ------ spé alphadiab ---------
+		//	if (!DolibarrApiAccess::$user->hasRight('societe', 'lire')) {
+		if (!DolibarrApiAccess::$user->hasRight('facture', 'lire')) {
+		// ------ spé alphadiab ---------
 			throw new RestException(403);
 		}
 		if (empty($id)) {

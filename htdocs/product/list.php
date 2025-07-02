@@ -492,7 +492,10 @@ $reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters, $obje
 $sql .= $hookmanager->resPrint;
 $sql = preg_replace('/,\s*$/', '', $sql);
 
-$sqlfields = $sql; // $sql fields to remove for count total
+// ----- spé alphadiab ---------
+// we keep it for rollback if needed
+//$sqlfields = $sql; // $sql fields to remove for count total
+// ----- spé alphadiab ---------
 
 $sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
 if (isModEnabled('workstation')) {
@@ -504,8 +507,16 @@ if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
 if (!empty($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_extrafields as ef on (p.rowid = ef.fk_object)";
 }
-$linktopfp = " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
-$sql .= $linktopfp;
+
+// ----- spé alphadiab ---------
+
+$sql = " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+// we keep it for rollback if needed
+//$linktopfp = " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price as pfp ON p.rowid = pfp.fk_product";
+//$sql .= $linktopfp;
+
+// ----- spé alphadiab ---------
+
 // multilang
 if (getDolGlobalInt('MAIN_MULTILANGS')) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_lang as pl ON pl.fk_product = p.rowid AND pl.lang = '".$db->escape($langs->getDefaultLang())."'";
@@ -693,24 +704,36 @@ $sql .= $hookmanager->resPrint;
 
 $nbtotalofrecords = '';
 if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
+	// ----- spé alphadiab ---------
+	// we keep it for rollback if needed
 	/* The fast and low memory method to get and count full list converts the sql into a sql count */
-	$sqlforcount = preg_replace('/^'.preg_quote($sqlfields, '/').'/', 'SELECT COUNT(*) as nbtotalofrecords', $sql);
-	$sqlforcount = preg_replace('/'.preg_quote($linktopfp, '/').'/', '', $sqlforcount);
-	$sqlforcount = preg_replace('/GROUP BY .*$/', '', $sqlforcount);
-
-	$resql = $db->query($sqlforcount);
-	if ($resql) {
-		$objforcount = $db->fetch_object($resql);
-		$nbtotalofrecords = $objforcount->nbtotalofrecords;
-	} else {
-		dol_print_error($db);
-	}
+//	$sqlforcount = preg_replace('/^'.preg_quote($sqlfields, '/').'/', 'SELECT COUNT(*) as nbtotalofrecords', $sql);
+//	$sqlforcount = preg_replace('/'.preg_quote($linktopfp, '/').'/', '', $sqlforcount);
+//	$sqlforcount = preg_replace('/GROUP BY .*$/', '', $sqlforcount);
+//
+//	$resql = $db->query($sqlforcount);
+//	if ($resql) {
+//		$objforcount = $db->fetch_object($resql);
+//		$nbtotalofrecords = $objforcount->nbtotalofrecords;
+//	} else {
+//		dol_print_error($db);
+//	}
+	$result = $db->query($sql);
+	$nbtotalofrecords = $db->num_rows($result);
+	// ----- spé alphadiab ---------
 
 	if (($page * $limit) > $nbtotalofrecords) {	// if total resultset is smaller than the paging size (filtering), goto and load page 0
 		$page = 0;
 		$offset = 0;
 	}
-	$db->free($resql);
+
+	// ----- spé alphadiab ---------
+		$sql .= $db->plimit($limit + 1, $offset);
+		// we keep it for rollback if needed
+		//$db->free($resql);
+		$db->free($sql);
+	// ----- spé alphadiab ---------
+
 }
 
 // Complete request and execute it with limit

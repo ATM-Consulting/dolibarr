@@ -671,6 +671,13 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 								$(\'textarea[name="address"]\').val("'.dol_escape_js($objsoc->address).'");
 								$(\'input[name="zipcode"]\').val("'.dol_escape_js($objsoc->zip).'");
 								$(\'input[name="town"]\').val("'.dol_escape_js($objsoc->town).'");
+
+								// ------- backport V12 alphadiab-------
+								$(\'input[name="email"]\').val("'.dol_escape_js($objsoc->email).'");
+								$(\'input[name="phone_pro"]\').val("'.dol_escape_js($objsoc->phone).'");
+								$(\'input[name="fax"]\').val("'.dol_escape_js($objsoc->fax).'");
+								// ------- backport V12 alphadiab-------
+
 								console.log("Set state_id to '.dol_escape_js((string) $objsoc->state_id).'");
 								$(\'select[name="state_id"]\').val("'.dol_escape_js((string) $objsoc->state_id).'").trigger("change");
 								/* set country at end because it will trigger page refresh */

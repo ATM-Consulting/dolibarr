@@ -267,7 +267,7 @@ class modCategorie extends DolibarrModules
 			's.address' => "Address", 's.zip' => "Zip", 's.town' => "Town", 'c.label' => "Country", 'c.code' => "CountryCode",
 			's.phone' => "Phone", 's.fax' => "Fax", 's.url' => "Url", 's.email' => "Email",
 			's.siret' => "ProfId1", 's.siren' => "ProfId2", 's.ape' => "ProfId3", 's.idprof4' => "ProfId4", 's.tva_intra' => "VATIntraShort", 's.capital' => "Capital", 's.note_public' => "NotePublic",
-			't.libelle' => 'ThirdPartyType', 'pl.code' => 'ProspectLevel', 'st.code' => 'ProspectStatus'
+			't.libelle' => 'ThirdPartyType', 'pl.code' => 'ProspectLevel', 'st.code' => 'ProspectStatus', 'usr.lastname'=>'SalesRepresentatives' // spé alphadiab : 'usr.lastname'=>'SalesRepresentatives'
 		);
 		$this->export_TypeFields_array[$r] = array(
 			'cat.rowid' => 'Numeric', 'cat.label' => "Text", 'cat.description' => "Text", 'cat.fk_parent' => 'Numeric', 'pcat.label' => 'Text',
@@ -275,14 +275,14 @@ class modCategorie extends DolibarrModules
 			's.address' => "Text", 's.zip' => "Text", 's.town' => "Text", 'c.label' => "List:c_country:label:label", 'c.code' => "Text",
 			's.phone' => "Text", 's.fax' => "Text", 's.url' => "Text", 's.email' => "Text",
 			's.siret' => "Text", 's.siren' => "Text", 's.ape' => "Text", 's.idprof4' => "Text", 's.tva_intra' => "Text", 's.capital' => "Numeric", 's.note_public' => "Text",
-			't.libelle' => 'List:c_typent:libelle:code', 'pl.code' => 'List:c_prospectlevel:label:code', 'st.code' => 'List:c_stcomm:libelle:code'
+			't.libelle' => 'List:c_typent:libelle:code', 'pl.code' => 'List:c_prospectlevel:label:code', 'st.code' => 'List:c_stcomm:libelle:code' ,'usr.lastname'=>'Text' // spé alphadiab  : 'usr.lastname'=>'Text'
 		);
 		$this->export_entities_array[$r] = array(
 			's.rowid' => 'company', 's.nom' => 'company', 's.prefix_comm' => "company", 's.client' => "company", 's.datec' => "company", 's.tms' => "company", 's.code_client' => "company",
 			's.address' => "company", 's.zip' => "company", 's.town' => "company", 'c.label' => "company", 'c.code' => "company",
 			's.phone' => "company", 's.fax' => "company", 's.url' => "company", 's.email' => "company",
 			's.siret' => "company", 's.siren' => "company", 's.ape' => "company", 's.idprof4' => "company", 's.tva_intra' => "company", 's.capital' => "company", 's.note_public' => "company",
-			't.libelle' => 'company', 'pl.code' => 'company', 'st.code' => 'company'
+			't.libelle' => 'company', 'pl.code' => 'company', 'st.code' => 'company', 'usr.lastname'=>'company' // spé alphadiab : 'usr.lastname'=>'company'
 		); // We define here only fields that use another picto
 
 		$keyforselect = 'societe';
@@ -291,15 +291,19 @@ class modCategorie extends DolibarrModules
 		include DOL_DOCUMENT_ROOT.'/core/extrafieldsinexport.inc.php';
 
 		$this->export_sql_start[$r] = 'SELECT DISTINCT ';
-		$this->export_sql_end[$r]  = ' FROM '.MAIN_DB_PREFIX.'categorie as cat';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as pcat ON pcat.rowid = cat.fk_parent';
-		$this->export_sql_end[$r] .= ' INNER JOIN '.MAIN_DB_PREFIX.'categorie_societe as cs ON cs.fk_categorie = cat.rowid';
-		$this->export_sql_end[$r] .= ' INNER JOIN '.MAIN_DB_PREFIX.'societe as s ON s.rowid = cs.fk_soc';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'societe_extrafields as extra ON s.rowid = extra.fk_object';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_country as c ON s.fk_pays = c.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_typent as t ON s.fk_typent = t.id';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_prospectlevel as pl ON s.fk_prospectlevel = pl.code';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_stcomm as st ON s.fk_stcomm = st.id';
+		$this->export_sql_end[$r]  = ' FROM '. $db->prefix() .'categorie as cat';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'categorie as pcat ON pcat.rowid = cat.fk_parent';
+		$this->export_sql_end[$r] .= ' INNER JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_categorie = cat.rowid';
+		$this->export_sql_end[$r] .= ' INNER JOIN '. $db->prefix() .'societe as s ON s.rowid = cs.fk_soc';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_extrafields as extra ON s.rowid = extra.fk_object';
+		// ---------- spé alphadiab ----------
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as usr ON sc.fk_user = usr.rowid';
+		// ---------- spé alphadiab ----------
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as c ON s.fk_pays = c.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_typent as t ON s.fk_typent = t.id';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_prospectlevel as pl ON s.fk_prospectlevel = pl.code';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_stcomm as st ON s.fk_stcomm = st.id';
 		$this->export_sql_end[$r] .= ' WHERE cat.entity IN ('.getEntity('category').')';
 		$this->export_sql_end[$r] .= ' AND cat.type = 2';
 

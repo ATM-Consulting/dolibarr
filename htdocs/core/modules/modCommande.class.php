@@ -201,8 +201,10 @@ class modCommande extends DolibarrModules
 		$this->export_code[$r] = $this->rights_class.'_'.$r;
 		$this->export_label[$r] = 'CustomersOrdersAndOrdersLines'; // Translation key (used only if key ExportDataset_xxx_z not found)
 		$this->export_permission[$r] = array(array("commande", "commande", "export"));
+
+		// -----spé alphadiab : 'u.lastname'=>'SalesRepresentatives', 'cat1.label'=>'ParentCategory', 'cat2.label'=>'FirstLevelChildCategory', 'cat3.label'=>'SecondLevelChildCategory',
 		$this->export_fields_array[$r] = array(
-			's.rowid' => "IdCompany", 's.nom' => 'CompanyName', 's.name_alias' => 'AliasNameShort', 'ps.nom' => 'ParentCompany', 's.code_client' => 'CustomerCode', 's.address' => 'Address', 's.zip' => 'Zip', 's.town' => 'Town', 'd.nom' => 'State', 'co.label' => 'Country',
+			's.rowid' => "IdCompany", 's.nom' => 'CompanyName', 's.name_alias' => 'AliasNameShort', 'ps.nom' => 'ParentCompany', 's.code_client' => 'CustomerCode', 's.address' => 'Address', 's.zip' => 'Zip', 's.town' => 'Town', 'u.lastname'=>'SalesRepresentatives', 'cat1.label'=>'ParentCategory', 'cat2.label'=>'FirstLevelChildCategory', 'cat3.label'=>'SecondLevelChildCategory', 'd.nom' => 'State', 'co.label' => 'Country',
 			'co.code' => "CountryCode", 's.phone' => 'Phone', 's.siren' => 'ProfId1', 's.siret' => 'ProfId2', 's.ape' => 'ProfId3', 's.idprof4' => 'ProfId4', 'c.rowid' => "Id",
 			'c.ref' => "Ref", 'c.ref_client' => "RefCustomer", 'c.fk_soc' => "IdCompany", 'c.date_creation' => "DateCreation", 'c.date_commande' => "OrderDate",
 			'c.date_livraison' => "DateDeliveryPlanned", 'c.amount_ht' => "Amount", 'c.total_ht' => "TotalHT",
@@ -227,16 +229,10 @@ class modCommande extends DolibarrModules
 				$this->export_fields_array[$r]['c.entity'] = 'Entity';
 			}
 		}
-		//$this->export_TypeFields_array[$r]=array(
-		//	's.rowid'=>"Numeric",'s.nom'=>'Text','s.address'=>'Text','s.zip'=>'Text','s.town'=>'Text','co.label'=>'List:c_country:label:label',
-		//	'co.code'=>'Text','s.phone'=>'Text','s.siren'=>'Text','s.siret'=>'Text','s.ape'=>'Text','s.idprof4'=>'Text','c.ref'=>"Text",'c.ref_client'=>"Text",
-		//	'c.date_creation'=>"Date",'c.date_commande'=>"Date",'c.amount_ht'=>"Numeric",'c.total_ht'=>"Numeric",
-		//	'c.total_ttc'=>"Numeric",'c.facture'=>"Boolean",'c.fk_statut'=>'Status','c.note_public'=>"Text",'c.date_livraison'=>'Date','cd.description'=>"Text",
-		//	'cd.product_type'=>'Boolean','cd.tva_tx'=>"Numeric",'cd.qty'=>"Numeric",'cd.total_ht'=>"Numeric",'cd.total_tva'=>"Numeric",'cd.total_ttc'=>"Numeric",
-		//	'p.rowid'=>'List:product:ref','p.ref'=>'Text','p.label'=>'Text'
-		//);
+
+		// -----spé alphadiab : 'u.lastname'=>'Text', 'cat1.label'=>'Text', 'cat2.label'=>'Text', 'cat3.label'=>'Text',
 		$this->export_TypeFields_array[$r] = array(
-			's.nom' => 'Text', 'ps.nom' => 'Text', 's.name_alias' => 'Text', 's.code_client' => 'Text', 's.address' => 'Text', 's.zip' => 'Text', 's.town' => 'Text', 'co.label' => 'List:c_country:label:label', 'co.code' => 'Text', 's.phone' => 'Text',
+			's.nom' => 'Text', 'ps.nom' => 'Text', 's.name_alias' => 'Text', 's.code_client' => 'Text', 's.address' => 'Text', 's.zip' => 'Text', 's.town' => 'Text', 'u.lastname'=>'Text', 'cat1.label'=>'Text', 'cat2.label'=>'Text', 'cat3.label'=>'Text', 'co.label' => 'List:c_country:label:label', 'co.code' => 'Text', 's.phone' => 'Text',
 			's.siren' => 'Text', 's.siret' => 'Text', 's.ape' => 'Text', 's.idprof4' => 'Text', 'c.ref' => "Text", 'c.ref_client' => "Text", 'c.date_creation' => "Date",
 			'c.date_commande' => "Date", 'c.date_livraison' => "Date", 'sm.code' => "Text", 'c.amount_ht' => "Numeric", 'c.total_ht' => "Numeric",
 			'c.total_ttc' => "Numeric", 'c.facture' => "Boolean", 'c.fk_statut' => 'Status', 'c.note_public' => "Text", 'pj.ref' => 'Text',
@@ -245,8 +241,10 @@ class modCommande extends DolibarrModules
 			'c.entity' => 'List:entity:label:rowid',
 			'cir.label'=>'Text',
 		);
+
+		//  -----spé alphadiab : 'u.lastname'=>'company', 'cat1.label'=>'company', 'cat2.label'=>'company', 'cat3.label'=>'company' ,
 		$this->export_entities_array[$r] = array(
-			's.rowid' => "company", 's.nom' => 'company', 's.name_alias' => 'company', 'ps.nom' => 'company', 's.code_client' => 'company', 's.address' => 'company', 's.zip' => 'company', 's.town' => 'company', 'd.nom' => 'company', 'co.label' => 'company',
+			's.rowid' => "company", 's.nom' => 'company', 's.name_alias' => 'company', 'ps.nom' => 'company', 's.code_client' => 'company', 's.address' => 'company', 's.zip' => 'company', 's.town' => 'company', 'u.lastname'=>'company', 'cat1.label'=>'company', 'cat2.label'=>'company', 'cat3.label'=>'company' , 'd.nom' => 'company', 'co.label' => 'company',
 			'co.code' => 'company', 's.phone' => 'company', 's.siren' => 'company', 's.ape' => 'company', 's.idprof4' => 'company', 's.siret' => 'company', 'c.rowid' => "order",
 			'c.ref' => "order", 'c.ref_client' => "order", 'c.fk_soc' => "order", 'c.date_creation' => "order", 'c.date_commande' => "order", 'c.amount_ht' => "order",
 			'c.total_ht' => "order", 'c.total_ttc' => "order", 'c.facture' => "order", 'c.fk_statut' => "order", 'c.note' => "order",
@@ -272,30 +270,43 @@ class modCommande extends DolibarrModules
 		$keyforaliasextra = 'extra4';
 		include DOL_DOCUMENT_ROOT.'/core/extrafieldsinexport.inc.php';
 		$this->export_sql_start[$r] = 'SELECT DISTINCT ';
-		$this->export_sql_end[$r]  = ' FROM '.MAIN_DB_PREFIX.'societe as s';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'societe_extrafields as extra4 ON s.rowid = extra4.fk_object';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'societe as ps ON ps.rowid = s.parent';
+		$this->export_sql_end[$r]  = ' FROM '. $db->prefix() .'societe as s';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_extrafields as extra4 ON s.rowid = extra4.fk_object';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe as ps ON ps.rowid = s.parent';
 		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
-			$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
+			$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
 		}
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_departements as d ON s.fk_departement = d.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_country as co ON s.fk_pays = co.rowid,';
-		$this->export_sql_end[$r] .= ' '.MAIN_DB_PREFIX.'commande as c';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_shipment_mode as sm ON c.fk_shipping_method = sm.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'c_input_reason as cir ON cir.rowid = c.fk_input_reason';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'projet as pj ON c.fk_projet = pj.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as uc ON c.fk_user_author = uc.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'user as uv ON c.fk_user_valid = uv.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'commande_extrafields as extra ON c.rowid = extra.fk_object';
-		$this->export_sql_end[$r] .= ' , '.MAIN_DB_PREFIX.'commandedet as cd';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'commandedet_extrafields as extra2 on cd.rowid = extra2.fk_object';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product as p on cd.fk_product = p.rowid';
-		$this->export_sql_end[$r] .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_extrafields as extra3 on p.rowid = extra3.fk_object';
-		$this->export_sql_end[$r] .= ' WHERE c.fk_soc = s.rowid AND c.rowid = cd.fk_commande';
-		$this->export_sql_end[$r] .= ' AND c.entity IN ('.getEntity('commande').')';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as d ON s.fk_departement = d.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as co ON s.fk_pays = co.rowid,';
+		$this->export_sql_end[$r] .= ' '. $db->prefix() .'commande as c ON c.fk_soc = s.rowid '; // spé alphadiab
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_shipment_mode as sm ON c.fk_shipping_method = sm.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_input_reason as cir ON cir.rowid = c.fk_input_reason';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'projet as pj ON c.fk_projet = pj.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uc ON c.fk_user_author = uc.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'user as uv ON c.fk_user_valid = uv.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'commande_extrafields as extra ON c.rowid = extra.fk_object';
+		$this->export_sql_end[$r] .= ' , '. $db->prefix() .'commandedet as cd  ON c.rowid = cd.fk_commande'; // spé alphadiab
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'commandedet_extrafields as extra2 on cd.rowid = extra2.fk_object';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'product as p on cd.fk_product = p.rowid';
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'product_extrafields as extra3 on p.rowid = extra3.fk_object';
+		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie_societe as cs ON cs.fk_soc = s.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat ON cs.fk_categorie = cat.rowid';
+
+		// ------------ spé alphadiab --------------
+		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
+		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
+		$this->export_sql_end[$r] .=' LEFT JOIN '.MAIN_DB_PREFIX.'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
+
+		$this->export_sql_end[$r] .=' WHERE ';
+		// We keep it for rollback if necessary
+//		$this->export_sql_end[$r] .= ' WHERE c.fk_soc = s.rowid AND c.rowid = cd.fk_commande';
+//		$this->export_sql_end[$r] .= ' AND c.entity IN ('.getEntity('commande').')';
+		$this->export_sql_end[$r] .= ' c.entity IN ('.getEntity('commande').')';
+		$this->export_sql_end[$r] .=' AND cat1.label IS NOT NULL';
 		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
 			$this->export_sql_end[$r] .= ' AND sc.fk_user = '.(empty($user) ? 0 : $user->id);
 		}
+		// ------------ end spé alphadiab --------------
 
 		// Imports
 		//--------

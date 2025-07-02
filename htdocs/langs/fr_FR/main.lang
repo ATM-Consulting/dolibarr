@@ -1353,3 +1353,10 @@ Transferred=Transféré
 Anonymous=Anonyme
 Automatic=Automatique
 Nobody=Nobody
+
+#
+## Spé alphadiab
+#
+ParentCategory=Catégorie parente
+FirstLevelChildCategory=Catégorie enfant de premier niveau
+SecondLevelChildCategory=Catégorie enfant de second niveau

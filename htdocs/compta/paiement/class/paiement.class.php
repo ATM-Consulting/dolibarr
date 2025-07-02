@@ -36,7 +36,9 @@
  */
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/multicurrency/class/multicurrency.class.php';
-
+// ------- backport V12 alphadiab-------
+require_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';
+// ------- backport V12 alphadiab-------
 
 /**
  *	Class to manage payments of customer invoices

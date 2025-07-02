@@ -350,8 +350,14 @@ if (empty($reshook) && $action == 'add') {	// Test on permission not required he
 			array_push($adh->errors, $langs->trans("AlreadyTooMuchPostOnThisIPAdress"));
 		}
 
+		// ----- spé alphadiab ---------
+		$result = $adh->create($user);
+
 		if (!$error) {
-			$result = $adh->create($user);
+			// we keep it for rollback if needed
+			//	$result = $adh->create($user);
+		// ----- spé alphadiab ---------
+
 			if ($result > 0) {
 				require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 				$object = $adh;
