@@ -762,10 +762,12 @@ if ($action == 'create' || $action == 'presend') {
 	$formticket->param = array('origin' => GETPOST('origin'), 'originid' => GETPOST('originid'));
 
 	$formticket->withcancel = 1;
+/**DEBUT SPECIFIQUE ATM **/
 	// Init list of files
 	if (GETPOST("mode", "aZ09") == 'init') {
 		$formticket->clear_attached_files();
 	}
+/**FIN SPECIFIQUE ATM **/
 	$formticket->showForm(0, 'edit', 0, null, $action, $object);
 
 	print dol_get_fiche_end();
