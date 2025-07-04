@@ -296,10 +296,10 @@ function calcul_price_total($qty, $pu, $remise_percent_ligne, $txtva, $uselocalt
 		$result8bis = price2num($tot_sans_remise * (1 + ($txtva / 100)) + $localtaxes[0], 'MT'); // Si TVA consideree normal (non NPR)
 		$result[7] = price2num((float) $result8bis - ((float) $result[6] + $localtaxes[0]), 'MT');
 
-		$result[0] = price2num($tot_avec_remise, 'MT');
+		$result[0] = price2num($tot_avec_remise, '');
 		$result[2] = price2num($tot_avec_remise * (1 + ((($info_bits & 1) ? 0 : $txtva) / 100)) + $localtaxes[1], 'MT'); // Selon TVA NPR ou non
 		$result2bis = price2num($tot_avec_remise * (1 + ($txtva / 100)) + $localtaxes[1], 'MT'); // Si TVA consideree normal (non NPR)
-		$result[1] = price2num((float) $result2bis - ((float) $result[0] + $localtaxes[1]), 'MT'); // Total VAT = TTC - (HT + localtax)
+		$result[1] = price2num((float) $result2bis - ((float) $result[0] + $localtaxes[1]), ''); // Total VAT = TTC - (HT + localtax)
 
 		$result[3] = price2num($pu, 'MU');
 		$result[5] = price2num($pu * (1 + ((($info_bits & 1) ? 0 : $txtva) / 100)) + $localtaxes[2], 'MU'); // Selon TVA NPR ou non
@@ -313,9 +313,9 @@ function calcul_price_total($qty, $pu, $remise_percent_ligne, $txtva, $uselocalt
 		$result[7] = price2num((float) $result[8] - ((float) $result6bis + $localtaxes[0]), 'MT');
 
 		$result[2] = price2num((float) $tot_avec_remise + (float) $localtaxes[1], 'MT');
-		$result[0] = price2num((float) $tot_avec_remise / (1 + ((($info_bits & 1) ? 0 : (float) $txtva) / 100)), 'MT'); // Selon TVA NPR ou non
+		$result[0] = price2num((float) $tot_avec_remise / (1 + ((($info_bits & 1) ? 0 : (float) $txtva) / 100)), ''); // Selon TVA NPR ou non
 		$result0bis = price2num((float) $tot_avec_remise / (1 + ((float) $txtva / 100)), 'MT'); // Si TVA consideree normal (non NPR)
-		$result[1] = price2num((float) $result[2] - ((float) $result0bis + (float) $localtaxes[1]), 'MT'); // Total VAT = TTC - (HT + localtax)
+		$result[1] = price2num((float) $result[2] - ((float) $result0bis + (float) $localtaxes[1]), ''); // Total VAT = TTC - (HT + localtax)
 
 		$result[5] = price2num($pu + $localtaxes[2], 'MU');
 		$result[3] = price2num($pu / (1 + ((($info_bits & 1) ? 0 : $txtva) / 100)), 'MU'); // Selon TVA NPR ou non
