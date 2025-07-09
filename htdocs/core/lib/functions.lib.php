@@ -1818,8 +1818,10 @@ function dol_syslog($message, $level = LOG_INFO, $ident = 0, $suffixinfilename =
 	if (!empty($message)) {
 		// Test log level
 		$logLevels = array(LOG_EMERG=>'EMERG', LOG_ALERT=>'ALERT', LOG_CRIT=>'CRITICAL', LOG_ERR=>'ERR', LOG_WARNING=>'WARN', LOG_NOTICE=>'NOTICE', LOG_INFO=>'INFO', LOG_DEBUG=>'DEBUG');
+
 		if (!array_key_exists($level, $logLevels)) {
-			throw new Exception('Incorrect log level');
+			dol_syslog('Error Bad Log Level '.$level, LOG_ERR);
+			$level = $logLevels[LOG_ERR];
 		}
 		if ($level > getDolGlobalInt('SYSLOG_LEVEL')) {
 			return;
@@ -2451,7 +2453,16 @@ function dol_banner_tab($object, $paramid, $morehtml = '', $shownav = 1, $fieldi
 		} else {
 			$morehtmlstatus .= '<span class="statusrefbuy">'.$object->getLibStatut(6, 1).'</span>';
 		}
-	} elseif (in_array($object->element, array('facture', 'invoice', 'invoice_supplier', 'chargesociales', 'loan', 'tva', 'salary'))) {
+	} elseif (in_array($object->element, array('facture', 'invoice', 'invoice_supplier'))) {
+		$totalallpayments = $object->getSommePaiement(0);
+		$totalallpayments += $object->getSumCreditNotesUsed(0);
+		$totalallpayments += $object->getSumDepositsUsed(0);
+		$tmptxt = $object->getLibStatut(6, $totalallpayments);
+		if (empty($tmptxt) || $tmptxt == $object->getLibStatut(3)) {
+			$tmptxt = $object->getLibStatut(5, $totalallpayments);
+		}
+		$morehtmlstatus .= $tmptxt;
+	} elseif (in_array($object->element, array('chargesociales', 'loan', 'tva'))) {
 		$tmptxt = $object->getLibStatut(6, $object->totalpaid);
 		if (empty($tmptxt) || $tmptxt == $object->getLibStatut(3)) {
 			$tmptxt = $object->getLibStatut(5, $object->totalpaid);
@@ -2971,6 +2982,10 @@ function dol_print_date($time, $format = '', $tzoutput = 'auto', $outputlangs = 
  */
 function dol_getdate($timestamp, $fast = false, $forcetimezone = '')
 {
+	if ($timestamp === '') {
+		return array();
+	}
+
 	$datetimeobj = new DateTime();
 	$datetimeobj->setTimestamp($timestamp); // Use local PHP server timezone
 	if ($forcetimezone) {
@@ -5931,9 +5946,10 @@ function price($amount, $form = 0, $outlangs = '', $trunc = 1, $rounding = -1, $
 		$nbdecimal = dol_strlen($decpart);
 	}
 	// Si on depasse max
-	if ($trunc && $nbdecimal > $conf->global->MAIN_MAX_DECIMALS_SHOWN) {
-		$nbdecimal = $conf->global->MAIN_MAX_DECIMALS_SHOWN;
-		if (preg_match('/\.\.\./i', $conf->global->MAIN_MAX_DECIMALS_SHOWN)) {
+	$max_nbdecimal = (int) str_replace('...', '', getDolGlobalString('MAIN_MAX_DECIMALS_SHOWN'));
+	if ($trunc && $nbdecimal > $max_nbdecimal) {
+		$nbdecimal = $max_nbdecimal;
+		if (preg_match('/\.\.\./i', getDolGlobalString('MAIN_MAX_DECIMALS_SHOWN'))) {
 			// Si un affichage est tronque, on montre des ...
 			$end = '...';
 		}
@@ -8030,12 +8046,12 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				$substitutionarray['__MEMBER_PHONEPRO__'] = (isset($object->phone_perso) ? dol_print_phone($object->phone_perso) : '');
 				$substitutionarray['__MEMBER_PHONEMOBILE__'] = (isset($object->phone_mobile) ? dol_print_phone($object->phone_mobile) : '');
 				$substitutionarray['__MEMBER_TYPE__'] = (isset($object->type) ? $object->type : '');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE__']       = dol_print_date($object->first_subscription_date, 'dayrfc');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_START__'] = (isset($object->first_subscription_date_start) ? dol_print_date($object->first_subscription_date_start, 'dayrfc') : '');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_END__']   = (isset($object->first_subscription_date_end) ? dol_print_date($object->first_subscription_date_end, 'dayrfc') : '');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE__']        = dol_print_date($object->last_subscription_date, 'dayrfc');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_START__']  = dol_print_date($object->last_subscription_date_start, 'dayrfc');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_END__']    = dol_print_date($object->last_subscription_date_end, 'dayrfc');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE__']       = dol_print_date($object->first_subscription_date, 'day');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_START__'] = (isset($object->first_subscription_date_start) ? dol_print_date($object->first_subscription_date_start, 'day') : '');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_END__']   = (isset($object->first_subscription_date_end) ? dol_print_date($object->first_subscription_date_end, 'day') : '');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE__']        = dol_print_date($object->last_subscription_date, 'day');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_START__']  = dol_print_date($object->last_subscription_date_start, 'day');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_END__']    = dol_print_date($object->last_subscription_date_end, 'day');
 			}
 
 			if (is_object($object) && $object->element == 'societe') {
@@ -8132,9 +8148,9 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 						$datenextexpiration = $line->date_end;
 					}
 				}
-				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATE__'] = dol_print_date($dateplannedstart, 'dayrfc');
+				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATE__'] = dol_print_date($dateplannedstart, 'day');
 				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATETIME__'] = dol_print_date($dateplannedstart, 'standard');
-				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATE__'] = dol_print_date($datenextexpiration, 'dayrfc');
+				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATE__'] = dol_print_date($datenextexpiration, 'day');
 				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATETIME__'] = dol_print_date($datenextexpiration, 'standard');
 			}
 			// add substition variable for ticket
@@ -9139,10 +9155,11 @@ function dol_osencode($str)
  * 		@param	string	$fieldid		Field to get
  *      @param  int		$entityfilter	Filter by entity
  *      @param	string	$filters		Filters to add. WARNING: string must be escaped for SQL and not coming from user input.
+ *      @param	bool    $useCache       If true (default), cache will be queried and updated.
  *      @return int						<0 if KO, Id of code if OK
  *      @see $langs->getLabelFromKey
  */
-function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid = 'id', $entityfilter = 0, $filters = '')
+function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid = 'id', $entityfilter = 0, $filters = '', $useCache = true)
 {
 	global $cache_codes;
 
@@ -9152,8 +9169,8 @@ function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid =
 	}
 
 	// Check in cache
-	if (isset($cache_codes[$tablename][$key][$fieldid])) {	// Can be defined to 0 or ''
-		return $cache_codes[$tablename][$key][$fieldid]; // Found in cache
+	if ($useCache && isset($cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key])) {	// Can be defined to 0 or ''
+		return $cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key]; // Found in cache
 	}
 
 	dol_syslog('dol_getIdFromCode (value for field '.$fieldid.' from key '.$key.' not found into cache)', LOG_DEBUG);
@@ -9171,13 +9188,15 @@ function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid =
 	$resql = $db->query($sql);
 	if ($resql) {
 		$obj = $db->fetch_object($resql);
+		$valuetoget = '';
 		if ($obj) {
-			$cache_codes[$tablename][$key][$fieldid] = $obj->valuetoget;
-		} else {
-			$cache_codes[$tablename][$key][$fieldid] = '';
+			$valuetoget = $obj->valuetoget;
 		}
 		$db->free($resql);
-		return $cache_codes[$tablename][$key][$fieldid];
+		if ($useCache) {
+			$cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key] = $valuetoget;
+		}
+		return $valuetoget;
 	} else {
 		return -1;
 	}
@@ -10349,7 +10368,7 @@ function getAdvancedPreviewUrl($modulepart, $relativepath, $alldata = 0, $param 
 
 	if ($alldata == 1) {
 		if ($isAllowedForPreview) {
-			return array('target'=>'_blank', 'css'=>'documentpreview', 'url'=>DOL_URL_ROOT.'/document.php?modulepart='.$modulepart.'&attachment=0&file='.urlencode($relativepath).($param ? '&'.$param : ''), 'mime'=>dol_mimetype($relativepath));
+			return array('target'=>'_blank', 'css'=>'documentpreview', 'url'=>DOL_URL_ROOT.'/document.php?modulepart='.urlencode($modulepart).'&attachment=0&file='.urlencode($relativepath).($param ? '&'.$param : ''), 'mime'=>dol_mimetype($relativepath));
 		} else {
 			return array();
 		}
@@ -10357,7 +10376,14 @@ function getAdvancedPreviewUrl($modulepart, $relativepath, $alldata = 0, $param 
 
 	// old behavior, return a string
 	if ($isAllowedForPreview) {
-		return 'javascript:document_preview(\''.dol_escape_js(DOL_URL_ROOT.'/document.php?modulepart='.$modulepart.'&attachment=0&file='.urlencode($relativepath).($param ? '&'.$param : '')).'\', \''.dol_mimetype($relativepath).'\', \''.dol_escape_js($langs->trans('Preview')).'\')';
+		$tmpurl = DOL_URL_ROOT.'/document.php?modulepart='.urlencode($modulepart).'&attachment=0&file='.urlencode($relativepath).($param ? '&'.$param : '');
+		$title = $langs->transnoentities("Preview");
+		//$title = '%27-alert(document.domain)-%27';
+		//$tmpurl = 'file='.urlencode("'-alert(document.domain)-'_small.jpg");
+
+		// We need to urlencode the parameter after the dol_escape_js($tmpurl) because  $tmpurl may contain n url with param file=abc%27def if file has a ' inside.
+		// and when we click on href with this javascript string, a urlcode is done by browser, converted the %27 of file param
+		return 'javascript:document_preview(\''.urlencode(dol_escape_js($tmpurl)).'\', \''.urlencode(dol_mimetype($relativepath)).'\', \''.rawurlencode(dol_escape_js($title)).'\')';
 	} else {
 		return '';
 	}
@@ -11135,11 +11161,11 @@ function dolGetStatus($statusLabel = '', $statusLabelShort = '', $html = '', $st
  *                              'classOverride' => '' // to replace class attribute of the button
  *                              ],
  *                              'confirm' => [
- *                              'url' => 'http://', // Overide Url to go when user click on action btn, if empty default url is $url.?confirm=yes, for no js compatibility use $url for fallback confirm.
- *                              'title' => '', // Overide title of modal,  if empty default title use "ConfirmBtnCommonTitle" lang key
- *                              'action-btn-label' => '', // Overide label of action button,  if empty default label use "Confirm" lang key
- *                              'cancel-btn-label' => '', // Overide label of cancel button,  if empty default label use "CloseDialog" lang key
- *                              'content' => '', // Overide text of content,  if empty default content use "ConfirmBtnCommonContent" lang key
+ *                              'url' => 'http://', // Override Url to go when user click on action btn, if empty default url is $url.?confirm=yes, for no js compatibility use $url for fallback confirm.
+ *                              'title' => '', // Override title of modal,  if empty default title use "ConfirmBtnCommonTitle" lang key
+ *                              'action-btn-label' => '', // Override label of action button,  if empty default label use "Confirm" lang key
+ *                              'cancel-btn-label' => '', // Override label of cancel button,  if empty default label use "CloseDialog" lang key
+ *                              'content' => '', // Override text of content,  if empty default content use "ConfirmBtnCommonContent" lang key
  *                              'modal' => true, // true|false to display dialog as a modal (with dark background)
  *                              'isDropDrown' => false, // true|false to display dialog as a dropdown (with dark background)
  *                              ],
