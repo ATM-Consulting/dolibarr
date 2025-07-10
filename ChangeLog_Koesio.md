@@ -1,4 +1,5 @@
 ## Backported from 17.0:
+- Backport develop PR #34724: Add hook fetchObjectLinked to CommonObject to allow performance enhancements - *2025-07-10*
 - Backport develop PR #34293: Ajout $properties et $lines dans les API de contracts et invoices pour la gestion des données - *2025-05-27*
 - Backport develop PR #33891: FIX critical bug (extrafields of parent replaced with extrafields of line during `fetch_lines()`)
 - Backport develop PR #33809: putLine contract endpoint: hidden conf `API_CONTRAT_PUTLINE_OUTPUT_LINE_ONLY` to only get the updated line in the output instead of the whole contract - **10/04/2025**
