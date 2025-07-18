@@ -197,8 +197,9 @@ if (empty($reshook)) {
 		if ($invoice->total_ttc < 0) {
 			$invoice->type = $invoice::TYPE_CREDIT_NOTE;
 
-			$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."facture WHERE";
-			$sql .= " fk_soc = ".((int) $invoice->socid);
+			$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."facture";
+			$sql .= " WHERE entity IN (".getEntity('invoice').")";
+			$sql .= " AND fk_soc = ".((int) $invoice->socid);
 			$sql .= " AND type <> ".Facture::TYPE_CREDIT_NOTE;
 			$sql .= " AND fk_statut >= ".$invoice::STATUS_VALIDATED;
 			$sql .= " ORDER BY rowid DESC";
@@ -291,7 +292,11 @@ if (empty($reshook)) {
 
 				if ($pay != "delayed") {
 					$payment->create($user);
-					$payment->addPaymentToBank($user, 'payment', '(CustomerInvoicePayment)', $bankaccount, '', '');
+					$res = $payment->addPaymentToBank($user, 'payment', '(CustomerInvoicePayment)', $bankaccount, '', '');
+					if ($res < 0) {
+						$error++;
+						dol_htmloutput_errors($langs->trans('ErrorNoPaymentDefined'), $payment->errors, 1);
+					}
 					$remaintopay = $invoice->getRemainToPay(); // Recalculate remain to pay after the payment is recorded
 				}
 			}
@@ -465,9 +470,13 @@ if (empty($reshook)) {
 		$invoice->fetch($placeid);
 	}
 
+	// If we add a line and no invoice yet, we create the invoice
 	if (($action == "addline" || $action == "freezone") && $placeid == 0) {
-		$invoice->socid = getDolGlobalString("$constforcompanyid");
-		$invoice->date = dol_now();
+		$invoice->socid = getDolGlobalString($constforcompanyid);
+
+		include_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+		$invoice->date = dol_get_first_hour(dol_now('tzuserrel'));		// Invoice::create() needs a date with no hours
+
 		$invoice->module_source = 'takepos';
 		$invoice->pos_source =  isset($_SESSION["takeposterminal"]) ? $_SESSION["takeposterminal"] : '' ;
 		$invoice->entity = !empty($_SESSION["takeposinvoiceentity"]) ? $_SESSION["takeposinvoiceentity"] : $conf->entity;
@@ -476,6 +485,7 @@ if (empty($reshook)) {
 			$langs->load('errors');
 			dol_htmloutput_errors($langs->trans("ErrorModuleSetupNotComplete", "TakePos"), null, 1);
 		} else {
+			// Create invoice
 			$placeid = $invoice->create($user);
 			if ($placeid < 0) {
 				dol_htmloutput_errors($invoice->error, $invoice->errors, 1);
@@ -498,7 +508,7 @@ if (empty($reshook)) {
 		$price = $datapriceofproduct['pu_ht'];
 		$price_ttc = $datapriceofproduct['pu_ttc'];
 		//$price_min = $datapriceofproduct['price_min'];
-		$price_base_type = $datapriceofproduct['price_base_type'];
+		$price_base_type = empty($datapriceofproduct['price_base_type']) ? 'HT' : $datapriceofproduct['price_base_type'];
 		$tva_tx = $datapriceofproduct['tva_tx'];
 		$tva_npr = $datapriceofproduct['tva_npr'];
 
@@ -543,7 +553,7 @@ if (empty($reshook)) {
 			$invoice->fetch_thirdparty();
 			$array_options = array();
 
-			$line = array('description' => $prod->description, 'price' => $price, 'tva_tx' => $tva_tx, 'locatax1_tx' => $localtax1_tx, 'locatax2_tx' => $localtax2_tx, 'remise_percent' => $customer->remise_percent, 'price_ttc' => $price_ttc, 'array_options' => $array_options);
+			$line = array('description' => $prod->description, 'price' => $price, 'tva_tx' => $tva_tx, 'localtax1_tx' => $localtax1_tx, 'localtax2_tx' => $localtax2_tx, 'remise_percent' => $customer->remise_percent, 'price_ttc' => $price_ttc, 'array_options' => $array_options);
 
 			/* setup of margin calculation */
 			if (isset($conf->global->MARGIN_TYPE)) {
@@ -664,7 +674,8 @@ if (empty($reshook)) {
 				$varforconst = 'CASHDESK_ID_THIRDPARTY'.$_SESSION["takeposterminal"];
 				$sql .= " SET fk_soc = ".((int) $conf->global->$varforconst).", ";
 				$sql .= " datec = '".$db->idate(dol_now())."'";
-				$sql .= " WHERE ref = '(PROV-POS".$db->escape($_SESSION["takeposterminal"]."-".$place).")'";
+				$sql .= " WHERE entity IN (".getEntity('invoice').")";
+				$sql .= " AND ref = '(PROV-POS".$db->escape($_SESSION["takeposterminal"]."-".$place).")'";
 				$resql1 = $db->query($sql);
 
 				if ($resdeletelines && $resql1) {
@@ -1154,14 +1165,14 @@ $( document ).ready(function() {
 
 	<?php
 	$sql = "SELECT rowid, datec, ref FROM ".MAIN_DB_PREFIX."facture";
+	$sql .= " WHERE entity IN (".getEntity('invoice').")";
 	if (empty($conf->global->TAKEPOS_CAN_EDIT_IF_ALREADY_VALIDATED)) {
 		// By default, only invoices with a ref not already defined can in list of open invoice we can edit.
-		$sql .= " WHERE ref LIKE '(PROV-POS".$db->escape(isset($_SESSION["takeposterminal"]) ? $_SESSION["takeposterminal"] : '')."-0%' AND entity IN (".getEntity('invoice').")";
+		$sql .= " AND ref LIKE '(PROV-POS".$db->escape(isset($_SESSION["takeposterminal"]) ? $_SESSION["takeposterminal"] : '')."-0%'";
 	} else {
 		// If TAKEPOS_CAN_EDIT_IF_ALREADY_VALIDATED set, we show also draft invoice that already has a reference defined
-		$sql .= " WHERE pos_source = '".$db->escape($_SESSION["takeposterminal"])."'";
+		$sql .= " AND pos_source = '".$db->escape($_SESSION["takeposterminal"])."'";
 		$sql .= " AND module_source = 'takepos'";
-		$sql .= " AND entity IN (".getEntity('invoice').")";
 	}
 
 	$sql .= $db->order('datec', 'ASC');
@@ -1314,7 +1325,9 @@ print '<tr class="liste_titre nodrag nodrop">';
 print '<td class="linecoldescription">';
 // In phone version only show when it is invoice page
 if (empty($mobilepage) || $mobilepage == "invoice") {
+	print '<!-- hidden var used by some js functions -->';
 	print '<input type="hidden" name="invoiceid" id="invoiceid" value="'.$invoice->id.'">';
+	print '<input type="hidden" name="thirdpartyid" id="thirdpartyid" value="'.$invoice->socid.'">';
 }
 if (getDolGlobalString('TAKEPOS_BAR_RESTAURANT')) {
 	$sql = "SELECT floor, label FROM ".MAIN_DB_PREFIX."takepos_floor_tables where rowid=".((int) $place);

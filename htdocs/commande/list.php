@@ -469,7 +469,7 @@ if (empty($reshook)) {
 								$array_options = $lines[$i]->array_options;
 							}
 
-							$objecttmp->context['createfromclone'];
+							$objecttmp->context['createfromclone'] = 'createfromclone';
 
 							$rang = ($nbOrders > 1) ? -1 : $lines[$i]->rang;
 							//there may already be rows from previous orders
@@ -2508,7 +2508,7 @@ if ($resql) {
 								$productstat_cachevirtual[$generic_commande->lines[$lig]->fk_product]['stock_reel'] = $generic_product->stock_theorique;
 							} else {
 								$generic_product->stock_reel = $productstat_cache[$generic_commande->lines[$lig]->fk_product]['stock_reel'];
-								$generic_product->stock_theorique = $productstat_cachevirtual[$generic_commande->lines[$lig]->fk_product]['stock_reel'] = $generic_product->stock_theorique;
+								$generic_product->stock_theorique = $productstat_cachevirtual[$generic_commande->lines[$lig]->fk_product]['stock_reel'];
 							}
 
 							if ($reliquat > $generic_product->stock_reel) {

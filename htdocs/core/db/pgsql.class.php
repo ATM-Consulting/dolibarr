@@ -559,7 +559,7 @@ class DoliDBPgsql extends DoliDB
 					$this->lasterror = $this->error();
 					$this->lasterrno = $this->errno();
 
-					if ($conf->global->SYSLOG_LEVEL < LOG_DEBUG) {
+					if (empty($conf->global->SYSLOG_LEVEL) || $conf->global->SYSLOG_LEVEL < LOG_DEBUG) {
 						dol_syslog(get_class($this)."::query SQL Error query: ".$query, LOG_ERR); // Log of request was not yet done previously
 					}
 					dol_syslog(get_class($this)."::query SQL Error message: ".$this->lasterror." (".$this->lasterrno.")", LOG_ERR);
@@ -718,7 +718,7 @@ class DoliDBPgsql extends DoliDB
 	 */
 	public function escape($stringtoencode)
 	{
-		return pg_escape_string($stringtoencode);
+		return pg_escape_string($this->db, $stringtoencode);
 	}
 
 	/**

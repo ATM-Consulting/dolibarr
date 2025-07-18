@@ -571,6 +571,19 @@ abstract class CommonObject
 	public $user_modification_id;
 
 
+	/**
+	 * @var int ID
+	 * @deprecated	Use $user_creation_id
+	 */
+	public $fk_user_creat;
+
+	/**
+	 * @var int ID
+	 * @deprecated 	Use $user_modification_id
+	 */
+	public $fk_user_modif;
+
+
 	public $next_prev_filter;
 
 	/**
@@ -734,7 +747,7 @@ abstract class CommonObject
 
 		$ret .= dolGetFirstLastname($firstname, $lastname, $nameorder);
 
-		return dol_trunc($ret, $maxlen);
+		return dol_string_nohtmltag(dol_trunc($ret, $maxlen));
 	}
 
 	/**
@@ -1123,7 +1136,7 @@ abstract class CommonObject
 	 *  @param 	int|string	$type_contact 		Type of contact (code or id). Must be id or code found into table llx_c_type_contact. For example: SALESREPFOLL
 	 *  @param  string		$source             external=Contact extern (llx_socpeople), internal=Contact intern (llx_user)
 	 *  @param  int			$notrigger			Disable all triggers
-	 *  @return int         	        		<0 if KO, 0 if already added, >0 if OK
+	 *  @return int         	        		<0 if KO, 0 if already added or code not valid, >0 if OK
 	 */
 	public function add_contact($fk_socpeople, $type_contact, $source = 'external', $notrigger = 0)
 	{
@@ -1168,9 +1181,8 @@ abstract class CommonObject
 		}
 
 		if ($id_type_contact == 0) {
-			$this->error = 'CODE_NOT_VALID_FOR_THIS_ELEMENT';
 			dol_syslog("CODE_NOT_VALID_FOR_THIS_ELEMENT: Code type of contact '".$type_contact."' does not exists or is not active for element ".$this->element.", we can ignore it");
-			return -3;
+			return 0;
 		}
 
 		$datecreate = dol_now();
@@ -1291,22 +1303,34 @@ abstract class CommonObject
 		// phpcs:enable
 		global $user;
 
+		$error = 0;
 
 		$this->db->begin();
 
-		$sql = "DELETE FROM ".$this->db->prefix()."element_contact";
-		$sql .= " WHERE rowid = ".((int) $rowid);
-
-		dol_syslog(get_class($this)."::delete_contact", LOG_DEBUG);
-		if ($this->db->query($sql)) {
-			if (!$notrigger) {
-				$result = $this->call_trigger(strtoupper($this->element).'_DELETE_CONTACT', $user);
-				if ($result < 0) {
-					$this->db->rollback();
-					return -1;
-				}
+		if (!$error && empty($notrigger)) {
+			// Call trigger
+			$this->context['contact_id'] = ((int) $rowid);
+			$result = $this->call_trigger(strtoupper($this->element).'_DELETE_CONTACT', $user);
+			if ($result < 0) {
+				$error++;
 			}
+			// End call triggers
+		}
 
+		if (!$error) {
+			dol_syslog(get_class($this)."::delete_contact", LOG_DEBUG);
+
+			$sql = "DELETE FROM ".MAIN_DB_PREFIX."element_contact";
+			$sql .= " WHERE rowid = ".((int) $rowid);
+
+			$result = $this->db->query($sql);
+			if (!$result) {
+				$error++;
+				$this->errors[] = $this->db->lasterror();
+			}
+		}
+
+		if (!$error) {
 			$this->db->commit();
 			return 1;
 		} else {
@@ -2148,7 +2172,7 @@ abstract class CommonObject
 		}
 
 		// For backward compatibility
-		if ($this->table_element == 'facture_rec' && $fieldid == 'title') {
+		if (in_array($this->table_element, array('facture_rec', 'facture_fourn_rec')) && $fieldid == 'title') {
 			$fieldid = 'titre';
 		}
 
@@ -2168,7 +2192,9 @@ abstract class CommonObject
 		$sql = "SELECT MAX(te.".$fieldid.")";
 		$sql .= " FROM ".(empty($nodbprefix) ?$this->db->prefix():'').$this->table_element." as te";
 		if ($this->element == 'user' && !empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)) {
-			$sql .= ",".$this->db->prefix()."usergroup_user as ug";
+			if (empty($user->admin) || !empty($user->entity) || $conf->entity != 1) {
+				$sql .= " INNER JOIN ".MAIN_DB_PREFIX."usergroup_user as ug ON ug.fk_user = te.rowid";
+			}
 		}
 		if (isset($this->ismultientitymanaged) && !is_numeric($this->ismultientitymanaged)) {
 			$tmparray = explode('@', $this->ismultientitymanaged);
@@ -2205,7 +2231,6 @@ abstract class CommonObject
 				if (!empty($user->admin) && empty($user->entity) && $conf->entity == 1) {
 					$sql .= " AND te.entity IS NOT NULL"; // Show all users
 				} else {
-					$sql .= " AND ug.fk_user = te.rowid";
 					$sql .= " AND ug.entity IN (".getEntity('usergroup').")";
 				}
 			} else {
@@ -2238,7 +2263,9 @@ abstract class CommonObject
 		$sql = "SELECT MIN(te.".$fieldid.")";
 		$sql .= " FROM ".(empty($nodbprefix) ?$this->db->prefix():'').$this->table_element." as te";
 		if ($this->element == 'user' && !empty($conf->global->MULTICOMPANY_TRANSVERSE_MODE)) {
-			$sql .= ",".$this->db->prefix()."usergroup_user as ug";
+			if (empty($user->admin) || !empty($user->entity) || $conf->entity != 1) {
+				$sql .= " INNER JOIN ".MAIN_DB_PREFIX."usergroup_user as ug ON ug.fk_user = te.rowid";
+			}
 		}
 		if (isset($this->ismultientitymanaged) && !is_numeric($this->ismultientitymanaged)) {
 			$tmparray = explode('@', $this->ismultientitymanaged);
@@ -2275,7 +2302,6 @@ abstract class CommonObject
 				if (!empty($user->admin) && empty($user->entity) && $conf->entity == 1) {
 					$sql .= " AND te.entity IS NOT NULL"; // Show all users
 				} else {
-					$sql .= " AND ug.fk_user = te.rowid";
 					$sql .= " AND ug.entity IN (".getEntity('usergroup').")";
 				}
 			} else {
@@ -3172,7 +3198,7 @@ abstract class CommonObject
 				while ($row = $this->db->fetch_row($resql)) {
 					$rows[] = $row[0];
 					if (!empty($includealltree)) {
-						$rows = array_merge($rows, $this->getChildrenOfLine($row[0]), $includealltree);
+						$rows = array_merge($rows, $this->getChildrenOfLine($row[0], $includealltree));
 					}
 				}
 			}
@@ -3710,7 +3736,8 @@ abstract class CommonObject
 					$diff = price2num($total_tva_by_vats[$obj->vatrate] - $tmpvat, 'MT', 1);
 					//print 'Line '.$i.' rowid='.$obj->rowid.' vat_rate='.$obj->vatrate.' total_ht='.$obj->total_ht.' total_tva='.$obj->total_tva.' total_ttc='.$obj->total_ttc.' total_ht_by_vats='.$total_ht_by_vats[$obj->vatrate].' total_tva_by_vats='.$total_tva_by_vats[$obj->vatrate].' (new calculation = '.$tmpvat.') total_ttc_by_vats='.$total_ttc_by_vats[$obj->vatrate].($diff?" => DIFF":"")."<br>\n";
 					if ($diff) {
-						if (abs($diff) > 0.1) {
+						if (abs($diff) > (10 * pow(10, -1 * getDolGlobalInt('MAIN_MAX_DECIMALS_TOT', 0)))) {
+							// If error is more than 10 times the accurancy of rounding. This should not happen.
 							$errmsg = 'A rounding difference was detected into TOTAL but is too high to be corrected. Some data in your line may be corrupted. Try to edit each line manually.';
 							dol_syslog($errmsg, LOG_WARNING);
 							dol_print_error('', $errmsg);
@@ -4060,8 +4087,12 @@ abstract class CommonObject
 						$classpath = 'adherents/class';
 						$module = 'adherent';
 					} elseif ($objecttype == 'contact') {
-						 $module = 'societe';
+						$module = 'societe';
+					} elseif ($objecttype == 'action') {
+						$module = 'agenda';
+						$subelement = 'actionComm';
 					}
+
 					// Set classfile
 					$classfile = strtolower($subelement);
 					$classname = ucfirst($subelement);
@@ -4892,8 +4923,8 @@ abstract class CommonObject
 	 *	But for the moment we don't know if it's possible as we keep a method available on overloaded objects.
 	 *
 	 *	@param	string		$action				Action code
-	 *	@param  string		$seller            	Object of seller third party
-	 *	@param  string  	$buyer             	Object of buyer third party
+	 *	@param  Societe		$seller            	Object of seller third party
+	 *	@param  Societe  	$buyer             	Object of buyer third party
 	 *	@param	int			$selected		   	Object line selected
 	 *	@param  int	    	$dateSelector      	1=Show also date range input fields
 	 *  @param	string		$defaulttpldir		Directory where to find the template
@@ -5535,7 +5566,7 @@ abstract class CommonObject
 				if (in_array(get_class($this), array('Adherent'))) {
 					$resultwritefile = $obj->write_file($this, $outputlangs, $srctemplatepath, 'member', 1, 'tmp_cards', $moreparams);
 				} else {
-					 $resultwritefile = $obj->write_file($this, $outputlangs, $srctemplatepath, $hidedetails, $hidedesc, $hideref, $moreparams);
+					$resultwritefile = $obj->write_file($this, $outputlangs, $srctemplatepath, $hidedetails, $hidedesc, $hideref, $moreparams);
 				}
 				// After call of write_file $obj->result['fullpath'] is set with generated file. It will be used to update the ECM database index.
 
@@ -6655,6 +6686,11 @@ abstract class CommonObject
 					break;
 				case 'boolean':
 					if (empty($this->array_options["options_".$key])) {
+						$this->array_options["options_".$key] = null;
+					}
+					break;
+				case 'link':
+					if ($this->array_options["options_".$key] === '') {
 						$this->array_options["options_".$key] = null;
 					}
 					break;
@@ -8271,7 +8307,7 @@ abstract class CommonObject
 						}
 
 						// HTML, text, select, integer and varchar: take into account default value in database if in create mode
-						if (in_array($extrafields->attributes[$this->table_element]['type'][$key], array('html', 'text', 'varchar', 'select', 'int', 'boolean'))) {
+						if (in_array($extrafields->attributes[$this->table_element]['type'][$key], array('html', 'text', 'varchar', 'select', 'radio', 'int', 'boolean'))) {
 							if ($action == 'create') {
 								$value = (GETPOSTISSET($keyprefix.'options_'.$key.$keysuffix) || $value) ? $value : $extrafields->attributes[$this->table_element]['default'][$key];
 							}
@@ -8446,23 +8482,25 @@ abstract class CommonObject
 
 	/**
 	 * Returns the rights used for this class
-	 * @return stdClass
+	 * @return array		Array of permission for the module
 	 */
 	public function getRights()
 	{
 		global $user;
 
+		$module = empty($this->module) ? '' : $this->module;
 		$element = $this->element;
+
 		if ($element == 'facturerec') {
 			$element = 'facture';
 		} elseif ($element == 'invoice_supplier_rec') {
-			return $user->rights->fournisseur->facture;
-		} elseif (!empty($user->rights->{$this->module}->{$element})) {
+			return empty($user->rights->fournisseur->facture) ? null : $user->rights->fournisseur->facture;
+		} elseif ($module && !empty($user->rights->$module->$element)) {
 			// for modules built with ModuleBuilder
-			return $user->rights->{$this->module}->{$element};
+			return $user->rights->$module->$element;
 		}
 
-		return $user->rights->{$element};
+		return $user->rights->$element;
 	}
 
 	/**
@@ -8986,9 +9024,9 @@ abstract class CommonObject
 
 
 	/**
-	 * Function to prepare a part of the query for insert by returning an array with all properties of object.
+	 * Function to return the array of data key-value from the ->fields and all the ->properties of an object.
 	 *
-	 * Note $this->${field} are set by the page that make the createCommon() or the updateCommon().
+	 * Note: $this->${field} are set by the page that make the createCommon() or the updateCommon().
 	 * $this->${field} should be a clean and string value (so date are formated for SQL insert).
 	 *
 	 * @return array		Array with all values of each properties to update
@@ -9067,7 +9105,7 @@ abstract class CommonObject
 
 		foreach ($this->fields as $field => $info) {
 			if ($this->isDate($info)) {
-				if (is_null($obj->{$field}) || $obj->{$field} === '' || $obj->{$field} === '0000-00-00 00:00:00' || $obj->{$field} === '1000-01-01 00:00:00') {
+				if (!isset($obj->{$field}) || is_null($obj->{$field}) || $obj->{$field} === '' || $obj->{$field} === '0000-00-00 00:00:00' || $obj->{$field} === '1000-01-01 00:00:00') {
 					$this->{$field} = '';
 				} else {
 					$this->{$field} = $db->jdate($obj->{$field});
@@ -9083,7 +9121,7 @@ abstract class CommonObject
 							$this->{$field} = (double) $obj->{$field};
 						}
 					} else {
-						if (!is_null($obj->{$field}) || (isset($info['notnull']) && $info['notnull'] == 1)) {
+						if (isset($obj->{$field}) && (!is_null($obj->{$field}) || (isset($info['notnull']) && $info['notnull'] == 1))) {
 							$this->{$field} = (int) $obj->{$field};
 						} else {
 							$this->{$field} = null;
@@ -9098,7 +9136,7 @@ abstract class CommonObject
 						$this->{$field} = (double) $obj->{$field};
 					}
 				} else {
-					if (!is_null($obj->{$field}) || (isset($info['notnull']) && $info['notnull'] == 1)) {
+					if (isset($obj->{$field}) && (!is_null($obj->{$field}) || (isset($info['notnull']) && $info['notnull'] == 1))) {
 						$this->{$field} = (double) $obj->{$field};
 					} else {
 						$this->{$field} = null;
@@ -9185,6 +9223,11 @@ abstract class CommonObject
 		}
 		if (array_key_exists('fk_user_creat', $fieldvalues) && !($fieldvalues['fk_user_creat'] > 0)) {
 			$fieldvalues['fk_user_creat'] = $user->id;
+			$this->fk_user_creat = $user->id;
+		}
+		if (array_key_exists('user_modification_id', $fieldvalues) && !($fieldvalues['user_modification_id'] > 0)) {
+			$fieldvalues['user_modification_id'] = $user->id;
+			$this->user_modification_id = $user->id;
 		}
 		unset($fieldvalues['rowid']); // The field 'rowid' is reserved field name for autoincrement field so we don't need it into insert.
 		if (array_key_exists('ref', $fieldvalues)) {
@@ -9298,7 +9341,12 @@ abstract class CommonObject
 					$line = (object) $line;
 				}
 
-				$result = $line->create($user, 1);
+				$result = 0;
+				if (method_exists($line, 'insert')) {
+					$result = $line->insert($user, 1);
+				} elseif (method_exists($line, 'create')) {
+					$result = $line->create($user, 1);
+				}
 				if ($result < 0) {
 					$this->error = $line->error;
 					$this->db->rollback();
@@ -9416,6 +9464,7 @@ abstract class CommonObject
 		if ($resql) {
 			$num_rows = $this->db->num_rows($resql);
 			$i = 0;
+			$this->lines = array();
 			while ($i < $num_rows) {
 				$obj = $this->db->fetch_object($resql);
 				if ($obj) {

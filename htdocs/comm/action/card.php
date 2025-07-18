@@ -996,7 +996,7 @@ if (empty($reshook) && GETPOST('actionmove', 'alpha') == 'mupdate') {
 
 	$newdate = GETPOST('newdate', 'alpha');
 	if (empty($newdate) || strpos($newdate, 'dayevent_') != 0) {
-		header("Location: ".$backtopage);
+		header("Location: ".$backtopage, true, 307);
 		exit;
 	}
 
@@ -1081,7 +1081,7 @@ if (empty($reshook) && GETPOST('actionmove', 'alpha') == 'mupdate') {
 		}
 	}
 	if (!empty($backtopage)) {
-		header("Location: ".$backtopage);
+		header("Location: ".$backtopage, true, 307);
 		exit;
 	} else {
 		$action = '';
@@ -1442,8 +1442,14 @@ if ($action == 'create') {
 			$preselectedids[GETPOST('contactid', 'int')] = GETPOST('contactid', 'int');
 		}
 		if ($origin=='contact') $preselectedids[GETPOST('originid', 'int')] = GETPOST('originid', 'int');
+		// select "all" or "none" contact by default
+		if (getDolGlobalInt('MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT')) {
+			$select_contact_default = 0; // select "all" contacts by default : avoid to use it if there is a lot of contacts
+		} else {
+			$select_contact_default = -1; // select "none" by default
+		}
 		print img_picto('', 'contact', 'class="paddingrightonly"');
-		print $form->selectcontacts(GETPOST('socid', 'int'), $preselectedids, 'socpeopleassigned[]', 1, '', '', 0, 'minwidth300 quatrevingtpercent', false, 0, array(), false, 'multiple', 'contactid');
+		print $form->selectcontacts(GETPOSTISSET('socid') ? GETPOSTINT('socid') : $select_contact_default, $preselectedids, 'socpeopleassigned[]', 1, '', '', 0, 'minwidth300 quatrevingtpercent', false, 0, array(), false, 'multiple', 'contactid');
 		print '</td></tr>';
 	}
 
@@ -1946,7 +1952,12 @@ if ($id > 0) {
 			// related contact
 			print '<tr><td>'.$langs->trans("ActionOnContact").'</td><td>';
 			print '<div class="maxwidth200onsmartphone">';
-			print img_picto('', 'contact', 'class="paddingrightonly"').$form->selectcontacts($object->socid, array_keys($object->socpeopleassigned), 'socpeopleassigned[]', 1, '', '', 1, 'quatrevingtpercent', false, 0, 0, array(), 'multiple', 'contactid');
+			if (getDolGlobalInt('MAIN_ACTIONCOM_CAN_ADD_ANY_CONTACT')) {
+				$select_contact_default = 0; // select "all" contacts by default : avoid to use it if there is a lot of contacts
+			} else {
+				$select_contact_default = -1; // select "none" by default
+			}
+			print img_picto('', 'contact', 'class="paddingrightonly"').$form->selectcontacts(!empty($object->socid) ? $object->socid : $select_contact_default, array_keys($object->socpeopleassigned), 'socpeopleassigned[]', 1, '', '', 1, 'quatrevingtpercent', false, 0, 0, array(), 'multiple', 'contactid');
 			print '</div>';
 			print '</td>';
 			print '</tr>';

@@ -64,6 +64,7 @@ $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("pa
 $id = (GETPOST('facid', 'int') ? GETPOST('facid', 'int') : GETPOST('id', 'int'));
 $lineid = GETPOST('lineid', 'int');
 $title = GETPOST('title', 'alpha');
+$libelle = GETPOST('libelle', 'alpha');
 $ref_supplier = GETPOST('ref_supplier', 'alpha');
 $projectid = GETPOST('projectid', 'int');
 $year_date_when = GETPOST('year_date_when');
@@ -71,7 +72,7 @@ $month_date_when = GETPOST('month_date_when');
 if ($user->socid) {
 	$socid = $user->socid;
 }
-$objecttype = 'facturefournisseur_rec';
+$objecttype = 'facture_fourn_rec';
 if ($action == "create" || $action == "add") {
 	$objecttype = '';
 }
@@ -125,7 +126,8 @@ $now = dol_now();
 
 $error = 0;
 
-$result = restrictedArea($user, 'facture', $object->id, $objecttype);
+$result = restrictedArea($user, 'supplier_invoicerec', $object->id, $objecttype);
+
 
 /*
  * Actions
@@ -188,6 +190,7 @@ if (empty($reshook)) {
 		if (! $error) {
 			$object->titre = GETPOST('title', 'alphanohtml'); // deprecated
 			$object->title = GETPOST('title', 'alphanohtml');
+			$object->libelle = GETPOST('libelle', 'alpha');
 			$object->fk_project = GETPOST('projectid', 'int');
 			$object->ref_supplier = GETPOST('ref_supplier', 'alphanohtml');
 
@@ -532,8 +535,8 @@ if (empty($reshook)) {
 				$label = ((GETPOST('product_label') && GETPOST('product_label') != $prod->label) ? GETPOST('product_label') : '');
 
 				// Update if prices fields are defined
-				$tva_tx = get_default_tva($mysoc, $object->thirdparty, $prod->id);
-				$tva_npr = get_default_npr($mysoc, $object->thirdparty, $prod->id);
+				$tva_tx = get_default_tva($object->thirdparty, $mysoc, $prod->id);
+				$tva_npr = get_default_npr($object->thirdparty, $mysoc, $prod->id);
 				if (empty($tva_tx)) {
 					$tva_npr = 0;
 				}
@@ -541,12 +544,12 @@ if (empty($reshook)) {
 				// Search the correct price into loaded array product_price_by_qty using id of array retrieved into POST['pqp'].
 				$pqp = (GETPOST('pbq', 'int') ? GETPOST('pbq', 'int') : 0);
 
-				$datapriceofproduct = $prod->getSellPrice($mysoc, $object->thirdparty, $pqp);
+				$datapriceofproduct = $prod->getSellPrice($object->thirdparty, $mysoc, $pqp);
 
 				$pu_ht = $datapriceofproduct['pu_ht'];
 				$pu_ttc = $datapriceofproduct['pu_ttc'];
 				$price_min = $datapriceofproduct['price_min'];
-				$price_base_type = $datapriceofproduct['price_base_type'];
+				$price_base_type = empty($datapriceofproduct['price_base_type']) ? 'HT' : $datapriceofproduct['price_base_type'];
 				$tva_tx = $datapriceofproduct['tva_tx'];
 				$tva_npr = $datapriceofproduct['tva_npr'];
 
@@ -656,8 +659,8 @@ if (empty($reshook)) {
 			$buyingprice = price2num(GETPOST('buying_price' . $predef) != '' ? GETPOST('buying_price' . $predef) : ''); // If buying_price is '0', we must keep this value
 
 			// Local Taxes
-			$localtax1_tx = get_localtax($tva_tx, 1, $object->thirdparty, $mysoc, $tva_npr);
-			$localtax2_tx = get_localtax($tva_tx, 2, $object->thirdparty, $mysoc, $tva_npr);
+			$localtax1_tx = get_localtax($tva_tx, 1, $mysoc, $object->thirdparty, $tva_npr);
+			$localtax2_tx = get_localtax($tva_tx, 2, $mysoc, $object->thirdparty, $tva_npr);
 			$info_bits = 0;
 			if ($tva_npr) {
 				$info_bits |= 0x01;
@@ -775,7 +778,7 @@ if (empty($reshook)) {
 			$special_code = 3;
 		}
 
-		$remise_percent = price2num(GETPOST('remise_percent'), '', 2);
+		$remise_percent = price2num(GETPOST('remise_percent'), '', 2) ?: 0;
 
 		// Check minimum price
 		$productid = GETPOST('productid', 'int');
@@ -1077,7 +1080,7 @@ if ($action == 'create') {
 			$disableedit = 1;
 			$disablemove = 1;
 			$disableremove = 1;
-			$object->printObjectLines('', $mysoc, $object->thirdparty, $lineid, 0); // No date selector for template invoice
+			$object->printObjectLines('', $object->thirdparty, $mysoc, $lineid, 0); // No date selector for template invoice
 		}
 
 		print "</table>\n";
@@ -1566,7 +1569,7 @@ if ($action == 'create') {
 			$canchangeproduct = 0;
 
 			$object->statut = $object->suspended;
-			$object->printObjectLines($action, $mysoc, $object->thirdparty, $lineid, 0); // No date selector for template invoice
+			$object->printObjectLines($action, $object->thirdparty, $mysoc, $lineid, 0); // No date selector for template invoice
 		}
 
 		// Form to add new line

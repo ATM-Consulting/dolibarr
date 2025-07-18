@@ -283,7 +283,7 @@ class Proposals extends DolibarrApi
 	/**
 	 * Get lines of a commercial proposal
 	 *
-	 * @param int		$id				Id of commercial proposal
+	 * @param int		$id					Id of commercial proposal
 	 * @param string    $sqlfilters 	Other criteria to filter answers separated by a comma. d is the alias for proposal lines table, p is the alias for product table. "Syntax example "(p.ref:like:'SO-%') and (d.date_start:<:'20220101')"
 	 *
 	 * @url	GET {id}/lines
@@ -292,8 +292,6 @@ class Proposals extends DolibarrApi
 	 */
 	public function getLines($id, $sqlfilters = '')
 	{
-		$filters = "";
-
 		if (!DolibarrApiAccess::$user->rights->propal->lire) {
 			throw new RestException(401);
 		}
@@ -307,6 +305,7 @@ class Proposals extends DolibarrApi
 			throw new RestException(401, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		$sql = '';
 		if (!empty($sqlfilters)) {
 			$errormessage = '';
 			$sql = forgeSQLFromUniversalSearchCriteria($sqlfilters, $errormessage);
@@ -695,6 +694,12 @@ class Proposals extends DolibarrApi
 		}
 		foreach ($request_data as $field => $value) {
 			if ($field == 'id') {
+				continue;
+			}
+			if ($field == 'array_options' && is_array($value)) {
+				foreach ($value as $index => $val) {
+					$this->propal->array_options[$index] = $this->_checkValForAPI($field, $val, $this->propal);
+				}
 				continue;
 			}
 			$this->propal->$field = $value;

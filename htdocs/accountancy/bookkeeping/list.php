@@ -519,6 +519,10 @@ if (empty($reshook)) {
 					setEventMessages($object->error, $object->errors, 'errors');
 					$error++;
 					break;
+				} elseif (isset($object->date_validation) && $object->date_validation != '') {
+					setEventMessages($langs->trans("ValidatedRecordWhereFound"), null, 'errors');
+					$error++;
+					break;
 				}
 			}
 		}
@@ -672,7 +676,7 @@ if (count($filter) > 0) {
 		} elseif ($key == 't.reconciled_option') {
 			$sqlwhere[] = 't.lettering_code IS NULL';
 		} elseif ($key == 't.code_journal' && !empty($value)) {
-			$sqlwhere[] = natural_search("t.code_journal", join(',', $value), 3, 1);
+			$sqlwhere[] = natural_search("t.code_journal", join(',', $value), 4, 1);
 		} else {
 			$sqlwhere[] = natural_search($key, $value, 0, 1);
 		}
@@ -1133,7 +1137,7 @@ if (!empty($arrayfields['t.tms']['checked'])) {
 	print $form->selectDate($search_date_modification_start, 'search_date_modification_start', 0, 0, 1, '', 1, 0, 0, '', '', '', '', 1, '', $langs->trans("From"));
 	print '</div>';
 	print '<div class="nowrap">';
-	print $form->selectDate($search_date_modification_end, 'search_date_modification_end', 0, 0, 1, '', 1, 0, 0, '', '', '', '', 1, '', $langs->trans("From"));
+	print $form->selectDate($search_date_modification_end, 'search_date_modification_end', 0, 0, 1, '', 1, 0, 0, '', '', '', '', 1, '', $langs->trans("to"));
 	print '</div>';
 	print '</td>';
 }

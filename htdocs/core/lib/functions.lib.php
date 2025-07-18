@@ -83,7 +83,7 @@ function getDolGlobalString($key, $default = '')
 {
 	global $conf;
 	// return $conf->global->$key ?? $default;
-	return (string) (empty($conf->global->$key) ? $default : $conf->global->$key);
+	return (string) (isset($conf->global->$key) ? $conf->global->$key : $default);
 }
 
 /**
@@ -97,7 +97,7 @@ function getDolGlobalInt($key, $default = 0)
 {
 	global $conf;
 	// return $conf->global->$key ?? $default;
-	return (int) (empty($conf->global->$key) ? $default : $conf->global->$key);
+	return (int) (isset($conf->global->$key) ? $conf->global->$key : $default);
 }
 
 /**
@@ -1228,7 +1228,7 @@ function dol_sanitizeFileName($str, $newstr = '_', $unaccent = 1)
 	// Char '>' '<' '|' '$' and ';' are special chars for shells.
 	// Char '/' and '\' are file delimiters.
 	// Chars '--' can be used into filename to inject special paramaters like --use-compress-program to make command with file as parameter making remote execution of command
-	$filesystem_forbidden_chars = array('<', '>', '/', '\\', '?', '*', '|', '"', ':', '°', '$', ';');
+	$filesystem_forbidden_chars = array('<', '>', '/', '\\', '?', '*', '|', '"', ':', '°', '$', ';', '`');
 	$tmp = dol_string_nospecial($unaccent ? dol_string_unaccent($str) : $str, $newstr, $filesystem_forbidden_chars);
 	$tmp = preg_replace('/\-\-+/', '_', $tmp);
 	$tmp = preg_replace('/\s+\-([^\s])/', ' _$1', $tmp);
@@ -1253,7 +1253,7 @@ function dol_sanitizePathName($str, $newstr = '_', $unaccent = 1)
 	// List of special chars for filenames in windows are defined on page https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
 	// Char '>' '<' '|' '$' and ';' are special chars for shells.
 	// Chars '--' can be used into filename to inject special paramaters like --use-compress-program to make command with file as parameter making remote execution of command
-	$filesystem_forbidden_chars = array('<', '>', '?', '*', '|', '"', '°', '$', ';');
+	$filesystem_forbidden_chars = array('<', '>', '?', '*', '|', '"', '°', '$', ';', '`');
 	$tmp = dol_string_nospecial($unaccent ? dol_string_unaccent($str) : $str, $newstr, $filesystem_forbidden_chars);
 	$tmp = preg_replace('/\-\-+/', '_', $tmp);
 	$tmp = preg_replace('/\s+\-([^\s])/', ' _$1', $tmp);
@@ -1658,8 +1658,10 @@ function dol_syslog($message, $level = LOG_INFO, $ident = 0, $suffixinfilename =
 	if (!empty($message)) {
 		// Test log level
 		$logLevels = array(LOG_EMERG=>'EMERG', LOG_ALERT=>'ALERT', LOG_CRIT=>'CRITICAL', LOG_ERR=>'ERR', LOG_WARNING=>'WARN', LOG_NOTICE=>'NOTICE', LOG_INFO=>'INFO', LOG_DEBUG=>'DEBUG');
+
 		if (!array_key_exists($level, $logLevels)) {
-			throw new Exception('Incorrect log level');
+			dol_syslog('Error Bad Log Level '.$level, LOG_ERR);
+			$level = $logLevels[LOG_ERR];
 		}
 		if ($level > $conf->global->SYSLOG_LEVEL) {
 			return;
@@ -7780,12 +7782,12 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				$substitutionarray['__MEMBER_PHONEPRO__'] = (isset($object->phone_perso) ? dol_print_phone($object->phone_perso) : '');
 				$substitutionarray['__MEMBER_PHONEMOBILE__'] = (isset($object->phone_mobile) ? dol_print_phone($object->phone_mobile) : '');
 				$substitutionarray['__MEMBER_TYPE__'] = (isset($object->type) ? $object->type : '');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE__']       = dol_print_date($object->first_subscription_date, 'dayrfc');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_START__'] = (isset($object->first_subscription_date_start) ? dol_print_date($object->first_subscription_date_start, 'dayrfc') : '');
-				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_END__']   = (isset($object->first_subscription_date_end) ? dol_print_date($object->first_subscription_date_end, 'dayrfc') : '');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE__']        = dol_print_date($object->last_subscription_date, 'dayrfc');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_START__']  = dol_print_date($object->last_subscription_date_start, 'dayrfc');
-				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_END__']    = dol_print_date($object->last_subscription_date_end, 'dayrfc');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE__']       = dol_print_date($object->first_subscription_date, 'day');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_START__'] = (isset($object->first_subscription_date_start) ? dol_print_date($object->first_subscription_date_start, 'day') : '');
+				$substitutionarray['__MEMBER_FIRST_SUBSCRIPTION_DATE_END__']   = (isset($object->first_subscription_date_end) ? dol_print_date($object->first_subscription_date_end, 'day') : '');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE__']        = dol_print_date($object->last_subscription_date, 'day');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_START__']  = dol_print_date($object->last_subscription_date_start, 'day');
+				$substitutionarray['__MEMBER_LAST_SUBSCRIPTION_DATE_END__']    = dol_print_date($object->last_subscription_date_end, 'day');
 			}
 
 			if (is_object($object) && $object->element == 'societe') {
@@ -7847,15 +7849,16 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				$substitutionarray['__ATTENDEE_LASTNAME__'] = isset($object->lastname) ? $object->lastname : '';
 			}
 
+			$project = null;
 			if (is_object($object->project)) {
-				$substitutionarray['__PROJECT_ID__'] = (is_object($object->project) ? $object->project->id : '');
-				$substitutionarray['__PROJECT_REF__'] = (is_object($object->project) ? $object->project->ref : '');
-				$substitutionarray['__PROJECT_NAME__'] = (is_object($object->project) ? $object->project->title : '');
+				$project = $object->project;
+			} elseif (is_object($object->projet)) { // Deprecated, for backward compatibility
+				$project = $object->projet;
 			}
-			if (is_object($object->projet)) {	// Deprecated, for backward compatibility
-				$substitutionarray['__PROJECT_ID__'] = (is_object($object->projet) ? $object->projet->id : '');
-				$substitutionarray['__PROJECT_REF__'] = (is_object($object->projet) ? $object->projet->ref : '');
-				$substitutionarray['__PROJECT_NAME__'] = (is_object($object->projet) ? $object->projet->title : '');
+			if ($project) {
+				$substitutionarray['__PROJECT_ID__'] = $project->id;
+				$substitutionarray['__PROJECT_REF__'] = $project->ref;
+				$substitutionarray['__PROJECT_NAME__'] = $project->title;
 			}
 			if (is_object($object) && $object->element == 'project') {
 				$substitutionarray['__PROJECT_NAME__'] = $object->title;
@@ -7881,9 +7884,9 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 						$datenextexpiration = $line->date_end;
 					}
 				}
-				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATE__'] = dol_print_date($dateplannedstart, 'dayrfc');
+				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATE__'] = dol_print_date($dateplannedstart, 'day');
 				$substitutionarray['__CONTRACT_HIGHEST_PLANNED_START_DATETIME__'] = dol_print_date($dateplannedstart, 'standard');
-				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATE__'] = dol_print_date($datenextexpiration, 'dayrfc');
+				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATE__'] = dol_print_date($datenextexpiration, 'day');
 				$substitutionarray['__CONTRACT_LOWEST_EXPIRATION_DATETIME__'] = dol_print_date($datenextexpiration, 'standard');
 			}
 			// add substition variable for ticket
@@ -8873,10 +8876,11 @@ function dol_osencode($str)
  * 		@param	string	$fieldid		Field to get
  *      @param  int		$entityfilter	Filter by entity
  *      @param	string	$filters		Filters to add. WARNING: string must be escaped for SQL and not coming from user input.
+ *      @param	bool    $useCache       If true (default), cache will be queried and updated.
  *      @return int						<0 if KO, Id of code if OK
  *      @see $langs->getLabelFromKey
  */
-function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid = 'id', $entityfilter = 0, $filters = '')
+function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid = 'id', $entityfilter = 0, $filters = '', $useCache = true)
 {
 	global $cache_codes;
 
@@ -8886,8 +8890,8 @@ function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid =
 	}
 
 	// Check in cache
-	if (isset($cache_codes[$tablename][$key][$fieldid])) {	// Can be defined to 0 or ''
-		return $cache_codes[$tablename][$key][$fieldid]; // Found in cache
+	if ($useCache && isset($cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key])) {	// Can be defined to 0 or ''
+		return $cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key]; // Found in cache
 	}
 
 	dol_syslog('dol_getIdFromCode (value for field '.$fieldid.' from key '.$key.' not found into cache)', LOG_DEBUG);
@@ -8905,13 +8909,15 @@ function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid =
 	$resql = $db->query($sql);
 	if ($resql) {
 		$obj = $db->fetch_object($resql);
+		$valuetoget = '';
 		if ($obj) {
-			$cache_codes[$tablename][$key][$fieldid] = $obj->valuetoget;
-		} else {
-			$cache_codes[$tablename][$key][$fieldid] = '';
+			$valuetoget = $obj->valuetoget;
 		}
 		$db->free($resql);
-		return $cache_codes[$tablename][$key][$fieldid];
+		if ($useCache) {
+			$cache_codes[$tablename][$fieldkey][$fieldid][$entityfilter][$filters][$key] = $valuetoget;
+		}
+		return $valuetoget;
 	} else {
 		return -1;
 	}
@@ -9024,9 +9030,13 @@ function dol_eval($s, $returnvalue = 0, $hideerrors = 1, $onlysimplestring = '1'
 		$forbiddenphpstrings = array('$$');
 		$forbiddenphpstrings = array_merge($forbiddenphpstrings, array('_ENV', '_SESSION', '_COOKIE', '_GET', '_POST', '_REQUEST'));
 
-		$forbiddenphpfunctions = array("exec", "passthru", "shell_exec", "system", "proc_open", "popen", "eval", "dol_eval", "executeCLI", "verifCond", "base64_decode");
+		$forbiddenphpfunctions = array("exec", "passthru", "shell_exec", "system", "proc_open", "popen");
+		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("dol_eval", "executeCLI", "verifCond"));	// native dolibarr functions
+		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("base64_decode", "rawurldecode", "urldecode")); // decode string functions
 		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("fopen", "file_put_contents", "fputs", "fputscsv", "fwrite", "fpassthru", "require", "include", "mkdir", "rmdir", "symlink", "touch", "unlink", "umask"));
+		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("get_defined_functions", "get_defined_vars", "get_defined_constants", "get_declared_classes"));
 		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("function", "call_user_func"));
+		$forbiddenphpfunctions = array_merge($forbiddenphpfunctions, array("eval", "create_function", "assert", "mb_ereg_replace")); // function with eval capabilities
 
 		$forbiddenphpregex = 'global\s+\$|\b('.implode('|', $forbiddenphpfunctions).')\b';
 
@@ -9809,7 +9819,12 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 
 	$value = preg_replace('/\s*\|\s*/', '|', $value);
 
-	$crits = explode(' ', $value);
+	//natural mode search type 3 allow spaces into search ...
+	if ($mode == 3 || $mode == -3) {
+		$crits = explode(',', $value);
+	} else {
+		$crits = explode(' ', $value);
+	}
 	$res = '';
 	if (!is_array($fields)) {
 		$fields = array($fields);
@@ -9870,7 +9885,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 							$listofcodes .= "'".$db->escape($val)."'";
 						}
 					}
-					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1).")";
+					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1, 0, 1).")";
 					$i2++; // a criteria for 1 more field was added to string
 				}
 				if ($mode == -3) {
@@ -10832,21 +10847,21 @@ function dolGetStatus($statusLabel = '', $statusLabelShort = '', $html = '', $st
  * @param int|boolean	$userRight  User action right
  * // phpcs:disable
  * @param array 		$params = [ // Various params for future : recommended rather than adding more function arguments
- *                          'attr' => [ // to add or override button attributes
- *                          'xxxxx' => '', // your xxxxx attribute you want
- *                          'class' => 'reposition', // to add more css class to the button class attribute
- *                          'classOverride' => '' // to replace class attribute of the button
- *                          ],
- *                          'confirm' => [
- *                          'url' => 'http://', // Overide Url to go when user click on action btn, if empty default url is $url.?confirm=yes, for no js compatibility use $url for fallback confirm.
- *                          'title' => '', // Overide title of modal,  if empty default title use "ConfirmBtnCommonTitle" lang key
- *                          'action-btn-label' => '', // Overide label of action button,  if empty default label use "Confirm" lang key
- *                          'cancel-btn-label' => '', // Overide label of cancel button,  if empty default label use "CloseDialog" lang key
- *                          'content' => '', // Overide text of content,  if empty default content use "ConfirmBtnCommonContent" lang key
- *                          'modal' => true, // true|false to display dialog as a modal (with dark background)
- * 						    'isDropDrown' => false, // true|false to display dialog as a dropdown (with dark background)
- *                          ],
- *                          ]
+ *                              'attr' => [ // to add or override button attributes
+ *                              'xxxxx' => '', // your xxxxx attribute you want
+ *                              'class' => 'reposition', // to add more css class to the button class attribute
+ *                              'classOverride' => '' // to replace class attribute of the button
+ *                              ],
+ *                              'confirm' => [
+ *                              'url' => 'http://', // Override Url to go when user click on action btn, if empty default url is $url.?confirm=yes, for no js compatibility use $url for fallback confirm.
+ *                              'title' => '', // Override title of modal,  if empty default title use "ConfirmBtnCommonTitle" lang key
+ *                              'action-btn-label' => '', // Override label of action button,  if empty default label use "Confirm" lang key
+ *                              'cancel-btn-label' => '', // Override label of cancel button,  if empty default label use "CloseDialog" lang key
+ *                              'content' => '', // Override text of content,  if empty default content use "ConfirmBtnCommonContent" lang key
+ *                              'modal' => true, // true|false to display dialog as a modal (with dark background)
+ *                              'isDropDrown' => false, // true|false to display dialog as a dropdown (with dark background)
+ *                              ],
+ *                              ]
  * // phpcs:enable
  * @return string               	html button
  */

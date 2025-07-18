@@ -361,6 +361,12 @@ class Products extends DolibarrApi
 			if ($field == 'stock_reel') {
 				throw new RestException(400, 'Stock reel cannot be updated here. Use the /stockmovements endpoint instead');
 			}
+			if ($field == 'array_options' && is_array($value)) {
+				foreach ($value as $index => $val) {
+					$this->product->array_options[$index] = $this->_checkValForAPI($field, $val, $this->product);
+				}
+				continue;
+			}
 			$this->product->$field = $value;
 		}
 
@@ -676,9 +682,9 @@ class Products extends DolibarrApi
 			require_once DOL_DOCUMENT_ROOT.'/product/class/productcustomerprice.class.php';
 			$prodcustprice = new Productcustomerprice($this->db);
 			$filter = array();
-			$filter['t.fk_product'] .= $id;
+			$filter['t.fk_product'] = $id;
 			if ($thirdparty_id) {
-				$filter['t.fk_soc'] .= $thirdparty_id;
+				$filter['t.fk_soc'] = $thirdparty_id;
 			}
 			$result = $prodcustprice->fetchAll('', '', 0, 0, $filter);
 		}

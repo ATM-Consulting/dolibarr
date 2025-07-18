@@ -658,7 +658,7 @@ if ($action == 'confirm_generateinvoice') {
 
 					// Update lineid into line of timespent
 					$sql = 'UPDATE '.MAIN_DB_PREFIX.'projet_task_time SET invoice_line_id = '.((int) $lineid).', invoice_id = '.((int) $tmpinvoice->id);
-					$sql .= ' WHERE rowid IN ('.$db->sanitize(join(',', $toselect)).') AND fk_user = '.((int) $userid);
+					$sql .= ' WHERE rowid = '.((int) $timespent_id).' AND fk_user = '.((int) $userid);
 					$result = $db->query($sql);
 					if (!$result) {
 						$error++;
@@ -1551,7 +1551,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		$parameters = array();
 		$reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
 		$sql .= $hookmanager->resPrint;
-		$sql .= " WHERE  1 = 1 ";
+		$sql .= " WHERE p.entity IN (".getEntity('project').")";
 		if (empty($projectidforalltimes) && empty($allprojectforuser)) {
 			// Limit on one task
 			$sql .= " AND t.fk_task =".((int) $object->id);

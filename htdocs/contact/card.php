@@ -470,15 +470,13 @@ if (empty($reshook)) {
 						$no_email = GETPOST('no_email', 'int');
 						$result = $object->setNoEmail($no_email);
 						if ($result < 0) {
+							$error++;
 							setEventMessages($object->error, $object->errors, 'errors');
-							$action = 'edit';
 						}
 					}
-
-					$action = 'view';
 				} else {
+					$error++;
 					setEventMessages($object->error, $object->errors, 'errors');
-					$action = 'edit';
 				}
 			}
 		}
@@ -488,6 +486,9 @@ if (empty($reshook)) {
 				header("Location: ".$backtopage);
 				exit;
 			}
+			$action = 'view';
+		} else {
+			$action = 'edit';
 		}
 	}
 
@@ -584,7 +585,9 @@ if (!empty($conf->global->MAIN_HTML_TITLE) && preg_match('/contactnameonly/', $c
 	$title = $object->lastname;
 }
 $help_url = 'EN:Module_Third_Parties|FR:Module_Tiers|ES:Empresas';
-$title = (!empty($conf->global->SOCIETE_ADDRESSES_MANAGEMENT) ? $langs->trans("NewContact") : $langs->trans("NewContactAddress"));
+if (empty($object->id)) {
+	$title = (!empty($conf->global->SOCIETE_ADDRESSES_MANAGEMENT) ? $langs->trans("NewContact") : $langs->trans("NewContactAddress"));
+}
 
 llxHeader('', $title, $help_url);
 
@@ -1423,15 +1426,17 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 
 		$object->fetch_thirdparty();
 
+
+		print '<div class="fichehalfright">';
+
+		print '<div class="underbanner clearboth"></div>';
+		print '<table class="border tableforfield centpercent">';
+
+
 		if (!empty($conf->global->THIRDPARTY_ENABLE_PROSPECTION_ON_ALTERNATIVE_ADRESSES)) {
 			if ($object->thirdparty->client == 2 || $object->thirdparty->client == 3) {
-				print '<br>';
-
-				print '<div class="underbanner clearboth"></div>';
-				print '<table class="border" width="100%">';
-
 				// Level of prospect
-				print '<tr><td class="titlefield nowrap">';
+				print '<tr><td class="titlefield">';
 				print '<table width="100%" class="nobordernopadding"><tr><td class="nowrap">';
 				print $langs->trans('ProspectLevel');
 				print '<td>';
@@ -1463,16 +1468,8 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 					}
 				}
 				print '</div></td></tr>';
-
-				print "</table>";
-				print '</div>';
 			}
 		}
-
-		print '<div class="fichehalfright">';
-
-		print '<div class="underbanner clearboth"></div>';
-		print '<table class="border tableforfield centpercent">';
 
 		// Categories
 		if (isModEnabled('categorie') && !empty($user->rights->categorie->lire)) {

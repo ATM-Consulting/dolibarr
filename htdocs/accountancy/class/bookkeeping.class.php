@@ -798,7 +798,7 @@ class BookKeeping extends CommonObject
 				$this->piece_num = $obj->piece_num;
 				$this->date_creation = $this->db->jdate($obj->date_creation);
 				$this->date_export = $this->db->jdate($obj->date_export);
-				$this->date_validation = isset($obj->date_validated) ? $this->db->jdate($obj->date_validated) : '';
+				$this->date_validation = isset($obj->date_validation) ? $this->db->jdate($obj->date_validation) : '';
 			}
 			$this->db->free($resql);
 
@@ -1053,7 +1053,7 @@ class BookKeeping extends CommonObject
 					$sqlwhere[] = natural_search($key, $value, 1, 1);
 				} elseif ($key == 't.code_journal' && !empty($value)) {
 					if (is_array($value)) {
-						$sqlwhere[] = natural_search("t.code_journal", join(',', $value), 3, 1);
+						$sqlwhere[] = natural_search("t.code_journal", join(',', $value), 4, 1);
 					} else {
 						$sqlwhere[] = natural_search("t.code_journal", $value, 3, 1);
 					}

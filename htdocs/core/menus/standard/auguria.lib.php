@@ -342,7 +342,7 @@ function print_left_auguria_menu($db, $menu_array_before, $menu_array_after, &$t
 	$newmenu = $menuArbo->menuLeftCharger($newmenu, $mainmenu, $leftmenu, ($user->socid ? 1 : 0), 'auguria', $tabMenu);
 
 	// We update newmenu for special dynamic menus
-	if (isModEnabled('banque') && $user->rights->banque->lire && $mainmenu == 'bank') {	// Entry for each bank account
+	if (isModEnabled('banque') && $user->hasRight('banque', 'lire') && $mainmenu == 'bank') {	// Entry for each bank account
 		include_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php'; // Required for to get Account::TYPE_CASH for example
 
 		$sql = "SELECT rowid, label, courant, rappro, courant";
@@ -375,7 +375,7 @@ function print_left_auguria_menu($db, $menu_array_before, $menu_array_after, &$t
 	}
 
 	if (isModEnabled('accounting') && !empty($user->rights->accounting->comptarapport->lire) && $mainmenu == 'accountancy') { 	// Entry in accountancy journal for each bank account
-		$newmenu->add('', $langs->trans("RegistrationInAccounting"), 1, $user->rights->accounting->comptarapport->lire, '', 'accountancy', 'accountancy', 10);
+		$newmenu->add('', $langs->trans("RegistrationInAccounting"), 1, $user->rights->accounting->comptarapport->lire, '', 'accountancy', 'accountancy_journal', 10);
 
 		// Multi journal
 		$sql = "SELECT rowid, code, label, nature";
