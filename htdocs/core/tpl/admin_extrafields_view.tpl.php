@@ -93,6 +93,8 @@ if (isModEnabled('multicompany')) {
 	print '<td class="center">'.$langs->trans("Entity").'</td>';
 }
 $parameters = array();
+$hookmanager = new HookManager($db);
+$hookmanager->initHooks(array('extrafieldsdao'));
 $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
 print $hookmanager->resPrint;
 // Action column
@@ -181,7 +183,6 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 			}
 			print '</td>';
 		}
-
 		$parameters = array('key' => $key, 'value' => $value);
 		$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
@@ -198,7 +199,7 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 		print "</tr>";
 	}
 } else {
-	$colspan = 17;
+	$colspan = 18;
 	if (isModEnabled('multicompany')) {
 		$colspan++;
 	}

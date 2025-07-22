@@ -6801,13 +6801,12 @@ abstract class CommonObject
 			}
 
 			$sql .= ")";
-
 			$resql = $this->db->query($sql);
+
 			if (!$resql) {
 				$this->error = $this->db->lasterror();
 				$error++;
 			}
-
 			if (!$error && $trigger) {
 				// Call trigger
 				$this->context = array('extrafieldaddupdate' => 1);
@@ -6817,7 +6816,6 @@ abstract class CommonObject
 				}
 				// End call trigger
 			}
-
 			if ($error) {
 				$this->db->rollback();
 				return -1;
@@ -7225,7 +7223,6 @@ abstract class CommonObject
 					$error++;
 				}
 			}
-
 			if (!$error) {
 				$parameters = array('key' => $key);
 				global $action;
@@ -10459,8 +10456,6 @@ abstract class CommonObject
 				$error++;
 			}
 		}
-
-		// Triggers
 		if (!$error && !$notrigger) {
 			// Call triggers
 			$result = $this->call_trigger(strtoupper(get_class($this)).'_MODIFY', $user);

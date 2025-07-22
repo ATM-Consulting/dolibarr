@@ -142,6 +142,8 @@ class ExtraFields
 	 */
 	public function addExtraField($attrname, $label, $type, $pos, $size, $elementtype, $unique = 0, $required = 0, $default_value = '', $param = '', $alwayseditable = 0, $perms = '', $list = '-1', $help = '', $computed = '', $entity = '', $langfile = '', $enabled = '1', $totalizable = 0, $printable = 0, $moreparams = array())
 	{
+		global $hookmanager;
+		$hookmanager->initHooks('extrafieldsdao');
 		if (empty($attrname)) {
 			return -1;
 		}
@@ -183,6 +185,35 @@ class ExtraFields
 				|| ($type == 'separate' && $err2 == 'DB_ERROR_RECORD_ALREADY_EXISTS')) {
 				$this->error = '';
 				$this->errno = '0';
+				$parameters = ['result', $result,
+					'result2', $result2,
+					'attrname' => $attrname,
+					'label' => $label,
+					'type' => $type,
+					'pos' => $pos,
+					'size' => $size,
+					'elementtype' => $elementtype,
+					'unique' => $unique,
+					'required' => $required,
+					'default_value' => $default_value,
+					'param' => $param,
+					'alwayseditable' => $alwayseditable,
+					'perms' => $perms,
+					'list' => $list,
+					'help' => $help,
+					'computed' => $computed,
+					'entity' => $entity,
+					'langfile' => $langfile,
+					'enabled' => $enabled,
+					'totalizable' => $totalizable,
+					'printable' => $printable,
+					'moreparams' => $moreparams];
+				$reshook = $hookmanager->executeHooks('addExtraField', $parameters, $this); // Note that $action and $object may have been modified by some hooks
+
+				if ($reshook < 0) {
+					$this->error = $this->db->lasterror();
+					return -1;
+				}
 				return 1;
 			} else {
 				return -2;
@@ -455,7 +486,6 @@ class ExtraFields
 			} else {
 				$params = '';
 			}
-
 			$sql = "INSERT INTO ".$this->db->prefix()."extrafields(";
 			$sql .= " name,";
 			$sql .= " label,";
@@ -511,7 +541,6 @@ class ExtraFields
 			$sql .= " ".($csslist ? "'".$this->db->escape($csslist)."'" : "null").",";
 			$sql .= " ".($cssview ? "'".$this->db->escape($cssview)."'" : "null");
 			$sql .= ')';
-
 			if ($this->db->query($sql)) {
 				dol_syslog(get_class($this)."::create_label_success", LOG_DEBUG);
 				return 1;
@@ -724,7 +753,7 @@ class ExtraFields
 
 			if (is_object($hookmanager)) {
 				$hookmanager->initHooks(array('extrafieldsdao'));
-				$parameters = array('field_desc' => &$field_desc, 'table' => $table, 'attr_name' => $attrname, 'label' => $label, 'type' => $type, 'length' => $length, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable);
+				$parameters = array('field_desc' => &$field_desc, 'table' => $table, 'attr_name' => $attrname, 'label' => $label, 'type' => $type, 'length' => $length, 'elementtype' => $elementtype, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable);
 				$reshook = $hookmanager->executeHooks('updateExtrafields', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 
 				if ($reshook < 0) {
@@ -757,6 +786,12 @@ class ExtraFields
 					 $this->error = $this->db->lasterror();
 					 return -1;
 					 }*/
+					$parameters = array('field_desc' => &$field_desc, 'table' => $table, 'attr_name' => $attrname, 'label' => $label, 'type' => $type, 'length' => $length, 'elementtype' => $elementtype, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable);
+					$reshook = $hookmanager->executeHooks('afterUpdateExtraField', $parameters, $this); // Note that $action and $object may have been modified by some hooks
+					if ($reshook < 0) {
+						$this->error = $this->db->lasterror();
+						return -1;
+					}
 					return 1;
 				} else {
 					$this->error = $this->db->lasterror();
@@ -929,7 +964,6 @@ class ExtraFields
 			$sql .= " ".($csslist ? "'".$this->db->escape($csslist)."'" : "null").",";
 			$sql .= " ".($cssview ? "'".$this->db->escape($cssview)."'" : "null");
 			$sql .= ")";
-
 			$resql2 = $this->db->query($sql);
 
 			if ($resql1 && $resql2) {
@@ -980,12 +1014,12 @@ class ExtraFields
 		$array_name_label = array();
 
 		// We should not have several time this request. If we have, there is some optimization to do by calling a simple $extrafields->fetch_optionals() in top of code and not into subcode
-		$sql = "SELECT rowid, name, label, type, size, elementtype, fieldunique, fieldrequired, param, pos, alwayseditable, perms, langs, list, printable, totalizable, fielddefault, fieldcomputed, entity, enabled, help,";
+		$sql = "SELECT e.rowid, name, label, type, size, elementtype, fieldunique, fieldrequired, param, pos, alwayseditable, perms, langs, list, printable, totalizable, fielddefault, fieldcomputed, entity, enabled, help,";
 		$sql .= " css, cssview, csslist";
 		$parameters = ['elementtype' => $elementtype, 'forceload' => $forceload, 'attrname' => $attrname];
 		$hookmanager->executeHooks('printExtrafieldsSelect', $parameters, $this, $action);
 		$sql .= $hookmanager->resPrint;
-		$sql .= " FROM ".$this->db->prefix()."extrafields";
+		$sql .= " FROM ".$this->db->prefix()."extrafields as e";
 		$hookmanager->executeHooks('printExtrafieldsFrom', $parameters, $this, $action);
 		$sql .= $hookmanager->resPrint;
 		//$sql.= " WHERE entity IN (0,".$conf->entity.")";    // Filter is done later
@@ -1834,7 +1868,10 @@ class ExtraFields
 				}
 			}
 		} elseif ($type == 'link') {
-			$param_list = array_keys($param['options']); // $param_list[0] = 'ObjectName:classPath' but can also be 'ObjectName:classPath:1:(status:=:1)'
+			if (!empty($param['options'])) {
+				$param_list = array_keys($param['options']); // $param_list[0] = 'ObjectName:classPath' but can also be 'ObjectName:classPath:1:(status:=:1)'
+
+			}
 			/* Removed.
 			 The selectForForms is called with parameter $objectfield defined, so the app can retrieve the filter inside the ajax component instead of being provided as parameters. The
 			 filter was used to pass SQL requests leading to serious SQL injection problem. This should not be possible. Also the call of the ajax was broken by some WAF.
