@@ -197,7 +197,7 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 		print "</tr>";
 	}
 } else {
-	$colspan = 18;
+	$colspan = 17;
 	if (isModEnabled('multicompany')) {
 		$colspan++;
 	}
