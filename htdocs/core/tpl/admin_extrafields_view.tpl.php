@@ -93,8 +93,6 @@ if (isModEnabled('multicompany')) {
 	print '<td class="center">'.$langs->trans("Entity").'</td>';
 }
 $parameters = array();
-$hookmanager = new HookManager($db);
-$hookmanager->initHooks(array('extrafieldsdao'));
 $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
 print $hookmanager->resPrint;
 // Action column
