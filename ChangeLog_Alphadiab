@@ -1,3 +1,4 @@
 # CHANGELOG BRANCHE SPÉ ALPHADIAB FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
 - Backport the diff from their version 12 **2/07/2025**
+- Add condition in shodocuments to generate link for lcr **3/07/2025**

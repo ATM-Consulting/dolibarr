@@ -979,7 +979,7 @@ class FormFile
 					} else {
 						$out .= '<span class="spanoverflow">';
 					}
-					if (is_object($ecmfile)) {
+					if (is_object($ecmfile) && $modulepart != 'lcr') { // spé epoxy for generate lcr
 						$out .= $ecmfile->getNomUrl(1, $modulepart, 0, 0, ' documentdownload');
 					} else {
 						$out .= '<a class="documentdownload paddingright" ';
