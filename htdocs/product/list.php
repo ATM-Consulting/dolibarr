@@ -726,7 +726,7 @@ if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
 	}
 
 	// ----- spé alphadiab ---------
-//		$sql .= $db->plimit($limit + 1, $offset);
+	// $sql .= $db->plimit($limit + 1, $offset);
 		// we keep it for rollback if needed
 		//$db->free($resql);
 		$db->free($sql);
