@@ -242,6 +242,13 @@ if ($search_ref) {
 	$sql .= natural_search('f.ref', $search_ref);
 }
 $sql .= " AND d.buy_price_ht IS NOT NULL";
+
+//--backport develop
+$parameters = array();
+$hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action);
+$sql .= $hookmanager->resPrint;
+//-- fin backport develop
+
 $sql .= $db->order($sortfield, $sortorder);
 
 $nbtotalofrecords = '';
