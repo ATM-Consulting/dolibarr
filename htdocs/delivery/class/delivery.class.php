@@ -110,6 +110,18 @@ class Delivery extends CommonObject
 
 	public $lines = array();
 
+	// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+	/**
+	 * Draft status
+	 */
+	const STATUS_DRAFT = 0;
+
+	/**
+	 * Validated status
+	 */
+	const STATUS_VALIDATED = 1;
+	// **********************************************************************
+
 
 	/**
 	 * Constructor
