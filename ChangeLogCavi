@@ -1,3 +1,4 @@
 # CHANGELOG 17.0 CAVI FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
+- NEW BACKPORT [Developp V23 to 17.0_cavi] : Add sendmail for Delivery/Reception *2025/07/31*
 - FIX DA026537 - Error in BDD saving *2025/05/16*
