@@ -139,7 +139,7 @@ class ExtraFields
 	 *
 	 *  @param	string			$attrname           Code of attribute
 	 *  @param  string			$label              label of attribute
-	 *  @param  string			$type               Type of attribute ('boolean','int','varchar','text','html','date','datehour','price','phone','mail','password','url','select','checkbox','separate',...)
+	 *  @param  string			$type               Type of attribute ('boolean','int','varchar','text','html','date','datetime','price','phone','mail','password','url','select','checkbox','separate',...)
 	 *  @param  int				$pos                Position of attribute
 	 *  @param  string			$size               Size/length definition of attribute ('5', '24,8', ...). For float, it contains 2 numeric separated with a comma.
 	 *  @param  string			$elementtype        Element type. Same value than object->table_element (Example 'member', 'product', 'thirdparty', ...)
@@ -207,7 +207,7 @@ class ExtraFields
 	 *  This is a private method. For public method, use addExtraField.
 	 *
 	 *	@param	string	$attrname			code of attribute
-	 *  @param	int		$type				Type of attribute ('boolean', 'int', 'varchar', 'text', 'html', 'date', 'datehour','price','phone','mail','password','url','select','checkbox', ...)
+	 *  @param	int		$type				Type of attribute ('boolean', 'int', 'varchar', 'text', 'html', 'date', 'datetime','price','phone','mail','password','url','select','checkbox', ...)
 	 *  @param	string	$length				Size/length of attribute ('5', '24,8', ...)
 	 *  @param  string	$elementtype        Element type ('member', 'product', 'thirdparty', 'contact', ...)
 	 *  @param	int		$unique				Is field unique or not
@@ -299,7 +299,7 @@ class ExtraFields
 	 *
 	 *	@param	string			$attrname		code of attribute
 	 *	@param	string			$label			label of attribute
-	 *  @param	int				$type			Type of attribute ('int', 'varchar', 'text', 'html', 'date', 'datehour', 'float')
+	 *  @param	int				$type			Type of attribute ('int', 'varchar', 'text', 'html', 'date', 'datetime', 'float')
 	 *  @param	int				$pos			Position of attribute
 	 *  @param	string			$size			Size/length of attribute ('5', '24,8', ...)
 	 *  @param  string			$elementtype	Element type ('member', 'product', 'thirdparty', ...)
@@ -526,7 +526,7 @@ class ExtraFields
 	 *
 	 *  @param	string	$attrname			Name of attribute
 	 *  @param	string	$label				Label of attribute
-	 *  @param	string	$type				Type of attribute ('boolean', 'int', 'varchar', 'text', 'html', 'date', 'datehour','price','phone','mail','password','url','select','checkbox', ...)
+	 *  @param	string	$type				Type of attribute ('boolean', 'int', 'varchar', 'text', 'html', 'date', 'datetime','price','phone','mail','password','url','select','checkbox', ...)
 	 *  @param	int		$length				Length of attribute
 	 *  @param  string	$elementtype        Element type ('member', 'product', 'thirdparty', 'contact', ...)
 	 *  @param	int		$unique				Is field unique or not
@@ -1083,6 +1083,9 @@ class ExtraFields
 					if ((string) $okey == '') {
 						continue;
 					}
+
+					$valarray = explode('|', $val);
+					$val = $valarray[0];
 
 					if ($langfile && $val) {
 						$options[$okey] = $langs->trans($val);
@@ -2026,7 +2029,7 @@ class ExtraFields
 					continue;
 				}
 
-				if (!empty($onlykey) && $onlykey == '@GETPOSTISSET' && !GETPOSTISSET('options_'.$key) && (! in_array($this->attributes[$object->table_element]['type'][$key], array('boolean', 'chkbxlst')))) {
+				if (!empty($onlykey) && $onlykey == '@GETPOSTISSET' && !GETPOSTISSET('options_'.$key) && (! in_array($this->attributes[$object->table_element]['type'][$key], array('boolean', 'checkbox', 'chkbxlst')))) {
 					//when unticking boolean field, it's not set in POST
 					continue;
 				}
@@ -2053,7 +2056,7 @@ class ExtraFields
 				if (empty($enabled)
 					|| (
 						$onlykey === '@GETPOSTISSET'
-						&& in_array($this->attributes[$object->table_element]['type'][$key], array('boolean', 'chkbxlst'))
+						&& in_array($this->attributes[$object->table_element]['type'][$key], array('boolean', 'checkbox', 'chkbxlst'))
 						&& in_array(abs($enabled), array(2, 5))
 						&& ! GETPOSTISSET('options_' . $key) // Update hidden checkboxes and multiselect only if they are provided
 					)
@@ -2077,8 +2080,12 @@ class ExtraFields
 						|| (is_array($_POST["options_".$key]) && empty($_POST["options_".$key]))) {
 						//print 'ccc'.$value.'-'.$this->attributes[$object->table_element]['required'][$key];
 
-						// Field is not defined. We mark this as a problem. We may fix it later if there is a default value and $todefaultifmissing is set.
+						// Field is not defined. We mark this as an error. We may fix it later if there is a default value and $todefaultifmissing is set.
+
 						$nofillrequired++;
+						if (!empty($this->attributes[$object->table_element]['langfile'][$key])) {
+							$langs->load($this->attributes[$object->table_element]['langfile'][$key]);
+						}
 						$error_field_required[$key] = $langs->transnoentitiesnoconv($value);
 					}
 				}

@@ -763,6 +763,7 @@ function num_public_holiday($timestampStart, $timestampEnd, $country_code = '', 
 		$sql = "SELECT code, entity, fk_country, dayrule, year, month, day, active";
 		$sql .= " FROM ".MAIN_DB_PREFIX."c_hrm_public_holiday";
 		$sql .= " WHERE active = 1 and fk_country IN (0".($country_id > 0 ? ", ".$country_id : 0).")";
+		$sql .= " AND entity IN (0," .getEntity('holiday') .")";
 
 		$resql = $db->query($sql);
 		if ($resql) {
@@ -996,16 +997,35 @@ function num_open_day($timestampStart, $timestampEnd, $inhour = 0, $lastday = 0,
 		return 'ErrorBadParameter_num_open_day';
 	}
 
-	//print 'num_open_day timestampStart='.$timestampStart.' timestampEnd='.$timestampEnd.' bit='.$lastday;
 	if ($timestampStart < $timestampEnd) {
-		$numdays = num_between_day($timestampStart, $timestampEnd, $lastday);
+		// --- 1. Calculate Gross Working Days ---
+		// Gross working days = total days in range - non-working days (weekends & public holidays).
+		$nbOpenDay = num_between_day($timestampStart, $timestampEnd, $lastday) - num_public_holiday($timestampStart, $timestampEnd, $country_code, $lastday);
 
-		$numholidays = num_public_holiday($timestampStart, $timestampEnd, $country_code, $lastday);
-		$nbOpenDay = ($numdays - $numholidays);
-		if ($inhour == 1 && $nbOpenDay <= 3) {
-			$nbOpenDay = ($nbOpenDay * 24);
+		// --- 2. Apply Contextual Half-Day Deductions ---
+		$halfday = (int) $halfday; // Ensure $halfday is an integer for reliable comparisons.
+
+		// Check if start/end days are working days just ONCE to optimize performance
+		// by avoiding redundant calls to the potentially slow num_public_holiday() function.
+		$isStartDayWorking = (num_public_holiday($timestampStart, $timestampStart, $country_code, 1) == 0);
+		$isEndDayWorking   = (num_public_holiday($timestampEnd, $timestampEnd, $country_code, 1) == 0);
+
+		// Deduct 0.5 if the leave starts in the afternoon of a working day.
+		if (($halfday == -1 || $halfday == 2) && $isStartDayWorking) {
+			$nbOpenDay -= 0.5;
 		}
-		return $nbOpenDay - (($inhour == 1 ? 12 : 0.5) * abs($halfday));
+
+		// Deduct 0.5 if the leave ends in the morning of a different, working day.
+		if (($halfday == 1 || $halfday == 2) && date('Y-m-d', $timestampStart) != date('Y-m-d', $timestampEnd) && $isEndDayWorking) {
+			$nbOpenDay -= 0.5;
+		}
+
+		// --- 3. Return Final Value ---
+		if ($inhour == 1) {
+			return $nbOpenDay * 24;
+		}
+
+		return $nbOpenDay;
 	} elseif ($timestampStart == $timestampEnd) {
 		$numholidays = 0;
 		if ($lastday) {

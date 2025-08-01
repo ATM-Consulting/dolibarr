@@ -195,9 +195,19 @@ if ($action == 'order' && GETPOST('valid')) {
 						}
 
 						$line->tva_tx = $productsupplier->vatrate_supplier;
+						$tva = $line->tva_tx / 100;
+
+						// If we use multicurrency
+						if (isModEnabled('multicurrency') && !empty($productsupplier->fourn_multicurrency_code) && $productsupplier->fourn_multicurrency_code != $conf->currency) {
+							$line->multicurrency_code 		= $productsupplier->fourn_multicurrency_code;
+							$line->fk_multicurrency 		= $productsupplier->fourn_multicurrency_id;
+							$line->multicurrency_subprice 	= $productsupplier->fourn_multicurrency_unitprice;
+							$line->multicurrency_total_ht	= $line->multicurrency_subprice * $qty;
+							$line->multicurrency_total_tva	= $line->multicurrency_total_ht * $tva;
+							$line->multicurrency_total_ttc	= $line->multicurrency_total_ht + $line->multicurrency_total_tva;
+						}
 						$line->subprice = $productsupplier->fourn_pu;
 						$line->total_ht = $productsupplier->fourn_pu * $qty;
-						$tva = $line->tva_tx / 100;
 						$line->total_tva = $line->total_ht * $tva;
 						$line->total_ttc = $line->total_ht + $line->total_tva;
 						$line->remise_percent = $productsupplier->remise_percent;
@@ -262,7 +272,8 @@ if ($action == 'order' && GETPOST('valid')) {
 						null,
 						null,
 						0,
-						$line->fk_unit
+						$line->fk_unit,
+						$line->multicurrency_subprice ?? 0
 					);
 				}
 				if ($result < 0) {
@@ -273,9 +284,11 @@ if ($action == 'order' && GETPOST('valid')) {
 				} else {
 					$id = $result;
 				}
+				$i++;
 			} else {
 				$order->socid = $suppliersid[$i];
 				$order->fetch_thirdparty();
+				$order->multicurrency_code = $order->thirdparty->multicurrency_code;
 
 				// Trick to know which orders have been generated using the replenishment feature
 				$order->source = $order::SOURCE_ID_REPLENISHMENT;
@@ -577,7 +590,7 @@ print '<span class="opacitymedium">'.$langs->trans("ReplenishmentStatusDesc").'<
 
 //$link = '<a title=' .$langs->trans("MenuNewWarehouse"). ' href="'.DOL_URL_ROOT.'/product/stock/card.php?action=create">'.$langs->trans("MenuNewWarehouse").'</a>';
 
-if (empty($fk_warhouse) && !empty($conf->global->STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE)) {
+if (empty($fk_entrepot) && !empty($conf->global->STOCK_ALLOW_ADD_LIMIT_STOCK_BY_WAREHOUSE)) {
 	print '<span class="opacitymedium">'.$langs->trans("ReplenishmentStatusDescPerWarehouse").'</span>'."\n";
 }
 print '<br><br>';

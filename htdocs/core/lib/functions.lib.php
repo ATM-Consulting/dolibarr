@@ -81,7 +81,7 @@ function getDolGlobalString($key, $default = '')
 {
 	global $conf;
 	// return $conf->global->$key ?? $default;
-	return (string) (empty($conf->global->$key) ? $default : $conf->global->$key);
+	return (string) (isset($conf->global->$key) ? $conf->global->$key : $default);
 }
 
 /**
@@ -94,7 +94,7 @@ function getDolGlobalInt($key, $default = 0)
 {
 	global $conf;
 	// return $conf->global->$key ?? $default;
-	return (int) (empty($conf->global->$key) ? $default : $conf->global->$key);
+	return (int) (isset($conf->global->$key) ? $conf->global->$key : $default);
 }
 
 /**
@@ -1145,28 +1145,42 @@ function dol_buildpath($path, $type = 0, $returnemptyifnotfound = 0)
 }
 
 /**
- *	Create a clone of instance of object (new instance with same value for properties)
- *  With native = 0: Property that are reference are also new object (full isolation clone). This means $this->db of new object is not valid.
+ *	Create a clone of instance of object (new instance with same value for each properties)
+ *  With native = 0: Property that are reference are different memory area in the new object (full isolation clone). This means $this->db of new object may not be valid.
  *  With native = 1: Use PHP clone. Property that are reference are same pointer. This means $this->db of new object is still valid but point to same this->db than original object.
+ *  With native = 2: Property that are reference are different memory area in the new object (full isolation clone). Only scalar and array values are cloned. This means $this->db of new object is not valid.
  *
  * 	@param	object	$object		Object to clone
- *  @param	int		$native		0=Full isolation method, 1=Native PHP method
+ *  @param	int		$native		0=Full isolation method, 1=Native PHP method, 2=Full isolation method keeping only scalar and array properties (recommended)
  *	@return object				Clone object
  *  @see https://php.net/manual/language.oop5.cloning.php
  */
 function dol_clone($object, $native = 0)
 {
-	if (empty($native)) {
+	if ($native == 0) {
+		// deprecated method, use the method with native = 2 instead
 		$tmpsavdb = null;
 		if (isset($object->db) && isset($object->db->db) && is_object($object->db->db) && get_class($object->db->db) == 'PgSql\Connection') {
 			$tmpsavdb = $object->db;
-			unset($object->db);		// Such property can not be serialized when PgSql/Connection
+			unset($object->db);		// Such property can not be serialized with pgsl (when object->db->db = 'PgSql\Connection')
 		}
 
-		$myclone = unserialize(serialize($object));	// serialize then unserialize is hack to be sure to have a new object for all fields
+		$myclone = unserialize(serialize($object));	// serialize then unserialize is a hack to be sure to have a new object for all fields
 
-		if ($tmpsavdb) {
+		if (!empty($tmpsavdb)) {
 			$object->db = $tmpsavdb;
+		}
+	} elseif ($native == 2) {
+		// recommended method to have a full isolated cloned object
+		$myclone = new stdClass();
+		$tmparray = get_object_vars($object);	// return only public properties
+
+		if (is_array($tmparray)) {
+			foreach ($tmparray as $propertykey => $propertyval) {
+				if (is_scalar($propertyval) || is_array($propertyval)) {
+					$myclone->$propertykey = $propertyval;
+				}
+			}
 		}
 	} else {
 		$myclone = clone $object; // PHP clone is a shallow copy only, not a real clone, so properties of references will keep the reference (refering to the same target/variable)
@@ -5969,30 +5983,30 @@ function isOnlyOneLocalTax($local)
 /**
  * Get values of localtaxes (1 or 2) for company country for the common vat with the highest value
  *
- * @param	int		$local 	LocalTax to get
- * @return	number			Values of localtax
+ * @param	int				$local 		LocalTax to get
+ * @return	string						Values of localtax (Can be '20', '-19:-15:-9')
  */
 function get_localtax_by_third($local)
 {
 	global $db, $mysoc;
-	$sql = "SELECT t.localtax1, t.localtax2 ";
-	$sql .= " FROM ".MAIN_DB_PREFIX."c_tva as t inner join ".MAIN_DB_PREFIX."c_country as c ON c.rowid=t.fk_pays";
-	$sql .= " WHERE c.code = '".$db->escape($mysoc->country_code)."' AND t.active = 1 AND t.taux=(";
-	$sql .= "  SELECT max(tt.taux) FROM ".MAIN_DB_PREFIX."c_tva as tt inner join ".MAIN_DB_PREFIX."c_country as c ON c.rowid=tt.fk_pays";
-	$sql .= "  WHERE c.code = '".$db->escape($mysoc->country_code)."' AND tt.active = 1";
-	$sql .= "  )";
+
+	$sql  = " SELECT t.localtax".$local." as localtax";
+	$sql .= " FROM ".MAIN_DB_PREFIX."c_tva as t INNER JOIN ".MAIN_DB_PREFIX."c_country as c ON c.rowid = t.fk_pays";
+	$sql .= " WHERE c.code = '".$db->escape($mysoc->country_code)."' AND t.active = 1 AND t.taux = (";
+	$sql .= "SELECT MAX(tt.taux) FROM ".MAIN_DB_PREFIX."c_tva as tt INNER JOIN ".MAIN_DB_PREFIX."c_country as c ON c.rowid = tt.fk_pays";
+	$sql .= " WHERE c.code = '".$db->escape($mysoc->country_code)."' AND tt.active = 1)";
+	$sql .= " AND t.localtax".$local."_type <> '0'";
+	$sql .= " ORDER BY t.rowid DESC";
 
 	$resql = $db->query($sql);
 	if ($resql) {
 		$obj = $db->fetch_object($resql);
-		if ($local == 1) {
-			return $obj->localtax1;
-		} elseif ($local == 2) {
-			return $obj->localtax2;
-		}
+		return $obj->localtax;
+	} else {
+		return 'Error';
 	}
 
-	return 0;
+	return '0';
 }
 
 
@@ -6101,7 +6115,7 @@ function getLocalTaxesFromRate($vatrate, $local, $buyer, $seller, $firstparamisi
 		}
 
 		$sql .= ", ".MAIN_DB_PREFIX."c_country as c";
-		if ($mysoc->country_code == 'ES') {
+		if (!empty($mysoc) && $mysoc->country_code == 'ES') {
 			$sql .= " WHERE t.fk_pays = c.rowid AND c.code = '".$db->escape($buyer->country_code)."'"; // local tax in spain use the buyer country ??
 		} else {
 			$sql .= " WHERE t.fk_pays = c.rowid AND c.code = '".$db->escape(empty($seller->country_code) ? $mysoc->country_code : $seller->country_code)."'";
@@ -7526,15 +7540,16 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 				$substitutionarray['__CANDIDATE_LASTNAME__'] = isset($object->lastname) ? $object->lastname : '';
 			}
 
+			$project = null;
 			if (is_object($object->project)) {
-				$substitutionarray['__PROJECT_ID__'] = (is_object($object->project) ? $object->project->id : '');
-				$substitutionarray['__PROJECT_REF__'] = (is_object($object->project) ? $object->project->ref : '');
-				$substitutionarray['__PROJECT_NAME__'] = (is_object($object->project) ? $object->project->title : '');
+				$project = $object->project;
+			} elseif (is_object($object->projet)) { // Deprecated, for backward compatibility
+				$project = $object->projet;
 			}
-			if (is_object($object->projet)) {	// Deprecated, for backward compatibility
-				$substitutionarray['__PROJECT_ID__'] = (is_object($object->projet) ? $object->projet->id : '');
-				$substitutionarray['__PROJECT_REF__'] = (is_object($object->projet) ? $object->projet->ref : '');
-				$substitutionarray['__PROJECT_NAME__'] = (is_object($object->projet) ? $object->projet->title : '');
+			if ($project) {
+				$substitutionarray['__PROJECT_ID__'] = $project->id;
+				$substitutionarray['__PROJECT_REF__'] = $project->ref;
+				$substitutionarray['__PROJECT_NAME__'] = $project->title;
 			}
 			if (is_object($object) && $object->element == 'project') {
 				$substitutionarray['__PROJECT_NAME__'] = $object->title;
@@ -7857,7 +7872,6 @@ function make_substitutions($text, $substitutionarray, $outputlangs = null, $con
 			} else {
 				if (! $msgishtml) {
 					$valueishtml = dol_textishtml($value, 1);
-					var_dump("valueishtml=".$valueishtml);
 
 					if ($valueishtml) {
 						$text = dol_htmlentitiesbr($text);
@@ -8633,6 +8647,10 @@ function dol_eval($s, $returnvalue = 0, $hideerrors = 1, $onlysimplestring = '1'
 				return '';
 			}
 		}
+	}
+
+	if (is_array($s) || $s === 'Array') {
+		return 'Bad string syntax to evaluate (value is Array) '.var_export($s, true);
 	}
 	if (strpos($s, '::') !== false) {
 		if ($returnvalue) {
@@ -9414,7 +9432,12 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 
 	$value = preg_replace('/\s*\|\s*/', '|', $value);
 
-	$crits = explode(' ', $value);
+	//natural mode search type 3 allow spaces into search ...
+	if ($mode == 3 || $mode == -3) {
+		$crits = explode(',', $value);
+	} else {
+		$crits = explode(' ', $value);
+	}
 	$res = '';
 	if (!is_array($fields)) {
 		$fields = array($fields);
@@ -9464,7 +9487,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0)
 							$listofcodes .= "'".$db->escape($val)."'";
 						}
 					}
-					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1).")";
+					$newres .= ($i2 > 0 ? ' OR ' : '').$field." ".($mode == -3 ? 'NOT ' : '')."IN (".$db->sanitize($listofcodes, 1, 0, 1).")";
 					$i2++; // a criteria was added to string
 				}
 				if ($mode == -3) {
@@ -11176,7 +11199,7 @@ function dolForgeCriteriaCallback($matches)
 
 	$operand = preg_replace('/[^a-z0-9\._]/i', '', trim($tmp[0]));
 
-	$operator = strtoupper(preg_replace('/[^a-z<>=]/i', '', trim($tmp[1])));
+	$operator = strtoupper(preg_replace('/[^a-z<>!=]/i', '', trim($tmp[1])));
 	if ($operator == 'NOTLIKE') {
 		$operator = 'NOT LIKE';
 	}

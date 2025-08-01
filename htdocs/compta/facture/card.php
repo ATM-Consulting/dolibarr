@@ -122,6 +122,9 @@ if ($id > 0 || !empty($ref)) {
 			$fetch_situation = true;
 		}
 		$ret = $object->fetch($id, $ref, '', '', $fetch_situation);
+		if ($ret > 0 && isset($object->fk_project)) {
+			$ret = $object->fetch_project();
+		}
 	}
 }
 
@@ -1927,6 +1930,8 @@ if (empty($reshook)) {
 				$object->mode_reglement_id = GETPOST('mode_reglement_id', 'int');
 				$object->remise_absolue =price2num(GETPOST('remise_absolue'), 'MU', 2);
 				$object->remise_percent = price2num(GETPOST('remise_percent'), '', 2);
+				$object->fk_account = GETPOST('fk_account', 'int');
+
 
 				// Proprietes particulieres a facture de remplacement
 
@@ -2126,7 +2131,7 @@ if (empty($reshook)) {
 				$pu_ht = $datapriceofproduct['pu_ht'];
 				$pu_ttc = $datapriceofproduct['pu_ttc'];
 				$price_min = $datapriceofproduct['price_min'];
-				$price_base_type = $datapriceofproduct['price_base_type'];
+				$price_base_type = empty($datapriceofproduct['price_base_type']) ? 'HT' : $datapriceofproduct['price_base_type'];
 				$tva_tx = $datapriceofproduct['tva_tx'];
 				$tva_npr = $datapriceofproduct['tva_npr'];
 
@@ -2793,7 +2798,7 @@ if (empty($reshook)) {
 
 
 	if ($action == 'update_extras') {
-		$object->oldcopy = dol_clone($object);
+		$object->oldcopy = dol_clone($object, 2);
 
 		// Fill array 'array_options' with data from add form
 		$ret = $extrafields->setOptionalsFromPost(null, $object, GETPOST('attribute', 'restricthtml'));
@@ -5388,7 +5393,6 @@ if ($action == 'create') {
 		if (empty($reshook)) {
 			$params = array(
 				'attr' => array(
-					'title' => '',
 					'class' => 'classfortooltip'
 				)
 			);
@@ -5401,6 +5405,7 @@ if ($action == 'create') {
 					if (!empty($conf->global->INVOICE_CAN_BE_EDITED_EVEN_IF_PAYMENT_DONE) || ($resteapayer == price2num($object->total_ttc, 'MT', 1) && empty($object->paye))) {
 						if (!$objectidnext && $object->is_last_in_cycle()) {
 							if ($usercanunvalidate) {
+								$params['attr']['title'] = '';
 								print dolGetButtonAction($langs->trans('Modify'), '', 'default', $_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=modif&token='.newToken(), '', true, $params);
 							} else {
 								$params['attr']['title'] = $langs->trans('NotEnoughPermissions');

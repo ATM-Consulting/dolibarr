@@ -264,7 +264,7 @@ if (empty($reshook)) {
 					// TODO Mutualise the list into object societe.class.php
 					$objects = array(
 						'Adherent' => '/adherents/class/adherent.class.php',
-						'Don' => '/don/class/don.class.php',
+						'Don' => array('file' => '/don/class/don.class.php', 'enabled' => isModEnabled('don')),
 						'Societe' => '/societe/class/societe.class.php',
 						//'Categorie' => '/categories/class/categorie.class.php',
 						'ActionComm' => '/comm/action/class/actioncomm.class.php',
@@ -285,7 +285,7 @@ if (empty($reshook)) {
 						'Delivery' => '/delivery/class/delivery.class.php',
 						'Product' => '/product/class/product.class.php',
 						'Project' => '/projet/class/project.class.php',
-						'Ticket' => '/ticket/class/ticket.class.php',
+						'Ticket' => array('file' => '/ticket/class/ticket.class.php', 'enabled' => isModEnabled('ticket')),
 						'User' => '/user/class/user.class.php',
 						'Account' => '/compta/bank/class/account.class.php',
 						'ConferenceOrBoothAttendee' => '/eventorganization/class/conferenceorboothattendee.class.php'
@@ -293,6 +293,13 @@ if (empty($reshook)) {
 
 					//First, all core objects must update their tables
 					foreach ($objects as $object_name => $object_file) {
+						if (is_array($object_file)) {
+							if (empty($object_file['enabled'])) {
+								continue;
+							}
+							$object_file = $object_file['file'];
+						}
+
 						require_once DOL_DOCUMENT_ROOT.$object_file;
 
 						if (!$error && !$object_name::replaceThirdparty($db, $soc_origin->id, $object->id)) {
@@ -446,7 +453,7 @@ if (empty($reshook)) {
 			}
 			$object->entity					= (GETPOSTISSET('entity') ? GETPOST('entity', 'int') : $conf->entity);
 			$object->name_alias				= GETPOST('name_alias', 'alphanohtml');
-			$object->parent					= GETPOST('parent_company_id', 'int');
+			$object->parent					= GETPOSTISSET('parent_company_id') ? GETPOST('parent_company_id', 'int') : $object->parent;
 			$object->address				= GETPOST('address', 'alphanohtml');
 			$object->zip					= GETPOST('zipcode', 'alphanohtml');
 			$object->town					= GETPOST('town', 'alphanohtml');
@@ -1805,7 +1812,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 		print '<td colspan="3" class="maxwidthonsmartphone">';
 		$userlist = $form->select_dolusers('', '', 0, null, 0, '', '', 0, 0, 0, 'AND u.statut = 1', 0, '', '', 0, 1);
 		// Note: If user has no right to "see all thirdparties", we force selection of sale representative to him, so after creation he can see the record.
-		$selected = (count(GETPOST('commercial', 'array')) > 0 ? GETPOST('commercial', 'array') : (GETPOST('commercial', 'int') > 0 ? array(GETPOST('commercial', 'int')) : (empty($user->rights->societe->client->voir) ? array($user->id) : array())));
+		$selected = (count(GETPOST('commercial', 'array')) > 0 ? GETPOST('commercial', 'array') : (GETPOST('commercial', 'int') > 0 ? array(GETPOST('commercial', 'int')) : array($user->id)));
 		print img_picto('', 'user').$form->multiselectarray('commercial', $userlist, $selected, null, null, 'quatrevingtpercent widthcentpercentminusx', 0, 0);
 		print '</td></tr>';
 

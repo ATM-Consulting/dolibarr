@@ -1370,6 +1370,8 @@ class CommandeFournisseur extends CommonOrder
 
 		// We set order into draft status
 		$this->brouillon = 1;
+		$this->statut = self::STATUS_DRAFT;	// deprecated
+		$this->status = self::STATUS_DRAFT;
 
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."commande_fournisseur (";
 		$sql .= "ref";
@@ -1874,7 +1876,7 @@ class CommandeFournisseur extends CommonOrder
 				// Predefine quantity according to packaging
 				if (!empty($conf->global->PRODUCT_USE_SUPPLIER_PACKAGING)) {
 					$prod = new Product($this->db);
-					$prod->get_buyprice($fk_prod_fourn_price, $qty, $fk_product, 'none', ($this->fk_soc ? $this->fk_soc : $this->socid));
+					$prod->get_buyprice($fk_prod_fourn_price, $qty, $fk_product, 'none', (empty($this->fk_soc) ? $this->socid : $this->fk_soc));
 
 					if ($qty < $prod->packaging) {
 						$qty = $prod->packaging;
@@ -2198,6 +2200,16 @@ class CommandeFournisseur extends CommonOrder
 			$this->error = $this->db->lasterror();
 			$this->errors[] = $this->db->lasterror();
 			$error++;
+		}
+
+		if (!$error) {
+			$sql1 = "UPDATE ".MAIN_DB_PREFIX."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet IN (SELECT rowid FROM ".$main." WHERE fk_commande = ".((int) $this->id).")";
+			dol_syslog(__METHOD__." linked order lines", LOG_DEBUG);
+			if (!$this->db->query($sql1)) {
+				$error++;
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->db->lasterror();
+			}
 		}
 
 		$sql = "DELETE FROM ".MAIN_DB_PREFIX."commande_fournisseurdet WHERE fk_commande =".((int) $this->id);
@@ -2854,7 +2866,7 @@ class CommandeFournisseur extends CommonOrder
 			$this->line->localtax2_type = empty($localtaxes_type[2]) ? '' : $localtaxes_type[2];
 			$this->line->remise_percent = $remise_percent;
 			$this->line->subprice       = $pu_ht;
-			$this->line->rang           = $this->rang;
+			$this->line->rang           = $oldline->rang;
 			$this->line->info_bits      = $info_bits;
 			$this->line->total_ht       = $total_ht;
 			$this->line->total_tva      = $total_tva;
@@ -2862,7 +2874,7 @@ class CommandeFournisseur extends CommonOrder
 			$this->line->total_localtax2 = $total_localtax2;
 			$this->line->total_ttc      = $total_ttc;
 			$this->line->product_type   = $type;
-			$this->line->special_code   = $this->special_code;
+			$this->line->special_code   = $oldline->special_code;
 			$this->line->origin         = $this->origin;
 			$this->line->fk_unit        = $fk_unit;
 
@@ -2936,7 +2948,7 @@ class CommandeFournisseur extends CommonOrder
 		$sql .= $this->db->order("rowid", "ASC");
 		$sql .= $this->db->plimit(1);
 		$resql = $this->db->query($sql);
-		if ($resql) {
+		if ($resql && $this->db->num_rows($resql)) {
 			$obj = $this->db->fetch_object($resql);
 			$prodid = $obj->rowid;
 		}
@@ -3978,10 +3990,17 @@ class CommandeFournisseurLigne extends CommonOrderLine
 			return -1;
 		}
 
-		$sql = 'DELETE FROM '.MAIN_DB_PREFIX."commande_fournisseurdet WHERE rowid=".((int) $this->id);
+		$sql1 = "UPDATE ".MAIN_DB_PREFIX."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet=".((int) $this->id);
+		$resql = $this->db->query($sql1);
+		if (!$resql) {
+			$this->db->rollback();
+			return -1;
+		}
+
+		$sql2 = 'DELETE FROM '.MAIN_DB_PREFIX."commande_fournisseurdet WHERE rowid=".((int) $this->id);
 
 		dol_syslog(__METHOD__, LOG_DEBUG);
-		$resql = $this->db->query($sql);
+		$resql = $this->db->query($sql2);
 		if ($resql) {
 			if (!$notrigger) {
 				// Call trigger

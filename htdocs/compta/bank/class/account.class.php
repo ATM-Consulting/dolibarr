@@ -240,6 +240,20 @@ class Account extends CommonObject
 	public $date_solde;
 
 	/**
+	 * Balance. Used in Account::create
+	 * @var float
+	 * @deprecated
+	 * @see $balance
+	 */
+	public $solde;
+
+	/**
+	 * Balance. Used in Account::create
+	 * @var float
+	 */
+	public $balance;
+
+	/**
 	 * Creditor Identifier CI. Some banks use different ICS for direct debit and bank tranfer
 	 * @var string
 	 */
@@ -672,6 +686,14 @@ class Account extends CommonObject
 			return -1;
 		}
 
+		$balance = $this->balance;
+		if (empty($balance) && !empty($this->solde)) {
+			$balance = $this->solde;
+		}
+		if (empty($balance)) {
+			$balance = 0;
+		}
+
 		// Chargement librairie pour acces fonction controle RIB
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/bank.lib.php';
 
@@ -745,7 +767,7 @@ class Account extends CommonObject
 				$accline = new AccountLine($this->db);
 				$accline->datec = $this->db->idate($now);
 				$accline->label = '('.$langs->trans("InitialBankBalance").')';
-				$accline->amount = price2num($this->solde);
+				$accline->amount = price2num($balance);
 				$accline->fk_user_author = $user->id;
 				$accline->fk_account = $this->id;
 				$accline->datev = $this->db->idate($this->date_solde);
@@ -1081,6 +1103,8 @@ class Account extends CommonObject
 		$error = 0;
 
 		$this->db->begin();
+
+		// @TODO Check there is no child into llx_payment_various, ... to allow deletion ?
 
 		// Delete link between tag and bank account
 		if (!$error) {
@@ -1903,7 +1927,6 @@ class AccountLine extends CommonObject
 		$sql .= " b.fk_user_author, b.fk_user_rappro,";
 		$sql .= " b.fk_type, b.num_releve, b.num_chq, b.rappro, b.note,";
 		$sql .= " b.fk_bordereau, b.banque, b.emetteur,";
-		//$sql.= " b.author"; // Is this used ?
 		$sql .= " ba.ref as bank_account_ref, ba.label as bank_account_label";
 		$sql .= " FROM ".MAIN_DB_PREFIX."bank as b,";
 		$sql .= " ".MAIN_DB_PREFIX."bank_account as ba";

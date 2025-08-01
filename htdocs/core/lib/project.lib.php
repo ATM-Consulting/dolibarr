@@ -275,7 +275,7 @@ function project_prepare_head(Project $project, $moreparam = '')
 	} else {
 		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 		require_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
-		$upload_dir = $conf->project->dir_output."/".dol_sanitizeFileName($project->ref);
+		$upload_dir = $conf->project->multidir_output[$project->entity]."/".dol_sanitizeFileName($project->ref);
 		$nbFiles = count(dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$'));
 		$nbLinks = Link::count($db, $project->element, $project->id);
 		$totalAttached = $nbFiles + $nbLinks;
@@ -401,7 +401,7 @@ function task_prepare_head($object)
 	}
 
 	$head[$h][0] = DOL_URL_ROOT.'/projet/tasks/document.php?id='.$object->id.(GETPOST('withproject') ? '&withproject=1' : '');
-	$filesdir = $conf->project->dir_output."/".dol_sanitizeFileName($object->project->ref).'/'.dol_sanitizeFileName($object->ref);
+	$filesdir = $conf->project->multidir_output[$object->entity]."/".dol_sanitizeFileName($object->project->ref).'/'.dol_sanitizeFileName($object->ref);
 	include_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 	include_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
 	$nbFiles = count(dol_dir_list($filesdir, 'files', 0, '', '(\.meta|_preview.*\.png)$'));
@@ -917,21 +917,24 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 		if ($showproject) {
 			print '<td></td><td></td>';
 		}
-		if (count($arrayfields) > 0 && !empty($arrayfields['t.label']['checked'])) {
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.label']['checked'])) {
 			print '<td></td>';
 		}
-		if (count($arrayfields) > 0 && !empty($arrayfields['t.dateo']['checked'])) {
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.description']['checked'])) {
 			print '<td></td>';
 		}
-		if (count($arrayfields) > 0 && !empty($arrayfields['t.datee']['checked'])) {
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.dateo']['checked'])) {
 			print '<td></td>';
 		}
-		if (count($arrayfields) > 0 && !empty($arrayfields['t.planned_workload']['checked'])) {
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.datee']['checked'])) {
+			print '<td></td>';
+		}
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.planned_workload']['checked'])) {
 			print '<td class="nowrap liste_total right">';
 			print convertSecondToTime($total_projectlinesa_planned, 'allhourmin');
 			print '</td>';
 		}
-		if (count($arrayfields) > 0 && !empty($arrayfields['t.duration_effective']['checked'])) {
+		if (count($arrayfields) > 0 && ! empty($arrayfields['t.duration_effective']['checked'])) {
 			print '<td class="nowrap liste_total right">';
 			if ($projectidfortotallink > 0) {
 				print '<a href="'.DOL_URL_ROOT.'/projet/tasks/time.php?projectid='.$projectidfortotallink.($showproject ? '' : '&withproject=1').'">';
@@ -1028,18 +1031,9 @@ function projectLinesa(&$inc, $parent, &$lines, &$level, $var, $showproject, &$t
 		if (count($arrayfields) > 0 && !empty($arrayfields['c.assigned']['checked'])) {
 			print '<td></td>';
 		}
-
-		//Check if Extrafields is totalizable
-		foreach ($extrafields->attributes['projet_task']['totalizable'] as $key=>$value){
-			if ($arrayfields['ef.'.$key]['checked'] == 1){
-				print '<td align="right">';
-				if ($value == 1){
-					print $totalarray['totalizable'][$key]['total'];
-				}
-				print '</td>';
-			}
+		if (! empty($totalarray['nbfield'])) {
+			print '<td colspan="'.$totalarray['nbfield'].'" class=""></td>';
 		}
-
 		print '<td class=""></td>';
 		print '</tr>';
 	}
