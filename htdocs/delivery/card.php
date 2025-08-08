@@ -660,7 +660,7 @@ if ($action == 'create') {
 					if ($conf->expedition_bon->enabled) {
 
 						// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
-						if ($object->statut == Delivery::STATUS_VALIDATED && $action != 'presend' && $expedition->status == Expedition::STATUS_VALIDATED) {
+						if ($object->statut == Delivery::STATUS_VALIDATED && $action != 'presend') {
 							print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?action=presend&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle', '');
 						}
 						// **********************************************************************
