@@ -1,3 +1,4 @@
+- FIX : DA026536 - Saut de ligne dans mail automatique - A supp en 21.0.3
 - FIX : DA026716 - Doc_ref too long
 - FIX : DA026571 - L'approbation de congé via la massaction n'enregistre pas la date d'approbation
 - FIX : #DA026469 -  Correction d’un problème où le bouton "Joindre un fichier" lors de la création d’un ticket déclenchait la création du ticket au lieu de permettre l’ajout de fichiers.
