@@ -3447,7 +3447,7 @@ class Facture extends CommonInvoice
 				if (!empty($fk_parent_line)) $this->line_order(true, 'DESC');
 
 				// Mise a jour info denormalisees au niveau facture
-				$this->update_price(1);
+				$this->update_price(1,'auto');
 				$this->db->commit();
 				return $result;
 			}
