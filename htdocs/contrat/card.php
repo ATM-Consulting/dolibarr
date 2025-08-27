@@ -1719,7 +1719,7 @@ if ($action == 'create') {
 					print '<td class="center">'.$objp->qty.'</td>';
 					// Unit
 					if (getDolGlobalInt('PRODUCT_USE_UNITS')) {
-						print '<td class="left">'.$langs->trans($object->lines[$cursorline - 1]->getLabelOfUnit()).'</td>';
+						print '<td class="left">'.$object->lines[$cursorline - 1]->getLabelOfUnit('long', $langs).'</td>';
 					}
 					// Discount
 					if ($objp->remise_percent > 0) {
@@ -2067,7 +2067,9 @@ if ($action == 'create') {
 					if ($objp->fk_product > 0) {
 						$product = new Product($db);
 						$product->fetch($objp->fk_product);
-						$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						if (!empty($product->duration_value) && !empty($product->duration_unit)) {
+							$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						}
 					}
 				}
 
