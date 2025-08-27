@@ -2805,7 +2805,7 @@ class Ticket extends CommonObject
 
 							// Customer company infos
 							$message .= '<br><br>';
-							$message .= "==============================================";µ
+							$message .= "==============================================";
 							// BACKPORT V21 A SUPPRIMER
 							$message .= !empty($object->thirdparty->name) ? '<br>'.$langs->trans('ThirdParty')." : ".$object->thirdparty->name : '';
 							// FIN BACKPORT V21
