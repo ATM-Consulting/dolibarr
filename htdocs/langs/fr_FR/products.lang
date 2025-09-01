@@ -143,6 +143,7 @@ WithoutDiscount=Sans remise
 VATRateForSupplierProduct=Taux TVA (pour ce produit/fournisseur)
 DiscountQtyMin=Remise pour cette qté.
 NoPriceDefinedForThisSupplier=Aucun prix/qté défini pour ce fournisseur/produit
+NoProductPriceDefinedForThisSupplier=Aucun produit prix/quantité défini pour ce fournisseur
 NoSupplierPriceDefinedForThisProduct=Aucun prix/qté fournisseur défini pour ce produit
 PredefinedItem=Article prédéfini
 PredefinedProductsToSell=Produits prédéfinis en vente
