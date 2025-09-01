@@ -112,6 +112,7 @@ PredefinedMailContentSendOrder=__(Hello)__\n\nPlease find order __REF__ attached
 PredefinedMailContentSendSupplierOrder=__(Hello)__\n\nPlease find our order __REF__ attached\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendSupplierInvoice=__(Hello)__\n\nPlease find invoice __REF__ attached\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendShipping=__(Hello)__\n\nPlease find shipping __REF__ attached\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
+PredefinedMailContentSendReception=__(Hello)__\n\nPlease find reception __REF__ attached\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendFichInter=__(Hello)__\n\nPlease find intervention __REF__ attached\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentLink=You can click on the link below to make your payment if it is not already done.\n\n%s\n\n
 PredefinedMailContentGeneric=__(Hello)__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__

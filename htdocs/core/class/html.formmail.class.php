@@ -624,11 +624,13 @@ class FormMail extends Form
 				$out .= '<input type="submit" class="button reposition smallpaddingimp" value="'.$langs->trans('Apply').'" name="modelselected" id="modelselected">';
 				$out .= ' &nbsp; ';
 				$out .= '</div>';
+				// ************* reception_send ! BACKPORT FOR V17 / PLEASE DELETE reception_send AT V23 *************
 			} elseif (!empty($this->param['models']) && in_array($this->param['models'], array(
 					'propal_send', 'order_send', 'facture_send',
-					'shipping_send', 'fichinter_send', 'supplier_proposal_send', 'order_supplier_send',
+					'shipping_send', 'reception_send', 'fichinter_send', 'supplier_proposal_send', 'order_supplier_send',
 					'invoice_supplier_send', 'thirdparty', 'contract', 'user', 'recruitmentcandidature_send', 'product_send', 'all'
 				))) {
+				// *********************** ! ONLY reception_send ! ****************************
 				// If list of template is empty
 				$out .= '<div class="center" style="padding: 0px 0 12px 0">'."\n";
 				$out .= '<span class="opacitymedium">'.$langs->trans('SelectMailModel').':</span> ';
@@ -1798,7 +1800,7 @@ class FormMail extends Form
 				} else {
 					// If there is no template at all
 					$defaultmessage = '';
-
+//					var_dump($type_template);die;
 					if ($type_template == 'body') {
 						// Special case to use this->withbody as content
 						$defaultmessage = (string) $this->withbody;
@@ -1818,6 +1820,10 @@ class FormMail extends Form
 						$defaultmessage = $outputlangs->transnoentities("PredefinedMailContentSendSupplierInvoice");
 					} elseif ($type_template == 'shipping_send') {
 						$defaultmessage = $outputlangs->transnoentities("PredefinedMailContentSendShipping");
+						// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+					} elseif ($type_template == 'reception_send') {
+						$defaultmessage = $outputlangs->transnoentities("PredefinedMailContentSendReception");
+						// **********************************************************************
 					} elseif ($type_template == 'fichinter_send') {
 						$defaultmessage = $outputlangs->transnoentities("PredefinedMailContentSendFichInter");
 					} elseif ($type_template == 'actioncomm_send') {

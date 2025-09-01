@@ -282,6 +282,15 @@ include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
 
 include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
 
+// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+// Actions to send emails
+$triggersendname = 'RECEPTION_SENTBYMAIL';
+$paramname = 'id';
+$autocopy = 'MAIN_MAIL_AUTOCOPY_RECEPTION_TO';
+$mode = 'emailfromreception';
+$trackid = 'bl' . $object->id;
+include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';
+// **********************************************************************
 
 /*
  *	View
@@ -685,6 +694,11 @@ if ($action == 'create') {
 
 				if ($user->hasRight('expedition', 'delivery', 'supprimer')) {
 					if (getDolGlobalInt('MAIN_SUBMODULE_EXPEDITION')) {
+						// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+						if ($object->statut == Delivery::STATUS_VALIDATED && $action != 'presend') {
+							print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?action=presend&token='.newToken().'&id='.$object->id.'&mode=init#formmailbeforetitle', '');
+						}
+						// **********************************************************************
 						print dolGetButtonAction('', $langs->trans('Delete'), 'delete', $_SERVER["PHP_SELF"].'?id='.$object->id.'&amp;expid='.$object->origin_id.'&amp;action=delete&amp;token='.newToken().'&amp;backtopage='.urlencode(DOL_URL_ROOT.'/expedition/card.php?id='.$object->origin_id), '');
 					} else {
 						print dolGetButtonAction('', $langs->trans('Delete'), 'delete', $_SERVER["PHP_SELF"].'?action=delete&amp;token='.newToken().'&amp;id='.$object->id, '');
@@ -701,25 +715,28 @@ if ($action == 'create') {
 			  * Documents generated
 			 */
 
-			$objectref = dol_sanitizeFileName($object->ref);
-			$filedir = $conf->expedition->dir_output."/receipt/".$objectref;
-			$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
+			if ($action != 'presend') {
 
-			$genallowed = $user->hasRight('expedition', 'delivery', 'lire');
-			$delallowed = $user->hasRight('expedition', 'delivery', 'creer');
+				$objectref = dol_sanitizeFileName($object->ref);
+				$filedir = $conf->expedition->dir_output . "/receipt/" . $objectref;
+				$urlsource = $_SERVER["PHP_SELF"] . "?id=" . $object->id;
 
-			print $formfile->showdocuments('delivery', $objectref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $soc->default_lang);
+				$genallowed = $user->hasRight('expedition', 'delivery', 'lire');
+				$delallowed = $user->hasRight('expedition', 'delivery', 'creer');
 
-			/*
-			  * Linked object block (of linked shipment)
-			  */
-			if ($object->origin == 'expedition') {
-				$shipment = new Expedition($db);
-				$shipment->fetch($object->origin_id);
+				print $formfile->showdocuments('delivery', $objectref, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $soc->default_lang);
 
-				// Show links to link elements
-				//$tmparray = $form->showLinkToObjectBlock($object, null, array('order'), 1);
-				$somethingshown = $form->showLinkedObjectBlock($object, '');
+				/*
+				  * Linked object block (of linked shipment)
+				  */
+				if ($object->origin == 'expedition') {
+					$shipment = new Expedition($db);
+					$shipment->fetch($object->origin_id);
+
+					// Show links to link elements
+					//$tmparray = $form->showLinkToObjectBlock($object, null, array('order'), 1);
+					$somethingshown = $form->showLinkedObjectBlock($object, '');
+				}
 			}
 
 
@@ -736,6 +753,25 @@ if ($action == 'create') {
 		/* Expedition non trouvee */
 		print "Expedition inexistante ou access refuse";
 	}
+
+	// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+	/*
+	* Action presend
+	*/
+	//Select mail models is same action as presend
+	if (GETPOST('modelselected')) {
+		$action = 'presend';
+	}
+
+	// Presend form
+	$modelmail = 'reception_send';
+	$defaulttopic = 'SendReceptionRef';
+	$diroutput = $conf->expedition->dir_output.'/receipt';
+	$trackid = 'bl'.$object->id;
+
+	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
+	// **********************************************************************
+
 }
 
 // End of page
