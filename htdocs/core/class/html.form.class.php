@@ -3708,7 +3708,7 @@ class Form
 
 		$sql .= " WHERE p.entity IN (" . getEntity('product') . ")";
 
-		// Fix provisoire sur la branche du client pr en attente sur develop dolibarr (dispo - prochaine mdv)
+		// Temporary fix on the client's branch pending PR on Dolibarr develop (available - next MDV)
 		if (isModEnabled('multicompany') && getDolGlobalInt('MULTICOMPANY_PRODUCT_SHARE_ALL_BY_DEFAULT')){
 			$sql .= " AND ees.rowid IS NULL ";
 		}
