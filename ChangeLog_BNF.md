@@ -1,2 +1,2 @@
 # Backported from Dolibarr core :
-- Backport develop #33597 : Moved reopen buisness logic from card into CommandeFournisseur class
+- Backport develop #33597 : Moved reopen business logic from card into CommandeFournisseur class
