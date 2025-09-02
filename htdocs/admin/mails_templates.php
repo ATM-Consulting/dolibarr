@@ -205,6 +205,11 @@ if (isModEnabled("societe") && $user->hasRight('societe', 'lire')) {
 if (isModEnabled("societe") && $user->hasRight('societe', 'contact', 'lire')) {
 	$elementList['contact'] = img_picto('', 'contact', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToContact'));
 }
+
+//// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
+$elementList['reception_send'] = img_picto('', 'dolly', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendReception'));
+// **********************************************************************
+
 if (isModEnabled('project')) {
 	$elementList['project'] = img_picto('', 'project', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToProject'));
 }
