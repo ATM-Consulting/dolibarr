@@ -398,8 +398,8 @@ class Utils
 			$handle = '';
 
 			// Start call method to execute dump
-			$fullcommandcrypted = $command." ".$paramcrypted." 2>&1";
-			$fullcommandclear = $command." ".$paramclear." 2>&1";
+			$fullcommandcrypted = $command." ".$paramcrypted."|tail +2 2>&1";
+			$fullcommandclear = $command." ".$paramclear."|tail +2 2>&1";
 			if (!$lowmemorydump) {
 				if ($compression == 'none') {
 					$handle = fopen($outputfile, 'w');
@@ -497,7 +497,7 @@ class Utils
 
 				if ($execmethod == 2) {	// With this method, there is no way to get the return code, only output
 					$handlein = popen($fullcommandclear, 'r');
-					$i = 0;
+					$i = 0;			// Start call method to execute dump
 					if ($handlein) {
 						while (!feof($handlein)) {
 							$i++; // output line number
