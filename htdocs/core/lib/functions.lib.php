@@ -2631,7 +2631,7 @@ function dol_get_fiche_head($links = array(), $active = '', $title = '', $notab 
 				$outmore_content .= preg_replace('/([a-z])\|([a-z])/i', '\\1 | \\2', $links[$i][1]); // Replace x|y with x | y to allow wrap on long composed texts.
 				$outmore_content .= '</a>'."\n";
 			}
-			if ($outmore_content !== '') {
+			if (!empty($outmore_content)) {
 				$outmore .= '<div class="popuptab wordwrap" style="display:inherit;">' . $outmore_content . '</div>';
 			}
 			$nbintab++;
