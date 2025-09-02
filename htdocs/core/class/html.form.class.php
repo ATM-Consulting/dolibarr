@@ -3700,7 +3700,7 @@ class Form
 		if (getDolGlobalInt('PRODUCT_USE_UNITS')) {
 			$sql .= " LEFT JOIN " . $this->db->prefix() . "c_units u ON u.rowid = p.fk_unit";
 		}
-		// Fix provisoire sur la branche du client pr en attente sur develop dolibarr (dispo - prochaine mdv)
+		// Temporary fix on the client's branch pending PR on Dolibarr develop (available - next MDV)
 		// we want to handle element sharing
 		if (isModEnabled('multicompany') && getDolGlobalInt('MULTICOMPANY_PRODUCT_SHARE_ALL_BY_DEFAULT')){
 			$sql .= ' LEFT JOIN '.$this->db->prefix().'entity_element_sharing AS ees ON ees.fk_element = p.rowid AND ees.entity IN ('.getEntity("product").') AND ees.element = "product"';
