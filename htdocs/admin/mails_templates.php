@@ -73,9 +73,7 @@ $optioncss = GETPOST('optioncss', 'alpha');
 $backtopage = GETPOST('backtopage');
 $contextpage = GETPOST('contextpage', 'aZ09');
 
-$id = GETPOSTINT('id') ?: 25;
-$rowid = GETPOSTINT('rowid') ?: 0;
-var_dump($id, $rowid);
+$id = $rowid = (GETPOSTINT('id') ? GETPOSTINT('id') : GETPOSTINT('rowid'));
 $search_label = GETPOST('search_label', 'alphanohtml'); // Must allow value like 'Abc Def' or '(MyTemplateName)'
 $search_type_template = GETPOST('search_type_template', 'alpha');
 $search_lang = GETPOST('search_lang', 'alpha');
@@ -209,8 +207,8 @@ if (isModEnabled("societe") && $user->hasRight('societe', 'contact', 'lire')) {
 }
 
 //// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
-//$elementList['reception_send'] = img_picto('', 'dolly', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendReception'));
-//// **********************************************************************
+$elementList['reception_send'] = img_picto('', 'dolly', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendReception'));
+// **********************************************************************
 
 if (isModEnabled('project')) {
 	$elementList['project'] = img_picto('', 'project', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToProject'));

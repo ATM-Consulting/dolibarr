@@ -1800,7 +1800,7 @@ class FormMail extends Form
 				} else {
 					// If there is no template at all
 					$defaultmessage = '';
-//					var_dump($type_template);die;
+
 					if ($type_template == 'body') {
 						// Special case to use this->withbody as content
 						$defaultmessage = (string) $this->withbody;
