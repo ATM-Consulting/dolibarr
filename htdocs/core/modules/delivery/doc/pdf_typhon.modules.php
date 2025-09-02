@@ -837,7 +837,6 @@ class pdf_typhon extends ModelePDFDeliveryOrder
 			}
 
 			$carac_client_name = pdfBuildThirdpartyName($thirdparty, $outputlangs);
-			// voir avec quentin car
 			$carac_client = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, ($usecontact ? $object->contact : ''), ($usecontact ? 1 : 0), 'targetwithdetails', $object);
 
 			// Show recipient

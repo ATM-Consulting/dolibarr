@@ -857,7 +857,7 @@ class Notify
 								$link = '<a href="'.$urlwithroot.'/fourn/commande/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$dir_output = $conf->fournisseur->commande->multidir_output[$object->entity ?? $conf->entity]."/".get_exdir(0, 0, 0, 1, $object);
 								$object_type = 'order_supplier';
-								$labeltouse = isset($conf->global->ORDER_SUPPLIER_APPROVE_TEMPLATE) ? $conf->global->ORDER_SUPPLIER_APPROVE_TEMPLATE : '';
+								$labeltouse = getDolGlobalString('ORDER_SUPPLIER_APPROVE_TEMPLATE') ? getDolGlobalString('ORDER_SUPPLIER_APPROVE_TEMPLATE')  : '';
 								$mesg = $outputlangs->transnoentitiesnoconv("Hello").",\n\n";
 								$mesg .= $outputlangs->transnoentitiesnoconv("EMailTextSupplierOrderCanceledBy", $link, $user->getFullName($outputlangs));
 								$mesg .= "\n\n".$outputlangs->transnoentitiesnoconv("Sincerely").".\n\n";
@@ -866,7 +866,7 @@ class Notify
 								$link = '<a href="'.$urlwithroot.'/fourn/commande/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$dir_output = $conf->fournisseur->commande->multidir_output[$object->entity ?? $conf->entity]."/".get_exdir(0, 0, 0, 1, $object);
 								$object_type = 'order_supplier';
-								$labeltouse = isset($conf->global->ORDER_SUPPLIER_APPROVE_TEMPLATE) ? $conf->global->ORDER_SUPPLIER_APPROVE_TEMPLATE : '';
+								$labeltouse = getDolGlobalString('ORDER_SUPPLIER_APPROVE_TEMPLATE')  ? getDolGlobalString('ORDER_SUPPLIER_APPROVE_TEMPLATE')  : '';
 								$mesg = $outputlangs->transnoentitiesnoconv("Hello").",\n\n";
 								$mesg .= $outputlangs->transnoentitiesnoconv("EMailTextSupplierOrderApprovedBy", $link, $user->getFullName($outputlangs));
 								$mesg .= "\n\n".$outputlangs->transnoentitiesnoconv("Sincerely").".\n\n";
@@ -1131,7 +1131,7 @@ class Notify
 						$sql .= " INNER JOIN ".$this->db->prefix()."notify as n ON s.rowid = n.fk_soc";
 						$sql .= " WHERE n.fk_soc = ".((int) $object->socid);
 						$resql = $this->db->query($sql);
-						if ($resql){
+						if ($resql) {
 							$obj = $this->db->fetch_object($resql);
 							$nomsoc = $obj->nom;
 							$mesg = $langs->transnoentitiesnoconv("EMailTextOrderValidated", $link);
