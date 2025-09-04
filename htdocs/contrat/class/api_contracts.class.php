@@ -550,9 +550,12 @@ class Contracts extends DolibarrApi
 			$result = $this->get($id);
 			unset($result->line);
 			return $this->_cleanObjectDatas($result);
-		} else {
+		}
+		//BACKPORT STD PR 35172
+		else {
 			throw new RestException(500, implode(';', $this->contract->errors));
 		}
+		// FIN BACKPORT STD PR 35172
 	}
 
 	/**
