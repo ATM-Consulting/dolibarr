@@ -6965,7 +6965,7 @@ class Form
 			if (isInEEC($societe_vendeuse) && isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()) {
 				// We also add the buyer country code
 				if (is_numeric($type)) {
-					if ($type == 1) { // We know product is a service
+					if ($type == 1 || $type == 0) { // SPÉ CLIENT FASTSUSPENSION; en standard, c'est uniquement pour les services: `$type == 1` sans le `|| $type == 0`
 						switch ($selectVatComboMode) {
 							case '1':
 								$code_country .= ",'" . $societe_acheteuse->country_code . "'";
