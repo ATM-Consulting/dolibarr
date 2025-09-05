@@ -1347,6 +1347,12 @@ if (!$error && ($action == 'updateprice' && $confirm == 'yes') && $permissiontoa
 		if ($pricepercentage == 0) {
 			setEventMessages($langs->trans("RecordsModified", 0), null);
 		} else {
+//////////////////////// BACKPORT CONSILIUM * DELETE me on V23 //////////////////////////////////////////
+			if (get_class($object) == 'Societe') {
+				require_once DOL_DOCUMENT_ROOT.'/product/class/productcustomerprice.class.php';
+				$object = new ProductCustomerPrice($db);
+			}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 			foreach ($toselect as $toselectid) {
 				$result = $object->fetch($toselectid);
 				//var_dump($contcats);exit;
