@@ -203,9 +203,6 @@ if (isModEnabled('facture') && !empty($user->rights->facture->lire)) {
 }
 if (isModEnabled("expedition")) {
 	$elementList['shipping_send'] = img_picto('', 'dolly', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendShipment'));
-	// ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
-	$elementList['reception_send'] = img_picto('', 'dolly', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendReception'));
-	// **********************************************************************
 }
 if (isModEnabled("reception")) {
 	$elementList['reception_send'] = img_picto('', 'dollyrevert', 'class="pictofixedwidth"').dol_escape_htmltag($langs->trans('MailToSendReception'));
