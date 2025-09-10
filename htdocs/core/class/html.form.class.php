@@ -7781,7 +7781,7 @@ class Form
 	/**
 	 *  Return list of projects in Ajax if Ajax activated or go to selectTicketsList
 	 *
-	 * @param 	string 	$selected 				Preselected tickets
+	 * @param 	string 	$selected 				Preselected projects
 	 * @param 	string 	$htmlname 				Name of HTML select field (must be unique in page).
 	 * @param 	string 	$filtertype				To add a filter
 	 * @param 	int 	$limit 					Limit on number of returned lines
@@ -7915,7 +7915,7 @@ class Form
 
 			if (!$forcecombo) {
 				include_once DOL_DOCUMENT_ROOT . '/core/lib/ajax.lib.php';
-				$out .= ajax_combobox($htmlname, $events, $conf->global->PROJECT_USE_SEARCH_TO_SELECT);
+				$out .= ajax_combobox($htmlname, $events, getDolGlobalInt("PROJECT_USE_SEARCH_TO_SELECT") ?? 0 );
 			}
 
 			$out .= '<select class="flat' . ($morecss ? ' ' . $morecss : '') . '" name="' . $htmlname . '" id="' . $htmlname . '">';
@@ -7973,37 +7973,31 @@ class Form
 	 * constructProjectListOption.
 	 * This define value for &$opt and &$optJson.
 	 *
-	 * @param stdClass 	$objp 		Result set of fetch
-	 * @param string 	$opt 		Option (var used for returned value in string option format)
-	 * @param array{key:string,value:string,type:string}	$optJson 	Option (var used for returned value in json format)
-	 * @param string 	$selected 	Preselected value
-	 * @param string 	$filterkey 	Filter key to highlight
+	 * @param stdClass  $objp     Result set of fetch
+	 * @param string    $opt      Option (var used for returned value in string option format)
+	 * @param array{key:string,value:string,type:string}    $optJson   Option (var used for returned value in json format)
+	 * @param string    $selected  Preselected value
+	 * @param string    $filterkey     Filter key to highlight
 	 * @return    void
 	 */
 	protected function constructProjectListOption(&$objp, &$opt, &$optJson, $selected, $filterkey = '')
 	{
-		$outkey = '';
-		$outref = '';
-		$outtype = '';
-
-		$label = $objp->label;
-
-		$outkey = $objp->rowid;
-		$outref = $objp->ref;
-		$outlabel = $objp->label;
-		$outtype = $objp->fk_product_type;
-
-		$opt = '<option value="' . $objp->rowid . '"';
-		$opt .= ($objp->rowid == $selected) ? ' selected' : '';
-		$opt .= '>';
-		$opt .= $objp->ref;
-		$objRef = $objp->ref;
-		if (!empty($filterkey) && $filterkey != '') {
-			$objRef = preg_replace('/(' . preg_quote($filterkey, '/') . ')/i', '<strong>$1</strong>', $objRef, 1);
+		// Préparation de la référence avec mise en surbrillance si nécessaire
+		$displayRef = $objp->ref;
+		if (!empty($filterkey)) {
+			$displayRef = preg_replace('/(' . preg_quote($filterkey, '/') . ')/i', '<strong>$1</strong>', $displayRef, 1);
 		}
 
-		$opt .= "</option>\n";
-		$optJson = array('key' => $outkey, 'value' => $outref, 'type' => $outtype);
+		// Construction de l'option HTML
+		$selectedAttr = ($objp->rowid == $selected) ? ' selected' : '';
+		$opt = "<option value=\"{$objp->rowid}\"{$selectedAttr}>{$displayRef}</option>\n";
+
+		// Construction du tableau JSON
+		$optJson = [
+			'key' => $objp->rowid,
+			'value' => $objp->ref,
+			'type' => ''
+		];
 	}
 
 

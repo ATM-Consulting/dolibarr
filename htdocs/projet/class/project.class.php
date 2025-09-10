@@ -2754,4 +2754,295 @@ class Project extends CommonObject
 			return $error;
 		}
 	}
+
+	/**
+	 *    Merge a project with current one, deleting the given project $projectId.
+	 *    The project given in parameter will be removed.
+	 *    This is called for example by the project/card.php file.
+	 *
+	 *    @param	int     $projectId		Company to merge the data from
+	 *    @return	int							-1 if error, >=0 if OK
+	 */
+	public function mergeProject($projectId)
+	{
+		global $conf, $langs, $hookmanager, $user, $action;
+
+		$error = 0;
+		$tmpProject = new Project($this->db); // The project that we will delete
+
+		dol_syslog("mergeProject merge project id=".$projectId." (will be deleted) into the project id=".$this->id);
+
+		if (!$error && $tmpProject->fetch($projectId) < 1) {
+			$this->error = $langs->trans('ErrorRecordNotFound');
+			$error++;
+		} elseif ($projectId == $this->id) {
+			$this->error = $langs->trans('CantMergeSameProject');
+			$error++;
+		}
+
+		if (!$error) {
+			$this->db->begin();
+
+			// Merge project data - keep current project data in case of duplicates
+			$listofproperties = array(
+				'socid', 'ref_ext', 'description', 'public', 'fk_opp_status', 'opp_percent',
+				'opp_amount', 'budget_amount', 'model_pdf', 'import_key', 'usage_bill_time',
+				'usage_opportunity', 'usage_task', 'usage_organize_event', 'email_msgid',
+				'email_date', 'fk_opp_status_end', 'accept_conference_suggestions',
+				'accept_booth_suggestions', 'price_registration', 'price_booth', 'max_attendees',
+				'location', 'extraparams', 'date_start_event', 'date_end_event'
+			);
+
+			foreach ($listofproperties as $property) {
+				if (empty($this->$property) || null) {
+					$this->$property = $tmpProject->$property;
+				}
+			}
+
+			// Merge project contacts - keep current project contacts and roles in case of duplicates
+			if (!$error) {
+				// Get contacts from both projects
+				$contactlistExternalTmp = $tmpProject->liste_contact(-1);
+				$contactlistInternalTmp = $tmpProject->liste_contact(-1, 'internal');
+				$contactlistExternalCurrent = $this->liste_contact(-1);
+				$contactlistInternalCurrent = $this->liste_contact(-1, 'internal');
+
+				// Process external contacts
+				if (is_array($contactlistExternalTmp)) {
+					foreach ($contactlistExternalTmp as $contactTmp) {
+						$contactExists = false;
+
+						// Check if contact already exists in current project
+						if (is_array($contactlistExternalCurrent)) {
+							foreach ($contactlistExternalCurrent as $contactCurrent) {
+								if ($contactCurrent['id'] == $contactTmp['id'] && $contactCurrent['fk_c_type_contact'] == $contactTmp['fk_c_type_contact']) {
+									$contactExists = true;
+									dol_syslog("Contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " already exists in current project, keeping current project contact");
+									break;
+								}
+							}
+						}
+
+						// Add contact if it doesn't exist
+						if (!$contactExists) {
+							$result = $this->add_contact($contactTmp['id'], $contactTmp['fk_c_type_contact'], $contactTmp['source']);
+							if ($result < 0) {
+								dol_syslog("Error adding external contact " . $contactTmp['id'] . " to project " . $this->id . ": " . $this->error, LOG_WARNING);
+								// Don't stop the merge for contact errors, just log them
+							} else {
+								dol_syslog("Added external contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " to project " . $this->id);
+							}
+						}
+					}
+				}
+
+				// Process internal contacts
+				if (is_array($contactlistInternalTmp)) {
+					foreach ($contactlistInternalTmp as $contactTmp) {
+						$contactExists = false;
+
+						// Check if contact already exists in current project
+						if (is_array($contactlistInternalCurrent)) {
+							foreach ($contactlistInternalCurrent as $contactCurrent) {
+								if ($contactCurrent['id'] == $contactTmp['id'] && $contactCurrent['fk_c_type_contact'] == $contactTmp['fk_c_type_contact']) {
+									$contactExists = true;
+									dol_syslog("Internal contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " already exists in current project, keeping current project contact");
+									break;
+								}
+							}
+						}
+
+						// Add contact if it doesn't exist
+						if (!$contactExists) {
+							$result = $this->add_contact($contactTmp['id'], $contactTmp['fk_c_type_contact'], $contactTmp['source']);
+							if ($result < 0) {
+								dol_syslog("Error adding internal contact " . $contactTmp['id'] . " to project " . $this->id . ": " . $this->error, LOG_WARNING);
+								// Don't stop the merge for contact errors, just log them
+							} else {
+								dol_syslog("Added internal contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " to project " . $this->id);
+							}
+						}
+					}
+				}
+			}
+
+
+			// Special handling for dates - keep the earliest start date and latest end date
+			if (empty($this->dateo) || (!empty($tmpProject->dateo) && $tmpProject->dateo < $this->dateo)) {
+				$this->dateo = $tmpProject->dateo;
+			}
+			if (empty($this->datee) || (!empty($tmpProject->datee) && $tmpProject->datee > $this->datee)) {
+				$this->datee = $tmpProject->datee;
+			}
+
+			// Merge budget amounts if both exist
+			if (empty($this->budget_amount) && !empty($tmpProject->budget_amount)) {
+				$this->budget_amount = $tmpProject->budget_amount;
+			}
+
+			// Merge opportunity amounts if both exist
+			if (!empty($tmpProject->opp_amount) && !empty($this->opp_amount)) {
+				$this->opp_amount += $tmpProject->opp_amount;
+			} elseif (empty($this->opp_amount) && !empty($tmpProject->opp_amount)) {
+				$this->opp_amount = $tmpProject->opp_amount;
+			}
+
+			// Concat notes
+			$listofproperties = array('note_public', 'note_private');
+			foreach ($listofproperties as $property) {
+				$this->$property = dol_concatdesc($this->$property, $tmpProject->$property);
+			}
+
+			// Merge extrafields
+			if (is_array($tmpProject->array_options)) {
+				foreach ($tmpProject->array_options as $key => $val) {
+					if (empty($this->array_options[$key])) {
+						$this->array_options[$key] = $val;
+					}
+				}
+			}
+
+			// Merge categories if they exist for projects
+			if (class_exists('Categorie')) {
+				include_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
+				$static_cat = new Categorie($this->db);
+
+				$cats_ori = $static_cat->containing($tmpProject->id, 'project', 'id');
+				$cats = $static_cat->containing($this->id, 'project', 'id');
+				$cats = array_merge($cats, $cats_ori);
+				if (!empty($cats)) {
+					$this->setCategories($cats, 'project');
+				}
+			}
+
+			// Check for duplicate ref to avoid conflicts
+			if ($tmpProject->ref == $this->ref) {
+				dol_syslog("We clean project ref to avoid duplicate key from database");
+				$tmpProject->ref = '';
+				$tmpProject->update($user, 1);
+			}
+
+			// Update current project
+			$result = $this->update($user, 1);
+			if ($result < 0) {
+				$error++;
+			}
+
+			// Move project tasks from old project to current project
+			if (!$error) {
+				$sql = "UPDATE " . $this->db->prefix() . "projet_task SET fk_projet = " . intval($this->id);
+				$sql .= " WHERE fk_projet = " . intval($projectId);
+
+				$resql = $this->db->query($sql);
+				if (!$resql) {
+					$this->error = $this->db->lasterror();
+					$error++;
+				} else {
+					dol_syslog("Moved tasks from project " . $projectId . " to project " . $this->id);
+				}
+			}
+
+			// Move other related objects
+			if (!$error) {
+				$objects = array(
+					'ActionComm' => array(
+						'table' => 'actioncomm',
+						'field' => 'fk_project'
+					),
+					'Deplacement' => array(
+						'table' => 'deplacement',
+						'field' => 'fk_projet'
+					),
+					'ExpenseReportDet' => array(
+						'table' => 'expensereport_det',
+						'field' => 'fk_projet'
+					),
+					'Ticket' => array(
+						'table' => 'ticket',
+						'field' => 'fk_project'
+					),
+					'ConferenceOrBoothAttendee' => array(
+						'table' => 'eventorganization_conferenceorboothattendee',
+						'field' => 'fk_project'
+					),
+					'ProjectUserTime' => array(
+						'table' => 'projet_task_time',
+						'field' => 'fk_projet'
+					),
+				);
+
+				foreach ($objects as $objectName => $objectInfo) {
+					if ($this->db->DDLListTables($conf->db->name, $this->db->prefix() . $objectInfo['table'])) {
+						$sql = "UPDATE " . $this->db->prefix() . $objectInfo['table'];
+						$sql .= " SET " . $objectInfo['field'] . " = " . $this->id;
+						$sql .= " WHERE " . $objectInfo['field'] . " = " . intval($projectId);
+
+						$resql = $this->db->query($sql);
+						if (!$resql) {
+							$this->error = $this->db->lasterror();
+							$error++;
+							break;
+						}
+					}
+				}
+			}
+
+			// External modules should update their tables too
+			if (!$error) {
+				$parameters = array('projectOrigin' => $projectId, 'projectDest' => $this->id);
+				$reshook = $hookmanager->executeHooks('replaceProject', $parameters, $this, $action);
+
+				if ($reshook < 0) {
+					$this->error = $hookmanager->error;
+					$this->errors = $hookmanager->errors;
+					$error++;
+				}
+			}
+
+			// Call trigger
+			if (!$error) {
+				$this->context = array('merge' => 1, 'mergefromid' => $tmpProject->id, 'mergefromtitle' => $tmpProject->title);
+
+				$result = $this->call_trigger('PROJECT_MODIFY', $user);
+				if ($result < 0) {
+					$error++;
+				}
+			}
+
+			// Move files from the project directory to delete into the directory of the project to keep
+			if (!$error) {
+				if (!empty($conf->project->multidir_output[$this->entity])) {
+					$srcdir = $conf->project->multidir_output[$this->entity] . "/" . dol_sanitizeFileName($tmpProject->ref);
+					$destdir = $conf->project->multidir_output[$this->entity] . "/" . dol_sanitizeFileName($this->ref);
+
+					if (dol_is_dir($srcdir)) {
+						$dirlist = dol_dir_list($srcdir, 'files', 1);
+						foreach ($dirlist as $filetomove) {
+							$destfile = $destdir . '/' . $filetomove['relativename'];
+							dol_move($filetomove['fullname'], $destfile, '0', 0, 0, 1);
+						}
+					}
+				}
+			}
+
+			// Finally remove the old project
+			if (!$error) {
+				if ($tmpProject->delete($user, 1) < 1) {
+					$this->error = $tmpProject->error;
+					$this->errors = $tmpProject->errors;
+					$error++;
+				}
+			}
+		}
+
+		if (!$error) {
+			$this->db->commit();
+			return 0;
+		} else {
+			dol_syslog($langs->trans('ErrorsProjectMerge', $this->error), LOG_ERR);
+			setEventMessages( $langs->trans('ErrorsProjectMerge', $this->error), $this->errors, 'errors' );
+			$this->db->rollback();
+			return -1;
+		}
+	}
 }
