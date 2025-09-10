@@ -31,6 +31,7 @@
  * 		\brief      File of class to manage projects
  */
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 /**
  *	Class to manage projects
@@ -2971,7 +2972,7 @@ class Project extends CommonObject
 					),
 				);
 
-				foreach ($objects as $objectName => $objectInfo) {
+				foreach ($objects as $objectInfo) {
 					if ($this->db->DDLListTables($conf->db->name, $this->db->prefix() . $objectInfo['table'])) {
 						$sql = "UPDATE " . $this->db->prefix() . $objectInfo['table'];
 						$sql .= " SET " . $objectInfo['field'] . " = " . $this->id;
@@ -2997,6 +2998,95 @@ class Project extends CommonObject
 					$this->errors = $hookmanager->errors;
 					$error++;
 				}
+			}
+
+			// Move files from the project directory to delete into the directory of the project to keep
+			if (!$error) {
+				if (!empty($conf->project->multidir_output[$this->entity])) {
+					$srcdir = $conf->project->multidir_output[$this->entity] . "/" . dol_sanitizeFileName($tmpProject->ref);
+					$destdir = $conf->project->multidir_output[$this->entity] . "/" . dol_sanitizeFileName($this->ref);
+
+					if (dol_is_dir($srcdir)) {
+						$dirlist = dol_dir_list($srcdir, 'files', 1);
+						foreach ($dirlist as $filetomove) {
+							$destfile = $destdir . '/' . $filetomove['relativename'];
+							dol_move($filetomove['fullname'], $destfile, '0', 0, 0, 1);
+						}
+					}
+				}
+			}
+
+			// Merge attached files from project upload directories
+			if (!$error) {
+				// Get upload directories for both projects
+				$uploadDirTmp = $conf->project->multidir_output[$tmpProject->entity] . '/' . get_exdir(0, 0, 0, 1, $tmpProject, 'project');
+				$uploadDirCurrent = $conf->project->multidir_output[$this->entity] . '/' . get_exdir(0, 0, 0, 1, $this, 'project');
+
+				// Ensure destination directory exists
+				if (!dol_is_dir($uploadDirCurrent)) {
+					dol_mkdir($uploadDirCurrent);
+				}
+
+				if (dol_is_dir($uploadDirTmp)) {
+					// Get files from source project (excluding meta files and preview images)
+					$filearray = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
+				}
+			}
+
+			if (is_array($filearray) && count($filearray) > 0) {
+				foreach ($filearray as $file) {
+					$srcfile = $file['fullname'];
+					$destfile = $uploadDirCurrent . '/' . $file['name'];
+
+					// Check if file already exists in destination
+					if (dol_is_file($destfile)) {
+						// If file exists, rename it using the old project reference as suffix
+						$pathinfo = pathinfo($file['name']);
+						$filename = $pathinfo['filename'];
+						$extension = isset($pathinfo['extension']) ? '.'.$pathinfo['extension'] : '';
+						$suffix = '_' . dol_sanitizeFileName($tmpProject->ref);
+
+						$newFilename = $filename.$suffix.$extension;
+						$destfile = $uploadDirCurrent . '/' . $newFilename;
+
+						// If even with the project ref suffix the file exists, add a counter
+						if (dol_is_file($destfile)) {
+							$counter = 1;
+							do {
+								$newFilename = $filename.$suffix . '_' .$counter . $extension;
+								$destfile = $uploadDirCurrent . '/' . $newFilename;
+								$counter++;
+							} while (dol_is_file($destfile));
+						}
+
+						dol_syslog("File " . $file['name'] . " already exists, renaming to " . $newFilename . " using old project reference ".$tmpProject->ref);
+					}
+
+					// Move the file
+					$result = dol_move($srcfile, $destfile, '0', 1, 0, 1);
+					if ($result) {
+						dol_syslog("Successfully moved file " . $file['name'] ." from project " . $projectId . " to project " . $this->id);
+
+						// Also move associated .meta file if it exists
+						$metafileSrc = $srcfile . '.meta';
+						$metafileDest = $destfile . '.meta';
+						if (dol_is_file($metafileSrc)) {
+							dol_move($metafileSrc, $metafileDest, '0', 1, 0, 1);
+							dol_syslog("Also moved meta file for " . $file['name']);
+						}
+					} else {
+						dol_syslog("Error moving file " . $file['name'] . " from project " . $projectId . " to project " . $this->id, LOG_WARNING);
+						// Don't stop the merge for file errors, just log them
+					}
+				}
+			}
+
+			// Clean up empty source directory if all files were moved
+			$remainingFiles = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
+
+			if (!is_array($remainingFiles) || count($remainingFiles) == 0) {
+				dol_delete_dir_recursive($uploadDirTmp);
+				dol_syslog("Cleaned up empty upload directory for project " . $projectId);
 			}
 
 			// Call trigger
