@@ -1,4 +1,5 @@
 ## Backported from 17.0:
+- Backport develop PR #35172: Return false with return code 200 on API - **11/09/2025**
 - Backport develop fourn/card.php : add hook & manage product list displat - **01/09/2025**
 - Backport 17.0 PR #34777 and #34778: `Facture::update()` fails when called in a trigger after `createFromClone()` + the clone of a template-generated invoice should not be linked to the template.
 - Backport develop PR #34293: Ajout $properties et $lines dans les API de contracts et invoices pour la gestion des données - *2025-05-27*
