@@ -1853,19 +1853,15 @@ class Project extends CommonObject
 
 				if (dol_mkdir($clone_project_dir) >= 0) {
 					$filearray = dol_dir_list($ori_project_dir, "files", 0, '', '(\.meta|_preview.*\.png)$', '', SORT_ASC, 1);
-					if (is_array($filearray) && !empty($filearray)) {
-						foreach ($filearray as $key => $file) {
-							$rescopy = dol_copy($ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name'], 0, 1);
-							if (is_numeric($rescopy) && $rescopy < 0) {
-								$this->error .= $langs->trans("ErrorFailToCopyFile", $ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name']);
-								$error++;
-							}
+					foreach ($filearray as $key => $file) {
+						$rescopy = dol_copy($ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name'], 0, 1);
+						if (is_numeric($rescopy) && $rescopy < 0) {
+							$this->error .= $langs->trans("ErrorFailToCopyFile", $ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name']);
+							$error++;
 						}
-					} else {
-						$this->error .= $langs->trans('NoFilesFound');
 					}
 				} else {
-					$this->error .= $langs->trans('ErrorInternalErrorDetected') . ' : dol_mkdir';
+					$this->error .= $langs->trans('ErrorInternalErrorDetected').':dol_mkdir';
 					$error++;
 				}
 			}
@@ -3090,55 +3086,57 @@ class Project extends CommonObject
 					$filearray = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
 				}
 			}
+			if (is_array($filearray) && !empty($filearray)) {
+				if (is_array($filearray) && count($filearray) > 0) {
+					foreach ($filearray as $file) {
+						$srcfile = $file['fullname'];
+						$destfile = $uploadDirCurrent . '/' . $file['name'];
 
-			if (is_array($filearray) && count($filearray) > 0) {
-				foreach ($filearray as $file) {
-					$srcfile = $file['fullname'];
-					$destfile = $uploadDirCurrent . '/' . $file['name'];
-
-					// Check if file already exists in destination
-					if (dol_is_file($destfile)) {
-						// If file exists, rename it using the old project reference as suffix
-						$pathinfo = pathinfo($file['name']);
-						$filename = $pathinfo['filename'];
-						$extension = isset($pathinfo['extension']) ? '.'.$pathinfo['extension'] : '';
-						$suffix = '_' . dol_sanitizeFileName($tmpProject->ref);
-
-						$newFilename = $filename.$suffix.$extension;
-						$destfile = $uploadDirCurrent . '/' . $newFilename;
-
-						// If even with the project ref suffix the file exists, add a counter
+						// Check if file already exists in destination
 						if (dol_is_file($destfile)) {
-							$counter = 1;
-							do {
-								$newFilename = $filename.$suffix . '_' .$counter . $extension;
-								$destfile = $uploadDirCurrent . '/' . $newFilename;
-								$counter++;
-							} while (dol_is_file($destfile));
+							// If file exists, rename it using the old project reference as suffix
+							$pathinfo = pathinfo($file['name']);
+							$filename = $pathinfo['filename'];
+							$extension = isset($pathinfo['extension']) ? '.' . $pathinfo['extension'] : '';
+							$suffix = '_' . dol_sanitizeFileName($tmpProject->ref);
+
+							$newFilename = $filename . $suffix . $extension;
+							$destfile = $uploadDirCurrent . '/' . $newFilename;
+
+							// If even with the project ref suffix the file exists, add a counter
+							if (dol_is_file($destfile)) {
+								$counter = 1;
+								do {
+									$newFilename = $filename . $suffix . '_' . $counter . $extension;
+									$destfile = $uploadDirCurrent . '/' . $newFilename;
+									$counter++;
+								} while (dol_is_file($destfile));
+							}
+
+							dol_syslog("File " . $file['name'] . " already exists, renaming to " . $newFilename . " using old project reference " . $tmpProject->ref);
 						}
 
-						dol_syslog("File " . $file['name'] . " already exists, renaming to " . $newFilename . " using old project reference ".$tmpProject->ref);
-					}
+						// Move the file
+						$result = dol_move($srcfile, $destfile, '0', 1, 0, 1);
+						if ($result) {
+							dol_syslog("Successfully moved file " . $file['name'] . " from project " . $projectId . " to project " . $this->id);
 
-					// Move the file
-					$result = dol_move($srcfile, $destfile, '0', 1, 0, 1);
-					if ($result) {
-						dol_syslog("Successfully moved file " . $file['name'] ." from project " . $projectId . " to project " . $this->id);
-
-						// Also move associated .meta file if it exists
-						$metafileSrc = $srcfile . '.meta';
-						$metafileDest = $destfile . '.meta';
-						if (dol_is_file($metafileSrc)) {
-							dol_move($metafileSrc, $metafileDest, '0', 1, 0, 1);
-							dol_syslog("Also moved meta file for " . $file['name']);
+							// Also move associated .meta file if it exists
+							$metafileSrc = $srcfile . '.meta';
+							$metafileDest = $destfile . '.meta';
+							if (dol_is_file($metafileSrc)) {
+								dol_move($metafileSrc, $metafileDest, '0', 1, 0, 1);
+								dol_syslog("Also moved meta file for " . $file['name']);
+							}
+						} else {
+							dol_syslog("Error moving file " . $file['name'] . " from project " . $projectId . " to project " . $this->id, LOG_WARNING);
+							// Don't stop the merge for file errors, just log them
 						}
-					} else {
-						dol_syslog("Error moving file " . $file['name'] . " from project " . $projectId . " to project " . $this->id, LOG_WARNING);
-						// Don't stop the merge for file errors, just log them
 					}
 				}
+			}else {
+				$this->error .= $langs->trans('NoFilesFound');
 			}
-
 			// Clean up empty source directory if all files were moved
 			$remainingFiles = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
 
