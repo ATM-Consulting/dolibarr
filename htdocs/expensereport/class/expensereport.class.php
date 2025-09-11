@@ -2997,7 +2997,7 @@ class ExpenseReportLine extends CommonObjectLine
 
 			$this->rowid = $objp->rowid;
 			$this->id = $objp->rowid;
-//			$this->ref = $objp->ref;
+			$this->ref = $objp->ref;
 			$this->fk_expensereport = $objp->fk_expensereport;
 			$this->comments = $objp->comments;
 			$this->qty = $objp->qty;
