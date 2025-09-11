@@ -312,3 +312,12 @@ TaskMergeSuccess=Les tâches ont été fusionnées
 ErrorTaskIdIsMandatory=Erreur : l'ID de tâche est obligatoire
 ErrorsTaskMerge=Une erreur s'est produite lors de la fusion des tâches
 Billable = Facturable
+#Merge projects
+MergeOriginProject=Projet à fusionner :
+ConfirmMergeProjects=Êtes-vous sûr de vouloir fusionner ce projet avec le projet actuel ? Tous ses objets liés (factures, commandes, tâches...) seront déplacés vers le projet actuel, et le projet sélectionné sera supprimé.
+ProjectMergeSuccess=Les projets ont été fusionnés avec succès.
+MergeProjects=Fusionner les projets
+ErrorsProjectMerge=Erreur lors de la fusion du projet : %s
+CantMergeSameProject=Vous ne pouvez pas fusionner un projet avec lui-même.
+NoFilesFound=Aucun fichier à fusionner n'a été trouvé.
+
