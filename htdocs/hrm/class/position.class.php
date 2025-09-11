@@ -847,12 +847,19 @@ class Position extends CommonObject
 	 */
 	public function showInputField($val, $key, $value, $moreparam = '', $keysuffix = '', $keyprefix = '', $morecss = 0, $nonewbutton = 0)
 	{
-		global $langs;
+		global $langs, $form;
+
+		// BACKPORT STD #32092
+		if (!($form instanceof Form)) {
+			$form = new Form($this->db);
+		}
+		// END BACKPORT
 
 		if ($key == 'fk_user') {
 			$vacantId = $keyprefix.$key.'vacant'.$keysuffix;
 
-			$out = parent::showInputField($val, $key, $value, $moreparam, $keysuffix, $keyprefix, $morecss);
+			$out = $form->select_dolusers($value, $keyprefix.$key.$keysuffix, 1, null, 0, '', '', '0', 0, 0, '', 0, '', (!empty($val['css']) ? $val['css'] : 'maxwidth100'));
+
 			$out .= '<label class="nowrap position-fk-user classfortooltip" title="'.dol_escape_js($langs->trans('VacantCheckboxHelper')).'"><input type="checkbox" id="'.$vacantId.'" name="'.$vacantId.'">&nbsp;'.$langs->trans("Vacant").'</label>'; ?>
 			<script type="text/javascript">
 				$(document).ready(function () {

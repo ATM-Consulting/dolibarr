@@ -1,0 +1,14 @@
+- FIX DA026382 : add sponge btp pdf - **25/04/2025**
+- FIX DA026427 : add an origin to event which are created from productlot - **24/04/2025**
+- Backported from 20.0 PR #33711 : on evaluation list, removed getNomUrl for label column
+- Backported DA026301 from 20.0 PR #33717 : wrong assigned user on agenda, and wrong backtopage  - **04/04/2025**
+- Backported from 20.0 PR #33713 : Fix pdf einstein automatic calculation  - **04/04/2025**
+- FIX/20.0/DA026307/search_extra_field_error - **01/04/2025**
+- FIX/SUPPORT/DA026290/fix_fatal_trying_update_desc_invoice_situation_2 - **25/03/2025**
+- FIX/132/DA025977/SELECT_DOLUSERS - *14/01/2025*
+- FIX/SUPPORT/DA025922/SetSpecialCharacter because the character '<' was not set into the whitelist  of special character which causes an issue when you try to fetch this type of extrafields - *30/12/2024*
+- FIX/SUPPORT/DA025748/SELECT_INACTIVE_USERS - *19/12/2024*
+- FIX/SUPPORT/DA025737/HIDDEN_DROPDOWN - *19/12/2024*
+- FIX/SUPPORT/DA025871/FiltreEvalListe - **16/12/2024**
+- FIX/SUPPORT/DA025787/HRM_closed_job_position_on_application - *04/12/2024*
+- FIX/SUPPORT/DA025778/Missing_trigger_on_situation_invoice for demat4dolibarr Easya - *03/12/2024*

@@ -1294,6 +1294,7 @@ foreach ($listofreferent as $key => $value) {
 				}
 				print "</td>\n";
 
+				// BACKPORT STD #32102
 				// Ref
 				print '<td class="left nowraponall">';
 				if ($tablename == 'expensereport_det') {
@@ -1355,6 +1356,8 @@ foreach ($listofreferent as $key => $value) {
 					print '</td></tr></table>';
 				}
 				print "</td>\n";
+				// END BACKPORT STD
+				
 				// Product and qty on stock movement
 				if ('MouvementStock' == $classname) {
 					$mvsProd = new Product($element->db);

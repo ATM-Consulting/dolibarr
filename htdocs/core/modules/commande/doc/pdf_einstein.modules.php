@@ -1352,6 +1352,7 @@ class pdf_einstein extends ModelePDFCommandes
 		$posy += 3;
 		$pdf->SetFont('', '', $default_font_size - 1);
 
+		/** BACKPORT PR #33713 */
 		if ($object->ref_client) {
 			$posy += 5;
 			$pdf->SetXY($posx, $posy);
@@ -1391,6 +1392,7 @@ class pdf_einstein extends ModelePDFCommandes
 			$pdf->SetTextColor(0, 0, 60);
 			$pdf->MultiCell($w, 3, $outputlangs->transnoentities("CustomerCode")." : ".$outputlangs->transnoentities($object->thirdparty->code_client), '', 'R');
 		}
+		/** END BACKPORT PR #33713 */
 
 		// Get contact
 		if (getDolGlobalString('DOC_SHOW_FIRST_SALES_REP')) {
