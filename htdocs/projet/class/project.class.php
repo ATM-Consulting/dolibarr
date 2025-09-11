@@ -2838,7 +2838,7 @@ class Project extends CommonObject
 
 						// Check if contact already exists in current project
 						if (is_array($contactlistExternalCurrent)) {
-							$contactExists = $this->contactExistsInCurrentList($contactlistInternalCurrent, $contactTmp);
+							$contactExists = $this->contactExistsInCurrentList($contactlistExternalCurrent, $contactTmp);
 						}
 
 						// Add contact if it doesn't exist
