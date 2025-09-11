@@ -294,7 +294,11 @@ class CMailFile
 				// Note because media links are public, this should be useless, except avoid blocking images with email browser.
 				// This converts an embed file with src="/viewimage.php?modulepart... into a cid link
 				// TODO Exclude viewimage used for the read tracker ?
-				$findimg = $this->findHtmlImages($dolibarr_main_data_root.'/medias');
+				$dolibarr_main_data_root_images = $dolibarr_main_data_root;
+				if ((int) $conf->entity !== 1) {
+					$dolibarr_main_data_root_images.='/'.$conf->entity.'/';
+				}
+				$findimg = $this->findHtmlImages($dolibarr_main_data_root_images.'/medias');
 				if ($findimg < 0) {
 					dol_syslog("CMailFile::CMailfile: Error on findHtmlImages");
 					$this->error = 'ErrorInAddAttachmentsImageBaseOnMedia';
@@ -379,10 +383,12 @@ class CMailFile
 
 		// Verify if $to, $addr_cc and addr_bcc have unwanted addresses
 		if (getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO')) {
+			// Parse to, cc and bcc to remove MAIN_MAIL_FORCE_NOT_SENDING_TO
+			$listofemailstonotsendto = explode(',', getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO'));
+
 			//Verify for $to
 			$replaceto = false;
 			$tabto = explode(",", $to);
-			$listofemailstonotsendto = explode(',', getDolGlobalString('MAIN_MAIL_FORCE_NOT_SENDING_TO'));
 			foreach ($tabto as $key => $addrto) {
 				$addrto = array_keys($this->getArrayAddress($addrto));
 				if (in_array($addrto[0], $listofemailstonotsendto)) {

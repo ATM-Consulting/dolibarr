@@ -1363,7 +1363,7 @@ class pdf_sponge extends ModelePDFFactures
 
 					$langs->loadLangs(array('payment', 'paybox', 'stripe'));
 					$servicename = $langs->transnoentities('Online');
-					$paiement_url = getOnlinePaymentUrl('', 'invoice', $object->ref, '', '', '');
+					$paiement_url = getOnlinePaymentUrl(0, 'invoice', $object->ref, '', '', '');
 					$linktopay = $langs->trans("ToOfferALinkForOnlinePayment", $servicename).' <a href="'.$paiement_url.'">'.$outputlangs->transnoentities("ClickHere").'</a>';
 
 					$pdf->SetXY($this->marge_gauche, $posy);
@@ -2176,7 +2176,7 @@ class pdf_sponge extends ModelePDFFactures
 			$title = $outputlangs->transnoentities("InvoiceProForma");
 		}
 		if ($this->situationinvoice) {
-			$langs->loadLangs(array("other"));
+			$outputlangs->loadLangs(array("other"));
 			$title = $outputlangs->transnoentities("PDFInvoiceSituation") . " " . $outputlangs->transnoentities("NumberingShort") . $object->situation_counter . " -";
 		}
 		if (getDolGlobalString('PDF_USE_ALSO_LANGUAGE_CODE') && is_object($outputlangsbis)) {

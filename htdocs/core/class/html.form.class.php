@@ -3089,7 +3089,7 @@ class Form
 
 				// include search in supplier ref
 				if (getDolGlobalString('MAIN_SEARCH_PRODUCT_BY_FOURN_REF')) {
-					$sqlSupplierSearch .= !empty($sqlSupplierSearch) ? ' OR ':'';
+					$sqlSupplierSearch .= !empty($sqlSupplierSearch) ? ' AND ':'';
 					$sqlSupplierSearch .= " pfp.ref_fourn LIKE '" . $this->db->escape($prefix . $crit) . "%'";
 				}
 				$sql .= ")";
@@ -6535,7 +6535,7 @@ class Form
 		$TCurrency = array();
 
 		$sql = "SELECT code FROM " . $this->db->prefix() . "multicurrency";
-		$sql .= " WHERE entity IN ('" . getEntity('mutlicurrency') . "')";
+		$sql .= " WHERE entity IN ('" . getEntity('multicurrency') . "')";
 		if ($filter) {
 			$sql .= " AND " . $filter;
 		}
@@ -6686,7 +6686,7 @@ class Form
 	 *                                            Else, default proposed VAT==0. End of rule.
 	 *  @param	bool	     $options_only		  Return HTML options lines only (for ajax treatment)
 	 *  @param  int          $mode                0=Use vat rate as key in combo list, 1=Add VAT code after vat rate into key, -1=Use id of vat line as key
-	 *  @param  int          $type_vat            0=All type, 1=VAT rate sale, 2=VAT rate purchase
+	 *  @param  int          $type_vat            0=All types, 1=VAT rate for sales, 2=VAT rate for purchases
 	 *  @return	string
 	 */
 	public function load_tva($htmlname = 'tauxtva', $selectedrate = '', $societe_vendeuse = null, $societe_acheteuse = null, $idprod = 0, $info_bits = 0, $type = '', $options_only = false, $mode = 0, $type_vat = 0)
@@ -6782,12 +6782,14 @@ class Form
 		$num = count($arrayofvatrates);
 
 		if ($num > 0) {
-			// Definition du taux a pre-selectionner (si defaulttx non force et donc vaut -1 ou '')
+			// Define the rate to pre-select (if defaulttx not forced so is -1 or '')
 			if ($defaulttx < 0 || dol_strlen($defaulttx) == 0) {
+				// Define a default thirdparty to use if the seller or buyer is not defined
 				$tmpthirdparty = new Societe($this->db);
+				$tmpthirdparty->country_code = $mysoc->country_code;
 
-				$defaulttx = get_default_tva($societe_vendeuse, (is_object($societe_acheteuse) ? $societe_acheteuse : $tmpthirdparty), $idprod);
-				$defaultnpr = get_default_npr($societe_vendeuse, (is_object($societe_acheteuse) ? $societe_acheteuse : $tmpthirdparty), $idprod);
+				$defaulttx = get_default_tva(is_object($societe_vendeuse) ? $societe_vendeuse : $tmpthirdparty, (is_object($societe_acheteuse) ? $societe_acheteuse : $tmpthirdparty), $idprod);
+				$defaultnpr = get_default_npr(is_object($societe_vendeuse) ? $societe_vendeuse : $tmpthirdparty, (is_object($societe_acheteuse) ? $societe_acheteuse : $tmpthirdparty), $idprod);
 
 				if (preg_match('/\((.*)\)/', $defaulttx, $reg)) {
 					$defaultcode = $reg[1];
@@ -8849,7 +8851,7 @@ class Form
 				    		},
 				    		cache: true
 				    	},
-		 				language: select2arrayoflanguage,
+		 				language: (typeof select2arrayoflanguage === \'undefined\') ? \'en\' : select2arrayoflanguage,
 						containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
 					    placeholder: "' . dol_escape_js($placeholder) . '",
 				    	escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
@@ -8939,7 +8941,7 @@ class Form
 
 					$(".' . $htmlname . '").select2({
 						data: data,
-						language: select2arrayoflanguage,
+						language: (typeof select2arrayoflanguage === \'undefined\') ? \'en\' : select2arrayoflanguage,
 						containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
 						placeholder: "' . dol_escape_js($placeholder) . '",
 						escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
