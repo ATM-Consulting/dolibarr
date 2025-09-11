@@ -323,3 +323,4 @@ ProjectMergeSuccess=Projects have been merged successfully
 MergeProjects=Merge projects
 ErrorsProjectMerge=Error during merge project : %s
 CantMergeSameProject=You can't merge the same project
+NoFilesFound= No files found to merge

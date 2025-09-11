@@ -32,6 +32,7 @@
  */
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+include_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
 
 /**
  *	Class to manage projects
@@ -1852,15 +1853,19 @@ class Project extends CommonObject
 
 				if (dol_mkdir($clone_project_dir) >= 0) {
 					$filearray = dol_dir_list($ori_project_dir, "files", 0, '', '(\.meta|_preview.*\.png)$', '', SORT_ASC, 1);
-					foreach ($filearray as $key => $file) {
-						$rescopy = dol_copy($ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name'], 0, 1);
-						if (is_numeric($rescopy) && $rescopy < 0) {
-							$this->error .= $langs->trans("ErrorFailToCopyFile", $ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name']);
-							$error++;
+					if (is_array($filearray) && !empty($filearray)) {
+						foreach ($filearray as $key => $file) {
+							$rescopy = dol_copy($ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name'], 0, 1);
+							if (is_numeric($rescopy) && $rescopy < 0) {
+								$this->error .= $langs->trans("ErrorFailToCopyFile", $ori_project_dir.'/'.$file['name'], $clone_project_dir.'/'.$file['name']);
+								$error++;
+							}
 						}
+					} else {
+						$this->error .= $langs->trans('NoFilesFound');
 					}
 				} else {
-					$this->error .= $langs->trans('ErrorInternalErrorDetected').':dol_mkdir';
+					$this->error .= $langs->trans('ErrorInternalErrorDetected') . ' : dol_mkdir';
 					$error++;
 				}
 			}
@@ -2816,7 +2821,7 @@ class Project extends CommonObject
 						// Check if contact already exists in current project
 						if (is_array($contactlistExternalCurrent)) {
 							foreach ($contactlistExternalCurrent as $contactCurrent) {
-								if ($contactCurrent['id'] == $contactTmp['id'] && $contactCurrent['fk_c_type_contact'] == $contactTmp['fk_c_type_contact']) {
+								if ($contactCurrent['id'] == $contactTmp['id']) {
 									$contactExists = true;
 									dol_syslog("Contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " already exists in current project, keeping current project contact");
 									break;
@@ -2845,7 +2850,7 @@ class Project extends CommonObject
 						// Check if contact already exists in current project
 						if (is_array($contactlistInternalCurrent)) {
 							foreach ($contactlistInternalCurrent as $contactCurrent) {
-								if ($contactCurrent['id'] == $contactTmp['id'] && $contactCurrent['fk_c_type_contact'] == $contactTmp['fk_c_type_contact']) {
+								if ($contactCurrent['id'] == $contactTmp['id']) {
 									$contactExists = true;
 									dol_syslog("Internal contact " . $contactTmp['id'] . " with role " . $contactTmp['fk_c_type_contact'] . " already exists in current project, keeping current project contact");
 									break;
@@ -2867,7 +2872,6 @@ class Project extends CommonObject
 				}
 			}
 
-
 			// Special handling for dates - keep the earliest start date and latest end date
 			if (empty($this->dateo) || (!empty($tmpProject->dateo) && $tmpProject->dateo < $this->dateo)) {
 				$this->dateo = $tmpProject->dateo;
@@ -2877,14 +2881,12 @@ class Project extends CommonObject
 			}
 
 			// Merge budget amounts if both exist
-			if (empty($this->budget_amount) && !empty($tmpProject->budget_amount)) {
+			if (empty($this->budget_amount) || ($this->budget_amount == 0) && !empty($tmpProject->budget_amount)) {
 				$this->budget_amount = $tmpProject->budget_amount;
 			}
 
 			// Merge opportunity amounts if both exist
-			if (!empty($tmpProject->opp_amount) && !empty($this->opp_amount)) {
-				$this->opp_amount += $tmpProject->opp_amount;
-			} elseif (empty($this->opp_amount) && !empty($tmpProject->opp_amount)) {
+			if (empty($this->opp_amount) || ($this->opp_amount == 0) && !empty($tmpProject->opp_amount)) {
 				$this->opp_amount = $tmpProject->opp_amount;
 			}
 
@@ -2905,7 +2907,6 @@ class Project extends CommonObject
 
 			// Merge categories if they exist for projects
 			if (class_exists('Categorie')) {
-				include_once DOL_DOCUMENT_ROOT . '/categories/class/categorie.class.php';
 				$static_cat = new Categorie($this->db);
 
 				$cats_ori = $static_cat->containing($tmpProject->id, 'project', 'id');
@@ -2970,6 +2971,63 @@ class Project extends CommonObject
 						'table' => 'projet_task_time',
 						'field' => 'fk_projet'
 					),
+					'Contrat' => array(
+						'table' => 'contrat',
+						'field' => 'fk_projet'
+					),
+					'Propal' => array(
+						'table' => 'propal',
+						'field' => 'fk_projet'
+					),
+					'FactureFourn' => array(
+						'table' => 'facture_fourn',
+						'field' => 'fk_projet'
+					),
+					'CommandeFournisseur' => array(
+						'table' => 'commande_fournisseur',
+						'field' => 'fk_projet'
+					),
+					'Facture' => array(
+						'table' => 'facture',
+						'field' => 'fk_projet'
+					),
+					'Commande' => array(
+						'table' => 'commande',
+						'field' => 'fk_projet'
+					),
+					'FactureRec' => array(
+						'table' => 'facture_rec',
+						'field' => 'fk_projet'
+					),
+					'ChargeSociales' => array(
+						'table' => 'chargesociales',
+						'field' => 'fk_projet'
+					),
+					'PaymentSalary' => array(
+						'table' => 'salary',
+						'field' => 'fk_projet'
+					),
+					'PaymentVarious' => array(
+						'table' => 'payment_various',
+						'field' => 'fk_projet'
+					),
+					'Expeditions' => array(
+						'table' => 'expedition',
+						'field' => 'fk_projet'
+					),
+					'Don' => array(
+						'table' => 'don',
+						'field' => 'fk_projet'
+					),
+					'FichInter' => array(
+						'table' => 'fichinter',
+						'field' => 'fk_projet'
+					),
+					'supplierProposal' => array(
+						'table' => 'supplier_proposal',
+						'field' => 'fk_projet'
+					),
+
 				);
 
 				foreach ($objects as $objectInfo) {
