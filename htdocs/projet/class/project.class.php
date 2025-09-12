@@ -2912,7 +2912,7 @@ class Project extends CommonObject
 			}
 
 			// Merge categories if they exist for projects
-			if (class_exists('Categorie') && isModEnabled('Categorie')) {
+			if (class_exists('Categorie') && isModEnabled('categorie')) {
 				$staticCat = new Categorie($this->db);
 
 				$catsOrigin = $staticCat->containing($tmpProject->id, 'project', 'id');
