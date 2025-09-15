@@ -3224,7 +3224,7 @@ class ContratLigne extends CommonObjectLine
 	 *
 	 *  @param	int		$id         Id object
 	 *  @param	string	$ref		Ref of contract line
-	 *  @return int         		<0 if KO, >0 if OK
+	 *  @return int         		<0 if KO, >0 if OK, 0 if not found
 	 */
 	public function fetch($id, $ref = '')
 	{
@@ -3345,6 +3345,9 @@ class ContratLigne extends CommonObjectLine
 				$this->rang = $obj->rang;
 
 				$this->fetch_optionals();
+			} else {
+				$this->db->free($resql);
+				return 0;
 			}
 
 			$this->db->free($resql);
