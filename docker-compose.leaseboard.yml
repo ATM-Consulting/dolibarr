@@ -1,0 +1,39 @@
+services:
+  database:
+    image: mariadb:10.11.14
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DATABASE_NAME:-dolibarr}
+    ports:
+      - "${NAT_DATABASE_PORT:-3306}:3306"
+    volumes:
+      - ./.docker/database:/var/lib/mysql
+
+  apache:
+    build:
+      context: .
+      dockerfile: ./docker/front/Dockerfile
+      args:
+        PUID: ${UID:-1000}
+        PGID: ${GID:-1000}
+    ports:
+      - "${NAT_APACHE_PORT:-8088}:80"
+    volumes:
+      - ./htdocs:/var/www/htdocs
+      - ./documents:/var/www/documents
+    depends_on:
+      - php
+
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+      args:
+        PUID: ${UID:-1000}
+        PGID: ${GID:-1000}
+    restart: on-failure
+    volumes:
+      - ./htdocs:/var/www/htdocs
+      - ./documents:/var/www/documents
+    depends_on:
+      - database

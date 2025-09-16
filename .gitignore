@@ -53,6 +53,10 @@ node_modules/
 #yarn
 yarn.lock
 
+# Docker
+.docker
+.env
+
 #package-lock
 package-lock.json
 

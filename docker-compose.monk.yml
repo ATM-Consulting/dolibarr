@@ -1,0 +1,49 @@
+services:
+  database:
+    image: mariadb:10.11.14
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DATABASE_NAME:-dolibarr}
+    ports:
+      - "${NAT_DATABASE_PORT:-3310}:3306"
+    volumes:
+      - ./.docker/database:/var/lib/mysql
+    networks:
+      - koesio-dev
+
+  apache:
+    build:
+      context: .
+      dockerfile: ./docker/front/Dockerfile
+      args:
+        PUID: ${UID:-1000}
+        PGID: ${GID:-1000}
+    ports:
+      - "${NAT_APACHE_PORT:-8090}:80"
+    volumes:
+      - ./htdocs:/var/www/htdocs
+    depends_on:
+      - php
+    networks:
+      koesio-dev:
+        aliases:
+          - monk.local
+
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/app/Dockerfile
+      args:
+        PUID: ${UID:-1000}
+        PGID: ${GID:-1000}
+    restart: on-failure
+    volumes:
+      - ./htdocs:/var/www/htdocs
+    depends_on:
+      - database
+    networks:
+      - koesio-dev
+
+networks:
+  koesio-dev:
+    external: true
