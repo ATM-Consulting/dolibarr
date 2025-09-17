@@ -1072,7 +1072,7 @@ function num_open_day($timestampStart, $timestampEnd, $inhour = 0, $lastday = 0,
 	if ($timestampStart < $timestampEnd) {
 		// --- 1. Calculate Gross Working Days ---
 		// Gross working days = total days in range - non-working days (weekends & public holidays).
-		$nbOpenDay = num_between_day($timestampStart, $timestampEnd, $lastday) - num_public_holiday($timestampStart, $timestampEnd, $country_code, $lastday);
+		$nbOpenDay =(int) num_between_day($timestampStart, $timestampEnd, $lastday) - (int)num_public_holiday($timestampStart, $timestampEnd, $country_code, $lastday);
 
 		// --- 2. Apply Contextual Half-Day Deductions ---
 		$halfday = (int) $halfday; // Ensure $halfday is an integer for reliable comparisons.
