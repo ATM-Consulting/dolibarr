@@ -3013,7 +3013,6 @@ if (empty($reshook)) {
 									}
 								}
 
-
 								$line->situation_percent -= $maxPrevSituationPercent;
 
 								if ($line->update() < 0) {
@@ -5334,7 +5333,7 @@ if ($action == 'create') {
 
 				foreach ($object->tab_next_situation_invoice as $next_invoice) {
 					$totalpaid = $next_invoice->getSommePaiement(0);
-					$totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
+					$totalcreditnotesNext = $next_invoice->getSumCreditNotesUsed(0);
 					$totaldeposits = $next_invoice->getSumDepositsUsed(0);
 
 					$total_next_ht += $next_invoice->total_ht;
@@ -5349,7 +5348,7 @@ if ($action == 'create') {
 					}
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ht).'</span></td>';
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ttc).'</span></td>';
-					print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid + $totalcreditnotes + $totaldeposits).'</td>';
+					print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid + $totalcreditnotesNext + $totaldeposits).'</td>';
 					print '</tr>';
 				}
 

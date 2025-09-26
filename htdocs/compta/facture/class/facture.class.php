@@ -2492,9 +2492,7 @@ class Facture extends CommonInvoice
 					) {
 						$this->tab_previous_situation_invoice[] = $invoice;
 					} else {
-						if ($invoice->type != FACTURE::TYPE_CREDIT_NOTE) {
-							$this->tab_next_situation_invoice[] = $invoice;
-						}
+						$this->tab_next_situation_invoice[] = $invoice;
 					}
 				}
 			}
