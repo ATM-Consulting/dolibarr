@@ -1241,7 +1241,11 @@ if (empty($reshook)) {
 
 
 							if ($facture_source->isSituationInvoice()) {
-								$source_fk_prev_id = $line->fk_prev_id; // temporary storing situation invoice fk_prev_id
+								if ($object->type == FACTURE::TYPE_CREDIT_NOTE) {
+									$source_fk_prev_id = $line->id; // temporary storing situation invoice fk_prev_id
+								} else {
+									$source_fk_prev_id = $line->fk_prev_id; // temporary storing situation invoice fk_prev_id
+								}
 								$line->fk_prev_id  = $line->id; // The new line of the new credit note we are creating must be linked to the situation invoice line it is created from
 
 								if (!empty($facture_source->tab_previous_situation_invoice)) {
@@ -1262,11 +1266,8 @@ if (empty($reshook)) {
 										}
 									}
 
-									$maxPrevSituationPercent = 0;
 									foreach ($facture_source->tab_previous_situation_invoice[$lineIndex]->lines as $prevLine) {
 										if ($prevLine->id == $source_fk_prev_id) {
-											$maxPrevSituationPercent = max($maxPrevSituationPercent, $prevLine->situation_percent);
-
 											//$line->subprice  = $line->subprice - $prevLine->subprice;
 											$line->total_ht  -= $prevLine->total_ht;
 											$line->total_tva -= $prevLine->total_tva;
@@ -1281,8 +1282,6 @@ if (empty($reshook)) {
 										}
 									}
 
-									// prorata
-									$line->situation_percent = $maxPrevSituationPercent - $line->situation_percent;
 
 									//print 'New line based on invoice id '.$facture_source->tab_previous_situation_invoice[$lineIndex]->id.' fk_prev_id='.$source_fk_prev_id.' will be fk_prev_id='.$line->fk_prev_id.' '.$line->total_ht.' '.$line->situation_percent.'<br>';
 

@@ -1,0 +1,4 @@
+***** ChangeLog for loukta*****
+- Fix : Major Fix for Credit Notes: A significant patch was applied to ensure that when creating a credit note for a situation invoice,
+the previous progress amounts and percentages are calculated and displayed correctly on credit note. This was one of the most important adjustments,
+ making the entire billing cycle more reliable. **26/09/2025**

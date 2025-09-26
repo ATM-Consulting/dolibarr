@@ -924,9 +924,15 @@ class FactureLigne extends CommonInvoiceLine
 				$invoicecache[$invoiceid] = new Facture($this->db);
 				$invoicecache[$invoiceid]->fetch($invoiceid);
 			}
-			if ($invoicecache[$invoiceid]->type != Facture::TYPE_SITUATION) {
+			$allowedTypes = [
+				Facture::TYPE_SITUATION,
+				Facture::TYPE_CREDIT_NOTE
+			];
+
+			if (!in_array($invoicecache[$invoiceid]->type, $allowedTypes)) {
 				return 0;
 			}
+
 
 			$all_found = false;
 			$lastprevid = $this->fk_prev_id;
@@ -950,7 +956,7 @@ class FactureLigne extends CommonInvoiceLine
 						$res_credit_note = $this->db->query($sql_credit_note);
 						if ($res_credit_note) {
 							while ($cn = $this->db->fetch_object($res_credit_note)) {
-								$cumulated_percent += floatval($cn->situation_percent);
+								$cumulated_percent -= floatval($cn->situation_percent);
 							}
 						} else {
 							dol_print_error($this->db);
