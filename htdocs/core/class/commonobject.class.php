@@ -8229,6 +8229,8 @@ abstract class CommonObject
 		$parameters = array('mode'=>$mode, 'params'=>$params, 'keysuffix'=>$keysuffix, 'keyprefix'=>$keyprefix, 'display_type'=>$display_type);
 		$reshook = $hookmanager->executeHooks('showOptionals', $parameters, $this, $action); // Note that $action and $object may have been modified by hook
 
+		$hookResPrint = $hookmanager->resPrint; // SPE KOESIO (MONK-133): BACKPORT FROM v23.0 (PR #35496)
+
 		if (empty($reshook)) {
 			if (is_array($extrafields->attributes[$this->table_element]) && key_exists('label', $extrafields->attributes[$this->table_element]) && is_array($extrafields->attributes[$this->table_element]['label']) && count($extrafields->attributes[$this->table_element]['label']) > 0) {
 				$out .= "\n";
@@ -8514,7 +8516,7 @@ abstract class CommonObject
 			}
 		}
 
-		$out .= $hookmanager->resPrint;
+		$out .= $hookResPrint; // SPE KOESIO (MONK-133): BACKPORT FROM v23.0 (PR #35496)
 
 		return $out;
 	}
