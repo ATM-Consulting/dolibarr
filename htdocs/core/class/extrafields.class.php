@@ -933,11 +933,34 @@ class ExtraFields
 	public function showInputField($key, $value, $moreparam = '', $keysuffix = '', $keyprefix = '', $morecss = '', $objectid = 0, $extrafieldsobjectkey = '', $mode = 0)
 	{
 		global $conf, $langs, $form;
+		global $hookmanager; // SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
 
 		if (!is_object($form)) {
 			require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 			$form = new Form($this->db);
 		}
+
+		// SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
+		$parameters = array(
+			'key'                  => $key,
+			'value'                => &$value,
+			'moreparam'            => $moreparam,
+			'keysuffix'            => $keysuffix,
+			'keyprefix'            => $keyprefix,
+			'morecss'              => $morecss,
+			'object'               => $this,
+			'extrafieldsobjectkey' => $extrafieldsobjectkey,
+			'mode'                 => $mode
+		);
+		$action = '';
+
+		$reshook = $hookmanager->executeHooks('showInputExtraField', $parameters, $this, $action); // Note that $action and $object may have been modified by hook
+		if ($reshook > 0) {
+			$out = $hookmanager->resPrint;
+			$hookmanager->resPrint = '';
+			return $out;
+		}
+		// END SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
 
 		$out = '';
 
@@ -1581,6 +1604,7 @@ class ExtraFields
 	public function showOutputField($key, $value, $moreparam = '', $extrafieldsobjectkey = '', $outputlangs = null)
 	{
 		global $conf, $langs;
+		global $hookmanager; // SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
 
 		if (is_null($outputlangs) || !is_object($outputlangs)) {
 			$outputlangs = $langs;
@@ -1590,6 +1614,25 @@ class ExtraFields
 			dol_syslog(get_class($this).'::showOutputField extrafieldsobjectkey required', LOG_ERR);
 			return 'BadValueForParamExtraFieldsObjectKey';
 		}
+
+		// SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
+		$parameters = array(
+			'key'                  => $key,
+			'value'                => &$value,
+			'moreparam'            => $moreparam,
+			'extrafieldsobjectkey' => $extrafieldsobjectkey,
+			'outputlangs'          => $outputlangs,
+			'object'               => $this
+		);
+		$action = '';
+
+		$reshook = $hookmanager->executeHooks('showOutputExtraField', $parameters, $this, $action); // Note that $action and $object may have been modified by hook
+		if ($reshook > 0) {
+			$out = $hookmanager->resPrint;
+			$hookmanager->resPrint = '';
+			return $out;
+		}
+		// END SPE KOESIO: BACKPORT FROM 23.0 (MONK-133, PR #35496)
 
 		$label = $this->attributes[$extrafieldsobjectkey]['label'][$key];
 		$type = $this->attributes[$extrafieldsobjectkey]['type'][$key];
