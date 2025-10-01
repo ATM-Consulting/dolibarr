@@ -2208,8 +2208,16 @@ abstract class CommonObject
 			$sql .= " LEFT JOIN ".$this->db->prefix()."societe_commerciaux as sc ON ".$aliastablesociete.".rowid = sc.fk_soc";
 		}
 		$sql .= " WHERE te.".$fieldid." < '".$this->db->escape($fieldid == 'rowid' ? $this->id : $this->ref)."'"; // ->ref must always be defined (set to id if field does not exists)
+
+		// BEGIN SPE KOESIO: T250090 backport Dolibarr#28318 from 20.0
 		if ($restrictiononfksoc == 1 && empty($user->rights->societe->client->voir) && !$socid) {
-			$sql .= " AND sc.fk_user = ".((int) $user->id);
+			$sql .= " AND (sc.fk_user = ".((int) $user->id);
+			if (getDolGlobalInt('MAIN_SEE_SUBORDINATES')) {
+				$userschilds = $user->getAllChildIds();
+				$sql .= " OR sc.fk_user IN (".$this->db->sanitize(implode(',', $userschilds)).")";
+			}
+			$sql .= ')';
+		// END SPE KOESIO: T250090 backport Dolibarr#28318 from 20.0
 		}
 		if ($restrictiononfksoc == 2 && empty($user->rights->societe->client->voir) && !$socid) {
 			$sql .= " AND (sc.fk_user = ".((int) $user->id).' OR te.fk_soc IS NULL)';
