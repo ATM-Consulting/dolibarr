@@ -805,10 +805,12 @@ if (empty($reshook)) {
 			$db->rollback();
 		}
 	} elseif ($action == 'confirm_deleteline' && $confirm == 'yes' && $user->rights->contrat->creer) {
+		// SPE KOESIO: use ContratLigne::delete() instead of Contract::deleteline()
 		$fk_line = GETPOSTINT('lineid');
 		$contratLigne = new ContratLigne($db);
 		$contratLigne->fetch($fk_line);
 		$result = $contratLigne->delete($user);
+		// END SPE KOESIO
 
 		if ($result >= 0) {
 			header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
@@ -1948,7 +1950,9 @@ if ($action == 'create') {
 						if ($objp->fk_product > 0) {
 							$product = new Product($db);
 							$product->fetch($objp->fk_product);
-							$dateactend = dol_time_plus_duree(time(), $product->duration_value ?: 0, $product->duration_unit);
+							if (!empty($product->duration_value) && !empty($product->duration_unit)) {
+								$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+							}
 						}
 					}
 

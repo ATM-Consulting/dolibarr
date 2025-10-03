@@ -992,14 +992,8 @@ class Facture extends CommonInvoice
 			 */
 			if (!$error && $this->fac_rec > 0) {
 				foreach ($_facrec->lines as $i => $val) {
-					////////////////////////////
-					//START BACKPORT V17 to V17_koesio
-					////////////////////////////
 					// For line from template invoice, we use data from template invoice
 					/*
-					////////////////////////////
-					//END BACKPORT V17 to V17_koesio
-					////////////////////////////
 					if ($_facrec->lines[$i]->fk_product) {
 						$prod = new Product($this->db);
 						$res = $prod->fetch($_facrec->lines[$i]->fk_product);
