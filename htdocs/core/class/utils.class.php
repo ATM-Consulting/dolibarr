@@ -363,8 +363,8 @@ class Utils
 			$handle = '';
 
 			// Start call method to execute dump
-			$fullcommandcrypted = $command." ".$paramcrypted." 2>&1";
-			$fullcommandclear = $command." ".$paramclear." 2>&1";
+			$fullcommandcrypted = $command." ".$paramcrypted."|tail +2 2>&1";
+			$fullcommandclear = $command." ".$paramclear."|tail +2 2>&1";
 			if (!$lowmemorydump) {
 				if ($compression == 'none') {
 					$handle = fopen($outputfile, 'w');
@@ -526,7 +526,7 @@ class Utils
 				} elseif ($compression == 'zstd') {
 					fclose($handle);
 				}
-				if ($ok && preg_match('/^-- (MySql|MariaDB)/i', $errormsg)) {	// No error
+				if ($ok && preg_match('/^-- (MySql|MariaDB)/i', $errormsg) || (strpos($errormsg, '!999999- enable the sandbox mode'))) {	// No error
 					$errormsg = '';
 				} else {
 					// Renommer fichier sortie en fichier erreur
