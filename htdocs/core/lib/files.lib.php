@@ -2918,7 +2918,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			if (is_array($conf->$modulepart->multidir_output) && !empty($conf->$modulepart->multidir_output[$entity])) {
 				$original_file = $conf->$modulepart->multidir_output[$entity].'/'.$original_file;
 			} else {
-				$original_file = $conf->$modulepart->dir_output.'/'.$original_file;
+				$original_file = DOL_DATA_ROOT . '/' . $entity . '/' . $modulepart . '/' . $original_file;
 			}
 		}
 
