@@ -1,0 +1,1 @@
+- FIX DA027157 : Fixed a "File not found" error when accessing a document belonging to another entity.
