@@ -420,7 +420,12 @@ class Product extends CommonObject
 	public $stock_warehouse = array();
 
 	public $oldcopy;
-
+// BACKPORT V22
+	/**
+	 * @var int
+	 */
+	public $StockableProduct;
+// FIN BACKPORT V22
 	/**
 	 * @var int Default warehouse Id
 	 */
@@ -534,6 +539,9 @@ class Product extends CommonObject
 		//'tosell'       =>array('type'=>'integer',      'label'=>'Status',           'enabled'=>1, 'visible'=>1,  'notnull'=>1, 'default'=>0, 'index'=>1,  'position'=>1000, 'arrayofkeyval'=>array(0=>'Draft', 1=>'Active', -1=>'Cancel')),
 		//'tobuy'        =>array('type'=>'integer',      'label'=>'Status',           'enabled'=>1, 'visible'=>1,  'notnull'=>1, 'default'=>0, 'index'=>1,  'position'=>1000, 'arrayofkeyval'=>array(0=>'Draft', 1=>'Active', -1=>'Cancel')),
 		'mandatory_period' => array('type'=>'integer', 'label'=>'mandatory_period', 'enabled'=>1, 'visible'=>1,  'notnull'=>1, 'default'=>0, 'index'=>1,  'position'=>1000),
+		// BACKPORT V22
+		'stockable_product'	=>array('type' => 'integer', 'label' => 'stockable_product', 'enabled' => 1, 'visible' => 1, 'default' => '1', 'notnull' => 1, 'index' => 1, 'position' => 502),
+		// FIN BACKPORT V22
 	);
 
 	/**
@@ -552,8 +560,13 @@ class Product extends CommonObject
 	 * Advanced feature: stock kit
 	 */
 	const TYPE_STOCKKIT = 3;
-
-
+// BACKPORT V22
+	/**
+	 * Stockable product
+	 */
+	const DISABLED_STOCK = 0;
+	const ENABLED_STOCK = 1;
+// FIN BACKPORT V22
 	/**
 	 *  Constructor
 	 *
@@ -646,7 +659,11 @@ class Product extends CommonObject
 		if (empty($this->status_buy)) {
 			$this->status_buy = 0;
 		}
-
+// BACKPORT V22
+		if (empty($this->stockable_product)) {
+			$this->stockable_product = 0;
+		}
+// FIN BACKPORT V22
 		$price_ht = 0;
 		$price_ttc = 0;
 		$price_min_ht = 0;
@@ -768,6 +785,9 @@ class Product extends CommonObject
 					$sql .= ", batch_mask";
 					$sql .= ", fk_unit";
 					$sql .= ", mandatory_period";
+					// BACKPORT V22
+					$sql .= ", stockable_product";
+					// FIN BACKPORT V22
 					$sql .= ") VALUES (";
 					$sql .= "'".$this->db->idate($now)."'";
 					$sql .= ", ".(!empty($this->entity) ? (int) $this->entity : (int) $conf->entity);
@@ -797,6 +817,9 @@ class Product extends CommonObject
 					$sql .= ", '".$this->db->escape($this->batch_mask)."'";
 					$sql .= ", ".($this->fk_unit > 0 ? ((int) $this->fk_unit) : 'NULL');
 					$sql .= ", '".$this->db->escape($this->mandatory_period)."'";
+					// BACKPORT V22
+					$sql .= ", ".((int) $this->stockable_product);
+					// FIN BACKPORT V22
 					$sql .= ")";
 
 					dol_syslog(get_class($this)."::Create", LOG_DEBUG);
@@ -1069,7 +1092,11 @@ class Product extends CommonObject
 		if (empty($this->state_id)) {
 			$this->state_id = 0;
 		}
-
+// BACKPORT V22
+		if (empty($this->stockable_product)) {
+			$this->stockable_product = 0;
+		}
+// FIN BACKPORT V22
 		// Barcode value
 		$this->barcode = trim($this->barcode);
 
@@ -1216,6 +1243,7 @@ class Product extends CommonObject
 			$sql .= ", fk_price_expression = ".($this->fk_price_expression != 0 ? (int) $this->fk_price_expression : 'NULL');
 			$sql .= ", fk_user_modif = ".($user->id > 0 ? $user->id : 'NULL');
 			$sql .= ", mandatory_period = ".($this->mandatory_period );
+			$sql .= ", stockable_product = ".(int) $this->stockable_product;
 			// stock field is not here because it is a denormalized value from product_stock.
 			$sql .= " WHERE rowid = ".((int) $id);
 
@@ -2395,7 +2423,9 @@ class Product extends CommonObject
 			$sql .= " p.pmp,";
 		}
 		$sql .= " p.datec, p.tms, p.import_key, p.entity, p.desiredstock, p.tobatch, p.batch_mask, p.fk_unit,";
-		$sql .= " p.fk_price_expression, p.price_autogen, p.model_pdf,";
+		// BACKPORT V22
+		$sql .= " p.fk_price_expression, p.price_autogen, p.stockable_product, p.model_pdf,";
+		// FIN BACKPORT V22
 		if ($separatedStock) {
 			$sql .= " SUM(sp.reel) as stock";
 		} else {
@@ -2438,7 +2468,9 @@ class Product extends CommonObject
 				$sql .= " p.pmp,";
 			}
 			$sql .= " p.datec, p.tms, p.import_key, p.entity, p.desiredstock, p.tobatch, p.batch_mask, p.fk_unit,";
-			$sql .= " p.fk_price_expression, p.price_autogen, p.model_pdf";
+			// BACKPORT V22
+			$sql .= " p.fk_price_expression, p.price_autogen, p.stockable_product, p.model_pdf";
+			// FIN BACKPORT V22
 			if (!$separatedStock) {
 				$sql .= ", p.stock";
 			}
@@ -2527,6 +2559,7 @@ class Product extends CommonObject
 				$this->seuil_stock_alerte = $obj->seuil_stock_alerte;
 				$this->desiredstock = $obj->desiredstock;
 				$this->stock_reel = $obj->stock;
+				$this->stockable_product = $obj->stockable_product;
 				$this->pmp = $obj->pmp;
 
 				$this->date_creation = $obj->datec;
