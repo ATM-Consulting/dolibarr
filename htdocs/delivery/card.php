@@ -284,11 +284,13 @@ include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
 
 // ************* BACKPORT FOR V17 / PLEASE DELETE ME AT V23 *************
 // Actions to send emails
-$triggersendname = 'SHIPPING_SENTBYMAIL';
+//backport from V23
+$triggersendname = 'DELIVERY_SENTBYMAIL';
 $paramname = 'id';
-$autocopy = 'MAIN_MAIL_AUTOCOPY_SHIPMENT_TO';
-$mode = 'emailfromshipment';
-$trackid = 'shi' . $object->id;
+$autocopy = 'MAIN_MAIL_AUTOCOPY_DELIVERY_TO';
+$mode = 'emailfromdelivery';
+$trackid = 'del' . $object->id;
+// end backport from V23
 include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';
 // **********************************************************************
 
@@ -764,11 +766,12 @@ if ($action == 'create') {
 	}
 
 	// Presend form
-	$modelmail = 'shipping_send';
-	$defaulttopic = 'SendShippingRef';
-	$diroutput = $conf->expedition->dir_output . '/sending';
-	$trackid = 'shi' . $object->id;
-
+	// start backport from V23
+	$modelmail = 'delivery_send';
+	$defaulttopic = 'SendDeliveryRef';
+	$diroutput = $conf->expedition->dir_output . '/receipt';
+	$trackid = 'del' . $object->id;
+	// end backport from V23
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
 	// **********************************************************************
 
