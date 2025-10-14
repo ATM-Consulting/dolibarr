@@ -1455,11 +1455,13 @@ class BOM extends CommonObject
 								$line->unit_cost = 0;
 							}
 						} else {
-							$line->unit_cost = (float) price2num($unit_cost);
+							// backport need to delete in V22
+							$line->unit_cost = (float) $unit_cost;
+							// end backport
 						}
-
-						$line->total_cost = (float) price2num($line->qty * $line->unit_cost, 'MT');
-
+						// backport need to delete in V22
+						$line->total_cost = (float) $line->qty * $line->unit_cost;
+						// end backport
 						$this->total_cost += $line->total_cost;
 					} else {
 						$bom_child = new BOM($this->db);
@@ -1467,7 +1469,9 @@ class BOM extends CommonObject
 						if ($res > 0) {
 							$bom_child->calculateCosts();
 							$line->childBom[] = $bom_child;
-							$this->total_cost += (float) price2num($bom_child->total_cost * $line->qty, 'MT');
+							// backport need to delete in V22
+							$this->total_cost += (float) $bom_child->total_cost * $line->qty;
+							// end backport
 							$this->total_cost += $line->total_cost;
 						} else {
 							$this->error = $bom_child->error;
@@ -1488,7 +1492,9 @@ class BOM extends CommonObject
 						$res = $workstation->fetch($line->fk_default_workstation);
 
 						if ($res > 0) {
-							$line->total_cost = (float) price2num($qtyhourforline * ($workstation->thm_operator_estimated + $workstation->thm_machine_estimated), 'MT');
+							// backport need to delete in V22
+							$line->total_cost = (float) $qtyhourforline * ($workstation->thm_operator_estimated + $workstation->thm_machine_estimated);
+							//end backport
 						} else {
 							$this->error = $workstation->error;
 							return -3;
@@ -1502,9 +1508,13 @@ class BOM extends CommonObject
 						}
 
 						if ($qtyhourservice) {
-							$line->total_cost = (float) price2num($qtyhourforline / $qtyhourservice * $tmpproduct->cost_price, 'MT');
+							// backport need to delete in V22
+							$line->total_cost = (float) $qtyhourforline / $qtyhourservice * $tmpproduct->cost_price;
+							//end backport
 						} else {
-							$line->total_cost = (float) price2num($line->qty * $tmpproduct->cost_price, 'MT');
+							// backport need to delete in V22
+							$line->total_cost = (float) $line->qty * $tmpproduct->cost_price;
+							// end backport
 						}
 					}
 
