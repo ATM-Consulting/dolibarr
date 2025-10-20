@@ -2760,8 +2760,8 @@ class Project extends CommonObject
 	/**
 	 * Check if contact already exist in the project
 	 *
-	 * @param array $contactlistExternalCurrent List of contacts from project to merge
-	 * @param array $contactTmp Contacts to check
+	 * @param array<int, array<string, mixed>> $contactlistExternalCurrent List of contacts from project to merge
+	 * @param array<string, mixed> $contactTmp Contacts to check
 	 * @return bool True if contact exist, false otherwise
 	 */
 	public function contactExistsInCurrentList($contactlistExternalCurrent, $contactTmp) : bool {
@@ -2832,12 +2832,11 @@ class Project extends CommonObject
 				$contactlistInternalCurrent = $this->liste_contact(-1, 'internal');
 
 				// Process external contacts
-				if (is_array($contactlistExternalTmp)) {
+				if (is_array($contactlistExternalTmp) && count($contactlistExternalTmp) > 0) {
 					foreach ($contactlistExternalTmp as $contactTmp) {
-						$contactExists = false;
-
 						// Check if contact already exists in current project
-						if (is_array($contactlistExternalCurrent)) {
+						$contactExists = false;
+						if (is_array($contactlistExternalCurrent) && count($contactlistExternalCurrent) > 0) {
 							$contactExists = $this->contactExistsInCurrentList($contactlistExternalCurrent, $contactTmp);
 						}
 
@@ -2855,12 +2854,11 @@ class Project extends CommonObject
 				}
 
 				// Process internal contacts
-				if (is_array($contactlistInternalTmp)) {
+				if (is_array($contactlistInternalTmp) && count($contactlistInternalTmp) > 0) {
 					foreach ($contactlistInternalTmp as $contactTmp) {
-						$contactExists = false;
-
 						// Check if contact already exists in current project
-						if (is_array($contactlistInternalCurrent)) {
+						$contactExists = false;
+						if (is_array($contactlistInternalCurrent) && count($contactlistInternalCurrent) > 0) {
 							$contactExists = $this->contactExistsInCurrentList($contactlistInternalCurrent, $contactTmp);
 						}
 
@@ -2887,12 +2885,12 @@ class Project extends CommonObject
 			}
 
 			// Merge budget amounts if both exist
-			if (empty($this->budget_amount) || ($this->budget_amount == 0) && !empty($tmpProject->budget_amount)) {
+			if ((empty($this->budget_amount) || $this->budget_amount == 0) && !empty($tmpProject->budget_amount)) {
 				$this->budget_amount = $tmpProject->budget_amount;
 			}
 
 			// Merge opportunity amounts if both exist
-			if (empty($this->opp_amount) || ($this->opp_amount == 0) && !empty($tmpProject->opp_amount)) {
+			if ((empty($this->opp_amount) || $this->opp_amount == 0) && !empty($tmpProject->opp_amount)) {
 				$this->opp_amount = $tmpProject->opp_amount;
 			}
 
@@ -2919,7 +2917,7 @@ class Project extends CommonObject
 				$cats = $staticCat->containing($this->id, 'project', 'id');
 				$cats = array_merge($cats, $catsOrigin);
 				if (!empty($cats)) {
-					$this->setCategories($cats, 'project');
+					$this->setCategories($cats);
 				}
 			}
 
@@ -3095,12 +3093,12 @@ class Project extends CommonObject
 					dol_mkdir($uploadDirCurrent);
 				}
 
+				$filearray = array();
 				if (dol_is_dir($uploadDirTmp)) {
 					// Get files from source project (excluding meta files and preview images)
 					$filearray = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
 				}
-			}
-			if (is_array($filearray) && !empty($filearray)) {
+
 				if (is_array($filearray) && count($filearray) > 0) {
 					foreach ($filearray as $file) {
 						$srcfile = $file['fullname'];
@@ -3147,16 +3145,15 @@ class Project extends CommonObject
 							// Don't stop the merge for file errors, just log them
 						}
 					}
-				}
-			}else {
-				$this->error .= $langs->trans('NoFilesFound');
-			}
-			// Clean up empty source directory if all files were moved
-			$remainingFiles = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
 
-			if (!is_array($remainingFiles) || count($remainingFiles) == 0) {
-				dol_delete_dir_recursive($uploadDirTmp);
-				dol_syslog("Cleaned up empty upload directory for project " . $projectId);
+					// Clean up empty source directory if all files were moved
+					$remainingFiles = dol_dir_list($uploadDirTmp, "files", 0, '', '(\.meta|_preview.*\.png)$', 'name', SORT_ASC, 1);
+
+					if (!is_array($remainingFiles) || count($remainingFiles) == 0) {
+						dol_delete_dir_recursive($uploadDirTmp);
+						dol_syslog("Cleaned up empty upload directory for project " . $projectId);
+					}
+				}
 			}
 
 			// Call trigger
