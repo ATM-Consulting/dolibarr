@@ -299,6 +299,7 @@ class InterfaceTicketEmail extends DolibarrTriggers
 					$res = 0;
 					$contactObj = null;
 
+					// [SPE AVM]: merge anticipé PR#35874
 					if ($contactid > 0) {
 						// TODO This security test has no sens. We must check that $contactid is inside $linked_contacts[]['id'] when $linked_contacts[]['source'] = 'external' or 'thirdparty'
 						// Refuse email if not
@@ -312,6 +313,7 @@ class InterfaceTicketEmail extends DolibarrTriggers
 							break;
 						}
 					}
+					// [END SPE]
 
 					$sendto = '';
 					if ($contactObj !== null && $res > 0 && !empty($contactObj->email) && !empty($contactObj->statut)) {
