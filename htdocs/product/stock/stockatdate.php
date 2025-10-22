@@ -276,19 +276,15 @@ $num = 0;
 
 $title = $langs->trans('StockAtDate');
 
-// Backport from V20
-if ($mode == 'future') {
-	$title = $langs->trans("VirtualStockAtDate");
-}
-// --- Préparation multientité / partage
+// --- Multi-entity preparation / sharing
 $visibleWarehousesEntities = (string) $conf->entity;
-$useSeparatedStock = false; // true => on somme via product_stock
+$useSeparatedStock = false; // true => we sum via product_stock
 
 if (!empty($search_fk_warehouse)) {
-	// Cas 1 : filtre d’entrepôts explicite -> on reste sur ps
+	// Case 1: explicit warehouse filter -> we stay on ps
 	$useSeparatedStock = true;
 } else if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED')) {
-	// Cas 2 : multi-company + partage d’entrepôts -> somme via sp limité aux entités visibles
+	// Case 2: multi-company + warehouse sharing -> sum via sp limited to visible entities
 	global $mc;
 	$useSeparatedStock = true;
 	if (isset($mc->sharings['stock']) && !empty($mc->sharings['stock'])) {
@@ -296,33 +292,47 @@ if (!empty($search_fk_warehouse)) {
 	}
 }
 
+// --- Determine stock source field and alias
+// We define the source of the stock calculation (which field to use)
+// in one place, avoiding logical repetition later.
+$stockField = '';
+$stockAlias = 'stock'; // Default alias
+$useStockSum = false;  // Flag if we need to use SUM() for the stock field itself
+
+if (!empty($search_fk_warehouse)) {
+	// Case 1: Filtering by specific warehouse(s)
+	$stockField = 'ps.reel';
+	$stockAlias = 'stock_reel';
+	$useStockSum = true;
+} elseif ($useSeparatedStock) {
+	// Case 2: Multi-entity with shared warehouses, sum from product_stock
+	$stockField = 'sp.reel';
+	$useStockSum = true;
+} else {
+	// Case 3: Standard stock from the main product table
+	$stockField = 'p.stock';
+}
+
 // --- SELECT
 $sql  = 'SELECT ';
 $sql .= ' p.rowid, p.ref, p.label, p.description, p.price,';
-$sql .= ' COALESCE(ppe.pmp, p.pmp) as pmp,'; // PMP par entité si dispo
+$sql .= ' COALESCE(ppe.pmp, p.pmp) as pmp,'; // WAP (Weighted Average Price) per entity if available
 $sql .= ' p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
 $sql .= ' p.tms as datem, p.duration, p.tobuy,';
 
-// Stock (champ 'stock' lorsque somme globale, ou 'stock_reel' lorsque filtre d’entrepôt)
-if (!empty($search_fk_warehouse)) {
-	$sql .= ' SUM(ps.reel) as stock_reel,';
-} elseif ($useSeparatedStock) {
-	$sql .= ' SUM(sp.reel) as stock,';
+// --- Stock field (DRY implementation)
+// Add the stock field to the SELECT, applying SUM() only if required (cases 1 and 2)
+if ($useStockSum) {
+	$sql .= ' SUM('.$stockField.') as '.$stockAlias.',';
 } else {
-	$sql .= ' p.stock,';
+	$sql .= ' '.$stockField.' as '.$stockAlias.',';
 }
 
-// Valeurs (currentvalue / sellvalue) : basées sur la source de stock sélectionnée
-if (!empty($search_fk_warehouse)) {
-	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * ps.reel) as currentvalue,';
-	$sql .= ' SUM(p.price * ps.reel) as sellvalue';
-} elseif ($useSeparatedStock) {
-	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * sp.reel) as currentvalue,';
-	$sql .= ' SUM(p.price * sp.reel) as sellvalue';
-} else {
-	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * p.stock) as currentvalue,';
-	$sql .= ' SUM(p.price * p.stock) as sellvalue';
-}
+// --- Value fields (DRY implementation)
+// currentvalue and sellvalue are now built *once* using the $stockField variable.
+// This logic is no longer repeated three times.
+$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * '.$stockField.') as currentvalue,';
+$sql .= ' SUM(p.price * '.$stockField.') as sellvalue';
 
 // Hooks select
 $parameters = array();
@@ -330,26 +340,30 @@ $reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters);
 $sql .= $hookmanager->resPrint;
 
 // --- FROM / JOIN
-$sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
+// This is where the code block you provided in your last message begins.
+// Remember to apply the security (intval) and prefix ($db->prefix()) fixes here.
+$sql .= ' FROM '.$db->prefix().'product as p';
 
 // Join product_perentity si on peut en bénéficier (PMP par entité ou per-entity partagé)
 if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED') || getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
-	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_perentity as ppe'
+	$sql .= ' LEFT JOIN '.$db->prefix().'product_perentity as ppe'
 		.  ' ON ppe.fk_product = p.rowid AND ppe.entity = '.((int) $conf->entity);
 }
 
 // Stock joins
 if (!empty($search_fk_warehouse)) {
-	// Cas 1 : filtre d’entrepôts -> ps
-	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as ps'
+	// Case 1: warehouse filter -> ps
+	$warehouseList = array_map('intval', $search_fk_warehouse);
+	$sql .= ' LEFT JOIN '.$db->prefix().'product_stock as ps'
 		.  ' ON ps.fk_product = p.rowid'
-		.  ' AND ps.fk_entrepot IN ('.$db->sanitize(implode(',', $search_fk_warehouse)).')';
+		.  ' AND ps.fk_entrepot IN ('.implode(',', $warehouseList).')';
 } elseif ($useSeparatedStock) {
-	// Cas 2 : somme via sp sur entrepôts visibles (entité courante + partagés)
-	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as sp'
+	// Case 2: sum via sp on visible warehouses (current entity + shared)
+	$entities = array_map('intval', explode(',', $visibleWarehousesEntities));
+	$sql .= ' LEFT JOIN '.$db->prefix().'product_stock as sp'
 		.  ' ON sp.fk_product = p.rowid'
-		.  ' AND sp.fk_entrepot IN (SELECT rowid FROM '.MAIN_DB_PREFIX.'entrepot'
-		.  '                         WHERE entity IN ('.$db->sanitize($visibleWarehousesEntities).'))';
+		.  ' AND sp.fk_entrepot IN (SELECT rowid FROM '.$db->prefix().'entrepot'
+		.  '                         WHERE entity IN ('.implode(',', $entities).'))';
 }
 
 // Hooks join
@@ -381,10 +395,10 @@ $sql .= ' GROUP BY';
 $sql .= ' p.rowid, p.ref, p.label, p.description, p.price, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
 $sql .= ' p.tms, p.duration, p.tobuy';
 
-// exposé : COALESCE(ppe.pmp,p.pmp) -> on groupe sur les 2 composantes
+// presentation: COALESCE(ppe.pmp,p.pmp) -> we group on the 2 components
 $sql .= ', p.pmp, ppe.pmp';
 
-// si on n’est PAS en somme via sp/ps (fallback p.stock), il faut regrouper p.stock
+// if we are NOT in sum via sp/ps (fallback p.stock), we must regroup p.stock
 if (empty($search_fk_warehouse) && !$useSeparatedStock) {
 	$sql .= ', p.stock';
 }
@@ -402,7 +416,6 @@ if ($sortfield == 'stock' && !empty($search_fk_warehouse)) {
 	$sortfield = 'stock_reel';
 }
 $sql .= $db->order($sortfield, $sortorder);
-// END Backport from V20
 
 $nbtotalofrecords = '';
 if ($date && $dateIsValid) {	// We avoid a heavy sql if mandatory parameter date not yet defined
