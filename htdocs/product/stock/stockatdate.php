@@ -378,8 +378,9 @@ if ($productid > 0) {
 	$sql .= ' AND p.rowid = '.((int) $productid);
 }
 if (!getDolGlobalString('STOCK_SUPPORTS_SERVICES')) {
-	$sql .= ' AND p.fk_product_type = 0';
+	$sql .= ' AND p.fk_product_type = '.PRODUCT::TYPE_PRODUCT;
 }
+
 if (!empty($canvas)) {
 	$sql .= " AND p.canvas = '".$db->escape($canvas)."'";
 }
