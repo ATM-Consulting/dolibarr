@@ -276,34 +276,95 @@ $num = 0;
 
 $title = $langs->trans('StockAtDate');
 
-$sql = 'SELECT p.rowid, p.ref, p.label, p.description, p.price, p.pmp,';
-$sql .= ' p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
-$sql .= ' p.tms as datem, p.duration, p.tobuy, p.stock, ';
-if (!empty($search_fk_warehouse)) {
-	$sql .= " SUM(p.pmp * ps.reel) as currentvalue, SUM(p.price * ps.reel) as sellvalue";
-	$sql .= ', SUM(ps.reel) as stock_reel';
-} else {
-	$sql .= " SUM(p.pmp * p.stock) as currentvalue, SUM(p.price * p.stock) as sellvalue";
+// Backport from V20
+if ($mode == 'future') {
+	$title = $langs->trans("VirtualStockAtDate");
 }
-// Add fields from hooks
+// --- Préparation multientité / partage
+$visibleWarehousesEntities = (string) $conf->entity;
+$useSeparatedStock = false; // true => on somme via product_stock
+
+if (!empty($search_fk_warehouse)) {
+	// Cas 1 : filtre d’entrepôts explicite -> on reste sur ps
+	$useSeparatedStock = true;
+} else if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED')) {
+	// Cas 2 : multi-company + partage d’entrepôts -> somme via sp limité aux entités visibles
+	global $mc;
+	$useSeparatedStock = true;
+	if (isset($mc->sharings['stock']) && !empty($mc->sharings['stock'])) {
+		$visibleWarehousesEntities .= "," . implode(",", $mc->sharings['stock']);
+	}
+}
+
+// --- SELECT
+$sql  = 'SELECT ';
+$sql .= ' p.rowid, p.ref, p.label, p.description, p.price,';
+$sql .= ' COALESCE(ppe.pmp, p.pmp) as pmp,'; // PMP par entité si dispo
+$sql .= ' p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+$sql .= ' p.tms as datem, p.duration, p.tobuy,';
+
+// Stock (champ 'stock' lorsque somme globale, ou 'stock_reel' lorsque filtre d’entrepôt)
+if (!empty($search_fk_warehouse)) {
+	$sql .= ' SUM(ps.reel) as stock_reel,';
+} elseif ($useSeparatedStock) {
+	$sql .= ' SUM(sp.reel) as stock,';
+} else {
+	$sql .= ' p.stock,';
+}
+
+// Valeurs (currentvalue / sellvalue) : basées sur la source de stock sélectionnée
+if (!empty($search_fk_warehouse)) {
+	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * ps.reel) as currentvalue,';
+	$sql .= ' SUM(p.price * ps.reel) as sellvalue';
+} elseif ($useSeparatedStock) {
+	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * sp.reel) as currentvalue,';
+	$sql .= ' SUM(p.price * sp.reel) as sellvalue';
+} else {
+	$sql .= ' SUM(COALESCE(ppe.pmp, p.pmp) * p.stock) as currentvalue,';
+	$sql .= ' SUM(p.price * p.stock) as sellvalue';
+}
+
+// Hooks select
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters);
 $sql .= $hookmanager->resPrint;
 
+// --- FROM / JOIN
 $sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
-if (!empty($search_fk_warehouse)) {
-	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as ps ON p.rowid = ps.fk_product AND ps.fk_entrepot IN ('.$db->sanitize(implode(",", $search_fk_warehouse)).")";
+
+// Join product_perentity si on peut en bénéficier (PMP par entité ou per-entity partagé)
+if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED') || getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
+	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_perentity as ppe'
+		.  ' ON ppe.fk_product = p.rowid AND ppe.entity = '.((int) $conf->entity);
 }
-// Add fields from hooks
+
+// Stock joins
+if (!empty($search_fk_warehouse)) {
+	// Cas 1 : filtre d’entrepôts -> ps
+	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as ps'
+		.  ' ON ps.fk_product = p.rowid'
+		.  ' AND ps.fk_entrepot IN ('.$db->sanitize(implode(',', $search_fk_warehouse)).')';
+} elseif ($useSeparatedStock) {
+	// Cas 2 : somme via sp sur entrepôts visibles (entité courante + partagés)
+	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as sp'
+		.  ' ON sp.fk_product = p.rowid'
+		.  ' AND sp.fk_entrepot IN (SELECT rowid FROM '.MAIN_DB_PREFIX.'entrepot'
+		.  '                         WHERE entity IN ('.$db->sanitize($visibleWarehousesEntities).'))';
+}
+
+// Hooks join
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListJoin', $parameters); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListJoin', $parameters);
 $sql .= $hookmanager->resPrint;
+
+// --- WHERE
 $sql .= ' WHERE p.entity IN ('.getEntity('product').')';
+
 if ($productid > 0) {
-	$sql .= " AND p.rowid = ".((int) $productid);
+	$sql .= ' AND p.rowid = '.((int) $productid);
 }
 if (!getDolGlobalString('STOCK_SUPPORTS_SERVICES')) {
-	$sql .= " AND p.fk_product_type = 0";
+	$sql .= ' AND p.fk_product_type = 0';
 }
 if (!empty($canvas)) {
 	$sql .= " AND p.canvas = '".$db->escape($canvas)."'";
@@ -314,13 +375,26 @@ if ($search_ref) {
 if ($search_nom) {
 	$sql .= natural_search('p.label', $search_nom);
 }
-$sql .= ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
-$sql .= ' p.tms, p.duration, p.tobuy, p.stock';
-// Add where from hooks
+
+// --- GROUP BY (OK ONLY_FULL_GROUP_BY)
+$sql .= ' GROUP BY';
+$sql .= ' p.rowid, p.ref, p.label, p.description, p.price, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+$sql .= ' p.tms, p.duration, p.tobuy';
+
+// exposé : COALESCE(ppe.pmp,p.pmp) -> on groupe sur les 2 composantes
+$sql .= ', p.pmp, ppe.pmp';
+
+// si on n’est PAS en somme via sp/ps (fallback p.stock), il faut regrouper p.stock
+if (empty($search_fk_warehouse) && !$useSeparatedStock) {
+	$sql .= ', p.stock';
+}
+
+// Hooks where additionnels
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters);
 $sql .= $hookmanager->resPrint;
 
+// --- ORDER
 if ($sortfield == 'stock_reel' && empty($search_fk_warehouse)) {
 	$sortfield = 'stock';
 }
@@ -328,6 +402,7 @@ if ($sortfield == 'stock' && !empty($search_fk_warehouse)) {
 	$sortfield = 'stock_reel';
 }
 $sql .= $db->order($sortfield, $sortorder);
+// END Backport from V20
 
 $nbtotalofrecords = '';
 if ($date && $dateIsValid) {	// We avoid a heavy sql if mandatory parameter date not yet defined
