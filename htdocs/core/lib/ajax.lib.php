@@ -486,11 +486,34 @@ function ajax_combobox($htmlname, $events = array(), $minLengthToAutocomplete = 
 	$moreselect2theme = preg_replace('/widthcentpercentminus[^\s]*/', '', $moreselect2theme);
 
 	$tmpplugin = 'select2';
-	$msg = "\n".'<!-- JS CODE TO ENABLE '.$tmpplugin.' for id = '.$htmlname.' -->
-		<script>
-			$(document).ready(function () {
-				$(\''.(dol_escape_js(preg_match('/^\./', $htmlname) ? $htmlname : '#'.$htmlname)).'\').'.$tmpplugin.'({
-					dir: \'ltr\',';
+	// BACKPORT v23 DA026698
+	$msg = "\n".'<!-- JS CODE TO ENABLE '.$tmpplugin.' for id = '.$htmlname.' -->'."\n";
+	$msg .= "<script>\n";
+
+	if (getDolGlobalString('MAIN_ENABLE_ACCENT_INSENSITIVE_SEARCH')) {
+		$msg .= '
+			// lowercase + remove accents
+			function normalizeString(str) {
+				return str
+					.normalize("NFD")
+					.replace(/[\u0300-\u036f]/g, "")
+					.toLowerCase();
+			}
+		';
+	} else {
+		$msg .= '
+			// lowercase only (accents kept)
+			function normalizeString(str) {
+				return str.toLowerCase();
+			}
+		';
+	}
+
+	$msg .= '
+		$(document).ready(function () {
+			$(\''.(dol_escape_js(preg_match('/^\./', $htmlname) ? $htmlname : '#'.$htmlname)).'\').'.$tmpplugin.'({
+				dir: \'ltr\',';
+	// END BACKPORT v23 DA026698
 	if (preg_match('/onrightofpage/', $morecss)) {	// when $morecss contains 'onrightofpage', the select2 component must also be inside a parent with class="parentonrightofpage"
 		$msg .= ' dropdownAutoWidth: true, dropdownParent: $(\'#'.$htmlname.'\').parent(), '."\n";
 	}
@@ -501,12 +524,16 @@ function ajax_combobox($htmlname, $events = array(), $minLengthToAutocomplete = 
 						if ($.trim(params.term) === "") {
 							return data;
 						}
-						keywords = (params.term).split(" ");
+// BACKPORT v23 DA026698
+						var term = normalizeString(params.term);
+						var text = normalizeString(data.text || "");
+						var keywords = term.split(" ");
 						for (var i = 0; i < keywords.length; i++) {
-							if (((data.text).toUpperCase()).indexOf((keywords[i]).toUpperCase()) == -1) {
+							if (text.indexOf(keywords[i]) === -1) {
 								return null;
 							}
 						}
+// END BACKPORT v23 DA026698
 						return data;
 					},
 					theme: \'default'.dol_escape_js($moreselect2theme).'\',		/* to add css on generated html components */

@@ -4142,6 +4142,7 @@ abstract class CommonObject
 				$sql .= ", multicurrency_total_ht = ".((float) price2num($this->multicurrency_total_ht, 'MT', 1));
 				$sql .= ", multicurrency_total_tva = ".((float) price2num($this->multicurrency_total_tva, 'MT', 1));
 				$sql .= ", multicurrency_total_ttc = ".((float) price2num($this->multicurrency_total_ttc, 'MT', 1));
+				$sql .= ", tms = CURRENT_TIMESTAMP()";
 				$sql .= " WHERE rowid = ".((int) $this->id);
 
 				dol_syslog(get_class($this)."::update_price", LOG_DEBUG);
@@ -8143,9 +8144,9 @@ abstract class CommonObject
 						if (strpos($InfoFieldList[4], 'extra') !== false) {
 							$sql .= ' as main, ' . $this->db->sanitize($this->db->prefix() . $InfoFieldList[0]) . '_extrafields as extra';
 							$sqlwhere .= " WHERE extra.fk_object = main." . $this->db->sanitize($InfoFieldList[2]);
-							$sqlwhere .= " AND " . $InfoFieldList[4];
+							$sqlwhere .= " AND " . forgeSQLFromUniversalSearchCriteria($InfoFieldList[4], $errstr, 1);
 						} else {
-							$sqlwhere .= " WHERE " . $InfoFieldList[4];
+							$sqlwhere .= " WHERE " . forgeSQLFromUniversalSearchCriteria($InfoFieldList[4], $errstr, 1);
 						}
 					} else {
 						$sqlwhere .= ' WHERE 1=1';
