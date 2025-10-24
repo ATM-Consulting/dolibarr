@@ -2102,7 +2102,9 @@ class Commande extends CommonOrder
 				$this->db->free($result);
 
 				// Lines
-				$result = $this->fetch_lines();
+				//spe techpap
+				$result = $this->fetch_lines(0, (getDolGlobalInt('MAIN_MULTILANGS') ? 1 : 0));
+				// end spe techpap
 				if ($result < 0) {
 					return -3;
 				}
