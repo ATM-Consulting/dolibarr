@@ -177,7 +177,6 @@ class InterfaceWorkflowManager extends DolibarrTriggers
 					}
 				}
 			}
-
 			// Second classify billed the proposal.
 			if (isModEnabled("propal") && !empty($conf->workflow->enabled) && getDolGlobalString('WORKFLOW_INVOICE_CLASSIFY_BILLED_PROPAL')) {
 				$object->fetchObjectLinked(0, 'propal', $object->id, $object->element);
@@ -196,7 +195,6 @@ class InterfaceWorkflowManager extends DolibarrTriggers
 					}
 				}
 			}
-
 			// Set shipment to "Closed" if WORKFLOW_SHIPPING_CLASSIFY_CLOSED_INVOICE is set (deprecated, has been replaced with WORKFLOW_SHIPPING_CLASSIFY_BILLED_INVOICE instead))
 			if (isModEnabled("shipping") && !empty($conf->workflow->enabled) && getDolGlobalString('WORKFLOW_SHIPPING_CLASSIFY_CLOSED_INVOICE')) {
 				$object->fetchObjectLinked(0, 'shipping', $object->id, $object->element);
