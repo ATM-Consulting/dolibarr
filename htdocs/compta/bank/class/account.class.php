@@ -1750,6 +1750,13 @@ class Account extends CommonObject
 				$out .= $address;
 				$outdone++;
 			}
+			//---------------------------------- BACKPORT SPE 22.0_cavi ----------------------- [START]
+			if (!empty($this->url)) {
+				$out .= ($outdone ? '<br>' : '');
+				$out .= dol_print_url($this->url, '_blank', 0, 1);
+				$outdone++;
+			}
+			//---------------------------------- BACKPORT SPE 22.0_cavi ----------------------- [END]
 			$outdone++;
 		}
 
