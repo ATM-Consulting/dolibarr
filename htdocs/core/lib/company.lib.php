@@ -2251,6 +2251,11 @@ function show_subsidiaries($conf, $langs, $db, $object)
 	$i = -1;
 
 	$sql = "SELECT s.rowid, s.client, s.fournisseur, s.nom as name, s.name_alias, s.email, s.address, s.zip, s.town, s.code_client, s.code_fournisseur, s.code_compta, s.code_compta_fournisseur, s.canvas";
+
+	//----------------------- BACKPORT 19.0 SECURIDIS ------------- START
+	$sql .= ", s.status";
+	//----------------------- BACKPORT 19.0 SECURIDIS ------------- END
+
 	$sql .= " FROM ".MAIN_DB_PREFIX."societe as s";
 	$sql .= " WHERE s.parent = ".((int) $object->id);
 	$sql .= " AND s.entity IN (".getEntity('societe').")";
@@ -2290,6 +2295,10 @@ function show_subsidiaries($conf, $langs, $db, $object)
 			$socstatic->canvas = $obj->canvas;
 			$socstatic->client = $obj->client;
 			$socstatic->fournisseur = $obj->fournisseur;
+
+			//----------------------- BACKPORT 19.0 SECURIDIS ------------- START
+			$socstatic->status = $obj->status;
+			//----------------------- BACKPORT 19.0 SECURIDIS ------------- END
 
 			print '<tr class="oddeven">';
 
