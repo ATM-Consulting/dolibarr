@@ -225,6 +225,14 @@ if ($result) {
 			$vatdata = $vatdata_cache[$tax_id];
 		} else {
 			$vatdata = getTaxesFromId($tax_id, $mysoc, $mysoc, 0);
+			if (getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC')) {
+				$buyer = new Societe($db);
+				$buyer->fetch($obj->socid);
+			} else {
+				$buyer = null;	// We don't need the buyer in this case
+			}
+			$seller = $mysoc;
+			$vatdata = getTaxesFromId($tax_id, $buyer, $seller, 0);
 			$vatdata_cache[$tax_id] = $vatdata;
 		}
 		$compta_tva = (!empty($vatdata['accountancy_code_sell']) ? $vatdata['accountancy_code_sell'] : $cpttva);
@@ -382,29 +390,32 @@ foreach ($tabfac as $key => $val) {		// Loop on each invoice
 */
 // New way, single query, load all unbound lines
 
-$sql = "
-SELECT
-    fk_facture,
-    COUNT(fd.rowid) as nb
-FROM
-	".MAIN_DB_PREFIX."facturedet as fd
-WHERE
-    fd.product_type <= 2
-    AND fd.fk_code_ventilation <= 0
-    AND fd.total_ttc <> 0
-	AND fk_facture IN (".$db->sanitize(join(",", array_keys($tabfac))).")
-GROUP BY fk_facture
-";
-$resql = $db->query($sql);
-
-$num = $db->num_rows($resql);
-$i = 0;
-while ($i < $num) {
-	$obj = $db->fetch_object($resql);
-	if ($obj->nb > 0) {
-		$errorforinvoice[$obj->fk_facture_fourn] = 'somelinesarenotbound';
+if (!empty($tabfac)) {
+	$sql = "
+	SELECT
+		fk_facture,
+		COUNT(fd.rowid) as nb
+	FROM
+		".MAIN_DB_PREFIX."facturedet as fd
+	WHERE
+		fd.product_type <= 2
+		AND fd.fk_code_ventilation <= 0
+		AND fd.total_ttc <> 0
+		AND fk_facture IN (".$db->sanitize(join(",", array_keys($tabfac))).")
+	GROUP BY fk_facture
+	";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$num = $db->num_rows($resql);
+		$i = 0;
+		while ($i < $num) {
+			$obj = $db->fetch_object($resql);
+			if ($obj->nb > 0) {
+				$errorforinvoice[$obj->fk_facture] = 'somelinesarenotbound';
+			}
+			$i++;
+		}
 	}
-	$i++;
 }
 //var_dump($errorforinvoice);exit;
 

@@ -96,7 +96,7 @@ $origin = GETPOST('origin', 'alpha');
 $originid = (GETPOST('originid', 'int') ? GETPOST('originid', 'int') : GETPOST('origin_id', 'int')); // For backward compatibility
 $fac_rec = GETPOST('fac_rec', 'int');
 $facid = GETPOST('facid', 'int');
-$ref_client = GETPOST('ref_client', 'int');
+$ref_client = GETPOST('ref_client', 'alpha');
 $rank = (GETPOST('rank', 'int') > 0) ? GETPOST('rank', 'int') : -1;
 $projectid = (GETPOST('projectid', 'int') ? GETPOST('projectid', 'int') : 0);
 $selectedLines = GETPOST('toselect', 'array');
@@ -643,7 +643,7 @@ if (empty($reshook)) {
 		$object->setValueFrom('ref', GETPOST('ref'), '', null, '', '', $user, 'BILL_MODIFY');
 	} elseif ($action == 'setref_client' && $usercancreate) {
 		$object->fetch($id);
-		$object->set_ref_client(GETPOST('ref_client'));
+		$object->set_ref_client(GETPOST('ref_client', 'alpha'));
 	} elseif ($action == 'confirm_valid' && $confirm == 'yes' && $usercanvalidate) {
 		// Classify to validated
 		$idwarehouse = GETPOST('idwarehouse', 'int');
@@ -1537,6 +1537,9 @@ if (empty($reshook)) {
 								}
 
 								foreach ($TTotalByTva as $tva => &$total) {
+									if (empty($amountdeposit[$tva])) {
+										$amountdeposit[$tva] = 0;
+									}
 									$coef = $total / $srcobject->total_ttc; // Calc coef
 									$am = $amount * $coef;
 									$amount_ttc_diff += $am;
@@ -1561,6 +1564,9 @@ if (empty($reshook)) {
 											if ($qualified) {
 												$totalamount += $lines[$i]->total_ht; // Fixme : is it not for the customer ? Shouldn't we take total_ttc ?
 												$tva_tx = $lines[$i]->tva_tx;
+												if (empty($amountdeposit[$tva_tx])) {
+													$amountdeposit[$tva_tx] = 0;
+												}
 												$amountdeposit[$tva_tx] += ($lines[$i]->total_ht * $valuedeposit) / 100;
 											}
 										}
@@ -3179,9 +3185,9 @@ if ($action == 'create') {
 				$expesrc->fetch_optionals();
 				$object->array_options = $expesrc->array_options;
 			} else {
-				$cond_reglement_id 	= (!empty($objectsrc->cond_reglement_id) ? $objectsrc->cond_reglement_id : (!empty($soc->cond_reglement_id) ? $soc->cond_reglement_id : 0));
-				$mode_reglement_id 	= (!empty($objectsrc->mode_reglement_id) ? $objectsrc->mode_reglement_id : (!empty($soc->mode_reglement_id) ? $soc->mode_reglement_id : 0));
-				$fk_account         = (!empty($objectsrc->fk_account) ? $objectsrc->fk_account : (!empty($soc->fk_account) ? $soc->fk_account : 0));
+				$cond_reglement_id 	= (!empty($objectsrc->cond_reglement_id) ? $objectsrc->cond_reglement_id : (!empty($soc->cond_reglement_id) ? $soc->cond_reglement_id : (!empty($cond_reglement_id) ? $cond_reglement_id : 0)));
+				$mode_reglement_id 	= (!empty($objectsrc->mode_reglement_id) ? $objectsrc->mode_reglement_id : (!empty($soc->mode_reglement_id) ? $soc->mode_reglement_id : (!empty($mode_reglement_id) ? $mode_reglement_id : 0)));
+				$fk_account         = (!empty($objectsrc->fk_account) ? $objectsrc->fk_account : (!empty($soc->fk_account) ? $soc->fk_account : (!empty($fk_account) ? $fk_account : 0)));
 				//$remise_percent 	= (!empty($objectsrc->remise_percent) ? $objectsrc->remise_percent : (!empty($soc->remise_percent) ? $soc->remise_percent : 0));
 				//$remise_absolue 	= (!empty($objectsrc->remise_absolue) ? $objectsrc->remise_absolue : (!empty($soc->remise_absolue) ? $soc->remise_absolue : 0));
 
@@ -3929,8 +3935,9 @@ if ($action == 'create') {
 		include_once DOL_DOCUMENT_ROOT.'/core/modules/facture/modules_facture.php';
 		$liste = ModelePDFFactures::liste_modeles($db);
 		if (getDolGlobalString('INVOICE_USE_DEFAULT_DOCUMENT')) {
+			$type = GETPOSTISSET('type') ? GETPOSTINT('type') : $object->type;
 			// Hidden conf
-			$paramkey = 'FACTURE_ADDON_PDF_'.$object->type;
+			$paramkey = 'FACTURE_ADDON_PDF_'.$type;
 			$preselected = getDolGlobalString($paramkey, getDolGlobalString('FACTURE_ADDON_PDF'));
 		} else {
 			$preselected = getDolGlobalString('FACTURE_ADDON_PDF');
@@ -4542,6 +4549,9 @@ if ($action == 'create') {
 	$morehtmlref .= '</div>';
 
 	$object->totalpaid = $totalpaid; // To give a chance to dol_banner_tab to use already paid amount to show correct status
+	$object->totalcreditnotes = $totalcreditnotes;
+	$object->totaldeposits = $totaldeposits;
+	$object->remaintopay = price2num($object->total_ttc - $object->totalpaid - $object->totalcreditnotes - $object->totaldeposits, 'MT');
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref, '', 0, '', '');
 

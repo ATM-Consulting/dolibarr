@@ -78,22 +78,22 @@ $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'co
 $opouvertureprevuemonth = GETPOST('opouvertureprevuemonth');
 $opouvertureprevueday = GETPOST('opouvertureprevueday');
 $opouvertureprevueyear = GETPOST('opouvertureprevueyear');
-$filter_opouvertureprevue = GETPOST('filter_opouvertureprevue');
+$filter_opouvertureprevue = GETPOST('filter_opouvertureprevue', 'alphawithlgt');
 
 $op1month = GETPOST('op1month', 'int');
 $op1day = GETPOST('op1day', 'int');
 $op1year = GETPOST('op1year', 'int');
-$filter_op1 = GETPOST('filter_op1', 'alpha');
+$filter_op1 = GETPOST('filter_op1', 'alphawithlgt');
 
 $op2month = GETPOST('op2month', 'int');
 $op2day = GETPOST('op2day', 'int');
 $op2year = GETPOST('op2year', 'int');
-$filter_op2 = GETPOST('filter_op2', 'alpha');
+$filter_op2 = GETPOST('filter_op2', 'alphawithlgt');
 
 $opcloturemonth = GETPOST('opcloturemonth', 'int');
 $opclotureday = GETPOST('opclotureday', 'int');
 $opclotureyear = GETPOST('opclotureyear', 'int');
-$filter_opcloture = GETPOST('filter_opcloture', 'alpha');
+$filter_opcloture = GETPOST('filter_opcloture', 'alphalgt');
 
 
 // Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
@@ -376,7 +376,10 @@ if (!empty($filter_opcloture) && $filter_opcloture == ' BETWEEN ') {
 // Add where from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 
-//print $sql;
+// Add where from hooks
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$sql .= $hookmanager->resPrint;
 
 // Count total nb of records
 $nbtotalofrecords = '';
@@ -488,6 +491,10 @@ if ($filter_datecloture_start != '') {
 }
 // Add $param from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
+// Add $param from hooks
+$parameters = array();
+$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$param .= $hookmanager->resPrint;
 
 // List of mass actions available
 $arrayofmassactions = array(

@@ -278,10 +278,12 @@ if (($action == 'updateline' || $action == 'updatesplitline') && !$cancel && $us
 		$error++;
 	}
 
+	//If timespent date is not provided in POST (for eg, because in list the column date is hidden) we keep the actual date
+	$timespent_date = dol_mktime(12, 0, 0, GETPOST("timelinemonth"), GETPOST("timelineday"), GETPOST("timelineyear"));
+
 	if (!$error) {
 		if (GETPOST('taskid', 'int') != $id) {        // GETPOST('taskid') is id of new task
 			$id_temp = GETPOST('taskid', 'int'); // should not overwrite $id
-
 
 			$object->fetchTimeSpent(GETPOST('lineid', 'int'));
 
@@ -296,11 +298,14 @@ if (($action == 'updateline' || $action == 'updatesplitline') && !$cancel && $us
 			$object->timespent_old_duration = GETPOST("old_duration", "int");
 			$object->timespent_duration = GETPOSTINT("new_durationhour") * 60 * 60; // We store duration in seconds
 			$object->timespent_duration += (GETPOSTINT("new_durationmin") ? GETPOSTINT('new_durationmin') : 0) * 60; // We store duration in seconds
-			if (GETPOST("timelinehour") != '' && GETPOST("timelinehour") >= 0) {    // If hour was entered
+			if (GETPOST("timelinehour") != ''
+				&& GETPOST("timelinehour") >= 0
+				&& !empty($timespent_date)) {
+				// If hour was entered
 				$object->timespent_date = dol_mktime(GETPOST("timelinehour"), GETPOST("timelinemin"), 0, GETPOST("timelinemonth"), GETPOST("timelineday"), GETPOST("timelineyear"));
 				$object->timespent_withhour = 1;
-			} else {
-				$object->timespent_date = dol_mktime(12, 0, 0, GETPOST("timelinemonth"), GETPOST("timelineday"), GETPOST("timelineyear"));
+			} elseif (!empty($timespent_date)) {
+				$object->timespent_date = $timespent_date;
 			}
 			$object->timespent_fk_user = GETPOST("userid_line", 'int');
 			$object->timespent_fk_product = GETPOST("fk_product", 'int');
@@ -320,16 +325,20 @@ if (($action == 'updateline' || $action == 'updatesplitline') && !$cancel && $us
 		} else {
 			$object->fetch($id, $ref);
 
+			$object->fetchTimeSpent(GETPOST('lineid', 'int'));
+
 			$object->timespent_id = GETPOST("lineid", 'int');
 			$object->timespent_note = GETPOST("timespent_note_line", "alphanohtml");
 			$object->timespent_old_duration = GETPOST("old_duration", "int");
 			$object->timespent_duration = GETPOSTINT("new_durationhour") * 60 * 60; // We store duration in seconds
 			$object->timespent_duration += (GETPOSTINT("new_durationmin") ? GETPOSTINT('new_durationmin') : 0) * 60; // We store duration in seconds
-			if (GETPOST("timelinehour") != '' && GETPOST("timelinehour") >= 0) {    // If hour was entered
+			if (GETPOST("timelinehour") != ''
+				&& GETPOST("timelinehour") >= 0
+				&& !empty($timespent_date)) {    // If hour was entered
 				$object->timespent_date = dol_mktime(GETPOST("timelinehour", 'int'), GETPOST("timelinemin", 'int'), 0, GETPOST("timelinemonth", 'int'), GETPOST("timelineday", 'int'), GETPOST("timelineyear", 'int'));
 				$object->timespent_withhour = 1;
-			} else {
-				$object->timespent_date = dol_mktime(12, 0, 0, GETPOST("timelinemonth", 'int'), GETPOST("timelineday", 'int'), GETPOST("timelineyear", 'int'));
+			} elseif (!empty($timespent_date)) {
+				$object->timespent_date = $timespent_date;
 			}
 			$object->timespent_fk_user = GETPOST("userid_line", 'int');
 			$object->timespent_fk_product = GETPOST("fk_product", 'int');
@@ -662,7 +671,7 @@ if ($action == 'confirm_generateinvoice') {
 
 					// Update lineid into line of timespent
 					$sql = 'UPDATE '.MAIN_DB_PREFIX.'element_time SET invoice_line_id = '.((int) $lineid).', invoice_id = '.((int) $tmpinvoice->id);
-					$sql .= ' WHERE rowid IN ('.$db->sanitize(join(',', $toselect)).') AND fk_user = '.((int) $userid);
+					$sql .= ' WHERE rowid = '.((int) $timespent_id).' AND fk_user = '.((int) $userid);
 					$result = $db->query($sql);
 					if (!$result) {
 						$error++;
@@ -1382,7 +1391,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		}
 		// Add $param from hooks
 		$parameters = array('param' => &$param);
-		$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListSearchParam', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		$param .= $hookmanager->resPrint;
 
 		print '<form method="POST" action="' . $_SERVER["PHP_SELF"] . '">';
@@ -1563,7 +1572,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		$sql .= " t.invoice_line_id";
 		// Add fields from hooks
 		$parameters = array();
-		$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters, $object); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		$sql .= $hookmanager->resPrint;
 		$sql = preg_replace('/,\s*$/', '', $sql);
 
@@ -1580,7 +1589,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 		// Add table from hooks
 		$parameters = array();
-		$reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		$sql .= $hookmanager->resPrint;
 		$sql .= " WHERE elementtype = 'task'";
 		$sql .= " AND p.entity IN (".getEntity('project').")";
@@ -1663,7 +1672,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 		// Add where from hooks
 		$parameters = array();
-		$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		$sql .= $hookmanager->resPrint;
 
 		// Count total nb of records
@@ -1760,7 +1769,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 			}
 			// Hook fields
 			$parameters = array('mode' => 'create');
-			$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters); // Note that $action and $object may have been modified by hook
+			$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 			print $hookmanager->resPrint;
 			print '<td></td>';
 			print "</tr>\n";
@@ -1843,7 +1852,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 			// Fields from hook
 			$parameters = array('mode' => 'create');
-			$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters); // Note that $action and $object may have been modified by hook
+			$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 			print $hookmanager->resPrint;
 
 			print '<td class="center">';
@@ -1861,7 +1870,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		$moreforfilter = '';
 
 		$parameters = array();
-		$reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldPreListTitle', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		if (empty($reshook)) {
 			$moreforfilter .= $hookmanager->resPrint;
 		} else {
@@ -1979,7 +1988,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		 */
 		// Fields from hook
 		$parameters = array('arrayfields' => $arrayfields);
-		$reshook = $hookmanager->executeHooks('printFieldListOption', $parameters); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListOption', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
 		// Action column
 		if (!getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
@@ -2063,7 +2072,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		 */
 		// Hook fields
 		$parameters = array('arrayfields' => $arrayfields, 'param' => $param, 'sortfield' => $sortfield, 'sortorder' => $sortorder);
-		$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
 		if (!getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
 			print_liste_field_titre($selectedfields, $_SERVER["PHP_SELF"], "", '', '', 'width="80"', $sortfield, $sortorder, 'center maxwidthsearch ');
@@ -2432,7 +2441,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 			// Fields from hook
 			$parameters = array('arrayfields' => $arrayfields, 'obj' => $task_time, 'i' => $i, 'totalarray' => &$totalarray);
-			$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters); // Note that $action and $object may have been modified by hook
+			$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 			print $hookmanager->resPrint;
 
 			// Action column
@@ -2627,7 +2636,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 				// Fields from hook
 				$parameters = array('arrayfields' => $arrayfields, 'obj' => $task_time, 'mode' => 'split1');
-				$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters); // Note that $action and $object may have been modified by hook
+				$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 				print $hookmanager->resPrint;
 
 				// Action column
@@ -2785,7 +2794,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 
 				// Fields from hook
 				$parameters = array('arrayfields' => $arrayfields, 'obj' => $task_time, 'mode' => 'split2');
-				$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters); // Note that $action and $object may have been modified by hook
+				$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 				print $hookmanager->resPrint;
 
 				// Action column
@@ -2836,7 +2845,7 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 		}
 
 		$parameters = array('arrayfields' => $arrayfields, 'sql' => $sql);
-		$reshook = $hookmanager->executeHooks('printFieldListFooter', $parameters); // Note that $action and $object may have been modified by hook
+		$reshook = $hookmanager->executeHooks('printFieldListFooter', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 		print $hookmanager->resPrint;
 
 		print "</table>";

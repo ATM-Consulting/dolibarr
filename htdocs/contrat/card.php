@@ -812,6 +812,8 @@ if (empty($reshook)) {
 			$result = $objectline->update($user);
 			if ($result < 0) {
 				$error++;
+				$action = 'editline';
+				$_GET['rowid'] = GETPOST('elrowid');
 				setEventMessages($objectline->error, $objectline->errors, 'errors');
 			}
 		}
@@ -1730,7 +1732,7 @@ if ($action == 'create') {
 						$line = new ContratLigne($db);
 						$line->id = $objp->rowid;
 						$line->fetch_optionals();
-						print $line->showOptionals($extrafields, 'view', array('class'=>'oddeven', 'style'=>$moreparam, 'colspan'=>$colspan, 'tdclass' => 'left'), '', '', 1);
+						print $line->showOptionals($extrafields, 'view', array('class'=>'oddeven', 'style'=>$moreparam, 'colspan'=>$colspan, 'tdclass' => 'notitlefieldcreate'), '', '', 1);
 					}
 				} else {
 					// Line in mode update
@@ -1834,7 +1836,7 @@ if ($action == 'create') {
 						$line = new ContratLigne($db);
 						$line->id = $objp->rowid;
 						$line->fetch_optionals();
-						print $line->showOptionals($extrafields, 'edit', array('style'=>'class="oddeven"', 'colspan'=>$colspan, 'tdclass' => 'left'), '', '', 1);
+						print $line->showOptionals($extrafields, 'edit', array('style'=>'class="oddeven"', 'colspan'=>$colspan, 'tdclass' => 'notitlefieldcreate'), '', '', 1);
 					}
 				}
 
@@ -1986,7 +1988,9 @@ if ($action == 'create') {
 					if ($objp->fk_product > 0) {
 						$product = new Product($db);
 						$product->fetch($objp->fk_product);
-						$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						if (!empty($product->duration_value) && !empty($product->duration_unit)) {
+							$dateactend = dol_time_plus_duree(time(), $product->duration_value, $product->duration_unit);
+						}
 					}
 				}
 
@@ -2193,6 +2197,7 @@ if ($action == 'create') {
 					);
 				}
 				if (isModEnabled('supplier_invoice') && $object->status > 0 && $soc->fournisseur == 1) {
+					$langs->load("suppliers");
 					$arrayofcreatebutton[] = array(
 						'url' => '/fourn/facture/card.php?action=create&origin='.$object->element.'&originid='.$object->id.'&socid='.$object->thirdparty->id,
 						'label' => $langs->trans('AddSupplierInvoice'),
@@ -2279,7 +2284,7 @@ if ($action == 'create') {
 				print '<br><!-- Link to sign -->';
 				require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';
 
-				print showOnlineSignatureUrl('contract', $object->ref).'<br>';
+				print showOnlineSignatureUrl('contract', $object->ref, $object).'<br>';
 			}
 
 			print '</div><div class="fichehalfright">';

@@ -269,8 +269,12 @@ class CMailFile
 				// Note because media links are public, this should be useless, except avoid blocking images with email browser.
 				// This convert an embedd file with src="/viewimage.php?modulepart... into a cid link
 				// TODO Exclude viewimage used for the read tracker ?
-				$findimg = $this->findHtmlImages($dolibarr_main_data_root.'/medias');
-				if ($findimg<0) {
+				$dolibarr_main_data_root_images=$dolibarr_main_data_root;
+				if ((int) $conf->entity !== 1) {
+					$dolibarr_main_data_root_images.='/'.$conf->entity.'/';
+				}
+				$findimg = $this->findHtmlImages($dolibarr_main_data_root_images.'/medias');
+				if ($findimg < 0) {
 					dol_syslog("CMailFile::CMailfile: Error on findHtmlImages");
 					$this->error = 'ErrorInAddAttachementsImageBaseOnMedia';
 					return;
@@ -585,7 +589,7 @@ class CMailFile
 
 			if (!empty($this->errors_to)) {
 				try {
-					$headers->addTextHeader('Errors-To', $this->getArrayAddress($this->errors_to));
+					$headers->addTextHeader('Errors-To', $this->getValidAddress($this->errors_to, 0));
 				} catch (Exception $e) {
 					$this->errors[] = $e->getMessage();
 				}
@@ -652,7 +656,6 @@ class CMailFile
 					$this->errors[] = $e->getMessage();
 				}
 			}
-			//if (!empty($this->errors_to)) $this->message->setErrorsTo($this->getArrayAddress($this->errors_to));
 			if (isset($this->deliveryreceipt) && $this->deliveryreceipt == 1) {
 				try {
 					$this->message->setReadReceiptTo($this->getArrayAddress($this->addr_from));
@@ -695,7 +698,7 @@ class CMailFile
 				$this->error = "Error in hook maildao sendMail ".$reshook;
 				dol_syslog("CMailFile::sendfile: mail end error=".$this->error, LOG_ERR);
 
-				return $reshook;
+				return false;
 			}
 			if ($reshook == 1) {	// Hook replace standard code
 				return true;
@@ -1208,9 +1211,10 @@ class CMailFile
 				$res = true;
 				if (!empty($this->error) || !empty($this->errors) || !$result) {
 					if (!empty($failedRecipients)) {
-						$this->errors[] = 'Transport failed for the following addresses: "' . join('", "', $failedRecipients) . '".';
+						$this->error = 'Transport failed for the following addresses: "' . join('", "', $failedRecipients) . '".';
+						$this->errors[] = $this->error;
 					}
-					dol_syslog("CMailFile::sendfile: mail end error=".$this->error, LOG_ERR);
+					dol_syslog("CMailFile::sendfile: mail end error=". join(' ', $this->errors), LOG_ERR);
 					$res = false;
 
 					if (getDolGlobalString('MAIN_MAIL_DEBUG')) {

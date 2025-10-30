@@ -286,7 +286,11 @@ class pdf_standard_asset extends ModelePDFAsset
 
 				// Set path to the background PDF File
 				if (getDolGlobalString('MAIN_ADD_PDF_BACKGROUND')) {
-					$pagecount = $pdf->setSourceFile($conf->mycompany->multidir_output[$object->entity].'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+					$logodir = $conf->mycompany->dir_output;
+					if (!empty($conf->mycompany->multidir_output[$object->entity])) {
+						$logodir = $conf->mycompany->multidir_output[$object->entity];
+					}
+					$pagecount = $pdf->setSourceFile($logodir .'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
 					$tplidx = $pdf->importPage(1);
 				}
 
@@ -1008,7 +1012,7 @@ class pdf_standard_asset extends ModelePDFAsset
 				$posy += 4;
 				$pdf->SetXY($posx, $posy);
 				$pdf->SetTextColor(0, 0, 60);
-				$pdf->MultiCell($w, 3, $langs->transnoentities("SalesRepresentative")." : ".$usertmp->getFullName($langs), '', 'R');
+				$pdf->MultiCell($w, 3, $outputlangs->transnoentities("SalesRepresentative")." : ".$usertmp->getFullName($langs), '', 'R');
 			}
 		}
 

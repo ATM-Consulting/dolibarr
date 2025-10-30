@@ -1066,6 +1066,11 @@ class Reception extends CommonObject
 					$mouvS->origin = null;
 
 					$result = $mouvS->livraison($user, $obj->fk_product, $obj->fk_entrepot, $obj->qty, 0, $langs->trans("ReceptionDeletedInDolibarr", $this->ref), '', $obj->eatby, $obj->sellby, $obj->batch); // Price is set to 0, because we don't want to see WAP changed
+					if ($result < 0) {
+						$error++;
+						$this->error = $mouvS->error;
+						$this->errors = $mouvS->errors;
+					}
 				}
 			} else {
 				$error++;
@@ -1598,6 +1603,8 @@ class Reception extends CommonObject
 		if ($resql) {
 			// Set order billed if 100% of order is received (qty in reception lines match qty in order lines)
 			if ($this->origin == 'order_supplier' && $this->origin_id > 0) {
+				require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
+
 				$order = new CommandeFournisseur($this->db);
 				$order->fetch($this->origin_id);
 
@@ -1714,7 +1721,7 @@ class Reception extends CommonObject
 	}
 
 	/**
-	 *	Classify the reception as invoiced (used for exemple by trigger when WORKFLOW_RECEPTION_CLASSIFY_BILLED_INVOICE is on)
+	 *	Classify the reception as invoiced (used for example by trigger when WORKFLOW_RECEPTION_CLASSIFY_BILLED_INVOICE is on)
 	 *
 	 *	@return     int     Return integer <0 if ko, >0 if ok
 	 */
@@ -1858,6 +1865,8 @@ class Reception extends CommonObject
 			}
 
 			if (!$error && $this->origin == 'order_supplier') {
+				require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
+
 				$commande = new CommandeFournisseur($this->db);
 				$commande->fetch($this->origin_id);
 				$result = $commande->setStatus($user, 4);

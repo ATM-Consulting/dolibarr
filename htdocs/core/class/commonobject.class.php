@@ -1572,7 +1572,7 @@ abstract class CommonObject
 
 		$tab = array();
 
-		$sql = "SELECT DISTINCT tc.rowid, tc.code, tc.libelle as type_label, tc.position, tc.element";
+		$sql = "SELECT DISTINCT tc.rowid, tc.code, tc.libelle as type_label, tc.position, tc.element, tc.module";
 		$sql .= " FROM ".$this->db->prefix()."c_type_contact as tc";
 
 		$sqlWhere = array();
@@ -1609,7 +1609,7 @@ abstract class CommonObject
 				$langs->loadLangs(array("propal", "orders", "bills", "suppliers", "contracts", "supplier_proposal"));
 
 				while ($obj = $this->db->fetch_object($resql)) {
-					$modulename = $obj->element;
+					$modulename = $obj->module ?? $obj->element;
 					if (strpos($obj->element, 'project') !== false) {
 						$modulename = 'projet';
 					} elseif ($obj->element == 'contrat') {
@@ -3240,7 +3240,7 @@ abstract class CommonObject
 				while ($row = $this->db->fetch_row($resql)) {
 					$rows[] = $row[0];
 					if (!empty($includealltree)) {
-						$rows = array_merge($rows, $this->getChildrenOfLine($row[0]), $includealltree);
+						$rows = array_merge($rows, $this->getChildrenOfLine($row[0], $includealltree));
 					}
 				}
 			}
@@ -4184,7 +4184,11 @@ abstract class CommonObject
 						$module = 'adherent';
 					} elseif ($objecttype == 'contact') {
 						$module = 'societe';
+					} elseif ($objecttype == 'action') {
+						$module = 'agenda';
+						$subelement = 'actionComm';
 					}
+
 					// Set classfile
 					$classfile = strtolower($subelement);
 					$classname = ucfirst($subelement);
@@ -5374,16 +5378,12 @@ abstract class CommonObject
 			}
 			$this->tpl['label'] .= $discount->getNomUrl(0, 'discount');
 		} elseif (!empty($line->fk_product)) {
-			$productstatic = new Product($this->db);
-			$productstatic->id = $line->fk_product;
-			$productstatic->ref = $line->ref;
-			$productstatic->type = $line->fk_product_type;
-			if (empty($productstatic->ref)) {
+			if (empty($line->product)) {
 				$line->fetch_product();
-				$productstatic = $line->product;
 			}
+			$productstatic = $line->product;
 
-			$this->tpl['label'] .= $productstatic->getNomUrl(1);
+			$this->tpl['label'] .= (is_object($productstatic) ? $productstatic->getNomUrl(1) : $line->ref);
 			$this->tpl['label'] .= ' - '.(!empty($line->label) ? $line->label : $line->product_label);
 			// Dates
 			if ($line->product_type == 1 && ($date_start || $date_end)) {
@@ -7045,9 +7045,9 @@ abstract class CommonObject
 			//var_dump('linealreadyfound='.$linealreadyfound.' sql='.$sql); exit;
 			if ($linealreadyfound) {
 				if ($this->array_options["options_".$key] === null) {
-					$sql = "UPDATE ".$this->db->prefix().$this->table_element."_extrafields SET ".$key." = null";
+					$sql = "UPDATE ".$this->db->prefix().$table_element."_extrafields SET ".$key." = null";
 				} else {
-					$sql = "UPDATE ".$this->db->prefix().$this->table_element."_extrafields SET ".$key." = '".$this->db->escape($new_array_options["options_".$key])."'";
+					$sql = "UPDATE ".$this->db->prefix().$table_element."_extrafields SET ".$key." = '".$this->db->escape($new_array_options["options_".$key])."'";
 				}
 				$sql .= " WHERE fk_object = ".((int) $this->id);
 
@@ -7337,7 +7337,7 @@ abstract class CommonObject
 			}
 
 			$out .= '<select class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" '.($moreparam ? $moreparam : '').'>';
-			if ((!isset($this->fields[$key]['default'])) || ($this->fields[$key]['notnull'] != 1)) {
+			if ((!isset($this->fields[$key]['default'])) || empty($this->fields[$key]['notnull']) || ($this->fields[$key]['notnull'] != 1)) {
 				$out .= '<option value="0">&nbsp;</option>';
 			}
 			foreach ($param['options'] as $keyb => $valb) {
@@ -8203,6 +8203,17 @@ abstract class CommonObject
 
 				if (!empty($classpath)) {
 					dol_include_once($InfoFieldList[1]);
+
+					if ($classname && !class_exists($classname)) {
+						// from V19 of Dolibarr, In some cases link use element instead of class, example project_task
+						// TODO use newObjectByElement() introduce in V20 by PR #30036 for better errors management
+						$element_prop = getElementProperties($classname);
+						if ($element_prop) {
+							$classname = $element_prop['classname'];
+						}
+					}
+
+
 					if ($classname && class_exists($classname)) {
 						$object = new $classname($this->db);
 						if ($object->element === 'product') {	// Special case for product because default valut of fetch are wrong
@@ -8590,6 +8601,10 @@ abstract class CommonObject
 					if (($mode == 'create') && abs($visibility) != 1 && abs($visibility) != 3) {
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list
 					} elseif (($mode == 'edit') && abs($visibility) != 1 && abs($visibility) != 3 && abs($visibility) != 4) {
+						// We need to make sure, that the values of hidden extrafields are also part of $_POST. Otherwise, they would be empty after an update of the object. See also getOptionalsFromPost
+						$ef_name = 'options_' . $key;
+						$ef_value = $this->array_options[$ef_name];
+						$out .= '<input type="hidden" name="' . $ef_name . '" id="' . $ef_name . '" value="' . $ef_value . '" />' . "\n";
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list and <> 4 = not visible at the creation
 					} elseif ($mode == 'view' && empty($visibility)) {
 						continue;
@@ -8640,7 +8655,7 @@ abstract class CommonObject
 									$value = $getposttemp;
 								}
 							} elseif (in_array($extrafields->attributes[$this->table_element]['type'][$key], array('int'))) {
-								$value =( !empty($this->array_options["options_".$key]) || $this->array_options["options_".$key] === '0' ) ? $this->array_options["options_".$key] : '';
+								$value =( !empty($this->array_options["options_".$key]) || (isset($this->array_options["options_".$key]) && $this->array_options["options_".$key] === '0')) ? $this->array_options["options_".$key] : '';
 							} else {
 								$value = (!empty($this->array_options["options_".$key]) ? $this->array_options["options_".$key] : ''); // No GET, no POST, no default value, so we take value of object.
 							}
@@ -8713,7 +8728,7 @@ abstract class CommonObject
 								}
 							}
 							$datekey = $keyprefix.'options_'.$key.$keysuffix;
-							$value = (GETPOSTISSET($datekey)) ? dol_mktime(12, 0, 0, GETPOST($datekey.'month', 'int', 3), GETPOST($datekey.'day', 'int', 3), GETPOST($datekey.'year', 'int', 3)) : $datenotinstring;
+							$value = (GETPOSTISSET($datekey) && $this->id == GETPOST('elrowid', 'int')) ? dol_mktime(12, 0, 0, GETPOST($datekey.'month', 'int', 3), GETPOST($datekey.'day', 'int', 3), GETPOST($datekey.'year', 'int', 3)) : $datenotinstring;
 						}
 						if (in_array($extrafields->attributes[$this->table_element]['type'][$key], array('datetime'))) {
 							$datenotinstring = null;
@@ -9917,6 +9932,7 @@ abstract class CommonObject
 		if ($resql) {
 			$num_rows = $this->db->num_rows($resql);
 			$i = 0;
+			$this->lines = array();
 			while ($i < $num_rows) {
 				$obj = $this->db->fetch_object($resql);
 				if ($obj) {

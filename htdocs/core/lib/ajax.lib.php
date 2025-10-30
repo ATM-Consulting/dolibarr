@@ -161,6 +161,14 @@ function ajax_autocompleter($selected, $htmlname, $url, $urloption = '', $minLen
 												 price_ttc: item.price_ttc,
 												 price_unit_ht: item.price_unit_ht,
 												 price_unit_ht_locale: item.price_unit_ht_locale,
+		';
+	if (isModEnabled('multicurrency')) {
+		$script .= '
+												multicurrency_code: item.multicurrency_code,
+												multicurrency_unitprice: item.multicurrency_unitprice,
+		';
+	}
+		$script .= '
 												 description : item.description,
 												 ref_customer: item.ref_customer,
 												 tva_tx: item.tva_tx,
@@ -484,7 +492,7 @@ function ajax_combobox($htmlname, $events = array(), $minLengthToAutocomplete = 
 	}
 	$msg .= '		width: \''.dol_escape_js($widthTypeOfAutocomplete).'\',		/* off or resolve */
 					minimumInputLength: '.((int) $minLengthToAutocomplete).',
-					language: select2arrayoflanguage,
+					language: (typeof select2arrayoflanguage === \'undefined\') ? \'en\' : select2arrayoflanguage,
 					matcher: function (params, data) {
 						if ($.trim(params.term) === "") {
 							return data;

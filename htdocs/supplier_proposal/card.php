@@ -1617,7 +1617,7 @@ if ($action == 'create') {
 			if ($action != 'classify') {
 				$morehtmlref .= '<a class="editfielda" href="'.$_SERVER['PHP_SELF'].'?action=classify&token='.newToken().'&id='.$object->id.'">'.img_edit($langs->transnoentitiesnoconv('SetProject')).'</a> ';
 			}
-			$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'].'?id='.$object->id, $object->socid, $object->fk_project, ($action == 'classify' ? 'projectid' : 'none'), 0, 0, 0, 1, '', 'maxwidth300');
+			$morehtmlref .= $form->form_project($_SERVER['PHP_SELF'].'?id='.$object->id, (getDolGlobalString('PROJECT_CAN_ALWAYS_LINK_TO_ALL_SUPPLIERS') ? $object->socid : -1), $object->fk_project, ($action == 'classify' ? 'projectid' : 'none'), 0, 0, 0, 1, '', 'maxwidth300');
 		} else {
 			if (!empty($object->fk_project)) {
 				$proj = new Project($db);
@@ -1692,7 +1692,7 @@ if ($action == 'create') {
 		print '<table class="nobordernopadding" width="100%"><tr><td>';
 		print $langs->trans('DeliveryDate');
 		print '</td>';
-		if ($action != 'editdate_livraison' && $object->statut == SupplierProposal::STATUS_VALIDATED) {
+		if ($action != 'editdate_livraison' && $object->statut != SupplierProposal::STATUS_NOTSIGNED) {
 			print '<td class="right"><a class="editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editdate_livraison&token='.newToken().'&id='.$object->id.'">'.img_edit($langs->transnoentitiesnoconv('SetDeliveryDate'), 1).'</a></td>';
 		}
 		print '</tr></table>';

@@ -957,7 +957,7 @@ if ($id > 0 || $ref) {
 					'pfp.barcode'=>array('label'=>$langs->trans("BarcodeValue"), 'enabled' => isModEnabled('barcode'), 'checked'=>0, 'position'=>16),
 					'pfp.packaging'=>array('label'=>$langs->trans("PackagingForThisProduct"), 'enabled' => getDolGlobalInt('PRODUCT_USE_SUPPLIER_PACKAGING'), 'checked'=>0, 'position'=>17),
 					'pfp.status'=>array('label'=>$langs->trans("Status"), 'enabled' => 1, 'checked'=>0, 'position'=>40),
-					'pfp.tms'=>array('label'=>$langs->trans("DateModification"), 'enabled' => isModEnabled('barcode'), 'checked'=>1, 'position'=>50),
+					'pfp.tms'=>array('label'=>$langs->trans("DateModification"), 'enabled' => 1, 'checked'=>1, 'position'=>50),
 				);
 
 				// fetch optionals attributes and labels
@@ -1250,7 +1250,7 @@ if ($id > 0 || $ref) {
 						// Date modification
 						if (!empty($arrayfields['pfp.tms']['checked'])) {
 							print '<td class="right nowraponall">';
-							print dol_print_date(($productfourn->fourn_date_modification ? $productfourn->fourn_date_modification : $productfourn->date_modification), "dayhour");
+							print dol_print_date(($productfourn->fourn_date_modification ? $productfourn->fourn_date_modification : $productfourn->date_modification), 'dayhour', 'tzuserrel');
 							print '</td>';
 						}
 
