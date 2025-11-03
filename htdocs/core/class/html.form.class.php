@@ -8053,6 +8053,7 @@ class Form
 				$fieldstoshow = $tmpfieldstoshow;
 			}
 		} else if ($objecttmp === 'categorie') {
+			// SPE KOESIO: backport PR #36074, you can safely remove this block in Dolibarr 20 and higher
 			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
