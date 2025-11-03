@@ -346,31 +346,31 @@ class InterfaceTicketEmail extends DolibarrTriggers
 		$message_customer .= '<li>'.$langs->trans('Category').' : '.$langs->getLabelFromKey($this->db, 'TicketCategoryShort'.$object->category_code, 'c_ticket_category', 'code', 'label', $object->category_code).'</li>';
 		$message_customer .= '<li>'.$langs->trans('Severity').' : '.$langs->getLabelFromKey($this->db, 'TicketSeverityShort'.$object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code).'</li>';
 
-//		// Extrafields
-//		if (is_array($this->attributes[$object->table_element]['label'])) {
-//			foreach ($this->attributes[$object->table_element]['label'] as $key => $value) {
-//				$enabled = 1;
-////				if ($enabled && isset($this->attributes[$object->table_element]['list'][$key])) {
-////					$enabled = dol_eval($this->attributes[$object->table_element]['list'][$key], 1);
-////				}
-////				$perms = 1;
-////				if ($perms && isset($this->attributes[$object->table_element]['perms'][$key])) {
-////					$perms = dol_eval($this->attributes[$object->table_element]['perms'][$key], 1);
-////				}
-//
-//				$qualified = true;
-//				if (empty($enabled)) {
-//					$qualified = false;
-//				}
-//				if (empty($perms)) {
-//					$qualified = false;
-//				}
-//
-//				if ($qualified) {
-//					$message_customer .= '<li>' . $langs->trans($key) . ' : ' . $value . '</li>';
-//				}
-//			}
-//		}
+		// Extrafields
+		if (is_array($this->attributes[$object->table_element]['label'])) {
+			foreach ($this->attributes[$object->table_element]['label'] as $key => $value) {
+				$enabled = 1;
+				if ($enabled && isset($this->attributes[$object->table_element]['list'][$key])) {
+					$enabled = dol_eval($this->attributes[$object->table_element]['list'][$key], 1);
+				}
+				$perms = 1;
+				if ($perms && isset($this->attributes[$object->table_element]['perms'][$key])) {
+					$perms = dol_eval($this->attributes[$object->table_element]['perms'][$key], 1);
+				}
+
+				$qualified = true;
+				if (empty($enabled)) {
+					$qualified = false;
+				}
+				if (empty($perms)) {
+					$qualified = false;
+				}
+
+				if ($qualified) {
+					$message_customer .= '<li>' . $langs->trans($key) . ' : ' . $value . '</li>';
+				}
+			}
+		}
 
 		$message_customer .= '</ul>';
 
