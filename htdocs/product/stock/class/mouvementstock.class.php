@@ -424,7 +424,9 @@ class MouvementStock extends CommonObject
 					return -8;
 				}
 			} else {
-				if (empty($product->stock_warehouse[$entrepot_id]->real) || $product->stock_warehouse[$entrepot_id]->real < abs($qty)) {
+// BACKPORT V22
+				if ($product->stockable_product == Product::ENABLED_STOCK && (empty($product->stock_warehouse[$entrepot_id]->real) || $product->stock_warehouse[$entrepot_id]->real < abs($qty))) {
+// FIN BACKPORT V22
 					$langs->load("stocks");
 					$this->error = $langs->trans('qtyToTranferIsNotEnough').' : '.$product->ref;
 					$this->errors[] = $langs->trans('qtyToTranferIsNotEnough').' : '.$product->ref;
@@ -433,8 +435,9 @@ class MouvementStock extends CommonObject
 				}
 			}
 		}
-
-		if ($movestock) {	// Change stock for current product, change for subproduct is done after
+// BACKPORT V22
+		if ($movestock && $product->stockable_product == Product::ENABLED_STOCK) {	// Change stock for current product, change for subproduct is done after
+// FIN BACKPORT V22
 			// Set $origin_type, origin_id and fk_project
 			$fk_project = $this->fk_project;
 			if (!empty($this->origin_type)) {			// This is set by caller for tracking reason
