@@ -494,7 +494,14 @@ if (empty($reshook)) {
 			$action = "create";
 			$error++;
 		}
-
+// BACKPORT V22
+		$stockable_product = (int) ($type == 0 || ($type == 1 && getDolGlobalInt('STOCK_SUPPORTS_SERVICES')));
+		if (GETPOST('status_batch') && $stockable_product == 0 && isModEnabled('stock') && isModEnabled('productbatch')) {
+			setEventMessages($langs->trans('ErrorBatchesNeedStockManagement'), null, 'errors');
+			$action = "create";
+			$error++;
+		}
+// FIN BACKPORT V22
 		if (!$error) {
 			$units = GETPOST('units', 'int');
 
@@ -614,7 +621,9 @@ if (empty($reshook)) {
 			} else {
 				$object->fk_unit = null;
 			}
-
+// BACKPORT V22
+			$object->stockable_product = $stockable_product;
+// FIN BACKPORT V22
 			$accountancy_code_sell = GETPOST('accountancy_code_sell', 'alpha');
 			$accountancy_code_sell_intra = GETPOST('accountancy_code_sell_intra', 'alpha');
 			$accountancy_code_sell_export = GETPOST('accountancy_code_sell_export', 'alpha');
@@ -781,7 +790,14 @@ if (empty($reshook)) {
 				} else {
 					$object->finished = null;
 				}
-
+// BACKPORT V22
+				// managed_in_stock
+				$object->stockable_product   = (int) GETPOSTISSET('stockable_product');
+				if ($object->status_batch > 0  && $object->stockable_product == 0 && isModEnabled('stock') && isModEnabled('productbatch')) {
+					$object->stockable_product = 1;
+					setEventMessages($langs->trans('ForceBatchesNeedStockManagement'), null, 'warnings');
+				}
+// FIN BACKPORT V22
 				$fk_default_bom = GETPOST('fk_default_bom', 'int');
 				if ($fk_default_bom >= 0) {
 					$object->fk_default_bom = $fk_default_bom;
@@ -2043,13 +2059,22 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print '<input type="text" name="url" class="quatrevingtpercent" value="'.(GETPOSTISSET('url') ? GETPOST('url') : $object->url).'">';
 				print '</td></tr>';
 			}
-
+// BACKPORT V22
 			// Stock
-			if ($object->isProduct() && isModEnabled('stock')) {
+			if (($object->isProduct() || getDolGlobalInt('STOCK_SUPPORTS_SERVICES')) && isModEnabled('stock')) {
+				if (isModEnabled('productbatch') && $object->hasbatch()) {
+					print '<tr><td><input type="hidden" id="stockable_product" name="stockable_product" value="on" /></td><td></td></tr>';
+				} else {
+					print '<tr><td><label for="stockable_product">' . $langs->trans("StockableProduct") . '</label></td>';
+					$checked = empty($object->stockable_product) ? "" : "checked";
+					print '<td><input type="checkbox" id="stockable_product" name="stockable_product" '. $checked . ' /></td></tr>';
+				}
+
 				// Default warehouse
-				print '<tr><td>'.$langs->trans("DefaultWarehouse").'</td><td>';
+				print '<tr class="showifstockable'.(empty($object->stockable_product) ? ' hidden' : '').'"><td>'.$langs->trans("DefaultWarehouse").'</td><td>';
 				print img_picto($langs->trans("DefaultWarehouse"), 'stock', 'class="pictofixedwidth"');
-				print $formproduct->selectWarehouses((GETPOSTISSET('fk_default_warehouse') ? GETPOST('fk_default_warehouse') : $object->fk_default_warehouse), 'fk_default_warehouse', 'warehouseopen', 1);
+				print $formproduct->selectWarehouses((GETPOSTISSET('fk_default_warehouse') ? GETPOST('fk_default_warehouse') : $object->fk_default_warehouse), 'fk_default_warehouse', 'warehouseopen', 1, 0, 0, '', 0, 0, array(), 'minwidth200 maxwidth500 widthcentpercentminusxx');
+// FIN BACKPORT V22
 				print ' <a href="'.DOL_URL_ROOT.'/product/stock/card.php?action=create&amp;backtopage='.urlencode($_SERVER['PHP_SELF'].'?action=edit&id='.((int) $object->id)).'">';
 				print '<span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddWarehouse").'"></span></a>';
 				print '</td></tr>';
@@ -2094,6 +2119,12 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print '</label>';
 
 				print '</td></tr>';
+
+				if (isModEnabled('stock') && getDolGlobalString('STOCK_SUPPORTS_SERVICES')) {
+					print '<tr><td>' . $langs->trans("StockableProduct") . '</td>';
+					$checked = $object->stockable_product == 1 ? "checked" : "";
+					print '<td><input type="checkbox" id="stockable_product" name="stockable_product" ' . $checked . ' /></td></tr>';
+				}
 			} else {
 				if (empty($conf->global->PRODUCT_DISABLE_NATURE)) {
 					// Nature
@@ -2319,6 +2350,16 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 			}
 			print '</table>';
 
+// BACKPORT V22
+			print '<script>';
+			print '$(document).ready(function() {
+            	$("#stockable_product").change(function() {
+	                $(".showifstockable").toggle(this.checked);
+    	        });
+        	});';
+
+			print '</script>';
+// FIN BACKPORT V22
 			print dol_get_fiche_end();
 
 			print $form->buttonsSaveCancel();
@@ -2547,15 +2588,21 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($action)) {
 				print dol_print_url($object->url, '_blank', 128);
 				print '</td></tr>';
 			}
-
+// BACKPORT V22
 			// Default warehouse
-			if ($object->isProduct() && isModEnabled('stock')) {
-				$warehouse = new Entrepot($db);
-				$warehouse->fetch($object->fk_default_warehouse);
+			if (($object->isProduct() || getDolGlobalInt('STOCK_SUPPORTS_SERVICES')) && isModEnabled('stock')) {
+				print '<tr><td>' . $form->textwithpicto($langs->trans("StockableProduct"), $langs->trans('StockableProductDescription')) . '</td>';
+				print '<td><input type="checkbox" readonly disabled '.($object->stockable_product == 1 ? 'checked' : '').'></td></tr>';
 
-				print '<tr><td>'.$langs->trans("DefaultWarehouse").'</td><td>';
-				print (!empty($warehouse->id) ? $warehouse->getNomUrl(1) : '');
-				print '</td>';
+				if ($object->stockable_product == 1) {
+					$warehouse = new Entrepot($db);
+					$warehouse->fetch($object->fk_default_warehouse);
+
+					print '<tr><td>'.$langs->trans("DefaultWarehouse").'</td><td>';
+					print(!empty($warehouse->id) ? $warehouse->getNomUrl(1) : '');
+					print '</td>';
+				}
+// FIN BACKPORT V22
 			}
 
 			if ($object->isService() && isModEnabled('workstation')) {
