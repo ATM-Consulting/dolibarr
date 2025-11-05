@@ -8052,6 +8052,9 @@ class Form
 			if ($tmpfieldstoshow) {
 				$fieldstoshow = $tmpfieldstoshow;
 			}
+		} else if ($objecttmp->element === 'category') {
+			// SPE KOESIO: backport PR #36074, you can safely remove this block in Dolibarr 20 and higher
+			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
 			$objecttmp->fields['ref'] = array('type'=>'varchar(30)', 'label'=>'Ref', 'showoncombobox'=>1);
