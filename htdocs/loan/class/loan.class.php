@@ -263,7 +263,7 @@ class Loan extends CommonObject implements \JsonSerializable
 			. ' d.value AS periodicity,'
 			. ' d.label AS periodicity_label'
 			. ' FROM ' . MAIN_DB_PREFIX . 'loan AS l'
-			. ' LEFT JOIN ' . MAIN_DB_PREFIX . 'c_periodicity AS d'
+			. ' LEFT JOIN ' . MAIN_DB_PREFIX . 'c_financement_periodicite AS d'
 			. '    ON d.rowid = l.fk_periodicity AND d.entity IN (' . getEntity('loan') . ')'
 			. ' WHERE l.rowid = ' . intval($id);
 
@@ -1010,7 +1010,7 @@ class Loan extends CommonObject implements \JsonSerializable
 			$periodicityDict = array();
 			$sql = /* @lang SQL */
 				'SELECT rowid, entity, code, label, value'
-				. ' FROM ' . MAIN_DB_PREFIX . 'c_periodicity';
+				. ' FROM ' . MAIN_DB_PREFIX . 'c_financement_periodicite';
 
 			if ($onlyActive) $sql .= ' WHERE active = 1';
 
