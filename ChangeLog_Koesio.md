@@ -1,4 +1,4 @@
-- NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  
+- NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
 - Backport 17.0 PR #35257: Fix condition for displaying the "create supplier order" button on customer order cards - **15/09/2025**
 - Backport 20.0 PR #28318: Misc conf `MAIN_SEE_SUBORDINATES` to allow supervisor to see all third parties her/his subordinates are allowed to see - **01/10/2025**
 - Backport develop PR #35172: Return false with return code 200 on API - **11/09/2025**
