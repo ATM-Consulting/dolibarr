@@ -775,6 +775,7 @@ class Holiday extends CommonObject
 		if ($checkBalance > 0) {
 			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
 
+			var_dump($balance);exit();
 			if ($balance < 0) {
 				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
 				return -1;
@@ -1105,6 +1106,7 @@ class Holiday extends CommonObject
 		}
 
 		$sql .= " WHERE rowid = ".((int) $this->id);
+		print $sql;
 
 		$this->db->begin();
 
@@ -1716,7 +1718,17 @@ class Holiday extends CommonObject
 					$newSolde = $nowHoliday + $nbDaysToAdd;
 
 					// We add a log for each user when its balance gets increased
-					$this->addLogCP($user->id, $userCounter['rowid'], $langs->trans('HolidayMonthlyCredit'), $newSolde, $userCounter['type']);
+
+					/*
+ 					 * Specific to CAPSIM:
+					 * The user running the cron job for updating leave balances must be the user with the specified ID.
+					 * Replaced $user->id with $userId (106)
+ 					 */
+					$userId = 106;
+					$this->addLogCP($userId, $userCounter['rowid'], $langs->trans('HolidayMonthlyCredit'), $newSolde, $userCounter['type']);
+					/*
+					 * End of specific
+					 */
 
 					$result = $this->updateSoldeCP($userCounter['rowid'], $newSolde, $userCounter['type']);
 
