@@ -3438,7 +3438,7 @@ class Propal extends CommonObject
 	public function load_board($user, $mode)
 	{
 		// phpcs:enable
-		global $conf, $langs;
+		global $conf, $langs, $hookmanager;
 
 		$clause = " WHERE";
 
@@ -3464,6 +3464,11 @@ class Propal extends CommonObject
 				$sql .= " AND EXISTS (SELECT sc.fk_soc FROM ".MAIN_DB_PREFIX."societe_commerciaux as sc WHERE sc.fk_soc = p.fk_soc AND sc.fk_user = ".((int) $search_sale).")";
 			}
 		}
+
+		// Add where from hooks
+		$parameters = array('socid' => $user->socid);
+		$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 
 		$resql = $this->db->query($sql);
 		if ($resql) {
@@ -3618,7 +3623,7 @@ class Propal extends CommonObject
 	 */
 	public function loadStateBoard()
 	{
-		global $user;
+		global $user, $hookmanager;
 
 		$this->nb = array();
 		$clause = "WHERE";
@@ -3642,6 +3647,10 @@ class Propal extends CommonObject
 			}
 		}
 
+		// Add where from hooks
+		$parameters = array();
+		$hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		$resql = $this->db->query($sql);
 		if ($resql) {
 			// This assignment in condition is not a bug. It allows walking the results.

@@ -4914,6 +4914,7 @@ class Societe extends CommonObject
 	 */
 	public function getOutstandingProposals($mode = 'customer')
 	{
+		global $hookmanager;
 		$table = 'propal';
 		if ($mode == 'supplier') {
 			$table = 'supplier_proposal';
@@ -4928,7 +4929,10 @@ class Societe extends CommonObject
 		}
 
 		dol_syslog("getOutstandingProposals for fk_soc = ".((int) $this->id), LOG_DEBUG);
-
+		// Add where from hooks
+		$parameters = array('mode' => $mode, 'table' => $table);
+		$hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		$resql = $this->db->query($sql);
 		if ($resql) {
 			$outstandingOpened = 0;
@@ -4958,6 +4962,7 @@ class Societe extends CommonObject
 	 */
 	public function getOutstandingOrders($mode = 'customer')
 	{
+		global $hookmanager;
 		$table = 'commande';
 		if ($mode == 'supplier') {
 			$table = 'commande_fournisseur';
@@ -4970,7 +4975,10 @@ class Societe extends CommonObject
 		} else {
 			$sql .= " AND entity IN (".getEntity('commande').")";
 		}
-
+		// Add where from hooks
+		$parameters = array('mode' => $mode, 'table' => $table);
+		$hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		dol_syslog("getOutstandingOrders", LOG_DEBUG);
 		$resql = $this->db->query($sql);
 		if ($resql) {

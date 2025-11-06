@@ -47,7 +47,7 @@ class modCommande extends DolibarrModules
 	 */
 	public function __construct($db)
 	{
-		global $conf, $user;
+		global $conf, $user, $hookmanager;
 
 		$this->db = $db;
 		$this->numero = 25;
@@ -296,6 +296,9 @@ class modCommande extends DolibarrModules
 		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
 			$this->export_sql_end[$r] .= ' AND sc.fk_user = '.(empty($user) ? 0 : $user->id);
 		}
+		$parameters = array();
+		$hookmanager->executeHooks('printExportWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$this->export_sql_end[$r] .= $hookmanager->resPrint;
 
 		// Imports
 		//--------

@@ -165,6 +165,7 @@ class Proposals extends DolibarrApi
 	 */
 	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $sqlfilters = '', $properties = '', $pagination_data = false, $loadlinkedobjects = 0)
 	{
+		global $hookmanager;
 		if (!DolibarrApiAccess::$user->hasRight('propal', 'lire')) {
 			throw new RestException(403);
 		}
@@ -195,6 +196,9 @@ class Proposals extends DolibarrApi
 				$sql .= " AND EXISTS (SELECT sc.fk_soc FROM ".MAIN_DB_PREFIX."societe_commerciaux as sc WHERE sc.fk_soc = t.fk_soc AND sc.fk_user = ".((int) $search_sale).")";
 			}
 		}
+		$parameters = array();
+		$hookmanager->executeHooks('printFieldListWhere', $parameters, $this->propal); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		// Add sql filters
 		if ($sqlfilters) {
 			$errormessage = '';

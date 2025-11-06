@@ -3440,6 +3440,10 @@ class Product extends CommonObject
 		if ($socid > 0) {
 			$sql .= " AND p.fk_soc = ".((int) $socid);
 		}
+		// Add where from hooks
+		$parameters = array('socid' => $socid, 'type_element' => 'propal');
+		$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 
 		$result = $this->db->query($sql);
 		if ($result) {
@@ -3567,6 +3571,10 @@ class Product extends CommonObject
 		if ($filtrestatut != '') {
 			$sql .= " AND c.fk_statut IN (".$this->db->sanitize($filtrestatut).")";
 		}
+		// Add where from hooks
+		$parameters = array('socid' => $socid, 'type_element' => 'order');
+		$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 
 		$result = $this->db->query($sql);
 		if ($result) {
@@ -3608,7 +3616,10 @@ class Product extends CommonObject
 					$sql .= " JOIN ".$this->db->prefix()."element_element as el ON ((el.fk_target = f.rowid AND el.targettype = 'facture' AND sourcetype = 'commande') OR (el.fk_source = f.rowid AND el.targettype = 'commande' AND sourcetype = 'facture'))";
 					$sql .= " JOIN ".$this->db->prefix()."commande as c ON el.fk_source = c.rowid";
 					$sql .= " WHERE c.fk_statut IN (".$this->db->sanitize($filtrestatut).") AND c.facture = 0 AND fd.fk_product = ".((int) $this->id);
-
+					// Add where from hooks
+					$parameters = array('socid' => $socid, 'type_element' => 'order');
+					$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+					$sql .= $hookmanager->resPrint;
 					dol_syslog(__METHOD__.":: sql $sql", LOG_NOTICE);
 					$resql = $this->db->query($sql);
 					if ($resql) {
@@ -3632,6 +3643,10 @@ class Product extends CommonObject
 					$sql .= " WHERE c.fk_statut IN (".$this->db->sanitize($filtrestatut).") AND f.fk_statut > ".Facture::STATUS_DRAFT." AND fd.fk_product = ".((int) $this->id);
 
 					dol_syslog(__METHOD__.":: sql $sql", LOG_NOTICE);
+					// Add where from hooks
+					$parameters = array('socid' => $socid, 'type_element' => 'order');
+					$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $this); // Note that $action and $object may have been modified by hook
+					$sql .= $hookmanager->resPrint;
 					$resql = $this->db->query($sql);
 					if ($resql) {
 						if ($this->db->num_rows($resql) > 0) {
@@ -4443,7 +4458,7 @@ class Product extends CommonObject
 	public function get_nb_propal($socid, $mode, $filteronproducttype = -1, $year = 0, $morefilter = '')
 	{
 		// phpcs:enable
-		global $user;
+		global $user, $hookmanager;
 
 		$sql = "SELECT sum(d.qty) as qty, date_format(p.datep, '%Y%m')";
 		if ($mode == 'bynumber') {
@@ -4475,6 +4490,9 @@ class Product extends CommonObject
 			$sql .= " AND p.fk_soc = ".((int) $socid);
 		}
 		$sql .= $morefilter;
+		$parameters = array('socid' => $user->socid);
+		$hookmanager->executeHooks('productGetNbPropal', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		$sql .= " GROUP BY date_format(p.datep,'%Y%m')";
 		$sql .= " ORDER BY date_format(p.datep,'%Y%m') DESC";
 
@@ -4547,7 +4565,7 @@ class Product extends CommonObject
 	public function get_nb_order($socid, $mode, $filteronproducttype = -1, $year = 0, $morefilter = '')
 	{
 		// phpcs:enable
-		global $user;
+		global $user, $hookmanager;
 
 		$sql = "SELECT sum(d.qty) as qty, date_format(c.date_commande, '%Y%m')";
 		if ($mode == 'bynumber') {
@@ -4579,6 +4597,9 @@ class Product extends CommonObject
 			$sql .= " AND c.fk_soc = ".((int) $socid);
 		}
 		$sql .= $morefilter;
+		$parameters = array('socid' => $user->socid);
+		$hookmanager->executeHooks('productGetNbOrder', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		$sql .= " GROUP BY date_format(c.date_commande,'%Y%m')";
 		$sql .= " ORDER BY date_format(c.date_commande,'%Y%m') DESC";
 
