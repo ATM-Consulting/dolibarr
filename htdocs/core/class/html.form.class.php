@@ -7467,11 +7467,12 @@ class Form
 					$hour = "0" . $hour;
 				}
 				$retstring .= '<option value="' . $hour . '"' . (($hour == $shour) ? ' selected' : '') . '>' . $hour;
-				//$retstring .= (empty($conf->dol_optimize_smallscreen) ? '' : 'H');
 				$retstring .= '</option>';
 			}
 			$retstring .= '</select>';
-			//if ($m && empty($conf->dol_optimize_smallscreen)) $retstring .= ":";
+			if ($disabled) {
+				$retstring .= '<input type="hidden" id="' . $prefix . 'hour"   name="' . $prefix . 'hour"   value="' . $shour . '">' . "\n";
+			}
 			if ($m) {
 				$retstring .= ":";
 			}
@@ -7488,7 +7489,10 @@ class Form
 				$retstring .= '<option value="' . $min_str . '"' . (($min_str == $smin) ? ' selected' : '') . '>' . $min_str . '</option>';
 			}
 			$retstring .= '</select>';
-
+			if ($disabled) {
+				$retstring .= '<input type="hidden" id="' . $prefix . 'min"   name="' . $prefix . 'min"   value="' . $smin . '">' . "\n";
+			}
+			// Add also seconds
 			$retstring .= '<input type="hidden" name="' . $prefix . 'sec" value="' . $ssec . '">';
 		}
 
