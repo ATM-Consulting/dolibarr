@@ -73,7 +73,7 @@ $optioncss = GETPOST('optioncss', 'alpha');
 $backtopage = GETPOST('backtopage');
 $contextpage = GETPOST('contextpage', 'aZ09');
 
-$id = $rowid = (GETPOSTINT('id') ? GETPOSTINT('id') : GETPOSTINT('rowid'));
+$rowid = (GETPOSTINT('id') ? GETPOSTINT('id') : GETPOSTINT('rowid'));
 $search_label = GETPOST('search_label', 'alphanohtml'); // Must allow value like 'Abc Def' or '(MyTemplateName)'
 $search_type_template = GETPOST('search_type_template', 'alpha');
 $search_lang = GETPOST('search_lang', 'alpha');
@@ -1164,7 +1164,7 @@ if ($num) {
 					$fieldsforcontent[] = 'content_lines';
 				}
 
-				$parameters = array('fieldsforcontent' => &$fieldsforcontent, 'tabname' => $tabname[$id]);
+				$parameters = array('fieldsforcontent' => &$fieldsforcontent, 'tabname' => $tabname[25]);
 				$hookmanager->executeHooks('editEmailTemplateFieldsForContent', $parameters, $obj, $tmpaction); // Note that $action and $object may have been modified by some hooks
 
 				foreach ($fieldsforcontent as $tmpfieldlist) {
@@ -1236,7 +1236,7 @@ if ($num) {
 					continue; // It means this is a type of template not into elementList (may be because enabled condition of this type is false because module is not enabled)
 				}
 				// Test on 'enabled'
-				if (! (int) dol_eval($obj->enabled, 1, 1, '1')) {
+				if (! (int) dol_eval((string) $obj->enabled, 1, 1, '1')) {
 					$i++;
 					continue; // Email template not qualified
 				}

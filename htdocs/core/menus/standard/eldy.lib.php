@@ -73,15 +73,15 @@ function print_eldy_menu($db, $atarget, $type_user, &$tabMenu, &$menu, $noout = 
 	$menu_arr = array();
 
 	// Home
-	$landingpage = getDolUserString('MAIN_LANDING_PAGE', getDolGlobalString('MAIN_LANDING_PAGE'));
-	if (!empty($landingpage)) {
-		$landingpage = dol_buildpath($landingpage, 1);
+	$homepage = getDolUserString('MAIN_HOME_PAGE', getDolGlobalString('MAIN_HOME_PAGE'));
+	if (!empty($homepage) && !$user->admin) {
+		$homepage = dol_buildpath($homepage, 1);
 	} else {
-		$landingpage = '/index.php?mainmenu=home&leftmenu=home';
+		$homepage = '/index.php?mainmenu=home&leftmenu=home';
 	}
 	$menu_arr[] = array(
 		'name' => 'Home',
-		'link' => $landingpage,
+		'link' => $homepage,
 		'title' => "Home",
 		'level' => 0,
 		'enabled' => $showmode = 1,
@@ -260,7 +260,6 @@ function print_eldy_menu($db, $atarget, $type_user, &$tabMenu, &$menu, $noout = 
 			$user->hasRight('propal', 'read')
 			|| $user->hasRight('commande', 'lire')
 			|| $user->hasRight('supplier_proposal', 'lire')
-			|| $user->hasRight('fournisseur', 'lire')
 			|| $user->hasRight('fournisseur', 'commande', 'lire')
 			|| $user->hasRight('supplier_order', 'lire')
 			|| $user->hasRight('contrat', 'lire')
@@ -1166,7 +1165,7 @@ function get_left_menu_home($mainmenu, &$newmenu, $usemenuhider = 1, $leftmenu =
 		if ($usemenuhider || empty($leftmenu) || $leftmenu == "setup") {
 			// Define $nbmodulesnotautoenabled - TODO This code is at different places
 			$nbmodulesnotautoenabled = count($conf->modules);
-			$listofmodulesautoenabled = array('agenda', 'fckeditor', 'export', 'import');
+			$listofmodulesautoenabled = array('user', 'agenda', 'fckeditor', 'export', 'import');
 			foreach ($listofmodulesautoenabled as $moduleautoenable) {
 				if (in_array($moduleautoenable, $conf->modules)) {
 					$nbmodulesnotautoenabled--;
@@ -1182,7 +1181,7 @@ function get_left_menu_home($mainmenu, &$newmenu, $usemenuhider = 1, $leftmenu =
 			}
 			$newmenu->add("/admin/company.php?mainmenu=home", $langs->trans("MenuCompanySetup").$warnpicto, 1);
 			$warnpicto = '';
-			if ($nbmodulesnotautoenabled <= getDolGlobalInt('MAIN_MIN_NB_ENABLED_MODULE_FOR_WARNING', 1)) {	// If only user module enabled
+			if ($nbmodulesnotautoenabled < getDolGlobalInt('MAIN_MIN_NB_ENABLED_MODULE_FOR_WARNING', 1)) {	// If only minimal initial modules enabled)
 				$langs->load("errors");
 				$warnpicto = img_warning($langs->trans("WarningMandatorySetupNotComplete"));
 			}

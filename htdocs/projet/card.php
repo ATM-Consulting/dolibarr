@@ -117,16 +117,19 @@ $permissiontoadd = $user->hasRight('projet', 'creer');
 $permissiontodelete = $user->hasRight('projet', 'supprimer');
 $permissiondellink = $user->hasRight('projet', 'creer');	// Used by the include of actions_dellink.inc.php
 $permissiontoeditextra = $permissiontoadd;
+
 if (GETPOST('attribute', 'aZ09') && isset($extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')])) {
 	// For action 'update_extras', is there a specific permission set for the attribute to update
-	$permissiontoeditextra = dol_eval($extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')]);
+	$permissiontoeditextra = dol_eval((string) $extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')]);
 }
 
 
 /*
  * Actions
  */
+
 $error = 0;
+
 $parameters = array('id' => $socid, 'objcanvas' => $objcanvas);
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 if ($reshook < 0) {
@@ -185,7 +188,7 @@ if (empty($reshook)) {
 		$action = '';
 
 		// For backward compatibility
-		$object->statut = $object::STATUS_DRAFT;	// this already set for $object->status by $object->setStatut()
+		$object->statut = $object::STATUS_DRAFT;	// this is already set for $object->status by $object->setStatut()
 	}
 
 	// Action add
@@ -355,10 +358,23 @@ if (empty($reshook)) {
 			}
 		}
 
-		if (getDolGlobalString('PROJECT_USE_OPPORTUNITIES')) {
+		// If opportunities are used and the customer is not yet a customer
+		if (getDolGlobalString('PROJECT_USE_OPPORTUNITIES') && $object->usage_opportunity) {
 			if ($object->opp_amount && ($object->opp_status <= 0)) {
 				$error++;
 				setEventMessages($langs->trans("ErrorOppStatusRequiredIfAmount"), null, 'errors');
+			}
+
+			if (!$error) {
+				if ((int) $object->thirdparty->client == 0 || (int) $object->thirdparty->client == 2) {		// If not yet customer
+					// Get ID of the special opportunity status code 'WON'
+					$idoppstatuswon = (int) dol_getIdFromCode($db, 'WON', 'c_lead_status', 'code', 'rowid');
+
+					if ($object->opp_status == $idoppstatuswon) {
+						// Switch the thirdparty into a customer
+						$object->thirdparty->setAsCustomer();
+					}
+				}
 			}
 		}
 
@@ -392,7 +408,7 @@ if (empty($reshook)) {
 			}
 		}
 
-		// Check if we must change status
+		// Check if we must change status of project
 		if (GETPOST('closeproject')) {
 			$resclose = $object->setClose($user);
 			if ($resclose < 0) {
@@ -416,6 +432,7 @@ if (empty($reshook)) {
 		}
 	}
 
+	// Set opportunity status
 	if ($action == 'set_opp_status' && $user->hasRight('projet', 'creer')) {
 		if (GETPOSTISSET('opp_status')) {
 			$object->opp_status   = $opp_status;
@@ -432,6 +449,8 @@ if (empty($reshook)) {
 		}
 
 		if (!$error) {
+			$db->begin();
+
 			$result = $object->update($user);
 			if ($result < 0) {
 				$error++;
@@ -441,13 +460,28 @@ if (empty($reshook)) {
 					setEventMessages($object->error, $object->errors, 'errors');
 				}
 			}
-		}
 
-		if ($error) {
-			$db->rollback();
-			$action = 'edit';
+			// If opportunities are used and the customer is not yet a customer
+			if (getDolGlobalString('PROJECT_USE_OPPORTUNITIES') && $object->usage_opportunity) {
+				if ((int) $object->thirdparty->client == 0 || (int) $object->thirdparty->client == 2) {		// If not yet customer
+					// Get ID of the special opportunity status code 'WON'
+					$idoppstatuswon = (int) dol_getIdFromCode($db, 'WON', 'c_lead_status', 'code', 'rowid');
+
+					if (!$error && $object->opp_status == $idoppstatuswon) {
+						// Switch the thirdparty into a customer
+						$object->thirdparty->setAsCustomer();
+					}
+				}
+			}
+
+			if ($error) {
+				$db->rollback();
+				$action = 'edit';
+			} else {
+				$db->commit();
+			}
 		} else {
-			$db->commit();
+			$action = 'edit';
 		}
 	}
 
@@ -1243,8 +1277,8 @@ if ($action == 'create' && $user->hasRight('projet', 'creer')) {
 			print '</div>';
 
 			print '<div id="divtocloseproject" class="inline-block valign clearboth paddingtop" style="display: none;">';
-			print '<input type="checkbox" id="inputcloseproject" name="closeproject" />';
-			print '<label for="inputcloseproject">';
+			print '<input type="checkbox" id="inputcloseproject" name="closeproject" class="valignmiddle" />';
+			print '<label for="inputcloseproject" class="opacitymedium valignmiddle">';
 			print $form->textwithpicto($langs->trans("AlsoCloseAProject"), $langs->trans("AlsoCloseAProjectTooltip")).'</label>';
 			print ' </div>';
 

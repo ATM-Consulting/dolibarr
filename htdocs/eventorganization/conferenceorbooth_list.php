@@ -132,7 +132,7 @@ foreach ($object->fields as $key => $val) {
 		$arrayfields['t.'.$key] = array(
 			'label' => $val['label'],
 			'checked' => (($visible < 0) ? 0 : 1),
-			'enabled' => (abs($visible) != 3 && (bool) dol_eval($val['enabled'], 1)),
+			'enabled' => (abs($visible) != 3 && (bool) dol_eval((string) $val['enabled'], 1)),
 			'position' => $val['position'],
 			'help' => isset($val['help']) ? $val['help'] : ''
 		);
@@ -184,10 +184,7 @@ if (preg_match('/^set/', $action) && ($projectid > 0 || $projectref) && $user->h
 		}
 	}
 }
-/*if ($action=='setaccept_conference_suggestions' && !empty(GETPOST('cancel', 'alpha'))) {
 
-}*/
-//setaccept_booth_suggestions
 if (GETPOST('cancel', 'alpha')) {
 	$action = 'list';
 	$massaction = '';
@@ -198,8 +195,6 @@ if (!GETPOST('confirmmassaction', 'alpha') && $massaction != 'presend'
 	&& $massaction != 'confirm_presend_attendees') {
 	$massaction = '';
 }
-
-
 
 
 $parameters = array();

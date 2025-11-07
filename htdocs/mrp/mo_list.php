@@ -148,7 +148,7 @@ foreach ($object->fields as $key => $val) {
 		$arrayfields[$tableprefix.'.'.$key] = array(
 			'label' => $val['label'],
 			'checked' => (($visible <= 0) ? 0 : 1),
-			'enabled' => (abs($visible) != 3 && (bool) dol_eval($val['enabled'], 1)),
+			'enabled' => (abs($visible) != 3 && (bool) dol_eval((string) $val['enabled'], 1)),
 			'position' => $val['position'],
 			'help' => isset($val['help']) ? $val['help'] : ''
 		);
@@ -255,14 +255,14 @@ if (empty($reshook)) {
 					if ($objMo->fetch($idMo)) {
 						if ($objMo->status == Mo::STATUS_DRAFT) {
 							if (!empty($changeDate)) {
-								if ($action == 'changedatestart_confirm') {
+								if ($action == 'changedatestart_confirm') {			// Test on permission not required
 									if ($newDate < $objMo->date_end_planned) {
 										$objMo->date_start_planned = $newDate;
 									} else {
 										setEventMessages($langs->trans('ErrorModifyMoDateStart', $objMo->ref), null, 'errors');
 										break;
 									}
-								} elseif ($action == 'changedateend_confirm') {
+								} elseif ($action == 'changedateend_confirm') {		// Test on permission not required
 									if ($newDate > $objMo->date_start_planned) {
 										$objMo->date_end_planned = $newDate;
 									} else {
