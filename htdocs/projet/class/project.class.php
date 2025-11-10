@@ -1144,6 +1144,7 @@ class Project extends CommonObject
 	 */
 	public function getElementCount($type, $tablename, $projectkey = 'fk_projet')
 	{
+		global $hookmanager;
 		if ($this->id <= 0) {
 			return 0;
 		}
@@ -1164,6 +1165,10 @@ class Project extends CommonObject
 			$sql = "SELECT COUNT(rowid) as nb FROM ".MAIN_DB_PREFIX.$tablename." WHERE ".$projectkey." = ".((int) $this->id)." AND entity IN (".getEntity($type).")";
 		}
 
+		// Add where from hooks
+		$parameters = array('type' => $type);
+		$reshook = $hookmanager->executeHooks('getElementCount', $parameters, $this); // Note that $action and $object may have been modified by hook
+		$sql .= $hookmanager->resPrint;
 		$result = $this->db->query($sql);
 
 		if (!$result) {

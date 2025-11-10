@@ -298,11 +298,12 @@ if (isModEnabled("propal") && $user->hasRight('propal', 'lire')) {
 	if ($socid) {
 		$sql .= " AND p.fk_soc = ".((int) $socid);
 	}
-	$sql .= " ORDER BY p.rowid DESC";
 	// Add where from hooks
 	$parameters = array('socid' => $user->socid);
 	$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $propalstatic); // Note that $action and $object may have been modified by hook
 	$sql .= $hookmanager->resPrint;
+	$sql .= " ORDER BY p.rowid DESC";
+
 	$resql = $db->query($sql);
 	if ($resql) {
 		$total = 0;
