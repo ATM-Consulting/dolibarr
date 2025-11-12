@@ -147,7 +147,7 @@ foreach ($object->fields as $key => $val) {
 		$arrayfields['t.'.$key] = array(
 			'label' => $val['label'],
 			'checked' => (($visible < 0) ? 0 : 1),
-			'enabled' => (abs($visible) != 3 && (bool) dol_eval($val['enabled'], 1)),
+			'enabled' => (abs($visible) != 3 && (bool) dol_eval((string) $val['enabled'], 1)),
 			'position' => $val['position'],
 			'help' => isset($val['help']) ? $val['help'] : ''
 		);
@@ -486,7 +486,7 @@ print '<input class="flat" type="text" size="6" name="search_user" value="'.$db-
 print '</td>';
 // Type
 print '<td class="liste_titre">';
-print $form->select_types_paiements($search_type_id, 'search_type_id', '', 0, 1, 1, 16, 1, '', 1);
+print $form->select_types_paiements($search_type_id, 'search_type_id', '', 0, 1, 1, 16, 1, 'maxwidth150', 1);
 print '</td>';
 // Chq number
 print '<td class="liste_titre"><input name="search_chq_number" class="flat width50" type="text" value="'.$db->escape($search_chq_number).'"></td>';
@@ -614,7 +614,7 @@ while ($i < $imaxinloop) {
 	$salstatic->ref = $obj->id_salary;
 
 	$paymentsalstatic->id = $obj->rowid;
-	$paymentsalstatic->ref = $obj->rowid;
+	$paymentsalstatic->ref = (string) $obj->rowid;
 	$paymentsalstatic->amount = $obj->amount;
 	$paymentsalstatic->fk_typepayment = $obj->payment_code;
 	$paymentsalstatic->datec = $obj->dateep;

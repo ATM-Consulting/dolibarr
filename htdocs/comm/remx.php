@@ -3,7 +3,7 @@
  * Copyright (C) 2004-2019 Laurent Destailleur         <eldy@users.sourceforge.net>
  * Copyright (C) 2008      Raphael Bertrand (Resultic) <raphael.bertrand@resultic.fr>
  * Copyright (C) 2019-2024  Frédéric France             <frederic.france@free.fr>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024-2025	MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -187,7 +187,7 @@ if ($action == 'setremise' && $permissiontocreate) {
 		if (!$error) {
 			$soc = new Societe($db);
 			$soc->fetch($id);
-			$discountid = $soc->set_remise_except($amount, $user, $desc, $tva_tx, $discount_type, $price_base_type);
+			$discountid = $soc->set_remise_except((float) $amount, $user, $desc, $tva_tx, $discount_type, $price_base_type);
 
 			if ($discountid > 0) {
 				if (!empty($backtopage)) {
@@ -289,10 +289,11 @@ if ($socid > 0) {
 		$sql .= " GROUP BY rc.fk_user";
 		$resql = $db->query($sql);
 		if ($resql) {
-			$obj = $db->fetch_object($resql);
-			$remise_all += (!empty($obj->amount) ? $obj->amount : 0);
-			if (!empty($obj->fk_user) && $obj->fk_user == $user->id) {
-				$remise_user += (!empty($obj->amount) ? $obj->amount : 0);
+			while ($obj = $db->fetch_object($resql)) {
+				$remise_all += (!empty($obj->amount) ? $obj->amount : 0);
+				if (!empty($obj->fk_user) && $obj->fk_user == $user->id) {
+					$remise_user += (!empty($obj->amount) ? $obj->amount : 0);
+				}
 			}
 		} else {
 			dol_print_error($db);
@@ -318,10 +319,11 @@ if ($socid > 0) {
 		$sql .= " GROUP BY rc.fk_user";
 		$resql = $db->query($sql);
 		if ($resql) {
-			$obj = $db->fetch_object($resql);
-			$remise_all += (!empty($obj->amount) ? $obj->amount : 0);
-			if (!empty($obj->fk_user) && $obj->fk_user == $user->id) {
-				$remise_user += (!empty($obj->amount) ? $obj->amount : 0);
+			while ($obj = $db->fetch_object($resql)) {
+				$remise_all += (!empty($obj->amount) ? $obj->amount : 0);
+				if (!empty($obj->fk_user) && $obj->fk_user == $user->id) {
+					$remise_user += (!empty($obj->amount) ? $obj->amount : 0);
+				}
 			}
 		} else {
 			dol_print_error($db);
@@ -388,7 +390,7 @@ if ($socid > 0) {
 			// VAT
 			print '<tr><td>'.$langs->trans("VAT").'</td>';
 			print '<td>';
-			print $form->load_tva('tva_tx', (GETPOSTISSET('tva_tx') ? GETPOST('tva_tx', 'alpha') : getDolGlobalString('MAIN_VAT_DEFAULT_IF_AUTODETECT_FAILS', 0)), $mysoc, $object, 0, 0, '', 0, 1);
+			print $form->load_tva('tva_tx', (GETPOSTISSET('tva_tx') ? GETPOST('tva_tx', 'alpha') : getDolGlobalString('MAIN_VAT_DEFAULT_IF_AUTODETECT_FAILS', 0)), $mysoc, $object, 0, 0, '', false, 1);
 			print '</td></tr>';
 			print '<tr><td class="fieldrequired" >'.$langs->trans("NoteReason").'</td>';
 			print '<td><input type="text" class="quatrevingtpercent" name="desc" value="'.GETPOST('desc', 'alphanohtml').'"></td></tr>';
@@ -426,9 +428,9 @@ if ($socid > 0) {
 	 */
 
 	if ($isCustomer && !$isSupplier) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 	} elseif (!$isCustomer && $isSupplier) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=1&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=1&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 	} else {
 		$newcardbutton = '';
 	}
@@ -436,7 +438,7 @@ if ($socid > 0) {
 	print load_fiche_titre($langs->trans("DiscountStillRemaining"), $newcardbutton);
 
 	if ($isCustomer) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewClientGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewClientGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 		if ($isSupplier) {
 			print '<div class="fichecenter">';
 			print '<div class="fichehalfleft fichehalfleft-lg">';

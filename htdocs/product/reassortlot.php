@@ -7,7 +7,7 @@
  * Copyright (C) 2016       Ferran Marcet			<fmarcet@2byte.es>
  * Copyright (C) 2019       Juanjo Menent			<jmenent@2byte.es>
  * Copyright (C) 2021       Noé Cendrier			<noe.cendrier@altairis.fr>
- * Copyright (C) 2024		Frédéric France			<frederic.france@free.fr>
+ * Copyright (C) 2024-2025  Frédéric France			<frederic.france@free.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ require_once DOL_DOCUMENT_ROOT.'/product/stock/class/productlot.class.php';
 /**
  * @var Conf $conf
  * @var DoliDB $db
+ * @var ExtraFields $extrafields
  * @var HookManager $hookmanager
  * @var Translate $langs
  * @var User $user
@@ -54,7 +55,7 @@ $massaction = GETPOST('massaction', 'alpha'); // The bulk action (combo box choi
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'myobjectlist'; // To manage different context of search
 $backtopage = GETPOST('backtopage', 'alpha'); // Go back to a dedicated page
 $optioncss = GETPOST('optioncss', 'aZ'); // Option for the css output (always '' except when 'print')
-$mode       = GETPOST('mode', 'aZ');
+$mode = GETPOST('mode', 'aZ');
 
 $sref = GETPOST("sref", 'alpha');
 $snom = GETPOST("snom", 'alpha');
@@ -393,8 +394,8 @@ if ($search_toolowstock) {
 	$sql_having .= " HAVING SUM(".$db->ifsql('ps.reel IS NULL', '0', 'ps.reel').") < p.seuil_stock_alerte"; // Not used yet
 }
 if ($search_stock_physique != '') {
-	$natural_search_physique = natural_search('SUM(' . $db->ifsql('pb.qty IS NULL', $db->ifsql('ps.reel IS NULL', '0', 'ps.reel'), 'pb.qty') . ')', $search_stock_physique, 1, 1);
-	$natural_search_physique = " " . substr($natural_search_physique, 1, -1); // remove first "(" and last ")" characters
+	$natural_search_physique = natural_search('__SEARCH_PHYSIQUE__', $search_stock_physique, 1, 1);
+	$natural_search_physique = " " . substr(str_replace('__SEARCH_PHYSIQUE__', 'SUM(COALESCE(pb.qty, ps.reel, 0))', $natural_search_physique), 1, -1); // remove first "(" and last ")" characters
 	if (!empty($sql_having)) {
 		$sql_having .= " AND";
 	} else {
@@ -764,8 +765,8 @@ while ($i < $imaxinloop) {
 	}
 
 	// Ref
-	print '<td class="nowrap">';
-	print $product_static->getNomUrl(1, '', 16);
+	print '<td class="tdoverflowmax250">';
+	print $product_static->getNomUrl(1);
 	//if ($objp->stock_theorique < $objp->seuil_stock_alerte) print ' '.img_warning($langs->trans("StockTooLow"));
 	print '</td>';
 	if (!$i) {
@@ -773,7 +774,7 @@ while ($i < $imaxinloop) {
 	}
 
 	// Label
-	print '<td>'.$objp->label.'</td>';
+	print '<td class="tdoverflowmax150">'.$objp->label.'</td>';
 	if (!$i) {
 		$totalarray['nbfield']++;
 	}
