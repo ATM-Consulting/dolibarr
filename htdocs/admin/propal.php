@@ -162,7 +162,13 @@ if ($action == 'updateMask') {
 			$error++;
 		}
 	}
-
+	if (GETPOSTISSET('PROPOSAL_SIGNATURE_ALIAS_URL')) {
+		$aliasurl = GETPOST('PROPOSAL_SIGNATURE_ALIAS_URL', 'alphanohtml'); // On utilise 'string' pour une URL
+		$res = dolibarr_set_const($db, "PROPOSAL_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
+		if (!($res > 0)) {
+			$error++;
+		}
+	}
 	if (!$error) {
 		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
 	} else {
@@ -662,7 +668,7 @@ print "</tr>\n";
 print '<tr class="oddeven"><td>';
 print $form->textwithpicto($langs->trans("WatermarkOnDraftProposal"), $htmltext, 1, 'help', '', 0, 2, 'watermarktooltip').'<br>';
 print '</td><td>';
-print '<input class="flat minwidth200" type="text" name="PROPALE_DRAFT_WATERMARK" value="'.dol_escape_htmltag(getDolGlobalString('PROPALE_DRAFT_WATERMARK')).'">';
+print '<input class="flat minwidth300" type="text" name="PROPALE_DRAFT_WATERMARK" value="'.dol_escape_htmltag(getDolGlobalString('PROPALE_DRAFT_WATERMARK')).'">';
 print '</td>';
 print "</tr>\n";
 
@@ -681,6 +687,11 @@ print '<td class="center">';
 print ajax_constantonoff('PROPOSAL_ALLOW_ONLINESIGN', array(), null, 0, 0, 0, 2, 0, 1, '', '', 'inline-block', 0, $langs->transnoentitiesnoconv("WarningOnlineSignature"));
 print '</td></tr>';
 
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("PropalSignatureAliasUrl"), $langs->trans("PropalSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
+print '<td>'; // Augmenté la largeur pour une URL
+print '<input class="flat minwidth300" type="text" name="PROPOSAL_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('PROPOSAL_SIGNATURE_ALIAS_URL')).'">';
+print '</td></tr>';
 
 /* Seems to be not so used. So kept hidden for the moment to avoid dangerous options inflation.
 if (isModEnabled('facture'))
