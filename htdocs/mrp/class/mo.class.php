@@ -795,12 +795,6 @@ class Mo extends CommonObject
 							} else {
 								$moline->qty = (float) price2num(($line->qty / (!empty($bom->qty) ? $bom->qty : 1)) * $this->qty / (!empty($line->efficiency) ? $line->efficiency : 1), 'MS'); // Calculate with Qty to produce and  more presition
 							}
-							if ($moline->qty <= 0) {
-								$error++;
-								$this->error = "BadValueForquantityToConsume";
-								$this->errors[] = $this->error;
-								break;
-							} else {
 								$moline->fk_product = $line->fk_product;
 								$moline->role = $role;
 								$moline->position = $line->position;
@@ -819,7 +813,6 @@ class Mo extends CommonObject
 									dol_print_error($this->db, $moline->error, $moline->errors);
 									break;
 								}
-							}
 						}
 					}
 				}

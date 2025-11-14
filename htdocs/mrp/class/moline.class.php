@@ -246,10 +246,6 @@ class MoLine extends CommonObjectLine
 	 */
 	public function create(User $user, $notrigger = 0)
 	{
-		if (empty($this->qty)) {
-			$this->error = 'ErrorEmptyValueForQty';
-			return -1;
-		}
 
 		return $this->createCommon($user, $notrigger);
 	}
