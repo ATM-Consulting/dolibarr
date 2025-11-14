@@ -96,6 +96,14 @@ if (!empty($extrafieldsobjectkey) && !empty($extrafields->attributes[$extrafield
 						$totalarray['nbfield'] = 0;
 					}
 					$totalarray['nbfield']++;
+					// backport a supprimer lorsque la solutions sera merge en v22
+					if (!empty($extrafields->attributes[$extrafieldsobjectkey]['type'][$key]) && $extrafields->attributes[$extrafieldsobjectkey]['type'][$key] === 'duration') {
+						if (empty($totalarray['type']) || !is_array($totalarray['type'])) {
+							$totalarray['type'] = array();
+						}
+						$totalarray['type'][$totalarray['nbfield']] = 'duration';
+					}
+					// end backport
 				}
 
 				if (!empty($extrafields->attributes[$extrafieldsobjectkey]['totalizable'][$key])) {
