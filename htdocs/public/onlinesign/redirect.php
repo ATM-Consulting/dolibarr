@@ -15,7 +15,7 @@ if (!$res) {
 }
 
 // Charger la librairie de signature
-require_once DOL_DOCUMENT_ROOT.'/core/lib/onlinesign.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';
 
 // --- RÉCUPÉRATION DES PARAMÈTRES (de la règle Apache) ---
 $type = GETPOST('type', 'alpha');
