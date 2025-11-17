@@ -15,7 +15,11 @@ if (!$res) {
 }
 
 // Charger la librairie de signature
-require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/onlinesign.lib.php';
+
+// Importer les variables globales de Dolibarr dans ce script
+global $conf, $db, $langs, $dolibarr_main_url_root;
+
 
 // --- RÉCUPÉRATION DES PARAMÈTRES (de la règle Apache) ---
 $type = GETPOST('type', 'alpha');
@@ -29,7 +33,6 @@ if (empty($type) || empty($ref)) {
 $obj = null;
 $db->begin();
 
-// --- CHARGER L'OBJET CORRESPONDANT ---
 $internal_type = ''; // ex: 'proposal'
 
 if ($type == 'propale' || $type == 'proposal') {
@@ -60,9 +63,7 @@ if (empty($obj) || $res <= 0) {
 	exit;
 }
 
-// --- GÉNÉRATION DE L'URL SÉCURISÉE INTERNE ---
-// Mode=0 (vraie URL), localorexternal=0 (URL interne/localhost)
-$full_secure_url = getOnlineSignatureUrl(0, $internal_type, $ref, 0, $obj); // 0 = URL INTERNE !
+$full_secure_url = getOnlineSignatureUrl(0, $internal_type, $ref, 0, $obj);
 
 if (strpos($full_secure_url, 'http') !== 0) {
 	dol_syslog("Failed to generate secure URL: " . $full_secure_url, LOG_ERR);
@@ -73,18 +74,13 @@ if (strpos($full_secure_url, 'http') !== 0) {
 
 $db->commit();
 
-// --- PROXY PHP : RÉCUPÉRER ET AFFICHER LE CONTENU ---
-// Utilise cURL pour récupérer le contenu de la page de signature
-// en "backend", sans que le client ne le voie.
-
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $full_secure_url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-// Gérer les cookies pour que la session (ex: pour le token CSRF) fonctionne
 curl_setopt($ch, CURLOPT_COOKIEJAR, DOL_DATA_ROOT . '/sessions/cookie_proxy.txt');
 curl_setopt($ch, CURLOPT_COOKIEFILE, DOL_DATA_ROOT . '/sessions/cookie_proxy.txt');
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1); // Suivre les redirections internes
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0); // Important si le SSL interne est auto-signé
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 
 $output = curl_exec($ch);
@@ -96,31 +92,42 @@ if ($http_code != 200 || $output === false) {
 	exit;
 }
 
-// AFFICHE LE HTML DE LA PAGE DE SIGNATURE
-// Problème : Les liens relatifs (CSS, JS, AJAX) dans ce HTML seront cassés.
-// Nous devons les réécrire pour qu'ils pointent vers le domaine public.
 
-// 1. Trouver l'URL de base interne (ex: https://doliboardtest-dlb...)
-$internal_base_url = $conf->url_root;
-// 2. Définir l'URL de base publique (ex: https://signature-propal...)
-//    -> Idéalement, à mettre dans la conf Dolibarr (ex: PROPAL_SIGNATURE_ALIAS_URL)
-$public_base_url = rtrim(getDolGlobalString(strtoupper($internal_type).'_SIGNATURE_ALIAS_URL'), '/');
+// --- DÉBUT DE LA CORRECTION DES LIENS ---
 
-// Si la conf est vide, on essaie de deviner
-if (empty($public_base_url)) {
-	// ATTENTION: C'est fragile. Mieux vaut configurer la constante.
-	$public_base_url = 'https://' . $_SERVER['HTTP_HOST'];
+// 1. Récupérer le nom de domaine public (ex: "signature-propal...")
+$public_domain_name = rtrim(getDolGlobalString(strtoupper($internal_type).'_SIGNATURE_ALIAS_URL'), '/');
+$public_domain_name = preg_replace('#^https?://#', '', $public_domain_name); // Nettoyer au cas où
+
+if (empty($public_domain_name)) {
+	$public_domain_name = $_SERVER['HTTP_HOST'];
 }
 
-// Remplacer les chemins relatifs/internes par des chemins absolus publics
-// Ex: /core/ajax/onlineSign.php -> https://signature-propal.../core/ajax/onlineSign.php
+// 2. Définir les chaînes à corriger
+$bad_strings = array(
+	'href="' . $public_domain_name . '/',
+	'src="' . $public_domain_name . '/',
+	'action="' . $public_domain_name . '/'
+);
+
+// 3. Définir les chaînes correctes (avec https://)
+$good_strings = array(
+	'href="https://' . $public_domain_name . '/',
+	'src="https://' . $public_domain_name . '/',
+	'action="https://' . $public_domain_name . '/'
+);
+
+// 4. Réparer le HTML
+$output = str_replace($bad_strings, $good_strings, $output);
+
+// 5. Réparer aussi les liens relatifs standards (ex: href="/theme...")
 $output = str_replace(
 	array('href="/', 'src="/', 'action="/'),
-	array('href="'.$public_base_url.'/', 'src="'.$public_base_url.'/', 'action="'.$public_base_url.'/'),
+	array('href="https://'.$public_domain_name.'/', 'src="https://'.$public_domain_name.'/', 'action="https://'.$public_domain_name.'/'),
 	$output
 );
-// Remplacer les chemins internes complets s'ils existent
-$output = str_replace($internal_base_url, $public_base_url, $output);
+
+// --- FIN DE LA CORRECTION DES LIENS ---
 
 
 // Envoyer le contenu modifié au client
