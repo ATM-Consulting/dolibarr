@@ -252,14 +252,14 @@ class pdf_canelle extends ModelePDFSuppliersInvoices
 				}
 				$pdf->SetFont(pdf_getPDFFont($outputlangs));
 				// Set path to the background PDF File
-				if (getDolGlobalString('MAIN_ADD_PDF_BACKGROUND')) {
-					$logodir = $conf->mycompany->dir_output;
-					if (!empty($conf->mycompany->multidir_output[$object->entity])) {
-						$logodir = $conf->mycompany->multidir_output[$object->entity];
-					}
-					$pagecount = $pdf->setSourceFile($logodir .'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
-					$tplidx = $pdf->importPage(1);
-				}
+//				if (getDolGlobalString('MAIN_ADD_PDF_BACKGROUND')) {
+//					$logodir = $conf->mycompany->dir_output;
+//					if (!empty($conf->mycompany->multidir_output[$object->entity])) {
+//						$logodir = $conf->mycompany->multidir_output[$object->entity];
+//					}
+//					$pagecount = $pdf->setSourceFile($logodir .'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+//					$tplidx = $pdf->importPage(1);
+//				}
 
 				$pdf->Open();
 				$pagenb = 0;
