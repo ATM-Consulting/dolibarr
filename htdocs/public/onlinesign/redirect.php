@@ -15,7 +15,7 @@ if (!$res) {
 }
 
 // Charger la librairie de signature
-require_once DOL_DOCUMENT_ROOT.'/core/lib/onlinesign.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';
 
 // Importer les variables globales de Dolibarr dans ce script
 global $conf, $db, $langs, $dolibarr_main_url_root;
