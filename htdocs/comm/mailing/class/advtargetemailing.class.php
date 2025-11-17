@@ -641,6 +641,27 @@ class AdvanceTargetingMailing extends CommonObject
 						if ($arrayquery['options_'.$key] > 0) {
 							$sqlwhere[] = " (te.".$key." = ".((int) $arrayquery["options_".$key]).")";
 						}
+					} elseif ($extrafields->attributes[$elementtype]['type'][$key] == 'chkbxlst'
+						&& is_array($arrayquery['options_'.$key])) {
+						if (count($arrayquery['options_'.$key])) {
+							$i2 = 0;
+							$field = "te.".$key;
+							$sqlwhereselllist="";
+							foreach ($arrayquery['options_'.$key] as $data) {
+								$data = trim($data);
+								if ($data) {
+									$sqlwhereselllist .= ($i2 > 0 ? " OR (" : "(").$field." LIKE '".$this->db->escape($data).",%'";
+									$sqlwhereselllist .= " OR ".$field." = '".$this->db->escape($data)."'";
+									$sqlwhereselllist .= " OR ".$field." LIKE '%,".$this->db->escape($data)."'";
+									$sqlwhereselllist .= " OR ".$field." LIKE '%,".$this->db->escape($data).",%'";
+									$sqlwhereselllist .= ")";
+									$i2++; // a criteria for 1 more field was added to string (we can add several criteria for the same field as it is a multiselect search criteria)
+								}
+							}
+							if (!empty($sqlwhereselllist)) {
+								$sqlwhere[] = "( ".$sqlwhereselllist." )";
+							}
+						}
 					} else {
 						if (is_array($arrayquery['options_'.$key])) {
 							$sqlwhere[] = " (te.".$key." IN (".$this->db->sanitize("'".implode("','", $arrayquery["options_".$key])."'", 1)."))";
@@ -784,6 +805,31 @@ class AdvanceTargetingMailing extends CommonObject
 								$sqlwhere[] = " (te.".$key." = ".((int) $arrayquery["options_".$key."_cnct"]).")";
 							}
 						}
+					} elseif ($extrafields->attributes[$elementtype]['type'][$key] == 'link') {
+						if ($arrayquery['options_'.$key."_cnct"] > 0) {
+							$sqlwhere[]= " (te.".$key." = ".((int) $arrayquery["options_".$key."_cnct"]).")";
+						}
+					} elseif ($extrafields->attributes[$elementtype]['type'][$key] == 'chkbxlst'
+						&& is_array($arrayquery['options_'.$key.'_cnct'])) {
+						if (count($arrayquery['options_'.$key.'_cnct'])) {
+							$i2 = 0;
+							$field = "te.".$key;
+							$sqlwhereselllist="";
+							foreach ($arrayquery['options_'.$key.'_cnct'] as $data) {
+								$data = trim($data);
+								if ($data) {
+									$sqlwhereselllist .= ($i2 > 0 ? " OR (" : "(").$field." LIKE '".$this->db->escape($data).",%'";
+									$sqlwhereselllist .= " OR ".$field." = '".$this->db->escape($data)."'";
+									$sqlwhereselllist .= " OR ".$field." LIKE '%,".$this->db->escape($data)."'";
+									$sqlwhereselllist .= " OR ".$field." LIKE '%,".$this->db->escape($data).",%'";
+									$sqlwhereselllist .= ")";
+									$i2++; // a criteria for 1 more field was added to string (we can add several criteria for the same field as it is a multiselect search criteria)
+								}
+							}
+							if (!empty($sqlwhereselllist)) {
+								$sqlwhere[] = "( ".$sqlwhereselllist." )";
+							}
+						}
 					} else {
 						if (is_array($arrayquery['options_'.$key.'_cnct'])) {
 							$sqlwhere[] = " (te.".$key." IN (".$this->db->sanitize("'".implode("','", $arrayquery["options_".$key."_cnct"])."'", 1)."))";
@@ -888,6 +934,31 @@ class AdvanceTargetingMailing extends CommonObject
 								if ($arrayquery['options_'.$key] != '') {
 									$sqlwhere[] = " (tse.".$key." = ".((int) $arrayquery["options_".$key]).")";
 								}
+							} elseif ($extrafields->attributes[$elementtype]['type'][$key] == 'link') {
+								if ($arrayquery['options_'.$key] > 0) {
+									$sqlwhere[]= " (te.".$key." = ".((int) $arrayquery["options_".$key]).")";
+								}
+							} elseif ($extrafields->attributes[$elementtype]['type'][$key] == 'chkbxlst'
+								&& is_array($arrayquery['options_'.$key])) {
+								if (count($arrayquery['options_'.$key])) {
+									$i2 = 0;
+									$field = "tse.".$key;
+									$sqlwhereselllist="";
+									foreach ($arrayquery['options_'.$key] as $data) {
+										$data = trim($data);
+										if ($data) {
+											$sqlwhereselllist  .= ($i2 > 0 ? " OR (" : "(").$field." LIKE '".$this->db->escape($data).",%'";
+											$sqlwhereselllist  .= " OR ".$field." = '".$this->db->escape($data)."'";
+											$sqlwhereselllist  .= " OR ".$field." LIKE '%,".$this->db->escape($data)."'";
+											$sqlwhereselllist  .= " OR ".$field." LIKE '%,".$this->db->escape($data).",%'";
+											$sqlwhereselllist  .= ")";
+											$i2++; // a criteria for 1 more field was added to string (we can add several criteria for the same field as it is a multiselect search criteria)
+										}
+									}
+									if (!empty($sqlwhereselllist)) {
+										$sqlwhere[] = "( ".$sqlwhereselllist." )";
+									}
+								}
 							} else {
 								if (is_array($arrayquery['options_'.$key])) {
 									$sqlwhere[] = " (tse.".$key." IN (".$this->db->sanitize("'".implode("','", $arrayquery["options_".$key])."'", 1)."))";
@@ -942,9 +1013,9 @@ class AdvanceTargetingMailing extends CommonObject
 	 */
 	public function transformToSQL($column_to_test, $criteria)
 	{
-		$return_sql_criteria = '(';
+		$return_sql_criteria = "(";
 
-		//This is a multiple value test
+		// This is a multiple value test
 		if (preg_match('/;/', $criteria)) {
 			$return_sql_not_like = array();
 			$return_sql_like = array();
@@ -952,23 +1023,23 @@ class AdvanceTargetingMailing extends CommonObject
 			$criteria_array = explode(';', $criteria);
 			foreach ($criteria_array as $inter_criteria) {
 				if (preg_match('/!/', $inter_criteria)) {
-					$return_sql_not_like[] = '('.$column_to_test.' NOT LIKE \''.str_replace('!', '', $inter_criteria).'\')';
+					$return_sql_not_like[] = "(".$this->db->sanitize($column_to_test)." NOT LIKE '".$this->db->sanitize(str_replace('!', '', $inter_criteria))."')";
 				} else {
-					$return_sql_like[] = '('.$column_to_test.' LIKE \''.$inter_criteria.'\')';
+					$return_sql_like[] = "(".$this->db->sanitize($column_to_test)." LIKE '".$this->db->sanitize($inter_criteria)."')";
 				}
 			}
 
 			if (count($return_sql_like) > 0) {
-				$return_sql_criteria .= '('.implode(' OR ', $return_sql_like).')';
+				$return_sql_criteria .= "(".implode(" OR ", $return_sql_like).")";	// element in arrays were sanitized previously
 			}
 			if (count($return_sql_not_like) > 0) {
-				$return_sql_criteria .= ' AND ('.implode(' AND ', $return_sql_not_like).')';
+				$return_sql_criteria .= " AND (".implode(" AND ", $return_sql_not_like).")";	// element in arrays were sanitized previously
 			}
 		} else {
-			$return_sql_criteria .= $column_to_test.' LIKE \''.$this->db->escape($criteria).'\'';
+			$return_sql_criteria .= $this->db->sanitize($column_to_test)." LIKE '".$this->db->escape($criteria)."'";
 		}
 
-		$return_sql_criteria .= ')';
+		$return_sql_criteria .= ")";
 
 		return $return_sql_criteria;
 	}

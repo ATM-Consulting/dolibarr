@@ -722,15 +722,17 @@ class modFacture extends DolibarrModules
 		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
 			$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
 			// ------spé alphadiab ---------
-
 			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as u ON sc.fk_user = u.rowid';
-			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_soc = s.rowid';
-			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
-			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
-			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
 			// ------spé alphadiab ---------
 
 		}
+		// ------spé alphadiab ---------
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_soc = s.rowid';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM '.$db->prefix().'categorie_societe WHERE fk_soc = s.rowid))';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM '.$db->prefix().'categorie_societe WHERE fk_soc = s.rowid))';
+		// ------spé alphadiab ---------
+
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as c on s.fk_pays = c.rowid';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as cd on s.fk_departement = cd.rowid';
 		$this->export_sql_end[$r] .= ' JOIN '. $db->prefix() .'facture as f'; // spé alphadiab
@@ -850,8 +852,8 @@ class modFacture extends DolibarrModules
 		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as ucomm ON sc.fk_user = ucomm.rowid';
 		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_soc = s.rowid';
 		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
-		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
-		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM llx_categorie_societe WHERE fk_soc =  s.rowid))';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat2 ON (cat2.fk_parent = cat1.rowid AND cat2.rowid IN (SELECT fk_categorie FROM '.$db->prefix().'categorie_societe WHERE fk_soc = s.rowid))';
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat3 ON (cat3.fk_parent = cat2.rowid AND cat3.rowid IN (SELECT fk_categorie FROM '.$db->prefix().'categorie_societe WHERE fk_soc = s.rowid))';
 		// ------spé alphadiab ---------
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_country as c on s.fk_pays = c.rowid';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_departements as cd on s.fk_departement = cd.rowid,';
