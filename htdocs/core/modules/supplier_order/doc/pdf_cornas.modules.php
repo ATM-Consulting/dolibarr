@@ -289,11 +289,11 @@ class pdf_cornas extends ModelePDFSuppliersOrders
 					$pdf->setPrintFooter(false);
 				}
 				$pdf->SetFont(pdf_getPDFFont($outputlangs));
-				// Set path to the background PDF File
-				if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND')) {
-					$pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
-					$tplidx = $pdf->importPage(1);
-				}
+//				// Set path to the background PDF File
+//				if (!getDolGlobalString('MAIN_DISABLE_FPDI') && getDolGlobalString('MAIN_ADD_PDF_BACKGROUND')) {
+//					$pagecount = $pdf->setSourceFile($conf->mycompany->dir_output.'/' . getDolGlobalString('MAIN_ADD_PDF_BACKGROUND'));
+//					$tplidx = $pdf->importPage(1);
+//				}
 
 				$pdf->Open();
 				$pagenb = 0;
