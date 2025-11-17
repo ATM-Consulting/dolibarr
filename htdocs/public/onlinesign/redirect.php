@@ -92,38 +92,38 @@ if ($http_code != 200 || $output === false) {
 	exit;
 }
 
+// ... (code cURL qui récupère $output) ...
 
 // --- DÉBUT DE LA CORRECTION DES LIENS ---
 
-// 1. Récupérer le nom de domaine public (ex: "signature-propal...")
+// 1. Récupérer l'URL interne
+$internal_base_url = rtrim($dolibarr_main_url_root, '/');
+
+// 2. Récupérer le DOMAINE public (ex: "signature-expedition...")
 $public_domain_name = rtrim(getDolGlobalString(strtoupper($internal_type).'_SIGNATURE_ALIAS_URL'), '/');
-$public_domain_name = preg_replace('#^https?://#', '', $public_domain_name); // Nettoyer au cas où
+$public_domain_name = preg_replace('#^https?://#', '', $public_domain_name); // Nettoyer
 
 if (empty($public_domain_name)) {
 	$public_domain_name = $_SERVER['HTTP_HOST'];
 }
 
-// 2. Définir les chaînes à corriger
-$bad_strings = array(
-	'href="' . $public_domain_name . '/',
-	'src="' . $public_domain_name . '/',
-	'action="' . $public_domain_name . '/'
-);
+// 3. Définir l'URL publique COMPLÈTE
+$public_base_url = 'https://' . $public_domain_name;
 
-// 3. Définir les chaînes correctes (avec https://)
-$good_strings = array(
-	'href="https://' . $public_domain_name . '/',
-	'src="https://' . $public_domain_name . '/',
-	'action="https://' . $public_domain_name . '/'
-);
-
-// 4. Réparer le HTML
-$output = str_replace($bad_strings, $good_strings, $output);
-
-// 5. Réparer aussi les liens relatifs standards (ex: href="/theme...")
+// 4. Remplacer les liens relatifs (ex: href="/theme...")
 $output = str_replace(
 	array('href="/', 'src="/', 'action="/'),
-	array('href="https://'.$public_domain_name.'/', 'src="https://'.$public_domain_name.'/', 'action="https://'.$public_domain_name.'/'),
+	array('href="'.$public_base_url.'/', 'src="'.$public_base_url.'/', 'action="'.$public_base_url.'/'),
+	$output
+);
+
+// 5. Remplacer les liens internes (ex: href="https://doliboardtest-dlb...")
+$output = str_replace($internal_base_url, $public_base_url, $output);
+
+// 6. (Correctif pour le bug de double URL que vous avez)
+$output = str_replace(
+	array('href="'.$public_domain_name.'/', 'src="'.$public_domain_name.'/', 'action="'.$public_domain_name.'/'),
+	array('href="'.$public_base_url.'/', 'src="'.$public_base_url.'/', 'action="'.$public_base_url.'/'),
 	$output
 );
 

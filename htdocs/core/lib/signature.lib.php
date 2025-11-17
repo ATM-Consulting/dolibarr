@@ -133,37 +133,12 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		} else {
 			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : $obj->entity) : ''), '0');
 		}
-		/*
-		if ($mode == 1) {
-			$out .= '&hashp=<span style="color: #666666">hash_of_file</span>';
-		} else {
-			include_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
-			$propaltmp = new Propal($db);
-			$res = $propaltmp->fetch(0, $ref);
-			if ($res <= 0) {
-				return 'FailedToGetProposal';
-			}
-
-			include_once DOL_DOCUMENT_ROOT.'/ecm/class/ecmfiles.class.php';
-			$ecmfile = new EcmFiles($db);
-
-			$ecmfile->fetch(0, '', $propaltmp->last_main_doc);
-
-			$hashp = $ecmfile->share;
-			if (empty($hashp)) {
-				$out = $langs->trans("FeatureOnlineSignDisabled");
-				return $out;
-			} else {
-				$out .= '&hashp='.$hashp;
-			}
-		}*/
 	} elseif ($type == 'contract') {
 		$securekeyseed = getDolGlobalString('CONTRACT_ONLINE_SIGNATURE_SECURITY_TOKEN');
 		if (strpos($securekeyseed, "\0") !== false) {
 			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
 			return 'Invalid parameter CONTRACT_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
 		}
-
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source=contract&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'contract_ref';
