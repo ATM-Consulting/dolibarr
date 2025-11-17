@@ -1139,48 +1139,6 @@ if ($action == 'create') {
 				print "</td></tr>";
 			}
 
-			// Weight
-			print '<tr><td>';
-			print $langs->trans("Weight");
-			print '</td><td colspan="3">';
-			print img_picto('', 'fa-balance-scale', 'class="pictofixedwidth"');
-			print '<input name="weight" size="4" value="'.GETPOSTINT('weight').'"> ';
-			$text = $formproduct->selectMeasuringUnits("weight_units", "weight", (string) GETPOSTINT('weight_units'), 0, 2);
-			$htmltext = $langs->trans("KeepEmptyForAutoCalculation");
-			print $form->textwithpicto($text, $htmltext);
-			print '</td></tr>';
-			// Dim
-			print '<tr><td>';
-			print $langs->trans("Width").' x '.$langs->trans("Height").' x '.$langs->trans("Depth");
-			print ' </td><td colspan="3">';
-			print img_picto('', 'fa-ruler', 'class="pictofixedwidth"');
-			print '<input name="sizeW" size="4" value="'.GETPOSTINT('sizeW').'">';
-			print ' x <input name="sizeH" size="4" value="'.GETPOSTINT('sizeH').'">';
-			print ' x <input name="sizeS" size="4" value="'.GETPOSTINT('sizeS').'">';
-			print ' ';
-			$text = $formproduct->selectMeasuringUnits("size_units", "size", (string) GETPOSTINT('size_units'), 0, 2);
-			$htmltext = $langs->trans("KeepEmptyForAutoCalculation");
-			print $form->textwithpicto($text, $htmltext);
-			print '</td></tr>';
-
-			// Delivery method
-			print "<tr><td>".$langs->trans("DeliveryMethod")."</td>";
-			print '<td colspan="3">';
-			$expe->fetch_delivery_methods();
-			print img_picto('', 'dolly', 'class="pictofixedwidth"');
-			print $form->selectarray("shipping_method_id", $expe->meths, GETPOSTINT('shipping_method_id'), 1, 0, 0, "", 1, 0, 0, '', 'widthcentpercentminusxx');
-			if ($user->admin) {
-				print info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"), 1);
-			}
-			print "</td></tr>\n";
-
-			// Tracking number
-			print "<tr><td>".$langs->trans("TrackingNumber")."</td>";
-			print '<td colspan="3">';
-			print img_picto('', 'barcode', 'class="pictofixedwidth"');
-			print '<input name="tracking_number" size="20" value="'.GETPOST('tracking_number', 'alpha').'">';
-			print "</td></tr>\n";
-
 			// Incoterms
 			if (isModEnabled('incoterm')) {
 				print '<tr>';
@@ -2131,10 +2089,8 @@ if ($action == 'create') {
 	// Print form confirm
 	print $formconfirm;
 
-	// Calculate totalWeight and totalVolume for all products
-	// by adding weight and volume of each product line.
+	// Calculate total volume for all products
 	$tmparray = $object->getTotalWeightVolume();
-	$totalWeight = $tmparray['weight'];
 	$totalVolume = $tmparray['volume'];
 
 	if (!empty($typeobject) && $typeobject === 'commande' && is_object($object->origin_object) && $object->origin_object->id && isModEnabled('order')) {
@@ -2256,69 +2212,6 @@ if ($action == 'create') {
 	print '</td>';
 	print '</tr>';
 
-	// Weight
-	print '<tr><td>';
-	print $form->editfieldkey("Weight", 'trueWeight', $object->trueWeight, $object, $user->hasRight('expedition', 'creer'));
-	print '</td><td>';
-
-	if ($action == 'edittrueWeight') {
-		print '<form name="settrueweight" action="'.$_SERVER["PHP_SELF"].'" method="post">';
-		print '<input name="action" value="settrueWeight" type="hidden">';
-		print '<input name="id" value="'.$object->id.'" type="hidden">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input id="trueWeight" name="trueWeight" value="'.$object->trueWeight.'" type="text" class="width50 valignmiddle">';
-		print $formproduct->selectMeasuringUnits("weight_units", "weight", (string) $object->weight_units, 0, 2, 'maxwidth125 valignmiddle');
-		print ' <input class="button smallpaddingimp valignmiddle" name="modify" value="'.$langs->trans("Modify").'" type="submit">';
-		print ' <input class="button button-cancel smallpaddingimp valignmiddle" name="cancel" value="'.$langs->trans("Cancel").'" type="submit">';
-		print '</form>';
-	} else {
-		print $object->trueWeight;
-		print ($object->trueWeight && $object->weight_units != '') ? ' '.measuringUnitString(0, "weight", $object->weight_units) : '';
-	}
-
-	// Calculated
-	if ($totalWeight > 0) {
-		if (!empty($object->trueWeight)) {
-			print ' ('.$langs->trans("SumOfProductWeights").': ';
-		}
-		print showDimensionInBestUnit($totalWeight, 0, "weight", $langs, getDolGlobalInt('MAIN_WEIGHT_DEFAULT_ROUND', -1), isset($conf->global->MAIN_WEIGHT_DEFAULT_UNIT) ? $conf->global->MAIN_WEIGHT_DEFAULT_UNIT : 'no');
-		if (!empty($object->trueWeight)) {
-			print ')';
-		}
-	}
-	print '</td></tr>';
-
-	// Width
-	print '<tr><td>'.$form->editfieldkey("Width", 'trueWidth', $object->trueWidth, $object, $user->hasRight('expedition', 'creer')).'</td><td>';
-	print $form->editfieldval("Width", 'trueWidth', $object->trueWidth, $object, $user->hasRight('expedition', 'creer'));
-	print ($object->trueWidth && $object->width_units != '') ? ' '.measuringUnitString(0, "size", $object->width_units) : '';
-	print '</td></tr>';
-
-	// Height
-	print '<tr><td>'.$form->editfieldkey("Height", 'trueHeight', $object->trueHeight, $object, $user->hasRight('expedition', 'creer')).'</td><td>';
-	if ($action == 'edittrueHeight') {
-		print '<form name="settrueHeight" action="'.$_SERVER["PHP_SELF"].'" method="post">';
-		print '<input name="action" value="settrueHeight" type="hidden">';
-		print '<input name="id" value="'.$object->id.'" type="hidden">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input id="trueHeight" name="trueHeight" value="'.$object->trueHeight.'" type="text" class="width50">';
-		print $formproduct->selectMeasuringUnits("size_units", "size", $object->size_units, 0, 2);
-		print ' <input class="button smallpaddingimp" name="modify" value="'.$langs->trans("Modify").'" type="submit">';
-		print ' <input class="button button-cancel smallpaddingimp" name="cancel" value="'.$langs->trans("Cancel").'" type="submit">';
-		print '</form>';
-	} else {
-		print $object->trueHeight;
-		print ($object->trueHeight && $object->height_units != '') ? ' '.measuringUnitString(0, "size", $object->height_units) : '';
-	}
-
-	print '</td></tr>';
-
-	// Depth
-	print '<tr><td>'.$form->editfieldkey("Depth", 'trueDepth', $object->trueDepth, $object, $user->hasRight('expedition', 'creer')).'</td><td>';
-	print $form->editfieldval("Depth", 'trueDepth', $object->trueDepth, $object, $user->hasRight('expedition', 'creer'));
-	print ($object->trueDepth && $object->depth_units != '') ? ' '.measuringUnitString(0, "size", $object->depth_units) : '';
-	print '</td></tr>';
-
 	// Volume
 	print '<tr><td>';
 	print $langs->trans("Volume");
@@ -2362,43 +2255,6 @@ if ($action == 'create') {
 	print '<div class="underbanner clearboth"></div>';
 
 	print '<table class="border centpercent tableforfield">';
-
-	// Sending method
-	print '<tr><td>';
-	print '<table class="nobordernopadding centpercent"><tr><td>';
-	print $langs->trans('SendingMethod');
-	print '</td>';
-
-	if ($action != 'editshipping_method_id' && $permissiontoadd) {
-		print '<td class="right"><a class="editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editshipping_method_id&token='.newToken().'&id='.$object->id.'">'.img_edit($langs->trans('SetSendingMethod'), 1).'</a></td>';
-	}
-	print '</tr></table>';
-	print '</td><td>';
-	if ($action == 'editshipping_method_id') {
-		print '<form name="setshipping_method_id" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'" method="post">';
-		print '<input type="hidden" name="token" value="'.newToken().'">';
-		print '<input type="hidden" name="action" value="setshipping_method_id">';
-		$object->fetch_delivery_methods();
-		print $form->selectarray("shipping_method_id", $object->meths, $object->shipping_method_id, 1, 0, 0, "", 1);
-		if ($user->admin) {
-			print info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"), 1);
-		}
-		print '<input type="submit" class="button button-edit smallpaddingimp" value="'.$langs->trans('Modify').'">';
-		print '</form>';
-	} else {
-		if ($object->shipping_method_id > 0) {
-			// Get code using getLabelFromKey
-			$code = $langs->getLabelFromKey($db, (string) $object->shipping_method_id, 'c_shipment_mode', 'rowid', 'code');
-			print $langs->trans("SendingMethod".strtoupper($code));
-		}
-	}
-	print '</td>';
-	print '</tr>';
-
-	// Tracking Number
-	print '<tr><td class="titlefieldmiddle">'.$form->editfieldkey("TrackingNumber", 'tracking_number', $object->tracking_number, $object, $user->hasRight('expedition', 'creer')).'</td><td>';
-	print $form->editfieldval("TrackingNumber", 'tracking_number', $object->tracking_url, $object, $user->hasRight('expedition', 'creer'), 'safehtmlstring', $object->tracking_number);
-	print '</td></tr>';
 
 	// Incoterms
 	if (isModEnabled('incoterm')) {
@@ -2497,7 +2353,6 @@ if ($action == 'create') {
 			print '<td class="left linecolbatch">'.$langs->trans("Batch").'</td>';
 		}
 	}
-	print '<td class="center linecolweight">'.$langs->trans("CalculatedWeight").'</td>';
 	print '<td class="center linecolvolume">'.$langs->trans("CalculatedVolume").'</td>';
 	//print '<td class="center">'.$langs->trans("Size").'</td>';
 	if ($object->status == 0) {
@@ -2891,16 +2746,6 @@ if ($action == 'create') {
 					}
 				}
 			}
-
-			// Weight
-			print '<td class="center linecolweight">';
-			if ($lines[$i]->fk_product_type == Product::TYPE_PRODUCT) {
-				print $lines[$i]->weight * $lines[$i]->qty_shipped.' '.measuringUnitString(0, "weight", $lines[$i]->weight_units);
-			} else {
-				print '&nbsp;';
-			}
-			print '</td>';
-
 			// Volume
 			print '<td class="center linecolvolume">';
 			if ($lines[$i]->fk_product_type == Product::TYPE_PRODUCT) {
