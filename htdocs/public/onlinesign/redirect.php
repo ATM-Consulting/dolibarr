@@ -92,10 +92,6 @@ if ($http_code != 200 || $output === false) {
 	exit;
 }
 
-// ... (code cURL qui récupère $output) ...
-
-// --- DÉBUT DE LA CORRECTION DES LIENS ---
-
 // 1. Récupérer l'URL interne
 $internal_base_url = rtrim($dolibarr_main_url_root, '/');
 
@@ -117,8 +113,9 @@ $output = str_replace(
 	$output
 );
 
-// 5. Remplacer les liens internes (ex: href="https://doliboardtest-dlb...")
+
 $output = str_replace($internal_base_url, $public_base_url, $output);
+print $output;exit;
 
 // 6. (Correctif pour le bug de double URL que vous avez)
 $output = str_replace(

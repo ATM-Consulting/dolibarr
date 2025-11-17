@@ -689,7 +689,7 @@ print '</td></tr>';
 
 print '<tr class="oddeven">';
 print '<td>'.$form->textwithpicto($langs->trans("PropalSignatureAliasUrl"), $langs->trans("PropalSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
-print '<td>'; // Augmenté la largeur pour une URL
+print '<td>';
 print '<input class="flat minwidth300" type="text" name="PROPOSAL_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('PROPOSAL_SIGNATURE_ALIAS_URL')).'">';
 print '</td></tr>';
 

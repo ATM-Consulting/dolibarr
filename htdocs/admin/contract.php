@@ -560,7 +560,7 @@ print '</td>';
 print '</tr>';
 print '<tr class="oddeven">';
 print '<td>'.$form->textwithpicto($langs->trans("ContractSignatureAliasUrl"), $langs->trans("ContractSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
-print '<td class="right">'; // On garde "right" pour être cohérent avec cette page
+print '<td class="right">';
 print '<input class="flat minwidth300" type="text" name="CONTRACT_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('CONTRACT_SIGNATURE_ALIAS_URL')).'">';
 print '</td></tr>';
 // Allow external download

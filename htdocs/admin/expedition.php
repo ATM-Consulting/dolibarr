@@ -102,7 +102,7 @@ if ($action == 'updateMask') {
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
 	if (GETPOSTISSET('EXPEDITION_SIGNATURE_ALIAS_URL')) {
-		$aliasurl = GETPOST('EXPEDITION_SIGNATURE_ALIAS_URL', 'alphanohtml'); // On utilise 'string' pour une URL
+		$aliasurl = GETPOST('EXPEDITION_SIGNATURE_ALIAS_URL', 'alphanohtml');
 		$res = dolibarr_set_const($db, "EXPEDITION_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
 		if (!($res > 0)) {
 			$error++;
@@ -499,7 +499,7 @@ print '</td></tr>';
 
 print '<tr class="oddeven">';
 print '<td>'.$form->textwithpicto($langs->trans("ExpeditionSignatureAliasUrl"), $langs->trans("ExpeditionSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
-print '<td>'; // Augmenté la largeur pour une URL
+print '<td>';
 print '<input class="flat minwidth300" type="text" name="EXPEDITION_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('EXPEDITION_SIGNATURE_ALIAS_URL')).'">';
 print '</td></tr>';
 
