@@ -339,6 +339,19 @@ class DoliDBMysqli extends DoliDB
 			return false; // Return false = error if empty request
 		}
 
+		// [FM DA027258]: logging des queries qui affectent la progression des tâches
+		$queryLower = strtolower($query);
+		if (str_starts_with($queryLower, 'update ') && str_contains($queryLower, 'projet_task') && str_contains($queryLower, 'progress')) {
+			global $user;
+			$logArray = [
+				'userId' => $user->id,
+				'query' => $query,
+				'backtrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8),
+			];
+			file_put_contents(DOL_DATA_ROOT.'/DA027258.json.log', json_encode($logArray, JSON_PRETTY_PRINT), FILE_APPEND);
+		}
+		// [END FM DA027258]
+
 		if (!empty($dolibarr_main_db_readonly)) {
 			if (preg_match('/^(INSERT|UPDATE|REPLACE|DELETE|CREATE|ALTER|TRUNCATE|DROP)/i', $query)) {
 				$this->lasterror = 'Application in read-only mode';
