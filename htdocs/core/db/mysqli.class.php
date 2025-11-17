@@ -344,6 +344,8 @@ class DoliDBMysqli extends DoliDB
 		if (str_starts_with($queryLower, 'update ') && str_contains($queryLower, 'projet_task') && str_contains($queryLower, 'progress')) {
 			global $user;
 			$logArray = [
+				'time' => dol_print_date(dol_now(), '%H:%M:%S'),
+				'date' => dol_print_date(dol_now(), '%Y-%m-%d'),
 				'userId' => $user->id,
 				'query' => $query,
 				'backtrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 8),
