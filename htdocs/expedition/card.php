@@ -103,10 +103,15 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 $extrafields->fetch_name_optionals_label($object->table_element_line);
 $extrafields->fetch_name_optionals_label($objectorder->table_element_line);
 
+// Permissions / Rights
+$usercanread    =  $user->hasRight("expedition", "lire");
+$usercancreate  =  $user->hasRight("expedition", "creer");
+$usercandelete  =  $user->hasRight("expedition", "supprimer");
+
 // Load object. Make an object->fetch
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be include, not include_once
 
-// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains array of hook context
+// Initialize technical object to manage hooks of page. Note that conf->hooks_modules contains an array of hook context
 $hookmanager->initHooks(array('expeditioncard', 'globalcard'));
 
 $date_delivery = dol_mktime(GETPOST('date_deliveryhour', 'int'), GETPOST('date_deliverymin', 'int'), 0, GETPOST('date_deliverymonth', 'int'), GETPOST('date_deliveryday', 'int'), GETPOST('date_deliveryyear', 'int'));
@@ -127,7 +132,7 @@ $result = restrictedArea($user, 'expedition', $object->id, '');
 $permissiondellink = $user->rights->expedition->delivery->creer; // Used by the include of actions_dellink.inc.php
 $permissiontoadd = $user->rights->expedition->creer;
 // BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
-$permissiontoedit = $permissiontoadd; // Used by actions_lineupdown.inc.php
+$permissiontoedit = $usercancreate; // Used by actions_lineupdown.inc.php
 // END BACKPORT
 
 
@@ -2126,8 +2131,8 @@ if ($action == 'create') {
 	print '<br>';
 
 	// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
-	if (!empty($conf->use_javascript_ajax) && $object->statut == Expedition::STATUS_DRAFT && !empty($user->rights->expedition->creer) && $num_prod > 1) {
-		include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
+	if (!empty($conf->use_javascript_ajax) && $object->statut == Expedition::STATUS_DRAFT && $usercancreate && $num_prod > 1) {
+		include DOL_DOCUMENT_ROOT . '/core/tpl/ajaxrow.tpl.php';
 	}
 	// END BACKPORT
 
@@ -2585,6 +2590,9 @@ if ($action == 'create') {
 				}
 				if (isModEnabled('stock')) {
 					$colspan++;
+				}
+				if ($object->statut == Expedition::STATUS_DRAFT) {
+					$colspan ++;
 				}
 
 				$line = $lines[$i];
