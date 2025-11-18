@@ -81,7 +81,9 @@ class DolibarrApiAccess implements iAuthenticate
 	public function __isAllowed()
 	{
 		// phpcs:enable
-		global $conf, $db, $langs, $mysoc, $user;
+		global $conf, $db, $langs, $mysoc, $user, $hookmanager;
+
+		$hookmanager->initHooks(array('apikey'));
 
 		$login = '';
 		$stored_key = '';
@@ -108,6 +110,13 @@ class DolibarrApiAccess implements iAuthenticate
 		}
 		if (preg_match('/^dolcrypt:/i', $api_key)) {
 			throw new RestException(503, 'Bad value for the API key. An API key should not start with dolcrypt:');
+		}
+
+		$parameters = array('server' => $_SERVER);
+		$reshook = $hookmanager->executeHooks('getCustomApiKey', $parameters, $object, $action);
+
+		if ($reshook > 0 && !empty($hookmanager->resPrint)) {
+			$api_key = $hookmanager->resPrint;
 		}
 
 		if ($api_key) {
