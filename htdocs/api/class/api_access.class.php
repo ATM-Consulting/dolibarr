@@ -81,7 +81,9 @@ class DolibarrApiAccess implements iAuthenticate
 	public function __isAllowed()
 	{
 		// phpcs:enable
-		global $conf, $db, $user;
+		global $conf, $db, $user, $hookmanager;
+
+		$hookmanager->initHooks(array('apikey'));
 
 		$login = '';
 		$stored_key = '';
@@ -105,6 +107,13 @@ class DolibarrApiAccess implements iAuthenticate
 		}
 		if (isset($_SERVER['HTTP_DOLAPIKEY'])) {         // Param DOLAPIKEY in header can be read with HTTP_DOLAPIKEY
 			$api_key = $_SERVER['HTTP_DOLAPIKEY']; // With header method (recommanded)
+		}
+
+		$parameters = array('server' => $_SERVER);
+		$reshook = $hookmanager->executeHooks('getCustomApiKey', $parameters, $object, $action);
+
+		if ($reshook > 0 && !empty($hookmanager->resPrint)) {
+			$api_key = $hookmanager->resPrint;
 		}
 
 		if ($api_key) {
