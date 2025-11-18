@@ -1573,8 +1573,8 @@ class Expedition extends CommonObject
 		$sql .= ", ed.rowid as line_id, ed.qty as qty_shipped, ed.fk_origin_line, ed.fk_entrepot";
 		$sql .= ", p.ref as product_ref, p.label as product_label, p.fk_product_type";
 		$sql .= ", p.weight, p.weight_units, p.length, p.length_units, p.surface, p.surface_units, p.volume, p.volume_units, p.tosell as product_tosell, p.tobuy as product_tobuy, p.tobatch as product_tobatch";
-		$sql .= " FROM ".MAIN_DB_PREFIX."expeditiondet as ed, ".MAIN_DB_PREFIX."commandedet as cd";
-		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON p.rowid = cd.fk_product";
+		$sql .= " FROM ".$this->db->prefix()."expeditiondet as ed, ".$this->db->prefix()."commandedet as cd";
+		$sql .= " LEFT JOIN ".$this->db->prefix()."product as p ON p.rowid = cd.fk_product";
 		$sql .= " WHERE ed.fk_expedition = ".((int) $this->id);
 		$sql .= " AND ed.fk_origin_line = cd.rowid";
 		// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
@@ -1927,7 +1927,7 @@ class Expedition extends CommonObject
 		}
 
 		$sql = "SELECT fk_origin_line, MAX(rowid) as samplerowid, MIN(rowid) as minrowid, MIN(rang) as minrang";
-		$sql .= " FROM ".MAIN_DB_PREFIX."expeditiondet";
+		$sql .= " FROM ".$this->db->prefix()."expeditiondet";
 		$sql .= " WHERE fk_expedition = ".((int) $this->id);
 		$sql .= " GROUP BY fk_origin_line";
 
@@ -1974,7 +1974,7 @@ class Expedition extends CommonObject
 			return 0;
 		}
 
-		$sql = "SELECT fk_origin_line FROM ".MAIN_DB_PREFIX."expeditiondet";
+		$sql = "SELECT fk_origin_line FROM ".$this->db->prefix()."expeditiondet";
 		$sql .= " WHERE rowid = ".((int) $rowid);
 		if (!empty($this->id)) {
 			$sql .= " AND fk_expedition = ".((int) $this->id);
