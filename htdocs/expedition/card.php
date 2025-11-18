@@ -129,8 +129,8 @@ if ($user->socid) {
 
 $result = restrictedArea($user, 'expedition', $object->id, '');
 
-$permissiondellink = $user->rights->expedition->delivery->creer; // Used by the include of actions_dellink.inc.php
-$permissiontoadd = $user->rights->expedition->creer;
+$permissiondellink = $user->hasRight('expedition', 'delivery', 'creer'); // Used by the include of actions_dellink.inc.php
+$permissiontoadd = $user->hasRight('expedition', 'creer');
 // BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
 $permissiontoedit = $usercancreate; // Used by actions_lineupdown.inc.php
 // END BACKPORT
