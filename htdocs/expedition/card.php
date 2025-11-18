@@ -126,6 +126,9 @@ $result = restrictedArea($user, 'expedition', $object->id, '');
 
 $permissiondellink = $user->rights->expedition->delivery->creer; // Used by the include of actions_dellink.inc.php
 $permissiontoadd = $user->rights->expedition->creer;
+// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+$permissiontoedit = $permissiontoadd; // Used by actions_lineupdown.inc.php
+// END BACKPORT
 
 
 /*
@@ -152,6 +155,10 @@ if (empty($reshook)) {
 	}
 
 	include DOL_DOCUMENT_ROOT.'/core/actions_dellink.inc.php'; // Must be include, not include_once
+
+	// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+	include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php'; // Must be include, not include_once
+	// END BACKPORT
 
 	// Actions to build doc
 	$upload_dir = $conf->expedition->dir_output.'/sending';
@@ -2118,6 +2125,12 @@ if ($action == 'create') {
 	}
 	print '<br>';
 
+	// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+	if (!empty($conf->use_javascript_ajax) && $object->statut == Expedition::STATUS_DRAFT && !empty($user->rights->expedition->creer) && $num_prod > 1) {
+		include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
+	}
+	// END BACKPORT
+
 	print '<div class="div-table-responsive-no-min">';
 	print '<table class="noborder" width="100%" id="tablelines" >';
 	print '<thead>';
@@ -2171,10 +2184,13 @@ if ($action == 'create') {
 	print '<td class="center linecolweight">'.$langs->trans("CalculatedWeight").'</td>';
 	print '<td class="center linecolvolume">'.$langs->trans("CalculatedVolume").'</td>';
 	//print '<td class="center">'.$langs->trans("Size").'</td>';
-	if ($object->statut == 0) {
+	// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+	if ($object->statut == Expedition::STATUS_DRAFT) {
 		print '<td class="linecoledit"></td>';
 		print '<td class="linecoldelete" width="10"></td>';
+		print '<td class="linecolmove"></td>';
 	}
+	// END BACKPORT
 	print "</tr>\n";
 	print '</thead>';
 
@@ -2517,18 +2533,34 @@ if ($action == 'create') {
 			// Size
 			//print '<td class="center">'.$lines[$i]->volume*$lines[$i]->qty_shipped.' '.measuringUnitString(0, "volume", $lines[$i]->volume_units).'</td>';
 
+		// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+			$showmovecol = ($object->statut == Expedition::STATUS_DRAFT);
+
 			if ($action == 'editline' && $lines[$i]->id == $line_id) {
 				print '<td class="center" colspan="2" valign="middle">';
 				print '<input type="submit" class="button button-save" id="savelinebutton marginbottomonly" name="save" value="'.$langs->trans("Save").'"><br>';
 				print '<input type="submit" class="button button-cancel" id="cancellinebutton" name="cancel" value="'.$langs->trans("Cancel").'"><br>';
 				print '</td>';
-			} elseif ($object->statut == Expedition::STATUS_DRAFT) {
+				if ($showmovecol) {
+					print '<td class="linecolmove tdlineupdown center"></td>';
+				}
+			} elseif ($showmovecol) {
 				// edit-delete buttons
 				print '<td class="linecoledit center">';
 				print '<a class="editfielda reposition" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=editline&token='.newToken().'&lineid='.$lines[$i]->id.'">'.img_edit().'</a>';
 				print '</td>';
 				print '<td class="linecoldelete" width="10">';
 				print '<a class="reposition" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=deleteline&token='.newToken().'&lineid='.$lines[$i]->id.'">'.img_delete().'</a>';
+				print '</td>';
+				print '<td class="linecolmove tdlineupdown center">';
+				if (!empty($user->rights->expedition->creer) && $num_prod > 1) {
+					if ($i > 0) {
+						print '<a class="lineupdown" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=up&token='.newToken().'&rowid='.$lines[$i]->id.'">'.img_up('default', 0, 'imgupforline').'</a>';
+					}
+					if ($i < $num_prod - 1) {
+						print '<a class="lineupdown" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=down&token='.newToken().'&rowid='.$lines[$i]->id.'">'.img_down('default', 0, 'imgdownforline').'</a>';
+					}
+				}
 				print '</td>';
 
 				// Display lines extrafields
@@ -2538,6 +2570,7 @@ if ($action == 'create') {
 					print $rowEnd;
 				}
 			}
+			// END BACKPORT
 			print "</tr>";
 
 			// Display lines extrafields.

@@ -1577,7 +1577,8 @@ class Expedition extends CommonObject
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON p.rowid = cd.fk_product";
 		$sql .= " WHERE ed.fk_expedition = ".((int) $this->id);
 		$sql .= " AND ed.fk_origin_line = cd.rowid";
-		$sql .= " ORDER BY cd.rang, ed.fk_origin_line";		// We need after a break on fk_origin_line but when there is no break on fk_origin_line, cd.rang is same so we can add it as first order criteria.
+		// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
+		$sql .= " ORDER BY CASE WHEN ed.rang IS NULL OR ed.rang = 0 THEN cd.rang ELSE ed.rang END, ed.rowid";
 
 		dol_syslog(get_class($this)."::fetch_lines", LOG_DEBUG);
 		$resql = $this->db->query($sql);
@@ -1771,6 +1772,226 @@ class Expedition extends CommonObject
 			return -2;
 		}
 	}
+
+	/**
+	 * Update rank of shipment line and keep grouped lines consistent.
+	 *
+	 * @param int $rowid Line identifier
+	 * @param int $rang  New rank
+	 * @return int
+	 */
+	public function updateRangOfLine( $rowid, $rang)
+	{
+		if ($this->table_element_line !== 'expeditiondet') {
+			return parent::updateRangOfLine($rowid, $rang);
+		}
+
+		$fkOriginLine = $this->getShipmentOriginLineFromRow($rowid);
+		if (empty($fkOriginLine)) {
+			return parent::updateRangOfLine($rowid, $rang);
+		}
+
+		$result = parent::updateRangOfLine($rowid, $rang);
+		if ($result <= 0) {
+			return $result;
+		}
+
+		$sql = "UPDATE ".$this->db->prefix()."expeditiondet";
+		$sql .= " SET rang = ".((int) $rang);
+		$sql .= " WHERE fk_expedition = ".((int) $this->id);
+		$sql .= " AND fk_origin_line = ".((int) $fkOriginLine);
+		$sql .= " AND rowid <> ".((int) $rowid);
+
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Move a line up.
+	 *
+	 * @param int     $rowid           Line id
+	 * @param boolean $fk_parent_line  Unused for shipments
+	 * @return void
+	 */
+	public function line_up($rowid, $fk_parent_line = true)
+	{
+		if ($this->table_element_line !== 'expeditiondet') {
+			parent::line_up($rowid, $fk_parent_line);
+			return;
+		}
+
+		$this->moveShipmentLine($rowid, -1);
+	}
+
+	/**
+	 * Move a line down.
+	 *
+	 * @param int     $rowid           Line id
+	 * @param boolean $fk_parent_line  Unused for shipments
+	 * @return void
+	 */
+	public function line_down($rowid, $fk_parent_line = true)
+	{
+		if ($this->table_element_line !== 'expeditiondet') {
+			parent::line_down($rowid, $fk_parent_line);
+			return;
+		}
+
+		$this->moveShipmentLine($rowid, 1);
+	}
+
+	/**
+	 * Apply a relative move on shipment lines.
+	 *
+	 * @param int $rowid     Representative line id
+	 * @param int $direction -1 to move up, 1 to move down
+	 * @return void
+	 */
+	protected function moveShipmentLine($rowid, $direction)
+	{
+		if (empty($this->id)) {
+			return;
+		}
+
+		$groups = $this->getShipmentLineGroups();
+		if (empty($groups)) {
+			return;
+		}
+
+		$fkOriginLine = $this->getShipmentOriginLineFromRow($rowid);
+		if (empty($fkOriginLine)) {
+			return;
+		}
+
+		$currentIndex = null;
+		foreach ($groups as $index => $group) {
+			if ($group['fk_origin_line'] == $fkOriginLine) {
+				$currentIndex = $index;
+				break;
+			}
+		}
+		if ($currentIndex === null) {
+			return;
+		}
+
+		$targetIndex = $currentIndex + (int) $direction;
+		if ($targetIndex < 0 || $targetIndex >= count($groups)) {
+			return;
+		}
+
+		$tmp = $groups[$targetIndex];
+		$groups[$targetIndex] = $groups[$currentIndex];
+		$groups[$currentIndex] = $tmp;
+
+		$this->applyShipmentLineRanks($groups);
+	}
+
+	/**
+	 * Synchronise ranks between shipment lines and their grouped detail rows.
+	 *
+	 * @param array $groups List of ordered groups
+	 * @return void
+	 */
+	protected function applyShipmentLineRanks(array $groups)
+	{
+		if (empty($groups)) {
+			return;
+		}
+
+		$rank = 1;
+		foreach ($groups as $group) {
+			if (empty($group['samplerowid'])) {
+				$rank++;
+				continue;
+			}
+			$this->updateRangOfLine($group['samplerowid'], $rank);
+			$rank++;
+		}
+	}
+
+	/**
+	 * Build ordered list of shipment line groups.
+	 *
+	 * @return array
+	 */
+	protected function getShipmentLineGroups()
+	{
+		$groups = array();
+
+		if (empty($this->id)) {
+			return $groups;
+		}
+
+		$sql = "SELECT fk_origin_line, MAX(rowid) as samplerowid, MIN(rowid) as minrowid, MIN(rang) as minrang";
+		$sql .= " FROM ".MAIN_DB_PREFIX."expeditiondet";
+		$sql .= " WHERE fk_expedition = ".((int) $this->id);
+		$sql .= " GROUP BY fk_origin_line";
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			while ($obj = $this->db->fetch_object($resql)) {
+				if (empty($obj->fk_origin_line)) {
+					continue;
+				}
+				$sortkey = (!empty($obj->minrang) ? (int) $obj->minrang : (int) $obj->minrowid);
+				$groups[] = array(
+					'fk_origin_line' => (int) $obj->fk_origin_line,
+					'samplerowid' => (int) $obj->samplerowid,
+					'sortkey' => $sortkey
+				);
+			}
+			$this->db->free($resql);
+		}
+
+		if (count($groups) > 1) {
+			usort($groups, function ($a, $b) {
+				if ($a['sortkey'] == $b['sortkey']) {
+					if ($a['fk_origin_line'] == $b['fk_origin_line']) {
+						return 0;
+					}
+					return ($a['fk_origin_line'] < $b['fk_origin_line']) ? -1 : 1;
+				}
+				return ($a['sortkey'] < $b['sortkey']) ? -1 : 1;
+			});
+		}
+
+		return $groups;
+	}
+
+	/**
+	 * Fetch fk_origin_line for a given expeditiondet row.
+	 *
+	 * @param int $rowid
+	 * @return int
+	 */
+	protected function getShipmentOriginLineFromRow($rowid)
+	{
+		if (empty($rowid)) {
+			return 0;
+		}
+
+		$sql = "SELECT fk_origin_line FROM ".MAIN_DB_PREFIX."expeditiondet";
+		$sql .= " WHERE rowid = ".((int) $rowid);
+		if (!empty($this->id)) {
+			$sql .= " AND fk_expedition = ".((int) $this->id);
+		}
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$obj = $this->db->fetch_object($resql);
+			$this->db->free($resql);
+			if ($obj && !empty($obj->fk_origin_line)) {
+				return (int) $obj->fk_origin_line;
+			}
+		}
+
+		return 0;
+	}
+	// END BACKPORT
 
 
 	/**
