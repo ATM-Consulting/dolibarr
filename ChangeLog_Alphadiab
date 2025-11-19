@@ -2,3 +2,5 @@
 
 - Backport the diff from their version 12 **2/07/2025**
 - Add condition in shodocuments to generate link for lcr **3/07/2025**
+- Comment background display for proposal suppolier and espensereport  **19/11/2025**
+- Fix sql query box_graph_invoices_permont on dashbord **19/11/2025**

@@ -132,7 +132,15 @@ class box_graph_invoices_permonth extends ModeleBoxes
 			$HEIGHT = '192';
 
 			$stats = new FactureStats($this->db, $socid, $mode, 0);
+			// Build where clause, exclude replaced invoices (they are duplicated)
 			$stats->where = "f.entity IN (".getEntity('invoice').") AND f.fk_statut > 0";
+			$stats->where .= " AND (f.fk_statut <> 3 OR f.close_code <> 'replaced')";
+			// Handle deposit invoices according to configuration
+			if (getDolGlobalString('FACTURE_DEPOSITS_ARE_JUST_PAYMENTS')) {
+				$stats->where .= " AND f.type IN (0,1,2,5)";
+			} else {
+				$stats->where .= " AND f.type IN (0,1,2,3,5)";
+			}
 			$px1 = null;
 			$px2 = null;
 
