@@ -2539,17 +2539,17 @@ if ($action == 'create') {
 			//print '<td class="center">'.$lines[$i]->volume*$lines[$i]->qty_shipped.' '.measuringUnitString(0, "volume", $lines[$i]->volume_units).'</td>';
 
 		// BACKPORT DA027072: Remove when shipment drag & drop lands in v23 core
-			$showmovecol = ($object->statut == Expedition::STATUS_DRAFT);
+			$isDraft = ($object->statut == Expedition::STATUS_DRAFT);
 
 			if ($action == 'editline' && $lines[$i]->id == $line_id) {
 				print '<td class="center" colspan="2" valign="middle">';
 				print '<input type="submit" class="button button-save" id="savelinebutton marginbottomonly" name="save" value="'.$langs->trans("Save").'"><br>';
 				print '<input type="submit" class="button button-cancel" id="cancellinebutton" name="cancel" value="'.$langs->trans("Cancel").'"><br>';
 				print '</td>';
-				if ($showmovecol) {
+				if ($isDraft) {
 					print '<td class="linecolmove tdlineupdown center"></td>';
 				}
-			} elseif ($showmovecol) {
+			} elseif ($isDraft) {
 				// edit-delete buttons
 				print '<td class="linecoledit center">';
 				print '<a class="editfielda reposition" href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=editline&token='.newToken().'&lineid='.$lines[$i]->id.'">'.img_edit().'</a>';
