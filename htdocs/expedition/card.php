@@ -2567,6 +2567,7 @@ if ($action == 'create') {
 					}
 				}
 				print '</td>';
+				// END BACKPORT
 
 				// Display lines extrafields
 				if (!empty($rowExtrafieldsStart)) {
@@ -2575,7 +2576,6 @@ if ($action == 'create') {
 					print $rowEnd;
 				}
 			}
-			// END BACKPORT
 			print "</tr>";
 
 			// Display lines extrafields.
