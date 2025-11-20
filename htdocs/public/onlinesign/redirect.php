@@ -13,14 +13,14 @@ if (!$res) {
 }
 
 // Charger la librairie de signature
-require_once DOL_DOCUMENT_ROOT.'/core/lib/onlinesign.lib.php'; // Correction du nom du fichier si nécessaire (signature.lib.php ou onlinesign.lib.php selon version)
+require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php'; // Correction du nom du fichier si nécessaire (signature.lib.php ou onlinesign.lib.php selon version)
 
 // Importer les variables globales
 global $conf, $db, $langs, $dolibarr_main_url_root;
 
 // --- RÉCUPÉRATION DES PARAMÈTRES ---
 $type = GETPOST('type', 'alpha');
-$ref = GETPOST('ref', 'regex:/^[a-zA-Z0-9\-]+$/');
+$ref = GETPOST('ref', 'alphanohtml');
 
 if (empty($type) || empty($ref)) {
 	dol_print_error(0, 'Missing parameters');
