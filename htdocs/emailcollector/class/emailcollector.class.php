@@ -2258,7 +2258,7 @@ class EmailCollector extends CommonObject
 									$trackid = $objectemail->track_id;
 								}
 								if (empty($objectemail->origin_references)) {
-									$objectemail->origin_references = $headers['References'];
+									$objectemail->origin_references = !empty($headers['References']) ? $headers['References'] : null;
 									$changeonticket_references = true;
 								} else {
 									foreach ($arrayofreferences as $key => $referencetmp) {
@@ -2612,6 +2612,7 @@ class EmailCollector extends CommonObject
 											// Search into contacts of thirdparties to try to guess the thirdparty to use
 											$resultContact = $contactstatic->findNearest(0, '', '', '', $emailtouseforthirdparty, '', 0);
 											if ($resultContact > 0) {
+												$contactstatic->fetch($resultContact);
 												$idtouseforthirdparty = $contactstatic->socid;
 												$result = $thirdpartystatic->fetch($idtouseforthirdparty);
 												if ($result > 0) {

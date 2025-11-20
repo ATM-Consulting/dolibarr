@@ -1304,8 +1304,7 @@ class DoliDBMysqli extends DoliDB
 	}
 }
 
-
-if (class_exists('myslqi')) {
+if (class_exists('mysqli')) {
 	/**
 	 * Class to make SSL connection
 	 */

@@ -310,3 +310,17 @@ MergeTasks=Merge tasks
 TaskMergeSuccess=Tasks have been merged
 ErrorTaskIdIsMandatory=Error: Task id is mandatory
 ErrorsTaskMerge=An error occurred while merging tasks
+CloneChanges=Recalculate date of task
+CloneAffectation=Clone assignations
+CloneProgression=Clone progression
+CloneTimes=Clone times
+CloneFile=Clone files
+ConfirmCloneTask=Do you want to clone this task?
+#Merge projects
+MergeOriginProject= Project to merge :
+ConfirmMergeProjects=Are you sure you want to merge this project with the current project? All its related objects (invoices, orders, tasks ...) will be moved to the current project, and the selected project will be deleted.
+ProjectMergeSuccess=Projects have been merged successfully
+MergeProjects=Merge projects
+ErrorsProjectMerge=Error during merge project : %s
+CantMergeSameProject=You can't merge the same project
+NoFilesFound= No files found to merge
