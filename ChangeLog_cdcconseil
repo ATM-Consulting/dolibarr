@@ -1,3 +1,4 @@
+- Backport FIX DA027383: security: check read permissions on evaluation cards - **19/11/2025**
 - NEW : Add merge project
 - FIX DA026382 : add sponge btp pdf - **25/04/2025**
 - FIX DA026427 : add an origin to event which are created from productlot - **24/04/2025**
