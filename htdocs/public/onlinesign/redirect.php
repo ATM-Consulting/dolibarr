@@ -1,8 +1,6 @@
 <?php
 /**
  * Script "Alias" de signature en ligne (mode PHP Proxy)
- * Ce script ne redirige pas le client. Il va chercher le contenu
- * de la page de signature et l'affiche comme si c'était le sien.
  */
 
 // --- CHARGEMENT DE L'ENVIRONNEMENT DOLIBARR ---
@@ -15,15 +13,14 @@ if (!$res) {
 }
 
 // Charger la librairie de signature
-require_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/onlinesign.lib.php'; // Correction du nom du fichier si nécessaire (signature.lib.php ou onlinesign.lib.php selon version)
 
-// Importer les variables globales de Dolibarr dans ce script
+// Importer les variables globales
 global $conf, $db, $langs, $dolibarr_main_url_root;
 
-
-// --- RÉCUPÉRATION DES PARAMÈTRES (de la règle Apache) ---
+// --- RÉCUPÉRATION DES PARAMÈTRES ---
 $type = GETPOST('type', 'alpha');
-$ref = GETPOST('ref', 'alphanohtml');
+$ref = GETPOST('ref', 'regex:/^[a-zA-Z0-9\-]+$/');
 
 if (empty($type) || empty($ref)) {
 	dol_print_error(0, 'Missing parameters');
@@ -33,7 +30,7 @@ if (empty($type) || empty($ref)) {
 $obj = null;
 $db->begin();
 
-$internal_type = ''; // ex: 'proposal'
+$internal_type = '';
 
 if ($type == 'propale' || $type == 'proposal') {
 	$internal_type = 'proposal';
@@ -74,17 +71,25 @@ if (strpos($full_secure_url, 'http') !== 0) {
 
 $db->commit();
 
+// --- DÉBUT PROXY CURL ---
 $ch = curl_init();
 curl_setopt($ch, CURLOPT_URL, $full_secure_url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_COOKIEJAR, DOL_DATA_ROOT . '/sessions/cookie_proxy.txt');
-curl_setopt($ch, CURLOPT_COOKIEFILE, DOL_DATA_ROOT . '/sessions/cookie_proxy.txt');
+curl_setopt($ch, CURLOPT_HEADER, 1); // On demande les headers
+
+// Gestion cookies
+$cookie_file = DOL_DATA_ROOT . '/sessions/cookie_proxy_'.session_id().'.txt';
+curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 
-$output = curl_exec($ch);
+$output = curl_exec($ch); // Contient HEADERS + BODY
 $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+
 curl_close($ch);
 
 if ($http_code != 200 || $output === false) {
@@ -92,12 +97,26 @@ if ($http_code != 200 || $output === false) {
 	exit;
 }
 
+// --- SÉPARATION HEADER / BODY ---
+$header = substr($output, 0, $header_size);
+$body = substr($output, $header_size); // $body contient uniquement le HTML
+
+// Transmission des cookies de session
+$headers_lines = explode("\r\n", $header);
+foreach ($headers_lines as $line) {
+	if (stripos($line, 'Set-Cookie:') === 0) {
+		header($line, false);
+	}
+}
+
+// --- CORRECTION DES LIENS ---
+
 // 1. Récupérer l'URL interne
 $internal_base_url = rtrim($dolibarr_main_url_root, '/');
 
-// 2. Récupérer le DOMAINE public (ex: "signature-expedition...")
+// 2. Récupérer le DOMAINE public
 $public_domain_name = rtrim(getDolGlobalString(strtoupper($internal_type).'_SIGNATURE_ALIAS_URL'), '/');
-$public_domain_name = preg_replace('#^https?://#', '', $public_domain_name); // Nettoyer
+$public_domain_name = preg_replace('#^https?://#', '', $public_domain_name);
 
 if (empty($public_domain_name)) {
 	$public_domain_name = $_SERVER['HTTP_HOST'];
@@ -106,27 +125,25 @@ if (empty($public_domain_name)) {
 // 3. Définir l'URL publique COMPLÈTE
 $public_base_url = 'https://' . $public_domain_name;
 
-// 4. Remplacer les liens relatifs (ex: href="/theme...")
-$output = str_replace(
+// 4. Remplacer les liens relatifs
+// ATTENTION : On utilise $body ici, pas $output !
+$body = str_replace(
 	array('href="/', 'src="/', 'action="/'),
 	array('href="'.$public_base_url.'/', 'src="'.$public_base_url.'/', 'action="'.$public_base_url.'/'),
-	$output
+	$body
 );
 
+// 5. Remplacer les liens internes complets
+$body = str_replace($internal_base_url, $public_base_url, $body);
 
-$output = str_replace($internal_base_url, $public_base_url, $output);
-print $output;exit;
-
-// 6. (Correctif pour le bug de double URL que vous avez)
-$output = str_replace(
+// 6. Correctif double URL
+$body = str_replace(
 	array('href="'.$public_domain_name.'/', 'src="'.$public_domain_name.'/', 'action="'.$public_domain_name.'/'),
 	array('href="'.$public_base_url.'/', 'src="'.$public_base_url.'/', 'action="'.$public_base_url.'/'),
-	$output
+	$body
 );
 
-// --- FIN DE LA CORRECTION DES LIENS ---
-
-
-// Envoyer le contenu modifié au client
-print $output;
+// --- ENVOI FINAL ---
+// On n'affiche QUE le corps (HTML), sans les en-têtes bruts
+print $body;
 exit;
