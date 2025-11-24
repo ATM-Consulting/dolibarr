@@ -1,3 +1,4 @@
+- Backport FIX DA027258: (from PR#36401) missing GETPOSTISSET in perweek.php - **24/11/2025**
 - Backport FIX DA027383: security: check read permissions on evaluation cards - **19/11/2025**
 - NEW : Add merge project
 - FIX DA026382 : add sponge btp pdf - **25/04/2025**
