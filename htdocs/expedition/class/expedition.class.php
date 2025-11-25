@@ -1738,10 +1738,11 @@ class Expedition extends CommonObject
 		}
 	}
 
+	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
 	 * Override to keep every expeditiondet row that belongs to the displayed line in sync when drag & drop reorders rows.
 	 *
-	 * @param array $rows Array of row ids received from ajax
+	 * @param int[] $rows Array of row ids received from ajax
 	 * @return void
 	 */
 	public function line_ajaxorder($rows)
