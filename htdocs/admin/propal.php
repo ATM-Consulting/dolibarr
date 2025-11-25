@@ -158,16 +158,12 @@ if ($action == 'updateMask') {
 	if (GETPOSTISSET('PROPOSAL_FREE_TEXT')) {
 		$freetext = GETPOST('PROPOSAL_FREE_TEXT', 'restricthtml'); // No alpha here, we want exact string
 		$res = dolibarr_set_const($db, "PROPOSAL_FREE_TEXT", $freetext, 'chaine', 0, '', $conf->entity);
-		if (!($res > 0)) {
-			$error++;
-		}
+		if (!($res > 0)) $error++;
 	}
 	if (GETPOSTISSET('PROPOSAL_SIGNATURE_ALIAS_URL')) {
 		$aliasurl = GETPOST('PROPOSAL_SIGNATURE_ALIAS_URL', 'alphanohtml'); // On utilise 'string' pour une URL
 		$res = dolibarr_set_const($db, "PROPOSAL_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
-		if (!($res > 0)) {
-			$error++;
-		}
+		if (!($res > 0)) $error++;
 	}
 	if (!$error) {
 		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
@@ -691,6 +687,11 @@ print '<tr class="oddeven">';
 print '<td>'.$form->textwithpicto($langs->trans("PropalSignatureAliasUrl"), $langs->trans("PropalSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
 print '<td>';
 print '<input class="flat minwidth300" type="text" name="PROPOSAL_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('PROPOSAL_SIGNATURE_ALIAS_URL')).'">';
+print '</td></tr>';
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("PropalSignatureUseProxyMode"), $langs->trans("PropalSignatureUseProxyModeHelp"), 1, 'help', '', 0, 2, 'proxymodetooltip').'</td>';
+print '<td class="center">';
+print ajax_constantonoff('PROPOSAL_SIGNATURE_USE_PROXY_MODE', array(), null, 0, 0, 1, 2);
 print '</td></tr>';
 
 /* Seems to be not so used. So kept hidden for the moment to avoid dangerous options inflation.
