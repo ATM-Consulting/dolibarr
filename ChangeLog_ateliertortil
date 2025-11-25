@@ -1,5 +1,6 @@
 ***** ChangeLog 18.0 branch atelier tortil *****
 
-FIX:  ajout du compte comptable de TVA en fonction du pays d'origine du fournisseur - *25/10/2024* -
+NEW: DA027072 - add drag and drop on expeditions lines - *18/11/2025* -
+FIX: Adding the VAT accounting account based on the supplier's country of origin  - *25/10/2024* -
 FIX: DA026749 - if we call setStatut we skip the update of date_cloture but cloture do a setStatut - *09/07/2025* -
 
