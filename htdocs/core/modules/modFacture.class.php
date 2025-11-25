@@ -719,13 +719,11 @@ class modFacture extends DolibarrModules
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_extrafields as extra4 ON s.rowid = extra4.fk_object';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe as ps ON ps.rowid = s.parent';
 		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'c_typent as t ON s.fk_typent = t.id';
-//		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
-			$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
-			// ------spé alphadiab ---------
-			$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as u ON sc.fk_user = u.rowid';
-			// ------spé alphadiab ---------
+		$this->export_sql_end[$r] .= ' LEFT JOIN '. $db->prefix() .'societe_commerciaux as sc ON sc.fk_soc = s.rowid';
+		// ------spé alphadiab ---------
+		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'user as u ON sc.fk_user = u.rowid';
+		// ------spé alphadiab ---------
 
-//		}
 		// ------spé alphadiab ---------
 		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie_societe as cs ON cs.fk_soc = s.rowid';
 		$this->export_sql_end[$r] .=' LEFT JOIN '. $db->prefix() .'categorie as cat1 ON (cs.fk_categorie = cat1.rowid AND cat1.fk_parent = 0)';
@@ -751,9 +749,7 @@ class modFacture extends DolibarrModules
 		$this->export_sql_end[$r] .= ' WHERE f.fk_soc = s.rowid AND f.rowid = fd.fk_facture';
 		$this->export_sql_end[$r] .= ' AND f.entity IN ('.getEntity('invoice').')';
 		// ------spé alphadiab ---------
-		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
 			$this->export_sql_end[$r] .= ' AND cat1.label IS NOT NULL';
-		}
 		// ------spé alphadiab ---------
 
 		if (!empty($user) && !$user->hasRight('societe', 'client', 'voir')) {
