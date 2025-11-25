@@ -563,6 +563,11 @@ print '<td>'.$form->textwithpicto($langs->trans("ContractSignatureAliasUrl"), $l
 print '<td class="right">';
 print '<input class="flat minwidth300" type="text" name="CONTRACT_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('CONTRACT_SIGNATURE_ALIAS_URL')).'">';
 print '</td></tr>';
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("ContractSignatureUseProxyMode"), $langs->trans("ContractSignatureUseProxyModeHelp"), 1, 'help', '', 0, 2, 'proxymodetooltip').'</td>';
+print '<td class="right">';
+print ajax_constantonoff('CONTRACT_SIGNATURE_USE_PROXY_MODE', array(), null, 0, 0, 1, 2);
+print '</td></tr>';
 // Allow external download
 print '<tr class="oddeven">';
 print '<td>'.$langs->trans("AllowExternalDownload").'</td>';

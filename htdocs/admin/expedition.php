@@ -104,9 +104,7 @@ if ($action == 'updateMask') {
 	if (GETPOSTISSET('EXPEDITION_SIGNATURE_ALIAS_URL')) {
 		$aliasurl = GETPOST('EXPEDITION_SIGNATURE_ALIAS_URL', 'alphanohtml');
 		$res = dolibarr_set_const($db, "EXPEDITION_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
-		if (!($res > 0)) {
-			$error++;
-		}
+		if (!($res > 0)) $error++;
 	}
 
 	if (!$error) {
@@ -501,6 +499,11 @@ print '<tr class="oddeven">';
 print '<td>'.$form->textwithpicto($langs->trans("ExpeditionSignatureAliasUrl"), $langs->trans("ExpeditionSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
 print '<td>';
 print '<input class="flat minwidth300" type="text" name="EXPEDITION_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('EXPEDITION_SIGNATURE_ALIAS_URL')).'">';
+print '</td></tr>';
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("ExpeditionSignatureUseProxyMode"), $langs->trans("ExpeditionSignatureUseProxyModeHelp"), 1, 'help', '', 0, 2, 'proxymodetooltip').'</td>';
+print '<td class="center">';
+print ajax_constantonoff('EXPEDITION_SIGNATURE_USE_PROXY_MODE', array(), null, 0, 0, 1, 2);
 print '</td></tr>';
 
 
