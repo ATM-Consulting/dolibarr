@@ -2656,7 +2656,9 @@ function getModuleDirForApiClass($moduleobject)
 		$moduledirforclass = 'compta/facture';
 	} elseif ($moduleobject == 'project' || $moduleobject == 'projects' || $moduleobject == 'task' || $moduleobject == 'tasks') {
 		$moduledirforclass = 'projet';
-	} elseif ($moduleobject == 'stock' || $moduleobject == 'stockmovements' || $moduleobject == 'warehouses') {
+		// BACKPORT V23 - 36243
+	} elseif ($moduleobject == 'stock' || $moduleobject == 'stockmovements' || $moduleobject == 'warehouses' || $moduleobject == 'productlots') {
+		// FIN BACKPORT V23 - 36243
 		$moduledirforclass = 'product/stock';
 	} elseif ($moduleobject == 'supplierproposals' || $moduleobject == 'supplierproposal' || $moduleobject == 'supplier_proposal') {
 		$moduledirforclass = 'supplier_proposal';
