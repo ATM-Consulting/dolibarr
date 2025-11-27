@@ -3230,8 +3230,13 @@ class Product extends CommonObject
 		// phpcs:enable
 		global $conf, $user, $hookmanager, $action;
 
-		$sql = "SELECT COUNT(DISTINCT c.fk_soc) as nb_customers, COUNT(DISTINCT c.rowid) as nb,";
-		$sql .= " COUNT(cd.rowid) as nb_rows, SUM(cd.qty) as qty";
+		if ($forVirtualStock) {
+			// OPTIMISATION : On ne calcule pas les compteurs inutiles pour le stock virtuel
+			$sql = "SELECT 0 as nb_customers, 0 as nb, 0 as nb_rows, SUM(cd.qty) as qty";
+		} else {
+			$sql = "SELECT COUNT(DISTINCT c.fk_soc) as nb_customers, COUNT(DISTINCT c.rowid) as nb,";
+			$sql .= " COUNT(cd.rowid) as nb_rows, SUM(cd.qty) as qty";
+		}
 		$sql .= " FROM ".$this->db->prefix()."commandedet as cd";
 		$sql .= ", ".$this->db->prefix()."commande as c";
 		$sql .= ", ".$this->db->prefix()."societe as s";
@@ -3358,8 +3363,12 @@ class Product extends CommonObject
 		// phpcs:enable
 		global $conf, $user, $hookmanager, $action;
 
-		$sql = "SELECT COUNT(DISTINCT c.fk_soc) as nb_suppliers, COUNT(DISTINCT c.rowid) as nb,";
-		$sql .= " COUNT(cd.rowid) as nb_rows, SUM(cd.qty) as qty";
+		if ($forVirtualStock) {
+			$sql = "SELECT 0 as nb_suppliers, 0 as nb, 0 as nb_rows, SUM(cd.qty) as qty";
+		} else {
+			$sql = "SELECT COUNT(DISTINCT c.fk_soc) as nb_suppliers, COUNT(DISTINCT c.rowid) as nb,";
+			$sql .= " COUNT(cd.rowid) as nb_rows, SUM(cd.qty) as qty";
+		}
 		$sql .= " FROM ".$this->db->prefix()."commande_fournisseurdet as cd";
 		$sql .= ", ".$this->db->prefix()."commande_fournisseur as c";
 		$sql .= ", ".$this->db->prefix()."societe as s";
@@ -3419,8 +3428,12 @@ class Product extends CommonObject
 		// phpcs:enable
 		global $conf, $user, $hookmanager, $action;
 
-		$sql = "SELECT COUNT(DISTINCT e.fk_soc) as nb_customers, COUNT(DISTINCT e.rowid) as nb,";
-		$sql .= " COUNT(ed.rowid) as nb_rows, SUM(ed.qty) as qty";
+		if ($forVirtualStock) {
+			$sql = "SELECT 0 as nb_customers, 0 as nb, 0 as nb_rows, SUM(ed.qty) as qty";
+		} else {
+			$sql = "SELECT COUNT(DISTINCT e.fk_soc) as nb_customers, COUNT(DISTINCT e.rowid) as nb,";
+			$sql .= " COUNT(ed.rowid) as nb_rows, SUM(ed.qty) as qty";
+		}
 		$sql .= " FROM ".$this->db->prefix()."expeditiondet as ed";
 		$sql .= ", ".$this->db->prefix()."commandedet as cd";
 		$sql .= ", ".$this->db->prefix()."commande as c";
@@ -3505,8 +3518,14 @@ class Product extends CommonObject
 		// phpcs:enable
 		global $conf, $user, $hookmanager, $action;
 
-		$sql = "SELECT COUNT(DISTINCT cf.fk_soc) as nb_suppliers, COUNT(DISTINCT cf.rowid) as nb,";
-		$sql .= " COUNT(fd.rowid) as nb_rows, SUM(fd.qty) as qty";
+
+		if ($forVirtualStock) {
+			$sql = "SELECT 0 as nb_suppliers, 0 as nb, 0 as nb_rows, SUM(fd.qty) as qty";
+		} else {
+			$sql = "SELECT COUNT(DISTINCT cf.fk_soc) as nb_suppliers, COUNT(DISTINCT cf.rowid) as nb,";
+			$sql .= " COUNT(fd.rowid) as nb_rows, SUM(fd.qty) as qty";
+		}
+
 		$sql .= " FROM ".$this->db->prefix()."receptiondet_batch as fd";
 		$sql .= ", ".$this->db->prefix()."commande_fournisseur as cf";
 		$sql .= ", ".$this->db->prefix()."societe as s";
@@ -3569,8 +3588,13 @@ class Product extends CommonObject
 
 		$serviceStockIsEnabled = isModEnabled("service") && getDolGlobalString('STOCK_SUPPORTS_SERVICES');
 
-		$sql = "SELECT COUNT(DISTINCT m.fk_soc) as nb_customers, COUNT(DISTINCT m.rowid) as nb,";
-		$sql .= " COUNT(mp.rowid) as nb_rows, SUM(mp.qty) as qty, role";
+		if ($forVirtualStock) {
+			$sql = "SELECT 0 as nb_customers, 0 as nb, 0 as nb_rows, SUM(mp.qty) as qty, role";
+		} else {
+			$sql = "SELECT COUNT(DISTINCT m.fk_soc) as nb_customers, COUNT(DISTINCT m.rowid) as nb,";
+			$sql .= " COUNT(mp.rowid) as nb_rows, SUM(mp.qty) as qty, role";
+		}
+
 		$sql .= " FROM ".$this->db->prefix()."mrp_production as mp";
 		$sql .= ", ".$this->db->prefix()."mrp_mo as m";
 		$sql .= " LEFT JOIN ".$this->db->prefix()."societe as s ON s.rowid = m.fk_soc";
