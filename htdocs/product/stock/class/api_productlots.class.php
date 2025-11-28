@@ -268,16 +268,12 @@ class Productlots extends DolibarrApi
 		$result = $this->productlot->fetch($id);
 		if ($result) {
 			$this->productlot->fetch_optionals();
-			$this->productlot->fetch_userassigned();
 			$this->productlot->oldcopy = clone $this->productlot;  // @phan-suppress-current-line PhanTypeMismatchProperty
 		}
 		if (!$result) {
 			throw new RestException(404, 'productlot not found');
 		}
 
-		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'productlot', '', 'fk_soc', 'id')) {
-			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
-		}
 		foreach ($request_data as $field => $value) {
 			if ($field == 'id') {
 				continue;
@@ -297,7 +293,7 @@ class Productlots extends DolibarrApi
 			$this->productlot->$field = $this->_checkValForAPI($field, $value, $this->productlot);
 		}
 
-		if ($this->productlot->update(DolibarrApiAccess::$user, 1) > 0) {
+		if ($this->productlot->update(DolibarrApiAccess::$user) > 0) {
 			return $this->get($id);
 		}
 
