@@ -844,6 +844,10 @@ if (empty($reshook)) {
 			$result = $object->setPaid($user, $close_code, $close_note);
 			if ($result < 0) {
 				setEventMessages($object->error, $object->errors, 'errors');
+			} else {
+				// Refresh the page to avoid showing the old status after the partial payment was accepted
+				header('Location: '.$_SERVER["PHP_SELF"].'?facid='.$object->id);
+				exit;
 			}
 		} else {
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Reason")), null, 'errors');

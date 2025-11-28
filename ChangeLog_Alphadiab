@@ -5,4 +5,5 @@
 - Comment background display for proposal suppolier and espensereport  **19/11/2025**
 - Fix sql query box_graph_invoices_permont on dashbord **19/11/2025**
 - backport issue on categorie : Create a new instance for each object to avoid reference issues
+- Fix invoice partial payment flow to reload page after escompte validation
 
