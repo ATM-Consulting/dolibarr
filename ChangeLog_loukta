@@ -1,4 +1,7 @@
 ***** ChangeLog for loukta *****
+- FIX DA027405 - merging PR Dolibarr#36503 in advance for Loukta: PDF for situation invoices uses legacy calculations
+ (cumulative) instead of the new algorithm (delta). Once the community PR is merged, this specific code can be discarded
+ and replaced with the community equivalent. - *03/12/2025*
 - Fix : Major Fix for Credit Notes: A significant patch was applied to ensure that when creating a credit note for a situation invoice,
 the previous progress amounts and percentages are calculated and displayed correctly on credit note. This was one of the most important adjustments,
  making the entire billing cycle more reliable. **26/09/2025**
