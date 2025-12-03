@@ -2413,7 +2413,7 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 			// 2 = situation_percent is non-cumulative (delta of current situation)
 			// 1 = (old mode): situation_percent is cumulative (state at situation)
 			$isCumulative = getDolGlobalInt('INVOICE_USE_SITUATION') === 1;
-			$showDelta = (bool) getDolGlobalInt('SITUATION_DISPLAY_DIFF_ON_PDF');
+			$showDelta = (bool)getDolGlobalInt('SITUATION_DISPLAY_DIFF_ON_PDF');
 
 			if ($isCumulative xor $showDelta) {
 				// Either:
@@ -2425,14 +2425,14 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 				// - old mode but we want to show a delta or
 				// - new mode but we want to show a total
 				$prev_progress = 0;
-				 if (method_exists($object->lines[$i], 'get_prev_progress')) {
-					 $prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-				 }
-				 $result = $isCumulative ?
-					 // old mode: we need to compute the delta (total - sum of previous)
-					 $object->lines[$i]->situation_percent - $prev_progress :
-					 // new mode: we need to compute the total (sum of previous + delta)
-					 $prev_progress + $object->lines[$i]->situation_percent;
+				if (method_exists($object->lines[$i], 'get_prev_progress')) {
+					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
+				}
+				$result = $isCumulative ?
+					// old mode: we need to compute the delta (total - sum of previous)
+					$object->lines[$i]->situation_percent - $prev_progress :
+					// new mode: we need to compute the total (sum of previous + delta)
+					$prev_progress + $object->lines[$i]->situation_percent;
 			}
 			$result = round($result, 1).'%';
 		}
