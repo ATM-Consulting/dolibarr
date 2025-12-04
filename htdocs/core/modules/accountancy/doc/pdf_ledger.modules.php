@@ -231,7 +231,6 @@ class pdf_ledger extends ModelePdfAccountancy
 		if (method_exists($pdf, 'AliasNbPages')) {
 			$pdf->AliasNbPages();  // @phan-suppress-current-line PhanUndeclaredMethod
 		}
-
 		$pdf->SetTitle($outputlangs->convToOutputCharset($object->ref));
 		if ($this->ledgerType == "sub") {
 			$pdf->SetSubject($outputlangs->transnoentities("BookkeepingSubAccount"));
@@ -305,7 +304,6 @@ class pdf_ledger extends ModelePdfAccountancy
 			// Show total line / title line when account has changed
 			if ($this->ledgerType == "sub") {
 				if (empty($account) || $account != $object->lines[$i]->subledger_account) {
-					// Add the subtotal line
 					if (!empty($account)) {
 						$this->addTotalLine(
 							$pdf,
@@ -318,8 +316,6 @@ class pdf_ledger extends ModelePdfAccountancy
 							$accountCredit
 						);
 					}
-
-					// Add the title line
 					$this->addTitleLine(
 						$pdf,
 						$curY,
@@ -334,11 +330,10 @@ class pdf_ledger extends ModelePdfAccountancy
 					$accountDebit = $accountCredit = 0;
 				}
 			} else {
+				$this->checkPageBreakIfNeeded($pdf, $this->tabTitleHeight, $heightforfooter, $object, $outputlangs, $tplidx ?? 0, $tab_top_newpage, $curY, $nexY);
 				if (empty($account) || $account != $object->lines[$i]->numero_compte) {
 					$accountingAccount = new AccountingAccount($this->db);
 					$accountingAccount->fetch(0, $object->lines[$i]->numero_compte);
-
-					// Add the subtotal line
 					if (!empty($account)) {
 						$this->addTotalLine(
 							$pdf,
@@ -351,8 +346,8 @@ class pdf_ledger extends ModelePdfAccountancy
 							$accountCredit
 						);
 					}
-
-					// Add the title line
+					$min_required_space = $this->tabTitleHeight + (6 * 2);
+					$this->checkPageBreakIfNeeded($pdf, $min_required_space, $heightforfooter, $object, $outputlangs, $tplidx, $tab_top_newpage, $curY, $nexY);
 					$this->addTitleLine(
 						$pdf,
 						$curY,
@@ -362,7 +357,6 @@ class pdf_ledger extends ModelePdfAccountancy
 						$langs->trans('AccountAccountingShort') . ' ' . length_accountg($accountingAccount->ref) . ' - ' . $accountingAccount->label,
 						$tab_top_newpage
 					);
-
 					$account = $object->lines[$i]->numero_compte;
 					$accountDebit = $accountCredit = 0;
 				}
@@ -378,7 +372,7 @@ class pdf_ledger extends ModelePdfAccountancy
 			$pdf->SetTextColor(0, 0, 0);
 
 			$pdf->setTopMargin($tab_top_newpage);
-			$pdf->setPageOrientation('', true, $heightforfooter + $heightforfreetext + $heightforinfotot); // The only function to edit the bottom margin of current page to set it.
+			$pdf->setPageOrientation('', true, $heightforfooter);
 			$pageposbefore = $pdf->getPage();
 
 			$showpricebeforepagebreak = 1;
@@ -387,7 +381,6 @@ class pdf_ledger extends ModelePdfAccountancy
 			// Column used for testing page change
 			// No check on column status, this column is mandatory
 			$pdf->startTransaction();
-
 			$this->printStdColumnContent($pdf, $curY, 'label', $object->lines[$i]->label_operation);
 
 			$pageposafter = $pdf->getPage();
@@ -722,7 +715,6 @@ class pdf_ledger extends ModelePdfAccountancy
 		}
 		$pdf->MultiCell($w / 3, 3, $title, 0, 'C');
 		$nexY = max($pdf->GetY(), $nexY);
-
 		// Date From To
 		$pdf->SetFont('', 'B', $default_font_size);
 		$pdf->SetXY(($posx + ($w / 3) * 2) - 2, $posy + 2);
@@ -1006,6 +998,7 @@ class pdf_ledger extends ModelePdfAccountancy
 			$pdf->rollbackTransaction(true);
 
 			$pdf->AddPage('', '', true);
+
 			$pdf->setPage($pageposafter);
 			$curY = $tab_top_newpage + $this->tabTitleHeight;
 			$this->printStdColumnContent($pdf, $curY, 'label', $label);
@@ -1032,6 +1025,37 @@ class pdf_ledger extends ModelePdfAccountancy
 
 		if (getDolGlobalString('MAIN_PDF_DASH_BETWEEN_LINES')) {
 			$this->addDashLine($pdf, $pageposafter, $nexY);
+		}
+	}
+	/**
+	 * Check height and add page if necessary
+	 *
+	 * @param TCPDF     $pdf             TCPDF Object
+	 * @param float     $threshold       Space needed at bottom (in mm)
+	 * @param float     $heightforfooter Height of the footer
+	 * @param object    $object          Object for pagehead
+	 * @param Translate $outputlangs     Langs object
+	 * @param mixed     $tplidx          Template index
+	 * @param float     $tab_top_newpage Top Y for new page
+	 * @param float     $curY            Current Y (By Reference)
+	 * @param float     $nexY            Next Y (By Reference)
+	 * @return void
+	 */
+	protected function checkPageBreakIfNeeded(TCPDF $pdf, float $threshold, float $heightforfooter, $object, $outputlangs, $tplidx, float $tab_top_newpage, float &$curY, float &$nexY): void
+	{
+		// On compare : Position Actuelle > (Hauteur Page - Footer - Marge demandée)
+		if ($pdf->GetY() > ($this->page_hauteur - $heightforfooter - $threshold)) {
+			$pdf->AddPage();
+
+			if (!empty($tplidx)) {
+				$pdf->useTemplate($tplidx);
+			}
+
+			$this->_pagehead($pdf, $object, 0, $outputlangs);
+
+			// On met à jour les références pour que le script principal sache où on est
+			$curY = $tab_top_newpage + $this->tabTitleHeight;
+			$nexY = $curY;
 		}
 	}
 }

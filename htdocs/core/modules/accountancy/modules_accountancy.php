@@ -147,16 +147,14 @@ abstract class ModelePdfAccountancy extends CommonDocGenerator
 		if ($uppercase) {
 			$label = mb_strtoupper($label);
 		}
-		$this->printTitleContent($pdf, $curY, $columnKey, $label);
-
+		$this->printTitleContentWithMulticell($pdf, $curY, $columnKey, $label);
 		$pageposafter = $pdf->getPage();
 		if ($pageposafter > $pageposbefore) {    // There is a pagebreak
 			$pdf->rollbackTransaction(true);
-
 			$pdf->AddPage('', '', true);
 			$pdf->setPage($pageposafter);
 			$curY = $tab_top_newpage + $this->tabTitleHeight;
-			$this->printTitleContent($pdf, $curY, $columnKey, $label);
+			$this->printTitleContentWithMulticell($pdf, $curY, $columnKey, $label);
 		}
 
 		$nexY = $pdf->GetY();
@@ -166,7 +164,6 @@ abstract class ModelePdfAccountancy extends CommonDocGenerator
 			$this->addDashLine($pdf, $pageposafter, $nexY);
 		}
 	}
-
 	/**
 	 * Print a title using the colKey start position, and the end of table as end position
 	 *
@@ -191,6 +188,27 @@ abstract class ModelePdfAccountancy extends CommonDocGenerator
 		$pdf->setCellPaddings($curentCellPaddinds['L'], $curentCellPaddinds['T'], $curentCellPaddinds['R'], $curentCellPaddinds['B']);
 	}
 
+	/**
+	 * Print title content using MultiCell to handle multiline text
+	 *
+	 * @param TCPDF  $pdf       TCPDF Object
+	 * @param float  $curY      Current Y position
+	 * @param string $columnKey Column key to find X start position
+	 * @param string $label     Text content to print
+	 * @return void
+	 */
+	protected function printTitleContentWithMulticell(TCPDF $pdf, float $curY, string $columnKey, string $label): void
+	{
+		$startX = $this->getColumnContentXStart($columnKey);
+
+		$margins = $pdf->getMargins();
+		$pageWidth = $pdf->GetPageWidth();
+		$widthAvailable = $pageWidth - $margins['right'] - $startX;
+
+		$pdf->SetXY($startX, $curY);
+
+		$pdf->MultiCell($widthAvailable, 4, $label, 0, 'L', 0, 1);
+	}
 	/**
 	 * Print standard column content
 	 *
