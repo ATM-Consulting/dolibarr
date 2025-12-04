@@ -231,7 +231,6 @@ class pdf_ledger extends ModelePdfAccountancy
 		if (method_exists($pdf, 'AliasNbPages')) {
 			$pdf->AliasNbPages();  // @phan-suppress-current-line PhanUndeclaredMethod
 		}
-
 		$pdf->SetTitle($outputlangs->convToOutputCharset($object->ref));
 		if ($this->ledgerType == "sub") {
 			$pdf->SetSubject($outputlangs->transnoentities("BookkeepingSubAccount"));
@@ -305,7 +304,7 @@ class pdf_ledger extends ModelePdfAccountancy
 			// Show total line / title line when account has changed
 			if ($this->ledgerType == "sub") {
 				if (empty($account) || $account != $object->lines[$i]->subledger_account) {
-					// Add the subtotal line
+//					 Add the subtotal line
 					if (!empty($account)) {
 						$this->addTotalLine(
 							$pdf,
@@ -334,6 +333,15 @@ class pdf_ledger extends ModelePdfAccountancy
 					$accountDebit = $accountCredit = 0;
 				}
 			} else {
+				if ($pdf->GetY() > ($this->page_hauteur - $heightforfooter - 5)) {
+					$pdf->AddPage();
+					if (!empty($tplidx)) {
+						$pdf->useTemplate($tplidx);
+					}
+					$this->_pagehead($pdf, $object, 0, $outputlangs);
+					$curY = $tab_top_newpage + $this->tabTitleHeight;
+					$nexY = $curY;
+				}
 				if (empty($account) || $account != $object->lines[$i]->numero_compte) {
 					$accountingAccount = new AccountingAccount($this->db);
 					$accountingAccount->fetch(0, $object->lines[$i]->numero_compte);
@@ -351,7 +359,16 @@ class pdf_ledger extends ModelePdfAccountancy
 							$accountCredit
 						);
 					}
+					if ($pdf->GetY() > ($this->page_hauteur - $heightforfooter - 20)) {
+						$pdf->AddPage();
+						if (!empty($tplidx)) {
+							$pdf->useTemplate($tplidx);
+						}
+						$this->_pagehead($pdf, $object, 0, $outputlangs);
 
+						$curY = $tab_top_newpage + $this->tabTitleHeight;
+						$nexY = $curY;
+					}
 					// Add the title line
 					$this->addTitleLine(
 						$pdf,
@@ -362,6 +379,8 @@ class pdf_ledger extends ModelePdfAccountancy
 						$langs->trans('AccountAccountingShort') . ' ' . length_accountg($accountingAccount->ref) . ' - ' . $accountingAccount->label,
 						$tab_top_newpage
 					);
+
+
 
 					$account = $object->lines[$i]->numero_compte;
 					$accountDebit = $accountCredit = 0;
@@ -378,7 +397,7 @@ class pdf_ledger extends ModelePdfAccountancy
 			$pdf->SetTextColor(0, 0, 0);
 
 			$pdf->setTopMargin($tab_top_newpage);
-			$pdf->setPageOrientation('', true, $heightforfooter + $heightforfreetext + $heightforinfotot); // The only function to edit the bottom margin of current page to set it.
+			$pdf->setPageOrientation('', true, $heightforfooter);
 			$pageposbefore = $pdf->getPage();
 
 			$showpricebeforepagebreak = 1;
@@ -387,7 +406,6 @@ class pdf_ledger extends ModelePdfAccountancy
 			// Column used for testing page change
 			// No check on column status, this column is mandatory
 			$pdf->startTransaction();
-
 			$this->printStdColumnContent($pdf, $curY, 'label', $object->lines[$i]->label_operation);
 
 			$pageposafter = $pdf->getPage();
@@ -722,7 +740,6 @@ class pdf_ledger extends ModelePdfAccountancy
 		}
 		$pdf->MultiCell($w / 3, 3, $title, 0, 'C');
 		$nexY = max($pdf->GetY(), $nexY);
-
 		// Date From To
 		$pdf->SetFont('', 'B', $default_font_size);
 		$pdf->SetXY(($posx + ($w / 3) * 2) - 2, $posy + 2);
@@ -1006,6 +1023,7 @@ class pdf_ledger extends ModelePdfAccountancy
 			$pdf->rollbackTransaction(true);
 
 			$pdf->AddPage('', '', true);
+
 			$pdf->setPage($pageposafter);
 			$curY = $tab_top_newpage + $this->tabTitleHeight;
 			$this->printStdColumnContent($pdf, $curY, 'label', $label);
