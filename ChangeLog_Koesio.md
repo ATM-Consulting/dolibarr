@@ -1,3 +1,4 @@
+- Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
 - Backport 16.0 PR #36074: Fix SQL error on lists when the object has an extrafield of type "link" to a category - **03/11/2025**
 - Backport 22.0 admin.langs / product/card.php / product.class.php / mouvementstock.class.php for products without movements - **09/10/2025**
