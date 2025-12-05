@@ -1691,23 +1691,24 @@ class CommandeFournisseur extends CommonOrder
 						$line->localtax2_tx,
 						$line->fk_product,
 						0,
-						$line->ref_fourn, // $line->ref_fourn comes from field ref into table of lines. Value may ba a ref that does not exists anymore, so we first try with value of product
-						$line->remise_percent,
-						'HT',
-						0,
-						$line->product_type,
-						$line->info_bits,
-						0,
-						$line->date_start,
-						$line->date_end,
-						$line->array_options,
-						$line->fk_unit,
-						$line->multicurrency_subprice,  // pu_ht_devise
-						$line->origin,     // origin
-						$line->origin_id,  // origin_id
-						$line->rang,       // rang
-						$line->special_code
-					);
+							$line->ref_fourn, // $line->ref_fourn comes from field ref into table of lines. Value may ba a ref that does not exists anymore, so we first try with value of product
+							$line->remise_percent,
+							'HT',
+							0,
+							$line->product_type,
+							$line->info_bits,
+							0,
+							$line->date_start,
+							$line->date_end,
+							$line->array_options,
+							$line->fk_unit,
+							$line->multicurrency_subprice,  // pu_ht_devise
+							$line->origin,     // origin
+							$line->origin_id,  // origin_id
+							$line->rang,       // rang
+							/** BACKPORT V23 **/$line->special_code,
+							isset($line->label) ? $line->label : ''/** END BACKPORT **/
+						);
 					if ($result < 0) {
 						dol_syslog(get_class($this)."::create ".$this->error, LOG_WARNING); // do not use dol_print_error here as it may be a functional error
 						$this->db->rollback();
@@ -2010,9 +2011,10 @@ class CommandeFournisseur extends CommonOrder
 	 *	@param		int			$origin_id				Id of origin object
 	 *	@param		int			$rang					Rank
 	 *	@param		int			$special_code			Special code
+	 *	@param		string		$label					Line label (used when desc is empty)
 	 *	@return     int     	        				Return integer <=0 if KO, >0 if OK
 	 */
-	public function addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1 = 0.0, $txlocaltax2 = 0.0, $fk_product = 0, $fk_prod_fourn_price = 0, $ref_supplier = '', $remise_percent = 0.0, $price_base_type = 'HT', $pu_ttc = 0.0, $type = 0, $info_bits = 0, $notrigger = 0, $date_start = null, $date_end = null, $array_options = [], $fk_unit = null, $pu_ht_devise = 0, $origin = '', $origin_id = 0, $rang = -1, $special_code = 0)
+	public function addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1 = 0.0, $txlocaltax2 = 0.0, $fk_product = 0, $fk_prod_fourn_price = 0, $ref_supplier = '', $remise_percent = 0.0, $price_base_type = 'HT', $pu_ttc = 0.0, $type = 0, $info_bits = 0, $notrigger = 0, $date_start = null, $date_end = null, $array_options = [], $fk_unit = null, $pu_ht_devise = 0, $origin = '', $origin_id = 0, $rang = -1, $special_code = 0, $label = '')
 	{
 		global $langs, $mysoc;
 
@@ -2060,7 +2062,11 @@ class CommandeFournisseur extends CommonOrder
 			} else {
 				$pu = $pu_ttc;
 			}
+			$label = trim((string) $label);
 			$desc = trim($desc);
+			if ($desc === '' && $label !== '') {
+				$desc = $label;
+			}
 
 			// Check parameters
 			if ($qty < 0 && !$fk_product) {
