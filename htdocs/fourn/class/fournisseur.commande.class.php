@@ -1706,8 +1706,10 @@ class CommandeFournisseur extends CommonOrder
 							$line->origin,     // origin
 							$line->origin_id,  // origin_id
 							$line->rang,       // rang
-							/** BACKPORT V23 **/$line->special_code,
-							isset($line->label) ? $line->label : ''/** END BACKPORT **/
+							$line->special_code,
+							/** BACKPORT V23 **/
+						isset($line->label) ? $line->label : ''
+							/** END BACKPORT **/
 						);
 					if ($result < 0) {
 						dol_syslog(get_class($this)."::create ".$this->error, LOG_WARNING); // do not use dol_print_error here as it may be a functional error
@@ -2062,11 +2064,13 @@ class CommandeFournisseur extends CommonOrder
 			} else {
 				$pu = $pu_ttc;
 			}
+			/**  backport from V23 **/
 			$label = trim((string) $label);
 			$desc = trim($desc);
 			if ($desc === '' && $label !== '') {
 				$desc = $label;
 			}
+			/**  END backport from V23 **/
 
 			// Check parameters
 			if ($qty < 0 && !$fk_product) {
