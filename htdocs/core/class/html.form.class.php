@@ -9105,6 +9105,8 @@ class Form
 			if ($tmpfieldstoshow) {
 				$fieldstoshow = $tmpfieldstoshow;
 			}
+		} elseif ($objecttmp->element === 'category') {
+			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
 			$objecttmp->fields['ref'] = array('type' => 'varchar(30)', 'label' => 'Ref', 'showoncombobox' => 1);
@@ -9138,7 +9140,11 @@ class Form
 		// Search data
 		$sql = "SELECT t.rowid, " . $fieldstoshow . " FROM " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . " as t";
 		if (!empty($objecttmp->isextrafieldmanaged)) {
-			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . "_extrafields as e ON t.rowid = e.fk_object";
+			$extrafieldTable = $objecttmp->table_element;
+			if ($extrafieldTable == 'categorie') {
+				$extrafieldTable = 'categories'; // For compatibility
+			}
+			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->sanitize($extrafieldTable) . "_extrafields as e ON t.rowid = e.fk_object";
 		}
 		if (!empty($objecttmp->parent_element)) {	// If parent_element is defined
 			$parent_properties = getElementProperties($objecttmp->parent_element);
@@ -9174,7 +9180,7 @@ class Form
 			// If table need a multientity restriction
 			if (!empty($objecttmp->ismultientitymanaged)) {
 				if ($objecttmp->ismultientitymanaged == 1) {
-					$sql .= " AND t.entity IN (" . getEntity($objecttmp->table_element) . ")";
+					$sql .= " AND t.entity IN (" . getEntity($objecttmp->element) . ")";
 				}
 				if (!is_numeric($objecttmp->ismultientitymanaged)) {
 					$sql .= " AND parenttable.entity = t." . $this->db->sanitize($tmparray[0]);

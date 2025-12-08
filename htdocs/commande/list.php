@@ -606,6 +606,13 @@ if (empty($reshook)) {
 								$lines[$i]->fk_unit
 							);
 							if ($result > 0) {
+								if (!empty($lines[$i]->extraparams)) {
+									$factureLine = new FactureLigne($db);
+									$factureLine->id = $result;
+									$factureLine->extraparams = $lines[$i]->extraparams;
+									$factureLine->setExtraParameters();
+								}
+
 								$lineid = $result;
 							} else {
 								$lineid = 0;
@@ -2574,9 +2581,12 @@ while ($i < $imaxinloop) {
 			if (!is_array($typenArray) || count($typenArray) == 0) {
 				$typenArray = $formcompany->typent_array(1);
 			}
-			print '<td class="center tdoverflowmax100" title="'.dolPrintHTMLForAttribute($typenArray[$obj->typent_code]).'">';
 			if (!empty($obj->typent_code)) {
+				print '<td class="center tdoverflowmax100" title="'.dolPrintHTMLForAttribute($typenArray[$obj->typent_code]).'">';
 				print $typenArray[$obj->typent_code];
+			} else {
+				print '<td class="center tdoverflowmax100">';
+				print '';
 			}
 			print '</td>';
 			if (!$i) {

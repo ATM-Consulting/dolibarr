@@ -1535,7 +1535,7 @@ class Product extends CommonObject
 							// @phan-suppress-next-line PhanPluginSuspiciousParamPosition
 							if ($ObjLot->fetch(0, $this->id, $valueforundefinedlot) == 0) {
 								$ObjLot->fk_product = $this->id;
-								$ObjLot->entity = $this->entity;
+								$ObjLot->entity = (int) $this->entity;
 								$ObjLot->fk_user_creat = $user->id;
 								$ObjLot->batch = $valueforundefinedlot;
 								if ($ObjLot->create($user, 1) < 0) {
@@ -3273,7 +3273,8 @@ class Product extends CommonObject
 						if (!$resql) {
 							$this->error = $this->db->lasterror;
 							return -1;
-						} elseif ($result = $this->db->fetch_array($resql)) {
+						} else {
+							$result = $this->db->fetch_array($resql);
 							$this->multiprices[$i] = (!empty($result["price"]) ? $result["price"] : 0);
 							$this->multiprices_ttc[$i] = (!empty($result["price_ttc"]) ? $result["price_ttc"] : 0);
 							$this->multiprices_min[$i] = (!empty($result["price_min"]) ? $result["price_min"] : 0);
