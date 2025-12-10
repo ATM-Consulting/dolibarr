@@ -303,6 +303,7 @@ class pdf_ledger extends ModelePdfAccountancy
 		for ($i = 0; $i < $nblines; $i++) {
 			// Show total line / title line when account has changed
 			if ($this->ledgerType == "sub") {
+				$this->checkPageBreakIfNeeded($pdf, $this->tabTitleHeight, $heightforfooter, $object, $outputlangs, $tplidx ?? 0, $tab_top_newpage, $curY, $nexY);
 				if (empty($account) || $account != $object->lines[$i]->subledger_account) {
 					if (!empty($account)) {
 						$this->addTotalLine(
@@ -316,8 +317,8 @@ class pdf_ledger extends ModelePdfAccountancy
 							$accountCredit
 						);
 					}
-
-					// Add the title line
+					$min_required_space = $this->tabTitleHeight + (6 * 2);
+					$this->checkPageBreakIfNeeded($pdf, $min_required_space, $heightforfooter, $object, $outputlangs, $tplidx ?? 0, $tab_top_newpage, $curY, $nexY);
 					$this->addTitleLine(
 						$pdf,
 						$curY,
