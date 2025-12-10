@@ -1,1 +1,0 @@
- Add hooks to modify SQL where clauses dynamically in several modules (backport https://github.com/Dolibarr/dolibarr/pull/35989/files)

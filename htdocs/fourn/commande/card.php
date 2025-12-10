@@ -1464,7 +1464,8 @@ if (empty($reshook)) {
 									$element,
 									!empty($lines[$i]->id) ? $lines[$i]->id : $lines[$i]->rowid,
 									-1,
-									$lines[$i]->special_code
+									$lines[$i]->special_code,
+									/** BACKPORT V23 **/ $label /** END BACKPORT **/
 								);
 
 								if ($result < 0) {
