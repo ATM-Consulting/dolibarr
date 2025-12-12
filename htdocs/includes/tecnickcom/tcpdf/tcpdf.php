@@ -22133,7 +22133,12 @@ class TCPDF
 	public function rollbackTransaction($self = false)
 	{
 		if (isset($this->objcopy)) {
-			$this->_destroy(true, true);
+			// FIX spe EPOXY: diable $this->_destroy()
+			//    When called on a TCPDI or FPDF object, in some cases,
+			//    it can destroy attributes like `CoreFonts` and cause PHP Fatals.
+			//    The current state is going to be overwritten (by the restoration
+			//    of $this->objcopy) so _destroy() doesn't save much RAM.
+			// $this->_destroy(true, true);
 			if ($self) {
 				$objvars = get_object_vars($this->objcopy);
 				foreach ($objvars as $key => $value) {
