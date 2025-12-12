@@ -329,7 +329,7 @@ class Productlots extends DolibarrApi
 			throw new RestException(404, 'Product lot not found');
 		}
 
-		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'productlot', '', 'fk_soc', 'id')) {
+		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'product_lot', '', 'fk_soc', 'rowid')) {
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
