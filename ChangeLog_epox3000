@@ -1,4 +1,5 @@
 ***** ChangeLog for epoxy_3000  *****
+FIX : DA027393 - TCPDF Fatal (le rollback d'une transaction supprime des variables indispensables sans les restaurer)
 NEW : DA026607 - BACKPORT V22 - Rajout d'une conf divers pour activer ou non l'affichage des objects liés dans les notes public des pdf'
 FIX : DA026578 - Lignes désordonnées au clone d'une commande
 FIX : Modification du comportment de saisi des tâches afin de pouvoir saisir du temps sur un projet même si le projet ne contient pas de contact assigné - **28/05/2025**
