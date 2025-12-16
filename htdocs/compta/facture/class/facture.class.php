@@ -846,7 +846,7 @@ class Facture extends CommonInvoice
 
 					$newinvoiceline->fk_facture = $this->id;
 
-					$newinvoiceline->origin = $this->lines[$i]->element;
+					$newinvoiceline->origin_type = $this->lines[$i]->element;
 					$newinvoiceline->origin_id = $this->lines[$i]->id;
 
 					// Auto set date of service ?
