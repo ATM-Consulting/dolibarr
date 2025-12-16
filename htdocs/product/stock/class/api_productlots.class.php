@@ -337,7 +337,7 @@ class Productlots extends DolibarrApi
 		}
 
 		if ($this->productlot->delete(DolibarrApiAccess::$user) < 0) {
-			throw new RestException(500, 'Error when delete Product lot : '.implode(',', $this->productlot->error));
+			throw new RestException(500, 'Error when delete Product lot : '.implode(',', $this->productlot->errors));
 		}
 
 		return array(
