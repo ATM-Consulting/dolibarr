@@ -453,6 +453,12 @@ class Productlot extends CommonObject
 		}
 	}
 
+
+
+	/*
+	 * START BACKPORT 23 (à supprimer lors du passage en v23)
+	 */
+
 	/**
 	 * Delete object in database
 	 *
@@ -461,7 +467,7 @@ class Productlot extends CommonObject
 	 *
 	 * @return int <0 if KO, >0 if OK
 	 */
-	public function delete(User $user, $notrigger = false)
+	public function delete(User $user, $notrigger = 0)
 	{
 		dol_syslog(__METHOD__, LOG_DEBUG);
 
@@ -469,6 +475,47 @@ class Productlot extends CommonObject
 
 		$this->db->begin();
 
+		// Check there is no stock for this lot
+		$sql = "SELECT pb.rowid FROM ".$this->db->prefix()."product_batch as pb, ".$this->db->prefix()."product_stock as ps";
+		$sql .= " WHERE pb.fk_product_stock = ps.rowid AND pb.batch = '".$this->db->escape($this->batch)."'";
+		$sql .= " AND ps.fk_product = ".((int) $this->fk_product);
+		$sql .= $this->db->plimit(1);
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$obj = $this->db->fetch_object($resql);
+			if ($obj) {
+				$error++;
+				$this->errors[] = 'Error Lot is used in stock (ID = '.$obj->rowid.'). Deletion not possible.';
+				dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
+			}
+		} else {
+			$error++;
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
+		}
+
+		// Check there is no movement for this lot
+		$sql = "SELECT sm.rowid FROM ".$this->db->prefix()."stock_mouvement as sm";
+		$sql .= " WHERE sm.batch = '".$this->db->escape($this->batch)."'";
+		$sql .= " AND sm.fk_product = ".((int) $this->fk_product);
+		$sql .= $this->db->plimit(1);
+
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$obj = $this->db->fetch_object($resql);
+			if ($obj) {
+				$error++;
+				$this->errors[] = 'Error Lot was used in a stock movement (ID '.$obj->rowid.'). Deletion not possible.';
+				dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
+			}
+		} else {
+			$error++;
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
+		}
+
+		// TODO
 		//if (!$error) {
 			//if (!$notrigger) {
 				// Uncomment this and change PRODUCTLOT to your own tag if you
@@ -489,7 +536,7 @@ class Productlot extends CommonObject
 			if (!$resql) {
 				$error++;
 				$this->errors[] = 'Error '.$this->db->lasterror();
-				dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
+				dol_syslog(__METHOD__.' '.implode(',', $this->errors), LOG_ERR);
 			}
 		}
 
@@ -504,6 +551,10 @@ class Productlot extends CommonObject
 			return 1;
 		}
 	}
+
+	/*
+	 * END BACKPORT 23 (à supprimer lors du passage en v23)
+	 */
 
 	/**
 	 * Load an object from its id and create a new one in database
