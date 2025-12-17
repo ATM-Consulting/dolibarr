@@ -932,8 +932,16 @@ function pdf_bank(&$pdf, $outputlangs, $curx, $cury, $account, $onlynumber = 0, 
 				$pdf->MultiCell($tmplength, 3, $outputlangs->convToOutputCharset($content), 0, 'C', 0);
 				$pdf->SetXY($curx, $cury + 1);
 				$curx += $tmplength;
+
+				$label = $outputlangs->transnoentities($val);
 				$pdf->SetFont('', 'B', $default_font_size - $diffsizecontent);
-				$pdf->MultiCell($tmplength, 3, $outputlangs->transnoentities($val), 0, 'C', 0);
+				if ($tmplength > 0) {
+					while ($pdf->GetStringWidth($label) > $tmplength && dol_strlen($label) > 1) {
+						$label = dol_trunc($label, dol_strlen($label) - 1, 'right', 'UTF-8', 1);
+					}
+				}
+
+				$pdf->Cell($tmplength, 3, $label, 0, 0, 'C', false, '', 0, false, 'T', 'M');
 				if (empty($onlynumber)) {
 					$pdf->line($curx, $cury + 1, $curx, $cury + 7);
 				}

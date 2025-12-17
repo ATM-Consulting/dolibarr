@@ -960,6 +960,7 @@ class FormFile
 
 					// Define relative path for download link (depends on module)
 					$relativepath = (string) $file["name"]; // Cas general
+
 					if ($modulesubdir) {
 						$relativepath = (string) $modulesubdir."/".$file["name"]; // Cas propal, facture...
 					}
