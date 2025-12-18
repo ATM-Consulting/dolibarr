@@ -369,36 +369,53 @@ if ($modulepart == 'barcode') {
 		$result = $module->buildBarCode($code, $encoding, $readable);
 	}
 } else {
-	// Open and return file
-	clearstatcache();
+    // --- CORRECTIF ARCHITECTE ATM ---
+    
+    // 1. Préparation basique (Code existant)
+    clearstatcache();
+    $filename = basename($fullpath_original_file);
+    dol_syslog("viewimage.php return file $fullpath_original_file filename=$filename content-type=$type");
 
-	$filename = basename($fullpath_original_file);
+    // Fallback nophoto
+    if (!dol_is_file($fullpath_original_file) && !GETPOSTINT("noalt", 1)) {
+        $fullpath_original_file = DOL_DOCUMENT_ROOT.'/public/theme/common/nophoto.png';
+        $type = 'image/png'; 
+    }
 
-	// Output files on browser
-	dol_syslog("viewimage.php return file $fullpath_original_file filename=$filename content-type=$type");
+    // 2. DÉSACTIVATION COMPRESSION PHP/APACHE
+    if (function_exists('apache_setenv')) {
+        apache_setenv('no-gzip', '1');
+    }
+    @ini_set('zlib.output_compression', '0');
+    @ini_set('output_handler', '');
 
-	if (!dol_is_file($fullpath_original_file) && !GETPOSTINT("noalt", 1)) {
-		// This test is to replace error images with a nice "notfound image" when image is not available (for example when thumbs not yet generated).
-		$fullpath_original_file = DOL_DOCUMENT_ROOT.'/public/theme/common/nophoto.png';
-		/*$error='Error: File '.$_GET["file"].' does not exists or filesystems permissions are not allowed';
-		print $error;
-		exit;*/
-	}
+    // 3. NETTOYAGE DES HEADERS DOLIBARR (CRITIQUE)
+    // C'est probablement ça qui manquait : Dolibarr a pu définir "Content-Encoding: gzip"
+    // dans le main.inc.php. On doit supprimer cet entête car on envoie du RAW.
+    header_remove('Content-Encoding');
+    header_remove('Vary');
+    header_remove('Content-Length'); // On laisse Apache recalculer ça proprement
 
-	// Permissions are ok and file found, so we return it
-	if ($type) {
-		top_httphead($type);
-		header('Content-Disposition: inline; filename="'.basename($fullpath_original_file).'"');
-	} else {
-		top_httphead('image/png');
-		header('Content-Disposition: inline; filename="'.basename($fullpath_original_file).'"');
-	}
+    // 4. NETTOYAGE DU TAMPON
+    // On vide tous les buffers ouverts par Dolibarr
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
 
-	$fullpath_original_file_osencoded = dol_osencode($fullpath_original_file);
+    // 5. ENVOI PROPRE
+    if (empty($type)) { $type = 'image/png'; }
+    
+    // On définit le Content-Type manuellement pour être sûr (top_httphead peut avoir des effets de bord)
+    header("Content-Type: $type");
+    header('Content-Disposition: inline; filename="'.$filename.'"');
+    header('Cache-Control: private, max-age=0, must-revalidate'); // Pour éviter les effets de cache pendant le debug
 
-	readfile($fullpath_original_file_osencoded);
+    $fullpath_original_file_osencoded = dol_osencode($fullpath_original_file);
+    readfile($fullpath_original_file_osencoded);
+
+    // 6. TERMINUS
+    exit;
 }
-
 
 if (is_object($db)) {
 	$db->close();
