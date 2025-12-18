@@ -54,6 +54,7 @@ if (!empty($object->fk_soc)) {
 }
 $reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $object, $action);
 print $hookmanager->resPrint;
+
 if ($reshook < 0) {
 	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 }
@@ -71,7 +72,6 @@ if (empty($reshook) && !empty($object->table_element) && isset($extrafields->att
 		$i++;
 
 		// Discard if extrafield is a hidden field on form
-
 		$enabled = 1;
 		if ($enabled && isset($extrafields->attributes[$object->table_element]['enabled'][$tmpkeyextra])) {
 			$enabled = (int) dol_eval($extrafields->attributes[$object->table_element]['enabled'][$tmpkeyextra], 1, 1, '2');

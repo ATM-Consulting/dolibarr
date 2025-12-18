@@ -6801,13 +6801,12 @@ abstract class CommonObject
 			}
 
 			$sql .= ")";
-
 			$resql = $this->db->query($sql);
+
 			if (!$resql) {
 				$this->error = $this->db->lasterror();
 				$error++;
 			}
-
 			if (!$error && $trigger) {
 				// Call trigger
 				$this->context = array('extrafieldaddupdate' => 1);
@@ -6817,7 +6816,6 @@ abstract class CommonObject
 				}
 				// End call trigger
 			}
-
 			if ($error) {
 				$this->db->rollback();
 				return -1;
@@ -7225,7 +7223,6 @@ abstract class CommonObject
 					$error++;
 				}
 			}
-
 			if (!$error) {
 				$parameters = array('key' => $key);
 				global $action;
@@ -10381,7 +10378,7 @@ abstract class CommonObject
 
 		$error = 0;
 
-		$now = dol_now();
+		$now = dol_now('tzuser');
 
 		// $this->oldcopy should have been set by the caller of update
 		//if (empty($this->oldcopy)) {
@@ -10395,6 +10392,9 @@ abstract class CommonObject
 
 		if (array_key_exists('date_modification', $fieldvalues) && empty($fieldvalues['date_modification'])) {
 			$fieldvalues['date_modification'] = $this->db->idate($now);
+		}
+		if (array_key_exists('tms', $fieldvalues)) {
+			$fieldvalues['tms'] = $this->db->idate($now);
 		}
 		if (array_key_exists('fk_user_modif', $fieldvalues) && !($fieldvalues['fk_user_modif'] > 0)) {
 			$fieldvalues['fk_user_modif'] = $user->id;
@@ -10458,8 +10458,6 @@ abstract class CommonObject
 				$error++;
 			}
 		}
-
-		// Triggers
 		if (!$error && !$notrigger) {
 			// Call triggers
 			$result = $this->call_trigger(strtoupper(get_class($this)).'_MODIFY', $user);
