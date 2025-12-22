@@ -1103,7 +1103,7 @@ if ($search_fk_input_reason > 0) {
 	$sql .= " AND c.fk_input_reason = ".((int) $search_fk_input_reason);
 }
 if ($search_import_key) {
-	$sql .= natural_search("s.import_key", $search_import_key);
+	$sql .= natural_search("c.import_key", $search_import_key);
 }
 // Search on user
 if ($search_user > 0) {
