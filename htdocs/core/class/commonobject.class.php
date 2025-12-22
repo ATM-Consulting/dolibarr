@@ -491,7 +491,7 @@ abstract class CommonObject
 	public $fk_delivery_address;
 
 	/**
-	 * @var int 		Shipping method ID
+	 * @var ?int 		Shipping method ID
 	 * @see setShippingMethod()
 	 */
 	public $shipping_method_id;
@@ -8232,7 +8232,7 @@ abstract class CommonObject
 									$isDependList = 1;
 								}
 
-								$data[(int) $obj->rowid] = $labeltoshow;
+								$data[$obj->rowid] = $labeltoshow;	// Warning: $obj->rowid is an alias and can be an int, but also a string ref.
 							}
 
 							$i++;
