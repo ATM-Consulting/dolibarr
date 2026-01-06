@@ -526,7 +526,8 @@ class ProductCombination
 
 			// MultiPrix
 			if (getDolGlobalString('PRODUIT_MULTIPRICES')) {
-				for ($i = 1; $i <= getDolGlobalInt('PRODUIT_MULTIPRICES_LIMIT'); $i++) {
+				$produit_multiprices_limit = getDolGlobalInt('PRODUIT_MULTIPRICES_LIMIT');
+				for ($i = 1; $i <= $produit_multiprices_limit; $i++) {
 					if ($parent->multiprices[$i] != '' || isset($this->combination_price_levels[$i]->variation_price)) {
 						$new_type = empty($parent->multiprices_base_type[$i]) ? 'HT' : $parent->multiprices_base_type[$i];
 						$new_min_price = $parent->multiprices_min[$i];
@@ -835,7 +836,8 @@ class ProductCombination
 
 		// Init price level
 		if (getDolGlobalString('PRODUIT_MULTIPRICES')) {
-			for ($i = 1; $i <= getDolGlobalInt('PRODUIT_MULTIPRICES_LIMIT'); $i++) {
+			$produit_multiprices_limit = getDolGlobalInt('PRODUIT_MULTIPRICES_LIMIT');
+			for ($i = 1; $i <= $produit_multiprices_limit; $i++) {
 				$productCombinationLevel = new ProductCombinationLevel($this->db);
 				$productCombinationLevel->fk_product_attribute_combination = $newcomb->id;
 				$productCombinationLevel->fk_price_level = $i;

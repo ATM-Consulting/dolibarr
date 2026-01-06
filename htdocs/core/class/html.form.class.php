@@ -3814,7 +3814,7 @@ class Form
 					$optstart .= ' data-supplier-ref="' . dol_escape_htmltag($objp->ref_fourn) . '"';
 					if (isModEnabled('multicurrency')) {
 						$optstart .= ' data-multicurrency-code="' . dol_escape_htmltag($objp->multicurrency_code) . '"';
-						$optstart .= ' data-multicurrency-up="' . dol_escape_htmltag($objp->multicurrency_unitprice) . '"';
+						$optstart .= ' data-multicurrency-unitprice="' . dol_escape_htmltag($objp->multicurrency_unitprice) . '"';
 					}
 				}
 				$optstart .= ' data-description="' . dol_escape_htmltag($objp->description, 0, 1) . '"';
@@ -6332,7 +6332,7 @@ class Form
 		$TCurrency = array();
 
 		$sql = "SELECT code FROM " . $this->db->prefix() . "multicurrency";
-		$sql .= " WHERE entity IN ('" . getEntity('mutlicurrency') . "')";
+		$sql .= " WHERE entity IN ('" . getEntity('multicurrency') . "')";
 		if ($filter) {
 			$sql .= " AND " . $filter;
 		}
@@ -6528,7 +6528,7 @@ class Form
 			// If SERVICE_ARE_ECOMMERCE_200238EC=1 combo list vat rate of purchaser and seller countries
 			// If SERVICE_ARE_ECOMMERCE_200238EC=2 combo list only the vat rate of the purchaser country
 			$selectVatComboMode = getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC');
-			if (isInEEC($societe_vendeuse) && isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()) {
+			if (is_object($societe_vendeuse) && is_object($societe_acheteuse) && isInEEC($societe_vendeuse) && isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()) {
 				// We also add the buyer country code
 				if (is_numeric($type)) {
 					if ($type == 1) { // We know product is a service
@@ -8232,6 +8232,8 @@ class Form
 			if ($tmpfieldstoshow) {
 				$fieldstoshow = $tmpfieldstoshow;
 			}
+		} elseif ($objecttmp->element === 'category') {
+			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
 			$objecttmp->fields['ref'] = array('type' => 'varchar(30)', 'label' => 'Ref', 'showoncombobox' => 1);
@@ -8609,7 +8611,7 @@ class Form
 				    		},
 				    		cache: true
 				    	},
-		 				language: select2arrayoflanguage,
+		 				language: (typeof select2arrayoflanguage === \'undefined\') ? \'en\' : select2arrayoflanguage,
 						containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
 					    placeholder: "' . dol_escape_js($placeholder) . '",
 				    	escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
@@ -8699,7 +8701,7 @@ class Form
 
 					$(".' . $htmlname . '").select2({
 						data: data,
-						language: select2arrayoflanguage,
+						language: (typeof select2arrayoflanguage === \'undefined\') ? \'en\' : select2arrayoflanguage,
 						containerCssClass: \':all:\',					/* Line to add class of origin SELECT propagated to the new <span class="select2-selection...> tag */
 						placeholder: "' . dol_escape_js($placeholder) . '",
 						escapeMarkup: function (markup) { return markup; }, 	// let our custom formatter work
