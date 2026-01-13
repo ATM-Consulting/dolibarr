@@ -2503,11 +2503,29 @@ if ($action == 'create' && $usercancreate) {
 			print $object->delivery_date ? dol_print_date($object->delivery_date, 'dayhour') : '&nbsp;';
 			if ($object->hasDelay() && !empty($object->delivery_date)) {
 				print ' '.img_picto($langs->trans("Late").' : '.$object->showDelay(), "warning");
+
+			}
+			//backport develop
+			// --- SHIPPABLE icon ---
+			if (isModEnabled('stock') && isModEnabled('expedition') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && !empty($object->delivery_date)) {
+				$shippableInfos = $object->getShippableInfos();
+
+				if (!empty($shippableInfos['has_product'])) {
+					print ' ';
+					print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
+
+					if (!empty($shippableInfos['warning'])) {
+						print ' ';
+						print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', 2), '', 2);
+					}
+				}
 			}
 		}
+
 		print '</td>';
 		print '</tr>';
 
+		//----
 		// Delivery delay
 		print '<tr class="fielddeliverydelay"><td>';
 		$editenable = $usercancreate;
@@ -2521,7 +2539,7 @@ if ($action == 'create' && $usercancreate) {
 		print '</td></tr>';
 
 		// Shipping Method
-		if (isModEnabled('expedition')) {
+		if (isModEnabled('shipping')) {
 			print '<tr><td>';
 			$editenable = $usercancreate;
 			print $form->editfieldkey("SendingMethod", 'shippingmethod', '', $object, $editenable);
