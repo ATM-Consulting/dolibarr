@@ -867,7 +867,6 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 	//dol_syslog("functions.lib:restrictedArea $feature, $objectid, $dbtablename, $feature2, $dbt_socfield, $dbt_select, $isdraft");
 	//print "user_id=".$user->id.", features=".join(',', $featuresarray).", objectid=".$objectid;
 	//print ", tableandshare=".$tableandshare.", dbt_socfield=".$dbt_keyfield.", dbt_select=".$dbt_select."<br>";
-
 	// More parameters
 	$params = explode('&', $tableandshare);
 	$dbtablename = (!empty($params[0]) ? $params[0] : '');
@@ -893,7 +892,7 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 			$feature = 'project_task';
 		}
 		if ($feature == 'task' || $feature == 'projet_task') {
-			$feature = 'project_task';
+			$feature = 'projet_task';
 		}
 		if ($feature == 'eventorganization') {
 			$feature = 'agenda';
@@ -1167,7 +1166,6 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 				return false;
 			}
 		}
-
 		if ($sql) {
 			$resql = $db->query($sql);
 			if ($resql) {
