@@ -326,5 +326,11 @@ if (is_object($db)) {
 if ($readfile) {
 	header('Content-Length: '.dol_filesize($fullpath_original_file));
 
+// --- NETTOYAGE DU TAMPON (ANTI-CORRUPTION) ---
+    if (ob_get_length()) {
+        ob_end_clean();
+    }
+    // ---------------------------------------------
+
 	readfileLowMemory($fullpath_original_file_osencoded);
 }
