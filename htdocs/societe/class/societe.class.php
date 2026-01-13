@@ -1196,13 +1196,6 @@ class Societe extends CommonObject
 
 		if ($this->client) {
 			$rescode = $this->check_codeclient();
-			// --- FIX START: Tolérance pour les vieux codes incorrects lors d'un update ---
-			// Si le code est syntaxiquement faux (-1) MAIS que la fiche existe déjà ($this->id > 0),
-			// on ignore l'erreur pour permettre la mise à jour des autres champs.
-//			if ($rescode == -1 && $this->id > 0) {
-//				$rescode = 0;
-//			}
-			// --- FIX END ---
 			if ($rescode != 0 && $rescode != -5) {
 				if ($rescode == -1) {
 					$this->errors[] = 'ErrorBadCustomerCodeSyntax';

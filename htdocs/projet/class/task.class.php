@@ -1201,6 +1201,7 @@ class Task extends CommonObjectLine
 		} else {
 			dol_print_error($this->db);
 		}
+
 		return $tasks;
 	}
 
