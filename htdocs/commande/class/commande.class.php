@@ -4316,7 +4316,7 @@ class Commande extends CommonOrder
 		);
 
 		// Requested naming for statuses
-		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_CLOSED) {
+		if ($this->statut == self::STATUS_DRAFT || $this->statut == self::STATUS_CLOSED) {
 			return $result;
 		}
 

@@ -254,7 +254,7 @@ $coldisplay++;
 	</td>
 	<?php
 	// Shippable Status (Empty cell for edit mode to keep column alignment)
-	if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->status > 0 && $object->status < 3)) {
+	if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->statut > 0 && $object->statut < 3)) {
 		print '<td class="linecolstock center">';
 		print '&nbsp;';
 		print '</td>';
