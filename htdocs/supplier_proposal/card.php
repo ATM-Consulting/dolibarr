@@ -1374,7 +1374,7 @@ if ($action == 'create') {
 		}
 
 		// Delivery date (or manufacturing)
-		print '<tr><td>'.$langs->trans("DeliveryDate").'</td>';
+		print '<tr><td>'.$langs->trans("SupplierProposalDate").'</td>';
 		print '<td colspan="2">';
 		print img_picto('', 'action', 'class="pictofixedwidth"');
 		$datedelivery = dol_mktime(0, 0, 0, GETPOSTINT('liv_month'), GETPOSTINT('liv_day'), GETPOSTINT('liv_year'));
@@ -1728,7 +1728,7 @@ if ($action == 'create') {
 		$langs->load('deliveries');
 		print '<tr><td>';
 		print '<table class="nobordernopadding" width="100%"><tr><td>';
-		print $langs->trans('DeliveryDate');
+		print $langs->trans('SupplierProposalDate');
 		print '</td>';
 		if ($action != 'editdate_livraison' && $object->status != SupplierProposal::STATUS_NOTSIGNED) {
 			print '<td class="right"><a class="editfielda" href="'.$_SERVER["PHP_SELF"].'?action=editdate_livraison&token='.newToken().'&id='.$object->id.'">'.img_edit($langs->transnoentitiesnoconv('SetDeliveryDate'), 1).'</a></td>';
