@@ -1374,7 +1374,9 @@ if ($action == 'create') {
 		}
 
 		// Delivery date (or manufacturing)
+		// start spe chaumeil
 		print '<tr><td>'.$langs->trans("SupplierProposalDate").'</td>';
+		// end spe chaumeil
 		print '<td colspan="2">';
 		print img_picto('', 'action', 'class="pictofixedwidth"');
 		$datedelivery = dol_mktime(0, 0, 0, GETPOSTINT('liv_month'), GETPOSTINT('liv_day'), GETPOSTINT('liv_year'));
