@@ -978,6 +978,7 @@ class SupplierProposal extends CommonObject
 		$sql .= ", total_ttc";
 		$sql .= ", datec";
 		$sql .= ", ref";
+		$sql .= ", ref_fourn";
 		$sql .= ", fk_user_author";
 		$sql .= ", note_private";
 		$sql .= ", note_public";
@@ -1000,6 +1001,7 @@ class SupplierProposal extends CommonObject
 		$sql .= ", 0";
 		$sql .= ", '".$this->db->idate($now)."'";
 		$sql .= ", '(PROV)'";
+		$sql .= ", ".(!empty($this->ref_fourn) ? "'".$this->db->escape($this->ref_fourn)."'" : "null");
 		$sql .= ", ".($user->id > 0 ? ((int) $user->id) : "null");
 		$sql .= ", '".$this->db->escape($this->note_private)."'";
 		$sql .= ", '".$this->db->escape($this->note_public)."'";
@@ -1252,7 +1254,7 @@ class SupplierProposal extends CommonObject
 	{
 		global $conf;
 
-		$sql = "SELECT p.rowid, p.entity, p.ref, p.fk_soc as socid";
+		$sql = "SELECT p.rowid, p.entity, p.ref, p.ref_fourn, p.fk_soc as socid";
 		$sql .= ", p.total_ttc, p.total_tva, p.localtax1, p.localtax2, p.total_ht";
 		$sql .= ", p.datec";
 		$sql .= ", p.date_valid as datev";
@@ -1291,6 +1293,7 @@ class SupplierProposal extends CommonObject
 				$this->entity               = $obj->entity;
 
 				$this->ref                  = $obj->ref;
+				$this->ref_fourn            = $obj->ref_fourn;
 				$this->total_ht             = $obj->total_ht;
 				$this->total_tva            = $obj->total_tva;
 				$this->total_localtax1		= $obj->localtax1;
