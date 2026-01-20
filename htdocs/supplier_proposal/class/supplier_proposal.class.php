@@ -957,6 +957,9 @@ class SupplierProposal extends CommonObject
 
 		// Set tmp vars
 		$delivery_date = $this->delivery_date;
+		if (empty($this->ref_fourn) && !empty($this->ref_supplier)) {
+			$this->ref_fourn = $this->ref_supplier;
+		}
 
 		// Multicurrency
 		if (!empty($this->multicurrency_code)) {
@@ -1294,6 +1297,9 @@ class SupplierProposal extends CommonObject
 
 				$this->ref                  = $obj->ref;
 				$this->ref_fourn            = $obj->ref_fourn;
+				if (empty($this->ref_supplier) && !empty($this->ref_fourn)) {
+					$this->ref_supplier = $this->ref_fourn;
+				}
 				$this->total_ht             = $obj->total_ht;
 				$this->total_tva            = $obj->total_tva;
 				$this->total_localtax1		= $obj->localtax1;
@@ -1442,6 +1448,29 @@ class SupplierProposal extends CommonObject
 			$this->error = $this->db->error();
 			return -1;
 		}
+	}
+
+	/**
+	 * Alias support for ref_supplier updates.
+	 *
+	 * @param string $field
+	 * @param mixed $value
+	 * @param string $table
+	 * @param int|null $id
+	 * @param string $format
+	 * @param string $id_field
+	 * @param User|null $fuser
+	 * @param string $trigkey
+	 * @param string $fk_user_field
+	 * @return int
+	 */
+	public function setValueFrom($field, $value, $table = '', $id = null, $format = '', $id_field = '', $fuser = null, $trigkey = '', $fk_user_field = 'fk_user_modif')
+	{
+		if ($field === 'ref_supplier') {
+			$field = 'ref_fourn';
+		}
+
+		return parent::setValueFrom($field, $value, $table, $id, $format, $id_field, $fuser, $trigkey, $fk_user_field);
 	}
 
 	/**
