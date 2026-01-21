@@ -1016,7 +1016,7 @@ if (empty($reshook)) {
 							$defbomidac = 0; // to avoid cloning same BOM twice
 							// ****** BACPkORT 36603 - A Supp quand merged *******
 							$clone_defbom_raw = GETPOST('clone_defbom', 'alpha');
-							$clone_defbom = (!empty($clone_defbom_raw) && $clone_defbom_raw !== '0') ? 1 : 0;
+							$clone_defbom = (!empty($clone_defbom_raw) && dol_escape_htmltag($clone_defbom_raw) !== '0') ? 1 : 0;
 							if ($clone_defbom && $object->fk_default_bom > 0) {
 								// ****** FIN BACkPORT 36603 - A Supp quand merged *******
 								$bomstatic = new BOM($db);
