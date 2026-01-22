@@ -1,8 +1,0 @@
-.ui-widget {
-  &-content {
-    a {
-      /* #278 - Overload color css inline by jquery-ui.css */
-      color: currentColor;
-    }
-  }
-}

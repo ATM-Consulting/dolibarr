@@ -1,1 +1,0 @@
-a[class*=tmenu][id^=mainmenua],a.tmenulabel{--textAlign: left;--padding: 1em;--fontSize: 1rem;--width: auto}a.tmenuimage:not(.menuhider){--display: none}@media(orientation: portrait){ul.tmenu>li{--minWidth: auto}}div.topmenuimage{display:unset}

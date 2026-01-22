@@ -1,7 +1,0 @@
-.logistic-content-container > .logistic-box-container > *:not(.logistic-stepper) {
-  @include max-width-sm {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-}
