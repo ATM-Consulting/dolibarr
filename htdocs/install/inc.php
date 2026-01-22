@@ -70,8 +70,8 @@ $conffile = "../conf/conf.php";
 $conffiletoshow = "htdocs/conf/conf.php";
 // For debian/redhat like systems
 // start spe hobo
-$conffile = "/etc/dolibarr/conf.php";
-$conffiletoshow = "/etc/dolibarr/conf.php";
+//$conffile = "/etc/dolibarr/conf.php";
+//$conffiletoshow = "/etc/dolibarr/conf.php";
 // end spe hobo
 
 $short_options = "c:h";
