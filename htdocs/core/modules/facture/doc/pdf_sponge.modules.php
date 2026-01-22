@@ -2708,19 +2708,21 @@ class pdf_sponge extends ModelePDFFactures
 					$pdf->SetXY($posx + 2, $posy - 5);
 					$pdf->SetFont('', '', $default_font_size - 2);
 					$pdf->MultiCell($widthrecbox, 0, $outputlangs->transnoentities('ShippingTo'), 0, 'L', false);
-					$pdf->RoundedRect($posx, $posy, $widthrecbox, $hautcadre, $this->corner_radius, '1234', 'D');
 
 					// Show shipping name
 					$pdf->SetXY($posx + 2, $posy + 3);
 					$pdf->SetFont('', 'B', $default_font_size);
 					$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_name_shipping, '', 'L');
 
-					$posy = $pdf->getY();
-
 					// Show shipping information
-					$pdf->SetXY($posx + 2, $posy);
+					$pdf->SetXY($posx + 2, $pdf->getY());
 					$pdf->SetFont('', '', $default_font_size - 1);
 					$pdf->MultiCell($widthrecbox - 2, 2, $carac_client_shipping, '', 'L');
+
+					// Recalculate height of shipping frame
+					$hautcadre = max($hautcadre, ($pdf->getY() - $posy) + 4);
+
+					$pdf->RoundedRect($posx, $posy, $widthrecbox, $hautcadre, $this->corner_radius, '1234', 'D');
 
 					$shipp_shift += $hautcadre + 10;
 				}
