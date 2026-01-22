@@ -1,0 +1,29 @@
+.box-section {
+  .box-section-header {
+    padding: 1rem 0 0;
+    font-weight: bold;
+    .box-section-collapse-btn {
+      display: none;
+    }
+  }
+  .box-section-collapsible {
+    height: auto;
+    max-height: 100%;
+    padding: 0 0 1rem;
+
+    &.expanded {
+      max-height: 100%;
+    }
+  }
+}
+
+.box-section {
+  // grid-row: span 10;
+  & > .boxfield-text {
+    order: 1;
+    grid-column: 1 / -1;
+  }
+  & > [class*="carousel"] {
+    order: 2;
+  }
+}

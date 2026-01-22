@@ -1,0 +1,189 @@
+body {
+  &:not(.sidebar-collapse) {
+    .mainmenu.menu.topmenuimage:before {
+      content: "\f00d" !important;
+    }
+  }
+  * > script,
+  * > style,
+  style,
+  script {
+    display: none !important;
+  }
+}
+.side-nav-vert,
+#id-top {
+  div#tmenu_tooltip {
+    padding: 0;
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+div.topmenuimage {
+  left: auto !important; // Overload eldy style.css.php:8266:8055:8135:8175
+  margin: auto !important; // Overload eldy style.css.php:8266:8055:8135:8175
+  top: auto !important; // Overload eldy style.css.php:8266:8055:8135:8175
+  &:before {
+    font-size: 1em !important;
+    line-height: 1;
+    height: 2em;
+  }
+}
+
+div.login_block {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+
+  gap: 1rem;
+  border-radius: 1rem;
+  // margin: 0.5rem;
+  padding: 1rem 0.25rem;
+
+  /**/
+  position: relative;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: var(--colortextbackhmenu);
+  width: auto !important;
+  height: auto !important;
+  min-width: initial;
+  max-width: initial;
+  line-height: inherit;
+
+  div.login_block_other {
+    // position: fixed;
+    // bottom: 1rem;
+    // right: 1rem;
+    // max-width: none;
+
+    margin: 0 auto;
+    opacity: 0.5;
+    // color: var(--colortext);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    * {
+      color: inherit !important;
+    }
+
+    .login_block_elem {
+      line-height: inherit;
+      height: auto;
+    }
+  }
+
+
+
+  // #169
+  @include max-width-sm {
+  }
+
+  span.aversion {
+    font-size: 10px;
+    font-family: monospace;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    span {
+      width: 1.9em;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      font-size: inherit;
+      &:before {
+        content: "V";
+      }
+    }
+  }
+
+  & > * {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    & > .nowrap {
+      flex-wrap: wrap;
+    }
+  }
+  & > .login_block_user {
+    line-height: 1;
+    height: auto;
+    width: 100%;
+    .login_block_elem {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-direction: row;
+      float: none;
+      padding: 0 !important;
+
+      & > * {
+        padding: 0 !important;
+      }
+      a.login-dropdown-a:not([href*="user/card.php"]) {
+        font-size: 1.3rem;
+      }
+    }
+
+    // #169
+    @include max-width-sm {
+      .user-header {
+        border-top: var(--border-width) var(--border-style)
+          var(--border-color-light);
+      }
+      .user-body > #topmenuloginmoreinfo {
+        border-top: var(--border-width) var(--border-style)
+          var(--border-color-light);
+        height: 10em;
+        overflow-y: auto;
+      }
+      //pour les boutons 'fiche' & 'logout'
+      .user-footer {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        * {
+          float: none !important;
+        }
+      }
+    }
+  }
+
+  & > .login_block_other {
+    //pour retirer l'icon 'impression'
+    div.login_block_elem[title*="impression"] {
+      // display: none;// Add Constante option for hide this icon -> TODO
+    }
+  }
+
+  .helppresentcircle {
+    position: absolute;
+    display: none;
+  }
+}
+
+/* DROPDOWN */
+.dropdown-menu {
+}
+.dropdown-toggle {
+  position: relative;
+}
+.tmenu div.dropdown-menu,
+.login_block div.dropdown-menu,
+.topnav div.dropdown-menu,
+.side-nav-vert .user-menu .dropdown-menu {
+  min-width: 100%;
+  max-width: 400px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.menuhider {
+  display: inherit !important;
+}
+
+// .tmenu > li > div > .tmenuimage > div:not(.menu) {
+// height: 32px !important; // #131
+// }

@@ -1,0 +1,48 @@
+/* smartphones, touchscreens */
+@mixin touchscreens() {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+} /* stylus-based screens */
+@mixin stylus() {
+  @media (hover: none) and (pointer: fine) {
+    @content;
+  }
+} /* Nintendo Wii controller, Microsoft Kinect */
+@mixin consoles() {
+  @media (hover: hover) and (pointer: coarse) {
+    @content;
+  }
+} /* mouse, touch pad */
+@mixin mouse() {
+  @media (hover: hover) and (pointer: fine) {
+    @content;
+  }
+}
+
+@media (hover: hover) {
+}
+@media (hover: none) {
+}
+@media (pointer: coarse) {
+}
+@media (pointer: fine) {
+}
+@media (pointer: none) {
+}
+
+/* at least one input mechanism of the device includes a pointing device of limited accuracy. */
+@media (any-pointer: coarse) {
+} /* at least one input mechanism of the device includes an accurate pointing device. */
+@media (any-pointer: fine) {
+} /* the device does not include any pointing device. */
+@media (any-pointer: none) {
+}
+
+/* one or more available input mechanism(s) can hover over elements with ease */
+@media (any-hover: hover) {
+} /* one or more available input mechanism(s) can hover, but not with ease (for example simulating the hovering when performing a long touch) */
+@media (any-hover: on-demand) {
+} /* one or more available input mechanism(s) cannot hover or there are no pointing input mechanisms */
+@media (any-hover: none) {
+}

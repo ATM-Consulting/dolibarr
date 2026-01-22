@@ -1,0 +1,16 @@
+/* TEST */ /* For overstyle all paginations... */
+@mixin paginations() {
+  div.pagination {
+    & > ul {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: baseline;
+      gap: 1em;
+
+      & > li {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  }
+}

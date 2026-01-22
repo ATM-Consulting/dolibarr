@@ -1,0 +1,39 @@
+.dashboard-section {
+  @include multiboxcontainer();
+  margin: 1em auto !important;
+  @include min-width-sm {
+    columns: 2;
+  }
+  * > .box {
+    table {
+      border: var(--border-width) var(--border-style) var(--border-color-light);
+      border-radius: var(--border-radius--medium);
+      tr.oddeven > td > a {
+        text-decoration: underline;
+
+        font-weight: bold;
+      }
+      tr:last-child > td {
+        border: none !important;
+      }
+    }
+
+    .box_titre > td {
+      font-weight: bold;
+    }
+    a {
+    }
+  }
+
+  .title {
+    column-span: all;
+  }
+
+  .fichecenterbis {
+    margin-top: 0px;
+  }
+
+  .fichehalfleft {
+    width: 100%;
+  }
+}

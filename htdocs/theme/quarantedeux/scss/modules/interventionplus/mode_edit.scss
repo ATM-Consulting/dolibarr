@@ -1,0 +1,22 @@
+body {
+  #addPartBtn {
+    display: none;
+  }
+  &.focus {
+    a {
+      &[href*="focus=0"] {
+        @include tab-item-active();
+      }
+    }
+  }
+  &.edit {
+    #addPartBtn {
+      display: inherit;
+    }
+    a {
+      &[href*="edit=0"] {
+        @include tab-item-active();
+      }
+    }
+  }
+}

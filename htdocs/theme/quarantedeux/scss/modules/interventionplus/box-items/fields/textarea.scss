@@ -1,0 +1,8 @@
+[class*="boxfield-textarea"] {
+  flex-direction: column;
+  align-items: flex-start;
+  grid-row: span 10;
+  .content {
+    line-height: 1.4em;
+  }
+}

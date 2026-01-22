@@ -1,0 +1,151 @@
+body#mainbody {
+  input.button:not(.buttongen):not(.bordertransp),
+  a.button:not(.buttongen):not(.bordertransp),
+  *[class*="butAction"],
+  a[class*="but"]:not([class*="quicklist-button"]):not([class*="cke"]) {
+    @include default_button();
+
+    //good action
+    //href
+    &[href*="action=create"],
+    &[href*="action=valid"],
+    &[href*="action=print"],
+    &[href*="action=received"],
+    &[href*="action=accept_intervention"] {
+      --btn-color: var(--btn-color-success);
+    }
+    //data-back-url
+    &[data-back-url*="action=set_waiting_part"],
+    &[data-back-url*="action=set_repaired"] {
+      --btn-color: var(--btn-color-success);
+    }
+    //data-toggle #364
+    &[data-toggle*="dropdown"] {
+      --btn-color: var(--btn-color-success);
+    }
+
+    //name
+    &[name*="save"],
+    &[name*="sendit"],
+    &[name*="print"],
+    &[name*="linkit"] {
+      --btn-color: var(--btn-color-success);
+    }
+    //value
+    &[value*="Filtrer"],
+    &[value*="Ajouter"] {
+      --btn-color: var(--btn-color-success);
+    }
+    //autre
+    &.btnTakePicture,
+    &#add_title_line,
+    &#add_total_line,
+    &#add_free_text,
+    &#addpart,
+    &#saveReceipt,
+    &#outgoingcall,
+    .goodActionButton {
+      --btn-color: var(--btn-color-success);
+    }
+
+    //risky action
+    &[href*="action=modif"],
+    &[href*="action=edit"],
+    &[href*="action=export"],
+    &#signalerror,
+    .riskyActionButton {
+      //--btn-background: blue;
+      --btn-color: var(--btn-color-warning);
+    }
+
+    //dangerous action
+    //href
+    &[href*="action=delete"],
+    &[href*="action=close"],
+    &[href*="action=remove"],
+    &[href*="action=canceled"],
+    &[href*="action=clone"],
+    &[href*="action=merge"],
+    &[href*="action=setLocked&value=1"] {
+      --btn-color: var(--btn-color-danger);
+    }
+    //data-back-url
+    &[data-back-url*="refuse_intervention"],
+    &[data-back-url*="action=set_not_repairable"] {
+      // --btn-background: red;
+      --btn-color: var(--btn-color-danger);
+    }
+    //autre
+    &.butActionDelete,
+    &#action-clone,
+    &[class*="butActionRefused"],
+    .dangerActionButton {
+      // --btn-background: red;
+      --btn-color: var(--btn-color-danger);
+    }
+    // Disable button
+    &[class*="butActionRefused"] {
+      opacity: 0.5;
+    }
+
+    //usefull action
+    &#scSendEmailBtn,
+    &[id*="addCommentBtn"],
+    &[href*="action=presend"],
+    .utilityActionButton {
+      --btn-color: var(--btn-color-utility);
+    }
+  }
+
+  #linked_file > a {
+    @include default_button();
+    --btn-color: var(--btn-color-warning);
+  }
+
+}
+
+/* OVERLOAD DOLIBUTTON CONTAINER */
+div.divButAction {
+  order: 1;
+  margin-bottom: initial !important;
+}
+
+// #270
+div.tabsAction > * {
+  order: 99 !important;
+}
+
+// #270
+#my-booking-title, #my-booking-product-booking {
+  order: 1 !important;
+}
+
+.dropdown.inline-block.dropdown-holder.open {
+  display: flex;
+  position: relative;
+  z-index: var(--z_index100);
+
+  & > .dropdown-content {
+    bottom: 100%;
+    background: linear-gradient(transparent, var(--colorbackbody));
+    border: none;
+    backdrop-filter: blur(3px);
+    right: auto !important;
+    display: flex;
+    flex-direction: column
+  }
+}
+
+body#mainbody div.dropdown-holder.open > a[class*="but"]:not([class*="quicklist-button"]):not([class*="cke"])[data-toggle*="dropdown"] {
+  background: var(--btn-color, var(--colortextlink)) !important;
+  color: var(--btn-background, var(--colorbackbody)) !important;
+}
+
+body#mainbody div.dropdown-holder.open > a[class*="but"]:not([class*="quicklist-button"]):not([class*="cke"])[data-toggle*="dropdown"]::before {
+  transform: none !important;
+}
+
+/* Surcharge of module Saturne on control code42 #401 */
+.dropdown-toggle:after {
+  display: inline-block !important;
+}

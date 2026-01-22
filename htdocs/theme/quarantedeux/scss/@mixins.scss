@@ -1,0 +1,28 @@
+/* BREAKPOINTS */
+$screen-sm: 768px;
+$screen-md: 1024px;
+$screen-lg: 1440px;
+$screen-xl: 1920px;
+
+/* 1 - Fonctions primaires */
+// @import "@mixins/**/**/*";
+@import "@mixins/debug";
+@import "@mixins/depreciated";
+
+@import "@mixins/@media/breakpoints";
+@import "@mixins/@media/dark_light_mode";
+@import "@mixins/@media/orientation";
+@import "@mixins/@media/pixelratio";
+@import "@mixins/@media/screen_type";
+
+@import "@mixins/@objects/boxtable";
+@import "@mixins/@objects/buttons";
+@import "@mixins/@objects/inputs";
+@import "@mixins/@objects/tabs";
+@import "@mixins/@objects/textes";
+@import "@mixins/@objects/tabsaction";
+
+@import "@mixins/styles/box";
+
+/* TEST */
+@import "@mixins/@objects/pagination";

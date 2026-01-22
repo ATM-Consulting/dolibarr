@@ -1,0 +1,88 @@
+div.fiche {
+  .interventionplus-box-container-footer {
+    width: 100% !important;
+    overflow-x: auto !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    margin: 0 !important;
+  }
+  .interventionplus-box-container-header {
+    @include tabs();
+    border-bottom: var(--border-width) var(--border-style)
+      var(--border-color-light) !important;
+    //overflow-x: auto !important; //#135
+    width: 100% !important;
+    margin: 0 !important;
+
+    & > * {
+      display: flex;
+
+      &.left-side {
+        flex-grow: 1;
+        .navigation {
+          display: flex;
+          .navigation__item {
+            a {
+              @include tab-item();
+            }
+            &.active,
+            &.tabsElemActive {
+              @include tab-item-active();
+            }
+          }
+        }
+      }
+      &.right-side {
+        padding: 0 0.8rem;
+        margin: 0;
+        a {
+          @include tab-item();
+        }
+
+        // a[href*="focus=&edit=0"]:nth-child(1),
+        // a[href*="focus=1&edit=1"]:nth-child(1),
+        // a[href*="focus=0&edit=0"]:nth-child(1),
+        // a[href*="focus=1&edit=0"]:nth-child(1),
+        // a[href*="focus=0&edit=1"]:nth-child(1)  // 166
+        // &[value*="Éditer"] {
+        // background-color:white;
+        // border-radius:50px;
+        // box-shadow: 0 3px currentColor;
+        // }
+
+        i {
+          padding-right: 1rem;
+        }
+      }
+    }
+  }
+  .interventionplus-box {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+  }
+  .interventionplus-box-container {
+    margin-left: calc(var(--inner-lr) * -1);
+    margin-right: calc(var(--inner-lr) * -1);
+    padding: 1rem var(--inner-lr);
+    // background: var(--color_back_hmenu);
+    // margin-bottom: calc(var(--inner-tb) * -1);
+    & > .fichecenter {
+      display: block;
+    }
+  }
+}
+/*@include max-width-sm() {
+  //#147
+  .divsearchfield {
+    display: flex;
+    flex-wrap: wrap;
+    width: 30%;
+    font-size: 0.8rem;
+    span {
+      width: 100% !important;
+    }
+    b {
+      left: 84% !important;
+    }
+  }
+}*/

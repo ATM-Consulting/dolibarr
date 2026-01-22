@@ -1,0 +1,16 @@
+body.focus {
+  .breadCrumbHolder.module {
+    padding-left: 0;
+  }
+  #id-container {
+    padding: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 5;
+
+    #id-right {
+      width: 100%;
+      // flex-basis: 100%;
+    }
+  }
+}

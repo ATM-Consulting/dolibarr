@@ -1,0 +1,19 @@
+/* WIP -> To integrate in super CTRL Stylesheet */
+section.dashboard-section {
+  overflow: inherit !important;
+  column-gap: var(--column-gap, 1rem);
+  .badge.badge-status {
+    display: block !important;
+    float: inherit !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25em;
+    padding: 0.5em 0.25em;
+    .material-icons {
+      font-size: 1.5em;
+      margin-top: -0.2em;
+      line-height: 1em;
+      vertical-align: middle;
+    }
+  }
+}

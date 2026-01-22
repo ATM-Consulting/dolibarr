@@ -1,0 +1,9 @@
+form[action*="lead/list.php"] {
+  height: auto !important;
+}
+form[action*="lead/list.php"] * > tr {
+  background: var(--colorbacktitle1) !important;
+}
+form[action*="lead/list.php"] * > td > input, form[action*="lead/list.php"] * > td > select {
+  background-color: var(--colorbackbody) !important;
+}

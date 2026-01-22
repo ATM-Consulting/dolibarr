@@ -1,0 +1,13 @@
+/*KANBAN*/
+.kanban-grid-wrapper {
+  @include max-width-sm {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  header {
+    z-index: var(--z_index60) !important; //#162
+  }
+}
+
+

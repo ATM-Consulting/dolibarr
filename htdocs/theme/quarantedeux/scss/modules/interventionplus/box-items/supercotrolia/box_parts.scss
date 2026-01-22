@@ -1,0 +1,20 @@
+#SuperCotroliaBoxParts {
+  // background: var(--colorbackbody);
+  & > .content {
+    padding: 0;
+    & > .tabcontent {
+      padding: 1rem;
+    }
+  }
+  &.grid-xl,
+  &.grid-l {
+    .tabcontent.visible {
+      // @include minigrid(2);
+    }
+  }
+  &.grid-xxl {
+    .tabcontent.visible {
+      // @include minigrid(3);
+    }
+  }
+}

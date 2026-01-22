@@ -1,0 +1,124 @@
+@mixin default_button() {
+  font-size: 1rem;
+  padding: 0.6em 1.2em;
+  line-height: 1.1667em;
+  color: var(--btn-color, var(--colortextlink)) !important; // Important overrides eldy
+  background: var(--btn-background, var(--colorbackbody)) !important; // Corrects CSS inline GP #401
+  border: solid var(--border-width) var(--btn-background, currentColor);
+  border-radius: var(--border-radius, 5px);
+  text-transform: uppercase;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  gap: 0.5em;
+  position: relative;
+  box-shadow: none;
+  margin: 0.25em 0em !important; // Important overrides H2G2
+
+  &.h2g2multiselect__chevron {
+    border-radius: 0 var(--border-radius, 5px) var(--border-radius, 5px) 0;
+    border-left: 0;
+  }
+
+  &.h2g2multiselect__button {
+    border-radius: var(--border-radius, 5px) 0 0 var(--border-radius, 5px);
+  }
+
+  i:not(.isfavorite),
+  span {
+    color: var(--btn-color, var(--colortextlink));
+    margin: 0;
+    align-content: center;
+  }
+  // overflow: hidden;
+  @include hover_style_button();
+}
+
+@mixin hover_style_button($currentColor: currentColor, $opacity: 0.2) {
+  position: relative;
+  z-index: var(--z_index30);
+
+  &:before {
+    pointer-events: none;
+    z-index: var(--z_index20);
+    content: "";
+    background: $currentColor;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    bottom: 50%;
+    right: 50%;
+    opacity: $opacity;
+    border-radius: 100%;
+    transition: all 0.5s;
+  }
+  &:hover {
+    opacity: 1;
+    &:before {
+      pointer-events: none;
+      // filter: blur(0px);
+      opacity: 0.3;
+      border-radius: 0%;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      transition: all 0.15s;
+    }
+  }
+  &:active {
+    &:before {
+      background: var(--color_text_link);
+      opacity: 0.6;
+    }
+  }
+  & input {
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+@mixin small_button() {
+  padding: 0.25em 0.5em;
+  border-radius: 0.2em;
+  overflow: hidden;
+  @include hover_style_button();
+}
+
+@mixin icon_button() {
+  display: flex;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: hidden;
+  text-align: center;
+  @include hover_style_button();
+  .fa::before {
+    // @include material-icons();
+    font-size: 1.2em;
+  }
+  & > * {
+    font-size: 1.2em;
+
+    float: initial !important;
+  }
+}
+
+@mixin action_button() {
+  @include default_button();
+  background: var(--color_text_title_link);
+  color: var(--colorbackbody);
+}
+
+@mixin horitab_button() {
+  @include basetext_button();
+  padding: 0.8em 1.6em;
+}

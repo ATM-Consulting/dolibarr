@@ -1,0 +1,19 @@
+@import "../../../scss/@mixins.scss";
+
+a.tmenuimage {
+  // border: solid 1px;
+  --fontSize: 1.25rem;
+
+  --padding: 0rem;
+  // --width: 100%;
+  --height: 4rem;
+  --lineHeight: 1rem;
+  @include orientation_portrait {
+    --width: 4rem;
+  }
+}
+
+a[class*="tmenu"][id^="mainmenua"] /*v13->v18->??*/,
+a.tmenulabel {
+  --display: none;
+}

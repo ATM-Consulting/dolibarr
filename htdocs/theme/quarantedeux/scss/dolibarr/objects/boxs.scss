@@ -1,0 +1,27 @@
+//pour la vue kanban qui sera gerer plus tard
+div[class*="kanban"] {
+  .col-s,
+  .col-l,
+  .col-xl {
+    @include oneboxcontainer();
+  }
+  #kanban {
+    @include multiboxcontainer();
+  }
+}
+
+//
+// SuperCotrolia
+//
+
+//Réception
+.logistic-box-container,
+.logistic-inter-box {
+  @include oneboxcontainer();
+}
+
+// Gestion du styles de formulaire 'CRUD' (tous ce qui est creation d'objet)
+form[action*="card.php"] > .tabBar,
+form[action*="create_api_user.php"] > .tabBar {
+  @include formbox();
+}

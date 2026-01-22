@@ -1,0 +1,82 @@
+div.carousel {
+  grid-column: 1 / -1 !important;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  height: 25vh;
+  min-height: 200px;
+  max-height: 300px;
+  position: relative;
+  // box-shadow: 0 1px currentColor;
+  border-radius: var(--border-radius, 1rem);
+  background: var(--colorbackbody);
+  // box-shadow: 0 0 3rem -1.5rem var(--color_back_hmenu);
+  overflow: hidden;
+  transition: all 0.5s;
+  &:hover {
+    box-shadow: 0 0 3rem -1.5rem var(--colorbackhmenu1);
+    .carousel__nav {
+      .carousel__button {
+      }
+    }
+  }
+  .carousel__viewport {
+    height: 100%;
+    .carousel__track {
+      height: 100%;
+      .carousel__slide {
+        height: 100%;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        //border: solid 1px;
+        position: relative;
+        a {
+          display: flex;
+          width: auto;
+          height: 100%;
+          transform: scale(1);
+          transition: all 1s;
+          overflow: hidden;
+          align-items: center;
+          &:hover {
+            // transform: scale(1.1);
+          }
+          img {
+            //   border: solid 10px;
+            //   position: absolute;
+            margin: 0 1rem !important;
+            // display: block;
+            height: 100%;
+            width: 100%;
+
+            object-fit: contain;
+            object-position: center center;
+            // box-shadow: 0 0.25rem 3rem -2rem var(--colortext);
+          }
+          &[href*=".pdf"] {
+            img {
+              width: 64px;
+              height: 64px;
+              object-fit: contain;
+            }
+          }
+        }
+      }
+    }
+  }
+  .carousel__nav {
+    .carousel__button {
+      @include icon_button();
+      background: white;
+      position: absolute;
+      width: 3rem;
+      height: 3rem;
+    }
+  }
+  .carousel__dots {
+    position: absolute;
+    bottom: 0;
+  }
+}

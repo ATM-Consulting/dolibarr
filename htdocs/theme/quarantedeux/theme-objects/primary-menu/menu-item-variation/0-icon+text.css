@@ -1,0 +1,17 @@
+@charset "UTF-8";
+/* BREAKPOINTS */
+/* 1 - Fonctions primaires */
+/* BREAKPOINTS */
+/* Detection de l'orientation de l'écran entre portrait ou paysage */
+/* smartphones, touchscreens */
+/* stylus-based screens */
+/* Nintendo Wii controller, Microsoft Kinect */
+/* mouse, touch pad */
+/* at least one input mechanism of the device includes a pointing device of limited accuracy. */
+/* at least one input mechanism of the device includes an accurate pointing device. */
+/* the device does not include any pointing device. */
+/* one or more available input mechanism(s) can hover over elements with ease */
+/* one or more available input mechanism(s) can hover, but not with ease (for example simulating the hovering when performing a long touch) */
+/* one or more available input mechanism(s) cannot hover or there are no pointing input mechanisms */
+/* TEST */
+/* TEST */ /* For overstyle all paginations... */

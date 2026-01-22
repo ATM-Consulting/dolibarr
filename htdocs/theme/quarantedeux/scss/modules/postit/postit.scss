@@ -1,0 +1,10 @@
+@media (orientation: portrait) {
+  a[href*="createNote"], div[id^="postit-"].postit {
+    display: none !important;
+  }
+}
+
+
+div[data-edit-event="click.textEditor"] > textarea {
+  color: rgba(0, 0, 0, 0.90) !important;
+}

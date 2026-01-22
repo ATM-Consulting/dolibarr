@@ -1,0 +1,115 @@
+.historic-header {
+  width: 100%;
+
+  .filter-container {
+    display: flex;
+    overflow-x: auto;
+    justify-content: space-around;
+    // flex-wrap: wrap;
+
+    & > * {
+      padding: 1rem;
+      cursor: pointer;
+      border: solid 1px;
+
+      &:before {
+        @include material-icons();
+        content: "\e836";
+        margin-right: 0.5em;
+      }
+      &.active {
+        order: -1;
+        font-weight: bold;
+        &:before {
+          content: "\e837";
+        }
+      }
+    }
+  }
+}
+ul#historic {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 0;
+  margin-bottom: 3rem;
+  border: var(--color_border_lines_h);
+  border-bottom: none;
+  list-style: none;
+  & > li {
+    padding: 1rem 2rem;
+    border-top: var(--color_border_lines_h);
+    background: var(--colorbacklinepair1);
+    &:last-child {
+      border-bottom: var(--color_border_lines_h);
+    }
+    &:nth-child(even) {
+      background: var(--colorbacklinepair1);
+    }
+    .timeline-content {
+      position: relative;
+      .timeline-icon {
+        left: -2rem;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        background: white;
+        position: absolute;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 2rem;
+      }
+      .timeline-content-container {
+        display: flex;
+        align-items: center;
+        & > * {
+          flex-grow: 1;
+          & > * {
+            display: flex;
+            align-items: center;
+            & > * {
+              margin: 0 0.5rem 0 0;
+              padding: 0;
+              &:first-child {
+                white-space: nowrap;
+                float: left;
+              }
+              &[onclick*="hideField"] {
+                white-space: nowrap;
+              }
+              &.timeline-msg {
+                white-space: nowrap;
+              }
+              &.badge {
+                white-space: nowrap;
+                padding: 0.5rem;
+              }
+            }
+          }
+          @include max-width-sm() {
+            //#145
+            & > * {
+              display: block;
+            }
+          }
+        }
+        .timeline-date {
+          flex-grow: 0;
+
+          font-weight: bold;
+        }
+      }
+    }
+    &.id-statut {
+      z-index: var(--z_index70);
+      margin-top: 2rem;
+    }
+  }
+}
+
+.interventionplus-box {
+  width: 100% !important;
+  padding: 1rem var(--inner-lr);
+}

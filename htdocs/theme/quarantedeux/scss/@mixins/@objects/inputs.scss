@@ -1,0 +1,73 @@
+@mixin inputs_base() {
+  padding: 0.6rem;
+  font-size: 1rem;
+  display: inline-block;
+  font-family: inherit !important;
+  outline: none;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  transition: all 0.25s;
+  border: none;
+  // color: inherit;
+  background: var(--background_field);
+  &:focus {
+    background: var(--color_backline_checked) !important;
+
+    // border: solid 1px var(--color_text_link) !important;
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    box-shadow: 0 6px 0 0 currentColor !important;
+  }
+}
+
+@mixin default_input() {
+  @include inputs_base();
+  box-shadow: 0 0px 0 0 currentColor, inset 0 -1px currentColor;
+
+  &:hover {
+    box-shadow: 0 3px 0 0 currentColor, inset 0 -3px currentColor;
+    // border: solid 1px var(--color_text_link);
+    background: var(--color_backline_hover);
+  }
+}
+@mixin disable_input() {
+  cursor: default;
+  // pointer-events: none;
+  @include inputs_base();
+  &:hover {
+  }
+}
+@mixin readmode_input() {
+  cursor: default;
+  // pointer-events: none;
+
+  background: transparent;
+  // border-bottom: solid 1px;
+
+  &:hover {
+  }
+}
+@mixin editmode_input() {
+  cursor: default;
+  // pointer-events: none;
+  @include default_input();
+}
+
+@mixin label_required() {
+  font-weight: bold;
+  color: var(--color_text_title_link);
+  &:before {
+    color: currentColor;
+    content: "*";
+    font-size: 1.5em;
+    line-height: 0em;
+    margin-right: 0.2em;
+  }
+  // color: red;
+}
+
+@mixin input_type_textarea() {
+  margin: 0 !important;
+  resize: none;
+  width: 100% !important;
+  // min-width: 400px;
+  height: 10.2em;
+}

@@ -129,8 +129,10 @@ $conffiletoshowshort = "conf.php";
 $conffile = "conf/conf.php";
 $conffiletoshow = "htdocs/conf/conf.php";
 // For debian/redhat like systems
-//$conffile = "/etc/dolibarr/conf.php";
-//$conffiletoshow = "/etc/dolibarr/conf.php";
+// start spe hobo
+$conffile = "/etc/dolibarr/conf.php";
+$conffiletoshow = "/etc/dolibarr/conf.php";
+// end spe hobo
 
 
 // Include configuration

@@ -1,0 +1,53 @@
+@media only screen and (max-width: 694px) {
+  html body {
+    position: relative;
+    height: 100vh;
+    overflow: auto;
+    color: var(--colortextbackhmenu);
+    background: var(--colorbackhmenu1);
+  }
+  html body #id-container {
+    color: var(--colortext) !important;
+    background: var(--colorbackbody) !important;
+  }
+  html body .breadCrumbHolder.module {
+    position: relative;
+  }
+  html body #id-right {
+    padding-top: 1rem;
+  }
+  html body > .side-nav-vert #tmenu_tooltip #mainmenutd_menu,
+  html body #id-top #tmenu_tooltip #mainmenutd_menu {
+    order: 99999;
+    right: 0;
+  }
+  html body > .side-nav-vert .login_block,
+  html body #id-top .login_block {
+    position: fixed;
+    top: 1rem !important;
+    right: 1rem;
+    left: auto !important;
+    padding: 1rem;
+    background: var(--colorbackhmenu1);
+    border-radius: 1rem;
+    flex-direction: column-reverse;
+  }
+  html body.sidebar-collapse .login_block {
+    display: none !important;
+  }
+  html body #id-container {
+    overflow: auto;
+    height: auto;
+    min-height: 100vh;
+  }
+  html body #id-container .side-nav {
+    right: 0;
+    max-width: none;
+    position: fixed !important;
+  }
+}
+@media only screen and (max-width: 694px) and (orientation: landscape) {
+  html body #id-container .side-nav {
+    left: var(--width-primary-menu);
+  }
+}

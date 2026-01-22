@@ -1,0 +1,16 @@
+/* Fichier destiné à recevoir tout le code custom pour le module ORDRES DE FABRICATION (MRP) de dolibarr */
+
+form[action*="/mrp/mo_production.php"] {
+
+  * > .fichehalfleft > div > table > tbody > tr:not([name]) > td:nth-child(1) {
+    width: 100% !important;
+  }
+
+  * > .fichehalfleft > div > table > tbody > tr > td {
+    width: fit-content !important;
+  }
+
+  * > input.width50[list*='batch-'] {
+    width: fit-content !important;
+  }
+}

@@ -1,0 +1,9 @@
+.subtotal-line-action-btn {
+  margin: 0.5em !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    #tablelines tr[rel=subtotal] {
+        background: var(--colorbacktitle1) !important;
+    }
+}

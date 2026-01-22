@@ -1,0 +1,11 @@
+form#searchFormList[action*="/custom/packinglist/packinglist.php"] {
+  position: static !important;
+}
+
+.ui-dialog .ui-dialog-content {
+  max-height: 70vh !important;
+}
+
+#dialog-confirm > div.confirmquestions > div.margintoponly > table > tbody > tr:not(.liste_titre) > td.nowrap {
+  white-space: normal;
+}

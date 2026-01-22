@@ -1,0 +1,1 @@
+La version du thème dolibarr est : 18.0.04

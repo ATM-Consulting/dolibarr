@@ -1,0 +1,9 @@
+form[action*="ihm.php"] {
+  & > .center {
+    position: sticky;
+    bottom: 0;
+    &:not(:last-of-type) {
+      display: none;
+    }
+  }
+}

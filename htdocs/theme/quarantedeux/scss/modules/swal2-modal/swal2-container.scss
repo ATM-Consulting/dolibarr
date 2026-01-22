@@ -1,0 +1,38 @@
+.swal2-container {
+  & > .swal2-modal {
+    max-width: 1024px;
+    width: 100% !important;
+    #swal2-html-container {
+      table.tableforemailform {
+        /* This is LOL... Stop use html table */
+        & > tbody {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          & > tr {
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            & > td {
+              &:first-of-type {
+                flex: none;
+              }
+              &:last-of-type {
+                display: flex;
+                flex-wrap: wrap;
+                flex-grow: 1;
+                & > *:not(.cke) {
+                  display: flex;
+                  flex-wrap: wrap;
+                  flex-grow: 1;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

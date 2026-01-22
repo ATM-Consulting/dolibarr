@@ -1,0 +1,48 @@
+@import "../../../scss/@mixins.scss";
+
+@include orientation_landscape() {
+  #id-top {
+    box-shadow: 0 0 0 0 var(--colortexttitlelink);
+
+    &:hover {
+      --width-primary-menu: clamp(15em, 15vw, 20em);
+
+      box-shadow: 0 0 6em -3em var(--colortexttitlelink);
+      a[class*="tmenu"][id^="mainmenua"] /*v13->v18->??*/,
+      a.tmenulabel {
+        --transition: all 0.5s;
+        --width: 100%;
+        --opacity: 1;
+      }
+      ul.tmenu > li {
+        @for $i from 0 to 20 {
+          &:nth-child(#{$i}) {
+            a[class*="tmenu"][id^="mainmenua"] /*v13->v18->??*/,
+            a.tmenulabel {
+              transition-delay: $i * 0.02s;
+            }
+          }
+        }
+      }
+    }
+    div.tmenucenter {
+      --flexDirection: row;
+      --alignSelf: stretch;
+    }
+    a.tmenuimage {
+      --padding: 0.5em 1em;
+      --flex: 1 1 auto;
+    }
+    a[class*="tmenu"][id^="mainmenua"] /*v13->v18->??*/,
+    a.tmenulabel {
+      --fontSize: 1rem;
+      --opacity: 0;
+      --width: 0;
+      --padding: 0.5em 0;
+      --display: inline-flex;
+      --alignItems: center;
+      --textAlign: left;
+      --overflow: hidden;
+    }
+  }
+}

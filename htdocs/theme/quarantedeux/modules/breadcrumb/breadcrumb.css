@@ -1,0 +1,152 @@
+@charset "UTF-8";
+/* BREAKPOINTS */
+/* 1 - Fonctions primaires */
+/* BREAKPOINTS */
+/* Detection de l'orientation de l'écran entre portrait ou paysage */
+/* smartphones, touchscreens */
+/* stylus-based screens */
+/* Nintendo Wii controller, Microsoft Kinect */
+/* mouse, touch pad */
+/* at least one input mechanism of the device includes a pointing device of limited accuracy. */
+/* at least one input mechanism of the device includes an accurate pointing device. */
+/* the device does not include any pointing device. */
+/* one or more available input mechanism(s) can hover over elements with ease */
+/* one or more available input mechanism(s) can hover, but not with ease (for example simulating the hovering when performing a long touch) */
+/* one or more available input mechanism(s) cannot hover or there are no pointing input mechanisms */
+/* TEST */
+/* TEST */ /* For overstyle all paginations... */
+/*#282*/
+body[style~="position:"] > .breadCrumbHolder.module {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  body:not(.sidebar-collapse) .breadCrumbHolder.module {
+    display: none;
+  }
+}
+body .breadCrumbHolder.module {
+  display: block;
+  transition: padding-left 0.5s;
+  position: sticky !important;
+  z-index: var(--z_index60);
+  left: 0;
+  width: 100%;
+  top: 0;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module {
+  margin: 0;
+  padding: 0;
+  float: left;
+  display: block;
+  height: auto;
+  overflow-y: hidden;
+  width: 100%;
+  padding: 0;
+  border-top: none;
+  border-bottom: var(--border-width) var(--border-style) var(--border-color-light);
+  background: var(--colorbackvmenu1);
+  color: var(--colortextbackvmenu);
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div {
+  overflow: auto !important;
+  line-height: 0;
+  position: initial !important;
+  width: auto !important;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul {
+  justify-content: flex-start;
+  width: auto !important;
+  min-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: auto;
+  display: flex;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li {
+  color: inherit;
+  display: flex;
+  align-items: center;
+  float: left;
+  position: relative;
+  height: auto;
+  line-height: 1em;
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  background: none;
+  transition: all 0.5s;
+  max-width: var(--width-secondary-menu, 100%);
+  overflow: hidden;
+}
+@media (orientation: landscape) {
+  body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li:not(.first):before {
+    content: "⟩";
+  }
+}
+@media (orientation: portrait) {
+  body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li:not(.last):before {
+    content: "⟨";
+  }
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li:not(.last):before, body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li:not(.first):before {
+  opacity: 0.5;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a {
+  pointer-events: all;
+  color: inherit;
+  white-space: nowrap;
+  text-align: left;
+  height: auto !important;
+  text-indent: initial;
+  width: 100%;
+  display: block;
+  margin: 0px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: none;
+  font-weight: bold;
+  text-transform: none;
+  text-decoration: none;
+  padding: 0.8em;
+  opacity: 0.8;
+  line-height: 1em;
+  float: unset;
+  border-radius: 0 !important;
+  position: relative;
+  z-index: var(--z_index30);
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a:after {
+  pointer-events: none;
+  z-index: var(--z_index20);
+  content: "";
+  background: currentColor;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  bottom: 50%;
+  right: 50%;
+  opacity: 0.2;
+  border-radius: 100%;
+  transition: all 0.5s;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a:hover {
+  opacity: 1;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a:hover:after {
+  pointer-events: none;
+  opacity: 0.3;
+  border-radius: 0%;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transition: all 0.15s;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a:active:after {
+  background: var(--color_text_link);
+  opacity: 0.6;
+}
+body .breadCrumbHolder.module #breadCrumb.breadCrumb.module > div > div > ul > li > a input:hover {
+  opacity: 0.8;
+}

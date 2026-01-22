@@ -1,0 +1,124 @@
+@charset "UTF-8";
+/* BREAKPOINTS */
+/* 1 - Fonctions primaires */
+/* BREAKPOINTS */
+/* Detection de l'orientation de l'écran entre portrait ou paysage */
+/* smartphones, touchscreens */
+/* stylus-based screens */
+/* Nintendo Wii controller, Microsoft Kinect */
+/* mouse, touch pad */
+/* at least one input mechanism of the device includes a pointing device of limited accuracy. */
+/* at least one input mechanism of the device includes an accurate pointing device. */
+/* the device does not include any pointing device. */
+/* one or more available input mechanism(s) can hover over elements with ease */
+/* one or more available input mechanism(s) can hover, but not with ease (for example simulating the hovering when performing a long touch) */
+/* one or more available input mechanism(s) cannot hover or there are no pointing input mechanisms */
+/* TEST */
+/* TEST */ /* For overstyle all paginations... */
+#id-top div.tmenucenter a[class*=tmenu][id^=mainmenua],
+#id-top div.tmenucenter a.tmenulabel,
+#id-top div.tmenucenter a.tmenuimage {
+  align-items: var(--alignItems, center) !important;
+  align-self: var(--alignSelf, stretch);
+  display: var(--display, flex) !important;
+  justify-content: var(--justifyContent, center);
+  flex: var(--flex, unset);
+  font-size: var(--fontSize, inherit) !important;
+  height: var(--height, auto) !important;
+  line-height: var(--lineHeight, 1em) !important;
+  margin: var(--margin, 0) !important;
+  opacity: var(--opacity, 1);
+  overflow: var(--overflow, initial);
+  padding: var(--padding) !important;
+  position: var(--position, relative);
+  text-align: var(--textAlign, center);
+  transition: var(--transition, all 0.5s);
+  width: var(--width, auto) !important;
+}
+#id-top div.tmenucenter div.topmenuimage {
+  width: 1em !important;
+  height: 1em !important;
+  /**/
+  background-size: contain;
+  background-position: center center;
+}
+#id-top div.tmenucenter .mainmenuaspan {
+  font-family: inherit;
+  display: block !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: inherit;
+  line-height: 1.2em !important;
+  padding: 0;
+  width: 100%;
+  font-size: inherit !important;
+  margin: auto !important;
+}
+@media (orientation: portrait) {
+  #id-top div.tmenucenter .mainmenuaspan {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+@media (orientation: portrait) {
+  #id-top div.tmenucenter {
+    --width: 4rem;
+  }
+}
+
+a.tmenuimage {
+  --fontSize: 1.25rem;
+  --padding: 0.5em 0;
+}
+a.tmenuimage span.fas,
+a.tmenuimage span.far {
+  line-height: inherit !important;
+}
+
+a[class*=tmenu][id^=mainmenua],
+a.tmenulabel {
+  --overflow: hidden;
+  --fontSize: 0.8rem;
+  --opacity: 0.5;
+  --padding: 0 0.5em 0.5em;
+}
+
+.backgroundforcompanylogo,
+div.menulogocontainer {
+  margin: var(--margin, 0) !important;
+  padding: var(--padding, 0.5rem) !important;
+  height: var(--height, auto) !important;
+  width: var(--width, auto) !important;
+  max-width: var(--maxWidth, 4em) !important;
+  max-height: var(--maxHeight, 4em) !important;
+  background-color: transparent;
+  border-radius: 0;
+}
+.backgroundforcompanylogo img.mycompany,
+div.menulogocontainer img.mycompany {
+  width: 100%;
+  height: 100%;
+}
+
+li#mainmenutd_menu {
+  --margin: 0 auto;
+}
+@media (orientation: landscape) {
+  li#mainmenutd_menu {
+    --height: 4em;
+    --width: 4em;
+  }
+}
+@media (orientation: portrait) {
+  li#mainmenutd_menu {
+    order: 9;
+  }
+}
+li#mainmenutd_menu .tmenucenter {
+  width: 100%;
+}
+
+li#mainmenutd_ {
+  /* ? ? Why empty item */
+  display: none !important;
+}

@@ -1,0 +1,124 @@
+@import "../../scss/@mixins.scss";
+
+/*#282*/
+body[style~="position:"] > .breadCrumbHolder.module {
+  display: none !important;
+}
+
+body {
+  @include max-width-sm {
+    &:not(.sidebar-collapse) {
+      .breadCrumbHolder.module {
+        display: none;
+      }
+    }
+  }
+  .breadCrumbHolder.module {
+    display: block;
+    transition: padding-left 0.5s;
+    position: sticky !important;
+    z-index: var(--z_index60); // Breadcrumbs is always under primary menu (90)
+    left: 0;
+    width: 100%;
+    top: 0;
+
+    @include debug();
+    #breadCrumb.breadCrumb.module {
+      margin: 0;
+      padding: 0;
+      float: left;
+      display: block;
+      height: auto;
+      overflow-y: hidden;
+      width: 100%;
+      padding: 0;
+      border-top: none;
+
+      border-bottom: var(--border-width) var(--border-style)
+        var(--border-color-light);
+      background: var(--colorbackvmenu1);
+      color: var(--colortextbackvmenu);
+      & > div {
+        overflow: auto !important;
+        line-height: 0;
+        position: initial !important;
+        width: auto !important;
+        & > div {
+          & > ul {
+            //@include orientation_landscape {
+              justify-content: flex-start;
+            //}
+            width: auto !important;
+            min-width: 100%;
+            margin: 0;
+            padding: 0;
+            height: auto;
+            display: flex;
+
+            & > li {
+              color: inherit;
+              display: flex;
+              align-items: center;
+              float: left;
+              position: relative;
+              height: auto;
+              line-height: 1em;
+              margin: 0;
+              padding: 0;
+              font-size: 1rem;
+              background: none;
+              // flex: 1 1;
+
+              transition: all 0.5s;
+              // border-right: var(--color_border_lines_v);
+              max-width: var(--width-secondary-menu, 100%);
+              overflow: hidden;
+              &:hover {
+              }
+              @include orientation_landscape {
+                &:not(.first):before {
+                  content: "⟩";
+                }
+              }
+              @include orientation_portrait {
+                &:not(.last):before {
+                  content: "⟨";
+                }
+              }
+
+              &:not(.last):before, &:not(.first):before {
+                opacity: 0.5;
+                // position: absolute;
+              }
+
+              & > a {
+                pointer-events: all;
+                color: inherit;
+                white-space: nowrap;
+                text-align: left;
+                height: auto !important;
+                text-indent: initial;
+                width: 100%;
+                display: block;
+                margin: 0px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                background: none;
+                font-weight: bold;
+                text-transform: none;
+                text-decoration: none;
+                padding: 0.8em;
+                opacity: 0.8;
+                line-height: 1em;
+                float: unset;
+
+                border-radius: 0 !important;
+                @include hover_style_button();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+.tabsAction {
+  overflow-x: visible !important;
+}
+.tabsAction > .h2g2multiselect > .h2g2multiselect__options {
+  z-index: var(--z_index40);
+}

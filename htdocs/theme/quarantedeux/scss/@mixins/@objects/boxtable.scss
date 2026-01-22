@@ -1,0 +1,7 @@
+@mixin boxtable {
+  border: solid 1px var(--border-color);
+  border-radius: var(--border-radius--small);
+  overflow-x: auto;
+  background: var(--colorbackbody);
+  // box-shadow: 0 0 3px -2px currentColor;
+}

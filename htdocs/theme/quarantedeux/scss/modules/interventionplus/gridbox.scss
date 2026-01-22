@@ -1,0 +1,101 @@
+body {
+  div.fiche {
+    & > .interventionplus-box-container {
+      width: 100% !important;
+
+      display: grid;
+      grid-template-columns: repeat(var(--columns, 1), 1fr);
+      grid-template-rows: auto;
+      gap: var(--column-gap, 1.5rem);
+
+      @include min-width-md {
+        --columns: 2;
+        grid-template-areas:
+          "Intervention Customer"
+          "Shipping Dossier"
+          "Command Export"
+          "Parts Devis"
+          "Comment Cars"
+          "Outsourcing .";
+      }
+
+      @include min-width-lg {
+        --columns: 3;
+
+        /* !BELOW! SPECIFIC FOR SUPERCOTROLIA INTERVENTION PLUS  */
+        grid-template-areas:
+          "Intervention Customer Shipping"
+          "Dossier Command Export"
+          "Parts Devis Comment"
+          "Cars Outsourcing .";
+      }
+
+      @include min-width-xl {
+        --columns: 4;
+        grid-template-areas:
+          "Intervention Customer Shipping Dossier"
+          "Command Export Parts Devis"
+          "Comment Cars Outsourcing .";
+      }
+      // @include custom-screen(2500) {
+      //   --columns: 5;
+      // }
+
+      & > * {
+        /* Important pour safari */
+        display: inline-block;
+        width: 100%;
+
+        /* Disable grid-row for grid-area -> BUG! */
+        // @for $i from 1 to 20 {
+        //   &[data-row="#{$i}"] {
+        //     grid-row: span #{$i};
+        //   }
+        // }
+      }
+    }
+  }
+
+  /*
+
+  ______ ____   _____ _    _  _____ 
+ |  ____/ __ \ / ____| |  | |/ ____|
+ | |__ | |  | | |    | |  | | (___  
+ |  __|| |  | | |    | |  | |\___ \ 
+ | |   | |__| | |____| |__| |____) |
+ |_|    \____/ \_____|\____/|_____/ 
+                                         
+  */
+  &.focus {
+    div.fiche {
+      .interventionplus-box-container {
+      }
+    }
+  }
+}
+
+/* !BELOW! SPECIFIC FOR SUPERCOTROLIA INTERVENTION PLUS  */
+
+$SuperCotroliaBoxes: (
+  "SuperCotroliaBoxOutsourcing": Outsourcing,
+  "SuperCotroliaBoxCars": Cars,
+  "SuperCotroliaBoxIntervention": Intervention,
+  "SuperCotroliaBoxDossier": Dossier,
+  "SuperCotroliaBoxParts": Parts,
+  "SuperCotroliaBoxCustomer": Customer,
+  "SuperCotroliaBoxCommand": Command,
+  "SuperCotroliaBoxDevis": Devis,
+  "SuperCotroliaBoxShipping": Shipping,
+  "SuperCotroliaBoxExport": Export,
+  "SuperCotroliaBoxComment": Comment,
+);
+
+@include min-width-md {
+  .interventionplus-box-container {
+    @each $boxid, $area, $order in $SuperCotroliaBoxes {
+      .box[id="#{$boxid}"] {
+        grid-area: #{$area};
+      }
+    }
+  }
+}

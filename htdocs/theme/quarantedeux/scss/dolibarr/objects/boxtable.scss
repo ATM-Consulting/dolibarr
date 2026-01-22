@@ -1,0 +1,12 @@
+div.div-table-responsive-no-min,
+table.boxtable {
+  @include boxtable;
+}
+
+.fichecenter {
+  #boxhalfleft {
+    form[method="post"] {
+      @include boxtable;
+    }
+  }
+}

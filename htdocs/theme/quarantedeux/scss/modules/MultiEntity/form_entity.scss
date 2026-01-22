@@ -1,0 +1,14 @@
+form#form_entity {
+  table {
+    margin-top: 2rem;
+    // @include tableforfield;
+  }
+}
+#multicompany_entity_list_filter,
+#multicompany_entity_list_length {
+  margin: 0.5rem auto;
+  label {
+    display: flex;
+    align-items: center;
+  }
+}

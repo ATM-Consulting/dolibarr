@@ -1,0 +1,65 @@
+#id-right {
+  .quicklist-dropdown-content.show {
+    display: flex !important;
+    flex-direction: column;
+    max-height: 264px;
+  }
+
+  div.div-table-responsive > table > tbody > tr.liste_titre_filter > td.liste_titre:last-child {
+    z-index: var(--z_index60);
+  }
+  #searchFormList > div.div-table-responsive > table > tbody {
+    & > tr:nth-child(2) {
+      z-index: var(--z_index40);
+    }
+
+    & > tr:nth-child(1) > td.liste_titre.maxwidthsearch {
+      z-index: var(--z_index60);
+    }
+  }
+
+  #quicklistDropdown > .quicklist-action {
+    border: none;
+    border-radius: 0;
+    &:hover {
+      background: #ccc;
+    }
+  }
+
+  #quicklistDropdown > input#quicklistInput {
+    padding: 5px;
+    border-radius: 0;
+  }
+
+  #quicklistDropdown > #quicklistElements > a {
+    text-decoration: none;
+  }
+}
+
+input.select2-search__field {
+  width: 100% !important;
+}
+
+div.quicklist-filter-list.centpercent {
+  padding: 1rem;
+  color: var(--colortexttitlenotab);
+  @extend .titre;
+
+  & > .quicklist-filter-item {
+    padding-top: 1rem;
+  }
+
+  & > span#toggle-collapse {
+    cursor: pointer;
+
+    & > span[class*="fa-chevron"] {
+      margin-right: 0.5em;
+    }
+  }
+}
+
+@media (orientation: portrait) {
+  .quicklist-button {
+    margin-bottom: 6px;
+  }
+}

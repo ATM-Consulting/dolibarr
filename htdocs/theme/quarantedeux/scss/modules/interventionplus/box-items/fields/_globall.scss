@@ -1,0 +1,121 @@
+[class*="boxfield"] {
+  padding: 0.25rem 0 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  // flex-wrap: wrap;
+  // box-shadow: 0 1px currentColor;
+  &:after {
+    content: "";
+    display: inline-block;
+    height: 1px;
+    border-top: dotted 1px currentColor;
+    // background: currentColor;
+    opacity: 0.5;
+    // min-width: 2rem;
+    flex-grow: 1;
+    order: 2;
+    margin: 0 0.5rem;
+    // width: 100%;
+  }
+  & > .label {
+    // flex-basis: 30%;
+    margin-right: 0.25em;
+    order: 1;
+    @include label;
+  }
+
+  & > .content {
+    // width: 100%;
+    display: inline-block;
+    text-align: right;
+    // flex-grow: 1;
+    order: 3;
+    & > * {
+      @include readmode_input();
+      width: 100%;
+      max-width: 100%;
+      display: block;
+      // font-weight: bold;
+    }
+    .select2-container {
+      padding: 0 !important;
+    }
+
+    /* FIELDS TYPOLOGIES */
+    &[data-type="text"] {
+      & > * {
+      }
+    }
+  }
+  &[class*="required"] {
+    #type {
+      // font-size: 1.5em;
+    }
+  }
+}
+
+[class*="boxfield-textarea"] {
+  // grid-column: span 2 !important;
+  & > .content {
+    text-align: left;
+  }
+}
+
+body.edit {
+  [class*="boxfield"] {
+  }
+
+  [class*="boxfield"][class*="-editable"] {
+    padding: 0.5rem 0;
+    flex-wrap: wrap;
+    box-shadow: none;
+    &:hover {
+      & > .label {
+        opacity: 1;
+      }
+    }
+    & > .content {
+      width: 100%;
+      text-align: left;
+      & > * {
+        @include editmode_input();
+        font-weight: normal;
+        min-height: 2.4rem;
+      }
+      &[data-type="textarea"] {
+        overflow-y: hidden;
+        & > * {
+          @include input_type_textarea();
+        }
+      }
+      &[data-type="select"] {
+        & > * {
+          position: relative;
+          &:after {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 1rem;
+
+            content: "v";
+          }
+        }
+      }
+    }
+    &[class*="required"] {
+      // color: red;
+      #type {
+        // font-size: 1em;
+      }
+      & > .label {
+        @include label_required();
+      }
+      & > .content {
+      }
+    }
+  }
+}

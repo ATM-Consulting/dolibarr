@@ -1,0 +1,22 @@
+.cal_other_month {
+  background: var(--colorbackvmenu1) !important;
+  color: var(--colortextvmenu1) !important;
+}
+.cal_current_month {
+  background: var(--colorbackbody) !important;
+  color: var(--colortext) !important;
+}
+.cal_today {
+  background: var(--colorbackhmenu1) !important;
+  color: var(--colortexthmenu1) !important;
+}
+table.cal_event {
+}
+.cal_today_peruser_impair {
+  background: var(--colorbacklineimpair1) !important;
+  color: var(--colortext) !important;
+}
+.cal_today_peruser_pair {
+  background: var(--colorbacklinepair1) !important;
+  color: var(--colortext) !important;
+}

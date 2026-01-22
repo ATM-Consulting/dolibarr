@@ -1,0 +1,20 @@
+.jPicker.Container {
+  z-index: var(--z_index100) !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%,-50%);
+  background: red !important;
+
+  &:before {
+    content: "";
+    position: fixed;
+    background: black;
+    opacity: 0.5;
+    width: 100vw;
+    height: 100vh;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+  }
+}

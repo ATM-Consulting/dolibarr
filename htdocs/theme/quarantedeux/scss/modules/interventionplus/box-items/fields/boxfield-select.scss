@@ -1,0 +1,12 @@
+body.edit {
+  [class*="boxfield-select"] {
+    & > .content[data-key="statut"] {
+      & > * {
+        padding: 0;
+        .badge {
+          margin: 0;
+        }
+      }
+    }
+  }
+}
