@@ -1241,8 +1241,19 @@ if (empty($reshook)) {
 
 
 							if ($facture_source->isSituationInvoice()) {
-								$source_fk_prev_id = $line->fk_prev_id; // temporary storing situation invoice fk_prev_id
-								$line->fk_prev_id  = $line->id; // The new line of the new credit note we are creating must be linked to the situation invoice line it is created from
+								// Determine the situation invoice mode
+								// Mode 1 (legacy): situation_percent is cumulative
+								// Mode 2 (new): situation_percent is a delta
+								$situationMode = getDolGlobalInt('INVOICE_USE_SITUATION');
+
+								// For credit notes in new mode, we link directly to the source line
+								// For legacy mode or regular situations, we use the chain (fk_prev_id)
+								if ($situationMode == 2 && $object->type == Facture::TYPE_CREDIT_NOTE) {
+									$source_fk_prev_id = $line->id;
+								} else {
+									$source_fk_prev_id = $line->fk_prev_id;
+								}
+								$line->fk_prev_id = $line->id; // The new line of the new credit note we are creating must be linked to the situation invoice line it is created from
 
 								if (!empty($facture_source->tab_previous_situation_invoice)) {
 									// search the last standard invoice in cycle and the possible credit note between this last and facture_source
@@ -1281,8 +1292,11 @@ if (empty($reshook)) {
 										}
 									}
 
-									// prorata
-									$line->situation_percent = $maxPrevSituationPercent - $line->situation_percent;
+									// Prorata calculation only needed in legacy mode (cumulative percentages)
+									// In new mode, situation_percent is already a delta
+									if ($situationMode == 1) {
+										$line->situation_percent = $maxPrevSituationPercent - $line->situation_percent;
+									}
 
 									//print 'New line based on invoice id '.$facture_source->tab_previous_situation_invoice[$lineIndex]->id.' fk_prev_id='.$source_fk_prev_id.' will be fk_prev_id='.$line->fk_prev_id.' '.$line->total_ht.' '.$line->situation_percent.'<br>';
 
@@ -1307,8 +1321,10 @@ if (empty($reshook)) {
 										}
 									}
 
-									// prorata
-									$line->situation_percent += $maxPrevSituationPercent;
+									// Prorata adjustment only in legacy mode
+									if ($situationMode == 1) {
+										$line->situation_percent += $maxPrevSituationPercent;
+									}
 
 									//print 'New line based on invoice id '.$facture_source->tab_previous_situation_invoice[$lineIndex]->id.' fk_prev_id='.$source_fk_prev_id.' will be fk_prev_id='.$line->fk_prev_id.' '.$line->total_ht.' '.$line->situation_percent.'<br>';
 								}
@@ -5344,9 +5360,9 @@ if ($action == 'create') {
 				$total_next_ht = $total_next_ttc = 0;
 
 				foreach ($object->tab_next_situation_invoice as $next_invoice) {
-					$totalpaid = $next_invoice->getSommePaiement(0);
-					$totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
-					$totaldeposits = $next_invoice->getSumDepositsUsed(0);
+					$next_totalpaid = $next_invoice->getSommePaiement(0);
+					$next_totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
+					$next_totaldeposits = $next_invoice->getSumDepositsUsed(0);
 					$total_next_ht += $next_invoice->total_ht;
 					$total_next_ttc += $next_invoice->total_ttc;
 
@@ -5359,7 +5375,7 @@ if ($action == 'create') {
 					}
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ht).'</span></td>';
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ttc).'</span></td>';
-					print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid + $totalcreditnotes + $totaldeposits).'</td>';
+					print '<td class="right">'.$next_invoice->getLibStatut(3, $next_totalpaid + $next_totalcreditnotes + $next_totaldeposits).'</td>';
 					print '</tr>';
 				}
 

@@ -204,12 +204,26 @@ if ($result) {
 		$line->fetch($obj->id); // id of line
 		$prev_progress = 0;
 		if ($obj->situation_cycle_ref > 0) {	// It is a situation invoice
+			$prev_progress = $line->get_prev_progress($obj->rowid); // id on invoice
+
+			// Handle both situation invoice modes:
+			// INVOICE_USE_SITUATION = 1 (legacy): situation_percent is cumulative
+			// INVOICE_USE_SITUATION = 2 (new): situation_percent is a delta
+			if (getDolGlobalInt('INVOICE_USE_SITUATION') === 1) {
+				// Legacy mode: compute delta from cumulative values
+				$progressDelta = $obj->situation_percent - $prev_progress;
+				$progressState = $obj->situation_percent;
+			} else {
+				// New mode: situation_percent is already a delta
+				$progressDelta = $obj->situation_percent;
+				$progressState = $prev_progress + $progressDelta;
+			}
+
 			// Avoid divide by 0
-			if ($obj->situation_percent == 0) {
+			if ($progressState == 0) {
 				$situation_ratio = 0;
 			} else {
-				$prev_progress = $line->get_prev_progress($obj->rowid); // id on invoice
-				$situation_ratio = ($obj->situation_percent - $prev_progress) / $obj->situation_percent;
+				$situation_ratio = $progressDelta / $progressState;
 			}
 		} else {
 			$situation_ratio = 1;

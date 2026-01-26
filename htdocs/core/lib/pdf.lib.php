@@ -2410,14 +2410,29 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 			return '';
 		}
 		if (empty($hidedetails) || $hidedetails > 1) {
-			if (getDolGlobalString('SITUATION_DISPLAY_DIFF_ON_PDF')) {
+			// INVOICE_USE_SITUATION: 1 = legacy (cumulative), 2 = new (delta)
+			// SITUATION_DISPLAY_DIFF_ON_PDF: show delta instead of cumulative total
+			$isCumulative = (getDolGlobalInt('INVOICE_USE_SITUATION') === 1);
+			$showDelta = (bool) getDolGlobalInt('SITUATION_DISPLAY_DIFF_ON_PDF');
+
+			if ($isCumulative xor $showDelta) {
+				// Either legacy mode showing total, or new mode showing delta
+				// In both cases, situation_percent already has the right value
+				$result = round($object->lines[$i]->situation_percent, 1).'%';
+			} else {
+				// Either legacy mode but want delta, or new mode but want total
+				// We need to compute from previous progress
 				$prev_progress = 0;
 				if (method_exists($object->lines[$i], 'get_prev_progress')) {
 					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
 				}
-				$result = round($object->lines[$i]->situation_percent - $prev_progress, 1).'%';
-			} else {
-				$result = round($object->lines[$i]->situation_percent, 1).'%';
+				if ($isCumulative) {
+					// Legacy mode, want delta: subtract previous from current
+					$result = round($object->lines[$i]->situation_percent - $prev_progress, 1).'%';
+				} else {
+					// New mode, want total: add current to previous
+					$result = round($prev_progress + $object->lines[$i]->situation_percent, 1).'%';
+				}
 			}
 		}
 	}
@@ -2464,17 +2479,14 @@ function pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails = 0)
 		} elseif (empty($hidedetails) || $hidedetails > 1) {
 			$total_ht = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->lines[$i]->multicurrency_total_ht : $object->lines[$i]->total_ht);
 			if (!empty($object->lines[$i]->situation_percent) && $object->lines[$i]->situation_percent > 0) {
-				// TODO Remove this. The total should be saved correctly in database instead of being modified here.
-				$prev_progress = 0;
-				$progress = 1;
-				if (method_exists($object->lines[$i], 'get_prev_progress')) {
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+				// Apply situation ratio to get actual delta amount for this situation
+				// In legacy mode (1), this converts cumulative amounts to delta
+				// In new mode (2), ratio is 1 so no conversion needed
+				if (method_exists($object->lines[$i], 'getSituationRatio')) {
+					$total_ht *= $object->lines[$i]->getSituationRatio();
 				}
-				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
-			} else {
-				$result .= price($sign * $total_ht, 0, $outputlangs);
 			}
+			$result .= price($sign * $total_ht, 0, $outputlangs);
 		}
 	}
 	return $result;
@@ -2520,17 +2532,14 @@ function pdf_getlinetotalwithtax($object, $i, $outputlangs, $hidedetails = 0)
 		} elseif (empty($hidedetails) || $hidedetails > 1) {
 			$total_ttc = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->lines[$i]->multicurrency_total_ttc : $object->lines[$i]->total_ttc);
 			if (isset($object->lines[$i]->situation_percent) && $object->lines[$i]->situation_percent > 0) {
-				// TODO Remove this. The total should be saved correctly in database instead of being modified here.
-				$prev_progress = 0;
-				$progress = 1;
-				if (method_exists($object->lines[$i], 'get_prev_progress')) {
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+				// Apply situation ratio to get actual delta amount for this situation
+				// In legacy mode (1), this converts cumulative amounts to delta
+				// In new mode (2), ratio is 1 so no conversion needed
+				if (method_exists($object->lines[$i], 'getSituationRatio')) {
+					$total_ttc *= $object->lines[$i]->getSituationRatio();
 				}
-				$result .= price($sign * ($total_ttc / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
-			} else {
-				$result .= price($sign * $total_ttc, 0, $outputlangs);
 			}
+			$result .= price($sign * $total_ttc, 0, $outputlangs);
 		}
 	}
 	return $result;

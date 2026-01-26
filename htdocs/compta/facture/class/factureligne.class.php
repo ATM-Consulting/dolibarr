@@ -857,7 +857,12 @@ class FactureLigne extends CommonInvoiceLine
 				$invoicecache[$invoiceid] = new Facture($this->db);
 				$invoicecache[$invoiceid]->fetch($invoiceid);
 			}
-			if ($invoicecache[$invoiceid]->type != Facture::TYPE_SITUATION) {
+			// Allow both situation invoices and credit notes linked to situation invoices
+			$allowedTypes = array(
+				Facture::TYPE_SITUATION,
+				Facture::TYPE_CREDIT_NOTE
+			);
+			if (!in_array($invoicecache[$invoiceid]->type, $allowedTypes)) {
 				return 0;
 			}
 
@@ -884,7 +889,8 @@ class FactureLigne extends CommonInvoiceLine
 					$res = $this->db->query($sql);
 					if ($res) {
 						while ($obj = $this->db->fetch_object($res)) {
-							$returnPercent += (float) $obj->situation_percent;
+							// Credit notes reduce the progress, so we subtract their percent
+							$returnPercent -= (float) $obj->situation_percent;
 						}
 					} else {
 						dol_print_error($this->db);
@@ -924,7 +930,12 @@ class FactureLigne extends CommonInvoiceLine
 				$invoicecache[$invoiceid] = new Facture($this->db);
 				$invoicecache[$invoiceid]->fetch($invoiceid);
 			}
-			if ($invoicecache[$invoiceid]->type != Facture::TYPE_SITUATION) {
+			// Allow both situation invoices and credit notes linked to situation invoices
+			$allowedTypes = array(
+				Facture::TYPE_SITUATION,
+				Facture::TYPE_CREDIT_NOTE
+			);
+			if (!in_array($invoicecache[$invoiceid]->type, $allowedTypes)) {
 				return 0;
 			}
 
@@ -950,7 +961,8 @@ class FactureLigne extends CommonInvoiceLine
 						$res_credit_note = $this->db->query($sql_credit_note);
 						if ($res_credit_note) {
 							while ($cn = $this->db->fetch_object($res_credit_note)) {
-								$cumulated_percent += floatval($cn->situation_percent);
+								// Credit notes reduce the progress, so we subtract their percent
+								$cumulated_percent -= floatval($cn->situation_percent);
 							}
 						} else {
 							dol_print_error($this->db);
@@ -972,5 +984,36 @@ class FactureLigne extends CommonInvoiceLine
 			}
 			return $cumulated_percent;
 		}
+	}
+
+	/**
+	 * Returns the ratio to apply to convert stored line amounts to actual delta amounts.
+	 *
+	 * This method handles the difference between the two situation invoice modes:
+	 * - INVOICE_USE_SITUATION = 1 (legacy): situation_percent is cumulative (state at current situation)
+	 *   In this mode, line amounts represent the cumulative total, so we need to compute the delta.
+	 * - INVOICE_USE_SITUATION = 2 (new): situation_percent is already a delta
+	 *   In this mode, line amounts already represent the delta, so no conversion is needed.
+	 *
+	 * @return float	The ratio to apply (between 0 and 1, or 1 if no conversion needed)
+	 */
+	public function getSituationRatio()
+	{
+		if (getDolGlobalInt('INVOICE_USE_SITUATION') === 1) {
+			// Legacy mode: situation_percent is cumulative (state at current situation)
+			// We need to compute the delta by subtracting previous progress
+			$prevProgress = $this->get_prev_progress($this->fk_facture);
+			$currentPercent = (float) $this->situation_percent;
+
+			if ($currentPercent == 0) {
+				return 0;
+			}
+
+			return ($currentPercent - $prevProgress) / $currentPercent;
+		}
+
+		// New mode (INVOICE_USE_SITUATION == 2) or not a situation invoice:
+		// Line amounts already represent the delta, no conversion needed
+		return 1;
 	}
 }

@@ -440,21 +440,38 @@ if (!empty($line->remise_percent) && $line->special_code != 3) {
 if (isset($this->situation_cycle_ref) && $this->situation_cycle_ref) {
 	include_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
 	$coldisplay++;
+
 	if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+		// New mode: situation_percent is a delta (not cumulative)
 		$previous_progress = $line->getAllPrevProgress($object->id);
-		$current_progress = $previous_progress + floatval($line->situation_percent);
+
+		// For credit notes, the progress doesn't increase - it stays at previous level
+		if ($object->type == Facture::TYPE_CREDIT_NOTE) {
+			$current_progress = $previous_progress;
+		} else {
+			$current_progress = $previous_progress + floatval($line->situation_percent);
+		}
+
 		print '<td class="linecolcycleref nowrap right">'.$current_progress.'%</td>';
 		$coldisplay++;
-		print '<td  class="nowrap right">'.$line->situation_percent.'%</td>';
+
+		// Display the delta with a minus sign for credit notes
+		if ($object->type == Facture::TYPE_CREDIT_NOTE) {
+			print '<td class="nowrap right">-'.$line->situation_percent.'%</td>';
+		} else {
+			print '<td class="nowrap right">'.$line->situation_percent.'%</td>';
+		}
 		$coldisplay++;
+
 		$locataxes_array = getLocalTaxesFromRate($line->tva.($line->vat_src_code ? ' ('.$line->vat_src_code.')' : ''), 0, ($senderissupplier ? $mysoc : $object->thirdparty), ($senderissupplier ? $object->thirdparty : $mysoc));
-		$tmp = calcul_price_total($line->qty, $line->pu, $line->remise_percent, $line->txtva, -1, -1, 0, 'HT', $line->info_bits, $line->type, ($senderissupplier ? $object->thirdparty : $mysoc), $locataxes_array, 100, $object->multicurrency_tx, $line->multicurrency_subprice);
+		$tmp = calcul_price_total($line->qty, $line->subprice, $line->remise_percent, $line->txtva, -1, -1, 0, 'HT', $line->info_bits, $line->type, ($senderissupplier ? $object->thirdparty : $mysoc), $locataxes_array, 100, $object->multicurrency_tx, $line->multicurrency_subprice);
 		print '<td class="linecolcycleref2 right nowrap">'.price($sign * (float) $tmp[0]).'</td>';
 	} else {
+		// Legacy mode: situation_percent is cumulative
 		print '<td class="linecolcycleref nowrap right">'.$line->situation_percent.'%</td>';
 		$coldisplay++;
 		$locataxes_array = getLocalTaxesFromRate($line->tva.($line->vat_src_code ? ' ('.$line->vat_src_code.')' : ''), 0, ($senderissupplier ? $mysoc : $object->thirdparty), ($senderissupplier ? $object->thirdparty : $mysoc));
-		$tmp = calcul_price_total($line->qty, $line->pu, $line->remise_percent, $line->txtva, -1, -1, 0, 'HT', $line->info_bits, $line->type, ($senderissupplier ? $object->thirdparty : $mysoc), $locataxes_array, 100, $object->multicurrency_tx, $line->multicurrency_subprice);
+		$tmp = calcul_price_total($line->qty, $line->subprice, $line->remise_percent, $line->txtva, -1, -1, 0, 'HT', $line->info_bits, $line->type, ($senderissupplier ? $object->thirdparty : $mysoc), $locataxes_array, 100, $object->multicurrency_tx, $line->multicurrency_subprice);
 		print '<td class="linecolcycleref2 right nowrap">'.price($sign * (float) $tmp[0]).'</td>';
 	}
 }
