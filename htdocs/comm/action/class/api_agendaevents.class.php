@@ -20,7 +20,7 @@
 use Luracast\Restler\RestException;
 
 require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
-
+require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
 
 /**
  * API class for Agenda Events
@@ -201,6 +201,26 @@ class AgendaEvents extends DolibarrApi
 				'limit' => $limit
 			];
 		}
+
+		$user_cache = array();
+
+		foreach ($result as $key => $event) {
+			$author_id = $event->authorid ? $event->authorid : $event->userownerid;
+
+			if ($author_id > 0) {
+				if (!isset($user_cache[$author_id])) {
+					$tmp_user = new User($db);
+					$tmp_user->fetch($author_id);
+					$user_cache[$author_id] = $tmp_user;
+				}
+
+				// On injecte les infos dans l'objet retourné
+				$result[$key]->user_author_firstname = $user_cache[$author_id]->firstname;
+				$result[$key]->user_author_lastname = $user_cache[$author_id]->lastname;
+				$result[$key]->user_author_name = $user_cache[$author_id]->getFullName($this->langs);
+			}
+		}
+		// PATCH END
 
 		return $obj_ret;
 	}
