@@ -301,6 +301,42 @@ if ($result) {
 		// Load of url links to the line into llx_bank (so load llx_bank_url)
 		$links = $object->get_url($obj->rowid); // Get an array('url'=>, 'url_id'=>, 'label'=>, 'type'=> 'fk_bank'=> )
 
+		// ---- START DA027562 Spé CAR Filter bank lines linked to other entities (MultiCompany) ------
+		if (!empty($conf->multicompany->enabled) && is_array($links)) {
+			$skip_line = false;
+			foreach ($links as $link) {
+				if ($link['type'] == 'payment') {
+					$sql_check = "SELECT entity FROM ".MAIN_DB_PREFIX."paiement WHERE rowid = ".((int) $link['url_id']);
+					$res_check = $db->query($sql_check);
+					if ($res_check && $obj_check = $db->fetch_object($res_check)) {
+						if ($obj_check->entity != $conf->entity) {
+							$skip_line = true;
+							break;
+						}
+					}
+				} elseif ($link['type'] == 'payment_supplier') {
+					$sql_check = "SELECT entity FROM ".MAIN_DB_PREFIX."paiementfourn WHERE rowid = ".((int) $link['url_id']);
+					$res_check = $db->query($sql_check);
+					if ($res_check && $obj_check = $db->fetch_object($res_check)) {
+						if ($obj_check->entity != $conf->entity) {
+							$skip_line = true;
+							break;
+						}
+					}
+				}
+			}
+			if ($skip_line) {
+				unset($tabpay[$obj->rowid]);
+				unset($tabcompany[$obj->rowid]);
+				unset($tabuser[$obj->rowid]);
+				$i++;
+				continue;
+			}
+		}
+
+
+		// ---- END DA027562 Spé CAR Filter bank lines linked to other entities (MultiCompany) ------
+
 		// By default
 		$tabpay[$obj->rowid]['type'] = 'unknown'; // Can be SOLD, miscellaneous entry, payment of patient, or any old record with no links in bank_url.
 		$tabtype[$obj->rowid] = 'unknown';
