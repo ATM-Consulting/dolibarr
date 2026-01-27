@@ -606,6 +606,13 @@ if (empty($reshook)) {
 								$lines[$i]->fk_unit
 							);
 							if ($result > 0) {
+								if (!empty($lines[$i]->extraparams)) {
+									$factureLine = new FactureLigne($db);
+									$factureLine->id = $result;
+									$factureLine->extraparams = $lines[$i]->extraparams;
+									$factureLine->setExtraParameters();
+								}
+
 								$lineid = $result;
 							} else {
 								$lineid = 0;
@@ -1140,7 +1147,7 @@ if ($search_pos_source) {
 	$sql .= natural_search("c.pos_source", $search_pos_source);
 }
 if ($search_import_key) {
-	$sql .= natural_search("s.import_key", $search_import_key);
+	$sql .= natural_search("c.import_key", $search_import_key);
 }
 // Search on user
 if ($search_user > 0) {

@@ -15,7 +15,7 @@
  * Copyright (C) 2013       Cedric Gross            <c.gross@kreiz-it.fr>
  * Copyright (C) 2013       Florian Henry           <florian.henry@open-concept.pro>
  * Copyright (C) 2016-2025  Ferran Marcet           <fmarcet@2byte.es>
- * Copyright (C) 2018-2025  Alexandre Spangaro      <alexandre@inovea-conseil.com>
+ * Copyright (C) 2018-2026  Alexandre Spangaro      <alexandre@inovea-conseil.com>
  * Copyright (C) 2018       Nicolas ZABOURI         <info@inovea-conseil.com>
  * Copyright (C) 2022       Sylvain Legrand         <contact@infras.fr>
  * Copyright (C) 2022-2023	Solution Libre SAS		<contact@solution-libre.fr>
@@ -2563,7 +2563,7 @@ class Facture extends CommonInvoice
 				$line->fk_warehouse = $objp->fk_warehouse;
 
 				// Accountancy
-				$line->fk_accounting_account = $objp->fk_code_ventilation;
+				$line->fk_code_ventilation = $objp->fk_code_ventilation;
 
 				// Multicurrency
 				$line->fk_multicurrency = $objp->fk_multicurrency;
@@ -5373,7 +5373,7 @@ class Facture extends CommonInvoice
 
 		if (getDolGlobalInt('LIST_OF_QUALIFIED_INVOICES_LIMIT_DEFINED') > 0) {
 			$sql .= " ORDER BY CASE WHEN f.rowid = ".((int) GETPOST('fac_avoir'))." THEN 0 ELSE 1 END, f.ref";
-			$sql .= $this->db->order('DESC');
+			$sql .= " DESC";
 			$sql .= $this->db->plimit(getDolGlobalInt('LIST_OF_QUALIFIED_INVOICES_LIMIT_DEFINED'));
 		} else {
 			$sql .= " ORDER BY f.ref";

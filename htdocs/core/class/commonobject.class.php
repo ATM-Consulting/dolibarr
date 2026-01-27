@@ -70,7 +70,7 @@ abstract class CommonObject
 	public $id;
 
 	/**
-	 * @var int 		The environment ID when using a multicompany module
+	 * @var ?int 		The environment ID when using a multicompany module
 	 */
 	public $entity;
 
@@ -490,7 +490,7 @@ abstract class CommonObject
 	public $fk_delivery_address;
 
 	/**
-	 * @var int 		Shipping method ID
+	 * @var ?int 		Shipping method ID
 	 * @see setShippingMethod()
 	 */
 	public $shipping_method_id;
@@ -1706,7 +1706,7 @@ abstract class CommonObject
 			$obj = $this->db->fetch_object($resql);
 
 			$transkey = "TypeContact_".$this->element."_".$source."_".$obj->code;
-			$libelle_type = ($langs->trans($transkey) != $transkey ? $langs->trans($transkey) : $obj->type_label);
+			$libelle_type = ($langs->trans($transkey) != $transkey ? $langs->trans($transkey) : $langs->trans($obj->type_label));
 			if (empty($option)) {
 				$tab[$obj->rowid] = $libelle_type;
 			} elseif ($option == 1) {
@@ -8315,7 +8315,7 @@ abstract class CommonObject
 									$isDependList = 1;
 								}
 
-								$data[(int) $obj->rowid] = $labeltoshow;
+								$data[$obj->rowid] = $labeltoshow;	// Warning: $obj->rowid is an alias and can be an int, but also a string ref.
 							}
 
 							$i++;
