@@ -107,11 +107,7 @@ class SupplierProposal extends CommonObject
 	/**
 	 * @var string
 	 */
-	public $ref_fourn; //Reference saisie lors de l'ajout d'une ligne à la demande
-	/**
-	 * @var string
-	 */
-	public $ref_supplier; //Reference saisie lors de l'ajout d'une ligne à la demande
+	public $ref_supplier; // Supplier reference shown on the header
 
 	/**
 	 * @var int
@@ -957,9 +953,6 @@ class SupplierProposal extends CommonObject
 
 		// Set tmp vars
 		$delivery_date = $this->delivery_date;
-		if (empty($this->ref_fourn) && !empty($this->ref_supplier)) {
-			$this->ref_fourn = $this->ref_supplier;
-		}
 
 		// Multicurrency
 		if (!empty($this->multicurrency_code)) {
@@ -981,7 +974,7 @@ class SupplierProposal extends CommonObject
 		$sql .= ", total_ttc";
 		$sql .= ", datec";
 		$sql .= ", ref";
-		$sql .= ", ref_fourn";
+		$sql .= ", ref_supplier";
 		$sql .= ", fk_user_author";
 		$sql .= ", note_private";
 		$sql .= ", note_public";
@@ -1004,7 +997,7 @@ class SupplierProposal extends CommonObject
 		$sql .= ", 0";
 		$sql .= ", '".$this->db->idate($now)."'";
 		$sql .= ", '(PROV)'";
-		$sql .= ", ".(!empty($this->ref_fourn) ? "'".$this->db->escape($this->ref_fourn)."'" : "null");
+		$sql .= ", ".(!empty($this->ref_supplier) ? "'".$this->db->escape($this->ref_supplier)."'" : "null");
 		$sql .= ", ".($user->id > 0 ? ((int) $user->id) : "null");
 		$sql .= ", '".$this->db->escape($this->note_private)."'";
 		$sql .= ", '".$this->db->escape($this->note_public)."'";
@@ -1257,7 +1250,7 @@ class SupplierProposal extends CommonObject
 	{
 		global $conf;
 
-		$sql = "SELECT p.rowid, p.entity, p.ref, p.ref_fourn, p.fk_soc as socid";
+		$sql = "SELECT p.rowid, p.entity, p.ref, p.ref_supplier, p.fk_soc as socid";
 		$sql .= ", p.total_ttc, p.total_tva, p.localtax1, p.localtax2, p.total_ht";
 		$sql .= ", p.datec";
 		$sql .= ", p.date_valid as datev";
@@ -1296,10 +1289,7 @@ class SupplierProposal extends CommonObject
 				$this->entity               = $obj->entity;
 
 				$this->ref                  = $obj->ref;
-				$this->ref_fourn            = $obj->ref_fourn;
-				if (empty($this->ref_supplier) && !empty($this->ref_fourn)) {
-					$this->ref_supplier = $this->ref_fourn;
-				}
+				$this->ref_supplier         = $obj->ref_supplier;
 				$this->total_ht             = $obj->total_ht;
 				$this->total_tva            = $obj->total_tva;
 				$this->total_localtax1		= $obj->localtax1;
@@ -1448,29 +1438,6 @@ class SupplierProposal extends CommonObject
 			$this->error = $this->db->error();
 			return -1;
 		}
-	}
-
-	/**
-	 * Alias support for ref_supplier updates.
-	 *
-	 * @param string $field
-	 * @param mixed $value
-	 * @param string $table
-	 * @param int|null $id
-	 * @param string $format
-	 * @param string $id_field
-	 * @param User|null $fuser
-	 * @param string $trigkey
-	 * @param string $fk_user_field
-	 * @return int
-	 */
-	public function setValueFrom($field, $value, $table = '', $id = null, $format = '', $id_field = '', $fuser = null, $trigkey = '', $fk_user_field = 'fk_user_modif')
-	{
-		if ($field === 'ref_supplier') {
-			$field = 'ref_fourn';
-		}
-
-		return parent::setValueFrom($field, $value, $table, $id, $format, $id_field, $fuser, $trigkey, $fk_user_field);
 	}
 
 	/**
@@ -2582,8 +2549,8 @@ class SupplierProposal extends CommonObject
 		if (!empty($this->ref)) {
 			$datas['ref'] = '<br><b>'.$langs->trans('Ref').':</b> '.$this->ref;
 		}
-		if (!empty($this->ref_fourn)) {
-			$datas['ref_supplier'] = '<br><b>'.$langs->trans('RefSupplier').':</b> '.$this->ref_fourn;
+		if (!empty($this->ref_supplier)) {
+			$datas['ref_supplier'] = '<br><b>'.$langs->trans('RefSupplier').':</b> '.$this->ref_supplier;
 		}
 		if (!empty($this->total_ht)) {
 			$datas['amount_ht'] = '<br><b>'.$langs->trans('AmountHT').':</b> '.price($this->total_ht, 0, $langs, 0, -1, -1, $conf->currency);
