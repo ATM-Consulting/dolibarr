@@ -279,8 +279,8 @@ if (empty($reshook)) {
 		if ($result < 0) {
 			dol_print_error($db, $object->error);
 		}
-	} elseif ($action == 'setref_fourn' && $usercancreate) {
-		$result = $object->setValueFrom('ref_fourn', GETPOST('ref_fourn', 'alpha'), '', null, 'text', '', $user, 'SUPPLIER_PROPOSAL_MODIFY');
+	} elseif ($action == 'setref_supplier' && $usercancreate) {
+		$result = $object->setValueFrom('ref_supplier', GETPOST('ref_supplier', 'alpha'), '', null, 'text', '', $user, 'SUPPLIER_PROPOSAL_MODIFY');
 		if ($result < 0) {
 			dol_print_error($db, $object->error);
 		}
@@ -319,7 +319,7 @@ if (empty($reshook)) {
 					$object->note_private = GETPOST('note', 'restricthtml');
 					$object->statut = SupplierProposal::STATUS_DRAFT;
 					$object->status = SupplierProposal::STATUS_DRAFT;
-					$object->ref_fourn = GETPOST('refsupplier', 'alpha');
+					$object->ref_supplier = GETPOST('refsupplier', 'alpha');
 				} else {
 					setEventMessages($langs->trans("ErrorFailedToCopyProposal", GETPOST('copie_supplier_proposal')), null, 'errors');
 				}
@@ -338,7 +338,7 @@ if (empty($reshook)) {
 				$object->user_creation_id = $user->id;
 				$object->note = GETPOST('note', 'restricthtml');
 				$object->note_private = GETPOST('note', 'restricthtml');
-				$object->ref_fourn = GETPOST('refsupplier', 'alpha');
+				$object->ref_supplier = GETPOST('refsupplier', 'alpha');
 
 				$object->origin = GETPOST('origin');
 				$object->origin_id = GETPOSTINT('originid');
@@ -1654,8 +1654,8 @@ if ($action == 'create') {
 	$morehtmlref = '<div class="refidno">';
 	// backport from V24
 	// Ref supplier
-	$morehtmlref .= $form->editfieldkey("RefSupplier", 'ref_fourn', $object->ref_fourn, $object, $usercancreateorder, 'string', '', 0, 1);
-	$morehtmlref .= $form->editfieldval("RefSupplier", 'ref_fourn', $object->ref_fourn, $object, $usercancreateorder, 'string'.(isset($conf->global->THIRDPARTY_REF_INPUT_SIZE) ? ':' . getDolGlobalString('THIRDPARTY_REF_INPUT_SIZE') : ''), '', null, null, '', 1);
+	$morehtmlref .= $form->editfieldkey("RefSupplier", 'ref_supplier', $object->ref_supplier, $object, $usercancreateorder, 'string', '', 0, 1);
+	$morehtmlref .= $form->editfieldval("RefSupplier", 'ref_supplier', $object->ref_supplier, $object, $usercancreateorder, 'string'.(isset($conf->global->THIRDPARTY_REF_INPUT_SIZE) ? ':' . getDolGlobalString('THIRDPARTY_REF_INPUT_SIZE') : ''), '', null, null, '', 1);
 	$morehtmlref .= '<br>';
 	// END backport
 	// Thirdparty
