@@ -1,3 +1,0 @@
-***** ChangeLog for 22.0.4 compared to 22.0.4_acropose *****
-- FIX: Cast int param selected if neccessary selectMeasuringUnits()  - **30/01/2026**
-- FIX: Display TVA in shipping frame - **22/01/2026**
