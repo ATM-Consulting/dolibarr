@@ -90,28 +90,25 @@ if ($action == 'presend') {
 		/** @var Commande $order */
 		$order = $object;
 
-		// --- Custom Logic: Attach specific PDF by exact name (e.g., CO12345.pdf) ---
-		// Based on user's request: "je veux joindre le bon docment direct. Pas le deriner mais celuin qui porte exactement le nom de ma commande par exmeple CO2601-10243 donc CO2601-10243.pdf"
+		// --- Custom Logic: Attach specific PDF by exact name ---
+		$desiredFilename = $order->ref . '.pdf';
+		$desiredFilepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $desiredFilename;
 
-		$desired_filename = $order->ref . '.pdf';
-		$desired_filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $desired_filename;
-
-		if (file_exists($desired_filepath)) {
-			$file = $desired_filepath; // Override the default $file with our specific one
+		if (file_exists($desiredFilepath)) {
+			$file = $desiredFilepath; // Override the default $file with our specific one
 			dol_syslog("Cliimmeca: Specific attachment found and set: " . $file, LOG_DEBUG);
 		} else {
-			dol_syslog("Cliimmeca: Specific PDF '" . $desired_filename . "' not found at expected path: " . $desired_filepath, LOG_WARNING);
+			dol_syslog("Cliimmeca: Specific PDF '" . $desiredFilename . "' not found at expected path: " . $desiredFilepath, LOG_WARNING);
 
 			// --- Fallback to previous behavior if specific file not found ---
-			// Indiquez ici le nom du modèle de document que vous voulez joindre.
 			// 'azur' est le modèle par défaut de Dolibarr pour les commandes.
-			$model_to_generate = 'azur'; // Fallback to azur generation
+			$modelToGenerate = 'azur'; // Fallback to azur generation
 
 			// Génération du document. Cette fonction renvoie le nom du fichier généré.
-			$generated_file_name = $order->generate_document($model_to_generate, $langs, 0, 0, 0);
+			$generatedFileName = $order->generate_document($modelToGenerate, $langs, 0, 0, 0);
 
-			if ($generated_file_name > 0) {
-				$filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $generated_file_name;
+			if ($generatedFileName > 0) {
+				$filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $generatedFileName;
 				if (file_exists($filepath)) {
 					$file = $filepath;
 					dol_syslog("Cliimmeca: Fallback: Generated PDF set: " . $file, LOG_DEBUG);
