@@ -80,6 +80,52 @@ if ($action == 'presend') {
 		$file = isset($fileparams['fullname']) ? $fileparams['fullname'] : null;
 	}
 
+	// --- START Cliimmeca Custom Logic for Default Attachment (Direct Core File Modification) ---
+	// WARNING: This modification will be overwritten on Dolibarr updates.
+	// We override the default attachment ($file) with a dynamically generated one.
+
+	if ($object->element == 'commande') { // Only apply this logic for orders
+		require_once DOL_DOCUMENT_ROOT . '/commande/class/commande.class.php';
+
+		/** @var Commande $order */
+		$order = $object;
+
+		// --- Custom Logic: Attach specific PDF by exact name (e.g., CO12345.pdf) ---
+		// Based on user's request: "je veux joindre le bon docment direct. Pas le deriner mais celuin qui porte exactement le nom de ma commande par exmeple CO2601-10243 donc CO2601-10243.pdf"
+
+		$desired_filename = $order->ref . '.pdf';
+		$desired_filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $desired_filename;
+
+		if (file_exists($desired_filepath)) {
+			$file = $desired_filepath; // Override the default $file with our specific one
+			dol_syslog("Cliimmeca: Specific attachment found and set: " . $file, LOG_DEBUG);
+		} else {
+			dol_syslog("Cliimmeca: Specific PDF '" . $desired_filename . "' not found at expected path: " . $desired_filepath, LOG_WARNING);
+
+			// --- Fallback to previous behavior if specific file not found ---
+			// Indiquez ici le nom du modèle de document que vous voulez joindre.
+			// 'azur' est le modèle par défaut de Dolibarr pour les commandes.
+			$model_to_generate = 'azur'; // Fallback to azur generation
+
+			// Génération du document. Cette fonction renvoie le nom du fichier généré.
+			$generated_file_name = $order->generate_document($model_to_generate, $langs, 0, 0, 0);
+
+			if ($generated_file_name > 0) {
+				$filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $generated_file_name;
+				if (file_exists($filepath)) {
+					$file = $filepath;
+					dol_syslog("Cliimmeca: Fallback: Generated PDF set: " . $file, LOG_DEBUG);
+				} else {
+					dol_syslog("Cliimmeca: Fallback: Generated PDF not found at: " . $filepath, LOG_ERR);
+				}
+			} else {
+				dol_syslog("Cliimmeca: Fallback: ERROR generating PDF for order " . $order->ref . " - Error: " . $order->error, LOG_ERR);
+			}
+			// --- End Fallback ---
+		}
+	}
+	// --- END Cliimmeca Custom Logic ---
+
 	// Define output language
 	$outputlangs = $langs;
 	$newlang = '';
