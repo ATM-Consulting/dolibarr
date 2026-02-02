@@ -80,6 +80,49 @@ if ($action == 'presend') {
 		$file = isset($fileparams['fullname']) ? $fileparams['fullname'] : null;
 	}
 
+	// --- START Cliimmeca Custom Logic for Default Attachment (Direct Core File Modification) ---
+	// WARNING: This modification will be overwritten on Dolibarr updates.
+	// We override the default attachment ($file) with a dynamically generated one.
+
+	if ($object->element == 'commande') { // Only apply this logic for orders
+		require_once DOL_DOCUMENT_ROOT . '/commande/class/commande.class.php';
+
+		/** @var Commande $order */
+		$order = $object;
+
+		// --- Custom Logic: Attach specific PDF by exact name ---
+		$desiredFilename = $order->ref . '.pdf';
+		$desiredFilepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $desiredFilename;
+
+		if (file_exists($desiredFilepath)) {
+			$file = $desiredFilepath; // Override the default $file with our specific one
+			dol_syslog("Cliimmeca: Specific attachment found and set: " . $file, LOG_DEBUG);
+		} else {
+			dol_syslog("Cliimmeca: Specific PDF '" . $desiredFilename . "' not found at expected path: " . $desiredFilepath, LOG_WARNING);
+
+			// --- Fallback to previous behavior if specific file not found ---
+			// 'azur' est le modèle par défaut de Dolibarr pour les commandes.
+			$modelToGenerate = 'azur'; // Fallback to azur generation
+
+			// Génération du document. Cette fonction renvoie le nom du fichier généré.
+			$generatedFileName = $order->generate_document($modelToGenerate, $langs, 0, 0, 0);
+
+			if ($generatedFileName > 0) {
+				$filepath = $conf->commande->dir_output . '/' . $order->ref . '/' . $generatedFileName;
+				if (file_exists($filepath)) {
+					$file = $filepath;
+					dol_syslog("Cliimmeca: Fallback: Generated PDF set: " . $file, LOG_DEBUG);
+				} else {
+					dol_syslog("Cliimmeca: Fallback: Generated PDF not found at: " . $filepath, LOG_ERR);
+				}
+			} else {
+				dol_syslog("Cliimmeca: Fallback: ERROR generating PDF for order " . $order->ref . " - Error: " . $order->error, LOG_ERR);
+			}
+			// --- End Fallback ---
+		}
+	}
+	// --- END Cliimmeca Custom Logic ---
+
 	// Define output language
 	$outputlangs = $langs;
 	$newlang = '';
