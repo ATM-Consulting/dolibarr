@@ -1525,7 +1525,10 @@ class Ticket extends CommonObject
 
 				if (!$error && !$notrigger) {
 					// Call trigger
-					$result = $this->call_trigger('TICKET_MODIFY', $user);
+					/*
+					 * BACKPORT Develop v24 -> PR #37086 - https://github.com/Dolibarr/dolibarr/pull/37086
+					 */
+					$result = $this->call_trigger('TICKET_READ', $user);
 					if ($result < 0) {
 						$error++;
 					}
