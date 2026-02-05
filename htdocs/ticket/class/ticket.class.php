@@ -1510,6 +1510,10 @@ class Ticket extends CommonObject
 
 		if ($this->statut != self::STATUS_CANCELED) { // no closed
 			$this->oldcopy = dol_clone($this);
+			/*
+			 * BACKPORT Develop v24 -> PR #37086 - https://github.com/Dolibarr/dolibarr/pull/37086
+			 */
+			$this->context['markAsRead'] = 1;
 
 			$this->db->begin();
 
@@ -1525,10 +1529,7 @@ class Ticket extends CommonObject
 
 				if (!$error && !$notrigger) {
 					// Call trigger
-					/*
-					 * BACKPORT Develop v24 -> PR #37086 - https://github.com/Dolibarr/dolibarr/pull/37086
-					 */
-					$result = $this->call_trigger('TICKET_READ', $user);
+					$result = $this->call_trigger('TICKET_MODIFY', $user);
 					if ($result < 0) {
 						$error++;
 					}
