@@ -96,7 +96,8 @@ $sortorder .= ',' . $sortorder.",ASC,ASC";
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
-$res = $object->fetch_optionals();$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
+$res = $object->fetch_optionals();
+$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 // Initialize array of search criteria
 $search_all = GETPOST("search_all", 'alpha');
@@ -114,10 +115,6 @@ if (empty($action) && empty($id) && empty($ref)) {
 // Load object
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be 'include', not 'include_once'.
 
-// Security check - Protection if external user
-//if ($user->socid > 0) accessforbidden();
-//if ($user->socid > 0) $socid = $user->socid;
-//$result = restrictedArea($user, 'mymodule', $id);
 
 //Parameters Page
 $paramwithsearch = '&sortfield=' . urlencode($sortfield);
@@ -140,7 +137,6 @@ if (!getDolGlobalString('MAIN_USE_ADVANCED_PERMS')) {
 $now = dol_now();
 
 
-
 /*
  * Actions
  */
@@ -148,7 +144,6 @@ $now = dol_now();
 if ($cancel) {
 	$action = '';
 }
-
 
 $parameters = array();
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
@@ -1107,7 +1102,7 @@ if ($resql) {
 	$i = 0;
 	$hasinput = false;
 	$totalarray = array();
-	while ($i < $num) {
+	while ($i < $num && $i < $limit) {
 		$obj = $db->fetch_object($resql);
 
 		if (isset($cacheOfWarehouses[$obj->fk_warehouse])) {
