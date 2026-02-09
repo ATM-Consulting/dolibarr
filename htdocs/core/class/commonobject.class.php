@@ -4485,6 +4485,10 @@ abstract class CommonObject
 
 				if ($trigkey) {
 					// Call trigger
+					/*
+					 * BACKPORT Develop  v24 -> PR #37086 - https://github.com/Dolibarr/dolibarr/pull/37086
+					 */
+					$this->oldcopy = dol_clone($this);
 					$result = $this->call_trigger($trigkey, $user);
 					if ($result < 0) {
 						$error++;
@@ -9952,6 +9956,7 @@ abstract class CommonObject
 		if ($this->db->query($sql)) {
 			if (!$error) {
 				$this->oldcopy = clone $this;
+				$this->{$statusfield} = $status;
 			}
 
 			if (!$error && !$notrigger) {
