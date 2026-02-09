@@ -1094,8 +1094,9 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					$param .= '&entity=' . intval($objp->entity);
-					print $formfile->showPreview($file_list, $sendingstatic->element, $relativepath, 0, $param);
+					$param = '&entity=' . intval($objp->entity);
+					// For shipment documents, modulepart must be 'expedition' (not 'shipping')
+					print $formfile->showPreview($file_list, 'expedition', $relativepath, 0, $param);
 				}
 				// $filename = dol_sanitizeFileName($objp->ref);
 				// $filedir = $conf->expedition->multidir_output[$objp->entity].'/'.dol_sanitizeFileName($objp->ref);
