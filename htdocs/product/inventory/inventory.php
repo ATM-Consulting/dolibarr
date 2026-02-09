@@ -96,8 +96,7 @@ $sortorder .= ',' . $sortorder.",ASC,ASC";
 
 // Fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($object->table_element);
-
-$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
+$res = $object->fetch_optionals();$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
 
 // Initialize array of search criteria
 $search_all = GETPOST("search_all", 'alpha');
@@ -1048,25 +1047,63 @@ if ($object->status == $object::STATUS_DRAFT || $object->status == $object::STAT
 // Request to show lines of inventory (prefilled after start/validate step)
 $sql = 'SELECT id.rowid, id.datec as date_creation, id.tms as date_modification, id.fk_inventory, id.fk_warehouse,';
 $sql .= ' id.fk_product, id.batch, id.qty_stock, id.qty_view, id.qty_regulated, id.fk_movement, id.pmp_real, id.pmp_expected';
+
+$sqlfields = $sql; // $sql fields to remove for count total
+
 $sql .= ' FROM ' . $db->prefix() . 'inventorydet as id';
 $sql .= ' LEFT JOIN ' . $db->prefix() . 'product as p ON id.fk_product = p.rowid';
 $sql .= ' LEFT JOIN ' . $db->prefix() . 'entrepot as e ON id.fk_warehouse = e.rowid';
 $sql .= ' WHERE id.fk_inventory = ' . ((int) $object->id);
-$sql .= $db->order($sortfield, $sortorder);
-$sql .= $db->plimit($limit, $offset);
+//$sql .= $db->order($sortfield, $sortorder);
+//$sql .= $db->plimit($limit, $offset);
 
 $cacheOfProducts = array();
 $cacheOfWarehouses = array();
 
-//$sql = '';
 $resql = $db->query($sql);
-if ($resql) {
-	$num = $db->num_rows($resql);
 
-	if (!empty($limit != 0) || $num > $limit || $page) {
-		print_fleche_navigation($page, $_SERVER["PHP_SELF"], '&id='.$object->id.$paramwithsearch, ($num >= $limit ? 1 : 0), '<li class="pagination"><span>' . $langs->trans("Page") . ' ' . ($page + 1) . '</span></li>', '', $limit);
+// Count total nb of records
+$nbtotalofrecords = '';
+if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
+	/* The fast and low memory method to get and count full list converts the sql into a sql count */
+	$sqlforcount = preg_replace('/^'.preg_quote($sqlfields, '/').'/', 'SELECT COUNT(*) as nbtotalofrecords', $sql);
+	$sqlforcount = preg_replace('/GROUP BY .*$/', '', $sqlforcount);
+	$resql = $db->query($sqlforcount);
+	if ($resql) {
+		$objforcount = $db->fetch_object($resql);
+		$nbtotalofrecords = $objforcount->nbtotalofrecords;
+	} else {
+		dol_print_error($db);
 	}
 
+	if (($page * $limit) > $nbtotalofrecords) {	// if total resultset is smaller than the paging size (filtering), goto and load page 0
+		$page = 0;
+		$offset = 0;
+	}
+	$db->free($resql);
+}
+
+// Complete request and execute it with limit
+$sql .= $db->order($sortfield, $sortorder);
+if ($limit) {
+	$sql .= $db->plimit($limit + 1, $offset);
+}
+$resql = $db->query($sql);
+if (!$resql) {
+	dol_print_error($db);
+	exit;
+}
+
+$num = $db->num_rows($resql);
+
+// Calculate total pages for pagination
+$nbtotalofpages = ($limit > 0 ? ceil($nbtotalofrecords / $limit) : 1);
+// Use input for page navigation instead of simple text
+$pageinput = '<li class="pagination pageplusone valignmiddle"><input type="text" class="width40 center pageplusone heightofcombo" name="pageplusone" value="'.($page + 1).'"></li>/<li class="pagination paginationlastpage">'.$nbtotalofpages.'</li>';
+
+print_fleche_navigation($page, $_SERVER["PHP_SELF"], '&id='.$object->id.$paramwithsearch, ($num > $limit ? 1 : 0), $pageinput, '', $limit, $nbtotalofrecords);
+
+if ($resql) {
 	$i = 0;
 	$hasinput = false;
 	$totalarray = array();
@@ -1395,6 +1432,24 @@ function updateTotalValuation() {
 	}));
 }
 
+// Add navigation functionality for page input
+$(document).ready(function() {
+	$('.pageplusone').on('click', function() {
+		$(this).select();
+	});
+	$('.pageplusone').on('keypress', function(e) {
+		if (e.which === 13) { // Enter key
+			var newPage = parseInt($(this).val()) - 1; // Convert to 0-indexed
+			var maxPages = parseInt($('.paginationlastpage').text());
+			if (!isNaN(newPage) && newPage >= 0 && newPage < maxPages) {
+				var currentUrl = window.location.href;
+				var url = new URL(currentUrl);
+				url.searchParams.set('page', newPage);
+				window.location.href = url.toString();
+			}
+		}
+	});
+});
 
 </script>
 	<?php
