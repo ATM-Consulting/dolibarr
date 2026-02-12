@@ -4483,7 +4483,17 @@ abstract class CommonObject
 					}
 				}
 
+				/*
+				 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
+				 */
+				$this->context = array_merge($this->context, array('newstatus' => $status));
+
 				if ($trigkey) {
+					/*
+					 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
+					 */
+					$this->oldcopy = dol_clone($this);
+
 					// Call trigger
 					$result = $this->call_trigger($trigkey, $user);
 					if ($result < 0) {
@@ -9952,6 +9962,7 @@ abstract class CommonObject
 		if ($this->db->query($sql)) {
 			if (!$error) {
 				$this->oldcopy = clone $this;
+				$this->{$statusfield} = $status;
 			}
 
 			if (!$error && !$notrigger) {

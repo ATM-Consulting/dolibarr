@@ -568,7 +568,10 @@ if (empty($reshook)) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			// prevent browser refresh from reopening ticket several times
 			if ($object->status == Ticket::STATUS_CLOSED || $object->status == Ticket::STATUS_CANCELED) {
-				$res = $object->setStatut(Ticket::STATUS_ASSIGNED);
+				/*
+				 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
+				 */
+				$res = $object->setStatut(Ticket::STATUS_ASSIGNED, null, '', 'TICKET_MODIFY');
 				if ($res) {
 					// Log action in ticket logs table
 					//$log_action = $langs->trans('TicketLogReopen');
@@ -626,7 +629,10 @@ if (empty($reshook)) {
 		if ($object->fetch(GETPOST('id', 'int'), GETPOST('track_id', 'alpha')) >= 0) {
 			$new_status = GETPOST('new_status', 'int');
 			$old_status = $object->status;
-			$res = $object->setStatut($new_status);
+			/*
+			 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
+			 */
+			$res = $object->setStatut($new_status, null, '', 'TICKET_MODIFY');
 			if ($res) {
 				// Log action in ticket logs table
 				$log_action = $langs->trans('TicketLogStatusChanged', $langs->transnoentities($object->statuts_short[$old_status]), $langs->transnoentities($object->statuts_short[$new_status]));
