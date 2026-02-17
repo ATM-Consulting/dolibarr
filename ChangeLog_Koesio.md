@@ -1,3 +1,4 @@
+- T260007 - Backport InvoiceAPI LinkedObjects - **2026-02-17**
 - Backport productLot delete() method - **16/12/2025** 
 - Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
