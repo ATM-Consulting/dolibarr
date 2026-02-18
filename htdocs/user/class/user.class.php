@@ -2931,7 +2931,7 @@ class User extends CommonObject
 		$linkend = '</a>';
 
 		//Check user's rights to see an other user
-		if ((!$user->rights->user->user->lire && $this->id != $user->id)) {
+		if ((!empty($user->rights->user->user->lire) && $this->id != $user->id)) {
 			$option = 'nolink';
 		}
 
