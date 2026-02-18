@@ -217,7 +217,7 @@ class FormActions
 
 			$urlbacktopage = $_SERVER['PHP_SELF'].'?id='.$object->id.($moreparambacktopage ? '&'.$moreparambacktopage : '');
 
-			$projectid = $object->fk_project;
+			$projectid = $object->fk_project ?? 0;
 			if ($typeelement == 'project') {
 				$projectid = $object->id;
 			}
