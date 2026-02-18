@@ -723,7 +723,7 @@ function print_left_eldy_menu($db, $menu_array_before, $menu_array_after, &$tabM
 
 	$newmenu = $menu;
 
-	$mainmenu = ($forcemainmenu ? $forcemainmenu : $_SESSION["mainmenu"]);
+	$mainmenu = ($forcemainmenu ? $forcemainmenu : ($_SESSION["mainmenu"] ?? ''));
 	$leftmenu = ($forceleftmenu ? '' : (empty($_SESSION["leftmenu"]) ? 'none' : $_SESSION["leftmenu"]));
 
 	global $usemenuhider;
