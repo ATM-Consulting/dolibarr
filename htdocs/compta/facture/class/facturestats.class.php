@@ -152,7 +152,6 @@ class FactureStats extends Stats
 	{
 		global $user;
 
-		// On utilise DISTINCT pour éviter les doublons si un client a plusieurs commerciaux
 		$sql = "SELECT date_format(f.datef,'%m') as dm, COUNT(DISTINCT f.rowid) as nb";
 		$sql .= " FROM ".$this->from;
 
@@ -208,7 +207,6 @@ class FactureStats extends Stats
 	{
 		global $user;
 
-		// Utilisation de f.total_ht (ou total_ttc selon ta préférence)
 		$sql = "SELECT date_format(f.datef,'%m') as dm, SUM(f.total_ht) as somme";
 		$sql .= " FROM ".$this->from;
 
