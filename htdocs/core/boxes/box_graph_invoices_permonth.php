@@ -146,8 +146,7 @@ class box_graph_invoices_permonth extends ModeleBoxes
 
 			// Build graphic number of object. $data = array(array('Lib',val1,val2,val3),...)
 			if ($shownb) {
-				$data1 = $stats->getNbByMonthWithPrevYear($endyear, $startyear, (GETPOST('action', 'aZ09') == $refreshaction ? -1 : (3600 * 24)), ($WIDTH < 300 ? 2 : 0), $startmonth);
-
+				$data1 = $stats->getNbByMonthWithPrevYear($endyear, $startyear, -1, ($WIDTH < 300 ? 2 : 0), $startmonth);
 				$filenamenb = $dir."/".$prefix."invoicesnbinyear-".$endyear.".png";
 				// default value for customer mode
 				$fileurlnb = DOL_URL_ROOT.'/viewimage.php?modulepart=billstats&file=invoicesnbinyear-'.$endyear.'.png';
@@ -169,7 +168,6 @@ class box_graph_invoices_permonth extends ModeleBoxes
 						}
 						$i++;
 					}
-
 					$px1->SetLegend($legend);
 					$px1->SetMaxValue($px1->GetCeilMaxValue());
 					$px1->SetWidth($WIDTH);
@@ -187,8 +185,7 @@ class box_graph_invoices_permonth extends ModeleBoxes
 
 			// Build graphic number of object. $data = array(array('Lib',val1,val2,val3),...)
 			if ($showtot) {
-				$data2 = $stats->getAmountByMonthWithPrevYear($endyear, $startyear, (GETPOST('action', 'aZ09') == $refreshaction ? -1 : (3600 * 24)), ($WIDTH < 300 ? 2 : 0), $startmonth);
-
+				$data2 = $stats->getAmountByMonthWithPrevYear($endyear, $startyear, -1, ($WIDTH < 300 ? 2 : 0), $startmonth);
 				$filenamenb = $dir."/".$prefix."invoicesamountinyear-".$endyear.".png";
 				// default value for customer mode
 				$fileurlnb = DOL_URL_ROOT.'/viewimage.php?modulepart=billstats&file=invoicesamountinyear-'.$endyear.'.png';

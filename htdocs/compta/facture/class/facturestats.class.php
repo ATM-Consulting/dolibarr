@@ -151,14 +151,18 @@ class FactureStats extends Stats
 	public function getNbByMonth($year, $format = 0)
 	{
 		global $user;
-
-		$sql = "SELECT date_format(f.datef,'%m') as dm, COUNT(*) as nb";
+		$sql = "SELECT date_format(f.datef,'%m') as dm, COUNT(DISTINCT f.rowid) as nb";
 		$sql .= " FROM ".$this->from;
+
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+			$sql .= " WHERE f.fk_soc = sc.fk_soc"; // <--- LA SOUDURE MANQUANTE
+			$sql .= " AND sc.fk_user = ".((int) $user->id); // <--- LE FILTRE SUR L'UTILISATEUR
+		} else {
+			$sql .= " WHERE 1=1";
 		}
 		$sql .= $this->join;
-		$sql .= " WHERE f.datef BETWEEN '".$this->db->idate(dol_get_first_day($year))."' AND '".$this->db->idate(dol_get_last_day($year))."'";
+		$sql .= " AND f.datef BETWEEN '".$this->db->idate(dol_get_first_day($year))."' AND '".$this->db->idate(dol_get_last_day($year))."'";
 		$sql .= " AND ".$this->where;
 		$sql .= " GROUP BY dm";
 		$sql .= $this->db->order('dm', 'DESC');
@@ -202,14 +206,18 @@ class FactureStats extends Stats
 	public function getAmountByMonth($year, $format = 0)
 	{
 		global $user;
-
-		$sql = "SELECT date_format(datef,'%m') as dm, SUM(f.".$this->field.")";
+		$sql = "SELECT date_format(f.datef,'%m') as dm, SUM(f.total_ht) as somme"; // ou total_ttc selon ton besoin
 		$sql .= " FROM ".$this->from;
+
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
 			$sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+			$sql .= " WHERE f.fk_soc = sc.fk_soc";
+			$sql .= " AND sc.fk_user = ".((int) $user->id);
+		} else {
+			$sql .= " WHERE 1=1";
 		}
 		$sql .= $this->join;
-		$sql .= " WHERE f.datef BETWEEN '".$this->db->idate(dol_get_first_day($year))."' AND '".$this->db->idate(dol_get_last_day($year))."'";
+		$sql .= " AND f.datef BETWEEN '".$this->db->idate(dol_get_first_day($year))."' AND '".$this->db->idate(dol_get_last_day($year))."'";
 		$sql .= " AND ".$this->where;
 		$sql .= " GROUP BY dm";
 		$sql .= $this->db->order('dm', 'DESC');
