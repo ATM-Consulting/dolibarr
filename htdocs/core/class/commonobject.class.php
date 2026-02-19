@@ -6773,6 +6773,7 @@ abstract class CommonObject
 				if (ExtraFields::isEmptyValue($v, $attributeType)) {
 					$langs->load("errors");
 					dol_syslog("Mandatory field '".$key."' is empty during create and set to required into definition of extrafields");
+					setEventMessage($langs->trans('ErrorFieldsRequired').' '.$attributeLabel, 'errors');
 					$this->errors[] = $langs->trans('ErrorFieldRequired', $attributeLabel);
 					return -1;
 				}
