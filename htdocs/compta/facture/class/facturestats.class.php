@@ -156,9 +156,8 @@ class FactureStats extends Stats
 		$sql .= " FROM ".$this->from;
 
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
-			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc";
-			$sql .= " WHERE f.fk_soc = sc.fk_soc";
-			$sql .= " AND sc.fk_user = ".((int) $user->id);
+			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc ON f.fk_soc = sc.fk_soc";
+			$sql .= " WHERE sc.fk_user = ".((int) $user->id);
 		} else {
 			$sql .= " WHERE 1=1";
 		}
@@ -211,9 +210,8 @@ class FactureStats extends Stats
 		$sql .= " FROM ".$this->from;
 
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
-			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc";
-			$sql .= " WHERE f.fk_soc = sc.fk_soc";
-			$sql .= " AND sc.fk_user = ".((int) $user->id);
+			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc ON f.fk_soc = sc.fk_soc";
+			$sql .= " WHERE sc.fk_user = ".((int) $user->id);
 		} else {
 			$sql .= " WHERE 1=1";
 		}
