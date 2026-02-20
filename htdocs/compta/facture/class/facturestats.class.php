@@ -156,7 +156,7 @@ class FactureStats extends Stats
 		$sql .= " FROM ".$this->from;
 
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
-			$sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc";
 			$sql .= " WHERE f.fk_soc = sc.fk_soc";
 			$sql .= " AND sc.fk_user = ".((int) $user->id);
 		} else {
@@ -207,11 +207,11 @@ class FactureStats extends Stats
 	{
 		global $user;
 
-		$sql = "SELECT date_format(f.datef,'%m') as dm, SUM(f.total_ht) as somme";
+		$sql = "SELECT date_format(datef,'%m') as dm, SUM(f.".$this->field.")";
 		$sql .= " FROM ".$this->from;
 
 		if (empty($user->socid) && !$user->hasRight('societe', 'client', 'voir')) {
-			$sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
+			$sql .= " INNER JOIN ".$this->db->prefix()."societe_commerciaux as sc";
 			$sql .= " WHERE f.fk_soc = sc.fk_soc";
 			$sql .= " AND sc.fk_user = ".((int) $user->id);
 		} else {
@@ -223,7 +223,6 @@ class FactureStats extends Stats
 		$sql .= " AND ".$this->where;
 		$sql .= " GROUP BY dm";
 		$sql .= $this->db->order('dm', 'DESC');
-
 		return $this->_getAmountByMonth($year, $sql, $format);
 	}
 
