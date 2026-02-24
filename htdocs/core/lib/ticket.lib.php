@@ -132,6 +132,15 @@ function ticket_prepare_head($object)
 
 
 	// History
+	$nbEvents = 0;
+	$sql = "SELECT COUNT(id) FROM " . $db->prefix() . "actioncomm";
+	$sql .= " WHERE fk_element = " . (int) $object->id . " AND elementtype = 'ticket'";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$row = $db->fetch_row($resql);
+		$nbEvents = $row[0];
+	}
+
 	$ticketViewType = "messaging";
 	if (empty($_SESSION['ticket-view-type'])) {
 		$_SESSION['ticket-view-type'] = $ticketViewType;
@@ -140,15 +149,18 @@ function ticket_prepare_head($object)
 	}
 
 	if ($ticketViewType == "messaging") {
-		$head[$h][0] = DOL_URL_ROOT.'/ticket/messaging.php?track_id='.$object->track_id;
+		$head[$h][0] = DOL_URL_ROOT . '/ticket/messaging.php?track_id=' . $object->track_id;
 	} else {
 		// $ticketViewType == "list"
-		$head[$h][0] = DOL_URL_ROOT.'/ticket/agenda.php?track_id='.$object->track_id;
+		$head[$h][0] = DOL_URL_ROOT . '/ticket/agenda.php?track_id=' . $object->track_id;
 	}
 	$head[$h][1] = $langs->trans('Events');
 	if (isModEnabled('agenda') && ($user->hasRight('agenda', 'myactions', 'read') || $user->hasRight('agenda', 'allactions', 'read'))) {
 		$head[$h][1] .= '/';
 		$head[$h][1] .= $langs->trans("Agenda");
+	}
+	if ($nbEvents > 0) {
+		$head[$h][1] .= '<span class="badge marginleftonlyshort">' . $nbEvents . '</span>';
 	}
 	$head[$h][2] = 'tabTicketLogs';
 	$h++;
