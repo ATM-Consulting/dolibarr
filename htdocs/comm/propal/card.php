@@ -19,6 +19,8 @@
  * Copyright (C) 2023		William Mead				<william.mead@manchenumerique.fr>
  * Copyright (C) 2024-2025	MDW							<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024		Alexandre Spangaro			<alexandre@inovea-conseil.com>
+ * Copyright (C) 2025		Benjamin Falière			<benjamin@faliere.com>
+ * Copyright (C) 2025		Anthony Berton				<anthony.berton@bb2a.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,10 +156,12 @@ $permissiontoedit = $usercancreate; // Used by the include of actions_lineupdown
 $permissiontoeditextra = $permissiontoadd;
 if (GETPOST('attribute', 'aZ09') && isset($extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')])) {
 	// For action 'update_extras', is there a specific permission set for the attribute to update
-	$permissiontoeditextra = dol_eval($extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')]);
+	$permissiontoeditextra = dol_eval((string) $extrafields->attributes[$object->table_element]['perms'][GETPOST('attribute', 'aZ09')]);
 }
 
 $price_base_type = null;
+$shipping_method_id = null;
+$warehouse_id = -1;
 
 // Security check
 if (!empty($user->socid)) {
@@ -1931,7 +1935,13 @@ if (empty($reshook)) {
 			$res = $product->fetch($productid);
 
 			$type = $product->type;
-			$$price_base_type = $product->price_base_type;
+			$price_base_type = $product->price_base_type;
+
+			// If base type TTc, we change pu value to define the TTC one
+			if ($price_base_type == 'TTC' && !empty($pu_ttc)) {
+				$pu = $pu_ttc;
+			}
+
 			$label = ((GETPOST('update_label') && GETPOST('product_label')) ? GETPOST('product_label') : '');
 
 			$price_min = $product->price_min;
@@ -2052,24 +2062,7 @@ if (empty($reshook)) {
 		$result = $object->set_demand_reason($user, GETPOSTINT('demand_reason_id'));
 	} elseif ($action == 'setconditions' && $usercancreate) {
 		// Terms of payment
-		$sql = "SELECT code ";
-		$sql .= "FROM " . $db->prefix() . "c_payment_term";
-		$sql .= " WHERE rowid = " . ((int) GETPOST('cond_reglement_id', 'int'));
-		$result = $db->query($sql);
-		if ($result) {
-			$obj = $db->fetch_object($result);
-			if ($obj->code == 'DEP30PCTDEL') {
-				$result = $object->setPaymentTerms(GETPOSTINT('cond_reglement_id'), GETPOSTFLOAT('cond_reglement_id_deposit_percent'));
-			} else {
-				$object->deposit_percent = 0;
-				$object->update($user);
-				$result = $object->setPaymentTerms(GETPOSTINT('cond_reglement_id'), $object->deposit_percent);
-			}
-		}
-		//} elseif ($action == 'setremisepercent' && $usercancreate) {
-		//	$result = $object->set_remise_percent($user, price2num(GETPOST('remise_percent'), '', 2));
-		//} elseif ($action == 'setremiseabsolue' && $usercancreate) {
-		//	$result = $object->set_remise_absolue($user, price2num(GETPOST('remise_absolue'), 'MU', 2));
+		$result = $object->setPaymentTerms(GETPOSTINT('cond_reglement_id'), GETPOSTFLOAT('cond_reglement_id_deposit_percent'));
 	} elseif ($action == 'setmode' && $usercancreate) {
 		// Payment choice
 		$result = $object->setPaymentMethods(GETPOSTINT('mode_reglement_id'));
@@ -2254,7 +2247,7 @@ if ($action == 'create') {
 
 			$cond_reglement_id  = (!empty($objectsrc->cond_reglement_id) ? $objectsrc->cond_reglement_id : (!empty($soc->cond_reglement_id) ? $soc->cond_reglement_id : 0));
 			$mode_reglement_id  = (!empty($objectsrc->mode_reglement_id) ? $objectsrc->mode_reglement_id : (!empty($soc->mode_reglement_id) ? $soc->mode_reglement_id : 0));
-			$warehouse_id      = (!empty($objectsrc->warehouse_id) ? $objectsrc->warehouse_id : (!empty($soc->warehouse_id) ? $soc->warehouse_id : 0));
+			$warehouse_id      = (!empty($objectsrc->warehouse_id) ? $objectsrc->warehouse_id : (!empty($soc->warehouse_id) ? $soc->warehouse_id : -1));
 
 			// Replicate extrafields
 			$objectsrc->fetch_optionals();
@@ -2278,7 +2271,7 @@ if ($action == 'create') {
 		$mode_reglement_id  = empty($soc->mode_reglement_id) ? $mode_reglement_id : $soc->mode_reglement_id;
 		$fk_account         = empty($soc->fk_account) ? $fk_account : $soc->fk_account;
 		$shipping_method_id = $soc->shipping_method_id;
-		$warehouse_id       = $soc->fk_warehouse;
+		$warehouse_id       = !empty($soc->fk_warehouse) ? $soc->fk_warehouse : $warehouse_id;
 		$remise_percent     = $soc->remise_percent;
 
 		if (isModEnabled("multicurrency") && !empty($soc->multicurrency_code)) {
@@ -2301,12 +2294,11 @@ if ($action == 'create') {
 			$fk_account = GETPOSTINT('fk_account');
 		}
 	}
-
 	// Warehouse default if null
 	if ($soc->fk_warehouse > 0) {
 		$warehouse_id = $soc->fk_warehouse;
 	}
-	if (isModEnabled('stock') && empty($warehouse_id) && getDolGlobalString('WAREHOUSE_ASK_WAREHOUSE_DURING_PROPAL')) {
+	if (isModEnabled('stock') && $warehouse_id < 0 && getDolGlobalString('WAREHOUSE_ASK_WAREHOUSE_DURING_PROPAL')) {
 		if (empty($object->warehouse_id) && getDolGlobalString('MAIN_DEFAULT_WAREHOUSE')) {
 			$warehouse_id = getDolGlobalString('MAIN_DEFAULT_WAREHOUSE');
 		}
@@ -2347,8 +2339,6 @@ if ($action == 'create') {
 		// Third party
 		print '<tr class="field_socid">';
 		print '<td class="titlefieldcreate fieldrequired">'.$langs->trans('Customer').'</td>';
-		$shipping_method_id = 0;
-		$warehouse_id = 0;
 		if ($socid > 0) {
 			print '<td class="valuefieldcreate">';
 			print $soc->getNomUrl(1, 'customer');
@@ -2357,7 +2347,6 @@ if ($action == 'create') {
 			if (getDolGlobalString('SOCIETE_ASK_FOR_SHIPPING_METHOD') && !empty($soc->shipping_method_id)) {
 				$shipping_method_id = $soc->shipping_method_id;
 			}
-			//$warehouse_id       = $soc->warehouse_id;
 		} else {
 			print '<td class="valuefieldcreate">';
 			$filter = '((s.client:IN:1,2,3) AND (s.status:=:1))';
@@ -3456,14 +3445,15 @@ if ($action == 'create') {
 		if (empty($reshook)) {
 			if ($action != 'editline') {
 				// Subtotal
-				if ($object->status == Propal::STATUS_DRAFT && isModEnabled('subtotals') && getDolGlobalString('SUBTOTAL_TITLE_'.strtoupper($object->element))) {
+				if ($object->status == Propal::STATUS_DRAFT && isModEnabled('subtotals')
+					&& (getDolGlobalInt('SUBTOTAL_TITLE_'.strtoupper($object->element)) || getDolGlobalInt('SUBTOTAL_'.strtoupper($object->element)))) {
 					$langs->load('subtotals');
 
 					$url_button = array();
 
 					$url_button[] = array(
 						'lang' => 'subtotals',
-						'enabled' => (isModEnabled('propal') && $object->status == Propal::STATUS_DRAFT),
+						'enabled' => (isModEnabled('propal') && $object->status == Propal::STATUS_DRAFT && getDolGlobalInt('SUBTOTAL_TITLE_'.strtoupper($object->element))),
 						'perm' => (bool) $usercancreate,
 						'label' => $langs->trans('AddTitleLine'),
 						'url' => '/comm/propal/card.php?id='.$object->id.'&action=add_title_line&token='.newToken()
@@ -3471,7 +3461,7 @@ if ($action == 'create') {
 
 					$url_button[] = array(
 						'lang' => 'subtotals',
-						'enabled' => (isModEnabled('propal') && $object->status == Propal::STATUS_DRAFT),
+						'enabled' => (isModEnabled('propal') && $object->status == Propal::STATUS_DRAFT && getDolGlobalInt('SUBTOTAL_'.strtoupper($object->element))),
 						'perm' => (bool) $usercancreate,
 						'label' => $langs->trans('AddSubtotalLine'),
 						'url' => '/comm/propal/card.php?id='.$object->id.'&action=add_subtotal_line&token='.newToken()

@@ -1151,9 +1151,9 @@ class ExtraFields
 		$unique = $this->attributes[$extrafieldsobjectkey]['unique'][$key];
 		$required = $this->attributes[$extrafieldsobjectkey]['required'][$key];
 		$param = $this->attributes[$extrafieldsobjectkey]['param'][$key];
-		$perms = (int) dol_eval($this->attributes[$extrafieldsobjectkey]['perms'][$key], 1, 1, '2');
+		$perms = (int) dol_eval((string) $this->attributes[$extrafieldsobjectkey]['perms'][$key], 1, 1, '2');
 		$langfile = $this->attributes[$extrafieldsobjectkey]['langfile'][$key];
-		$list = (string) dol_eval($this->attributes[$extrafieldsobjectkey]['list'][$key], 1, 1, '2');
+		$list = (string) dol_eval((string) $this->attributes[$extrafieldsobjectkey]['list'][$key], 1, 1, '2');
 		$totalizable = $this->attributes[$extrafieldsobjectkey]['totalizable'][$key];
 		$help = $this->attributes[$extrafieldsobjectkey]['help'][$key];
 		$alwayseditable = $this->attributes[$extrafieldsobjectkey]['alwayseditable'][$key];
@@ -1622,6 +1622,7 @@ class ExtraFields
 								if (is_array($fields_label) && count($fields_label) > 1) {
 									$notrans = true;
 									foreach ($fields_label as $field_toshow) {
+										$field_toshow = preg_replace('/^.*\./', '', $field_toshow);
 										$labeltoshow .= $obj->$field_toshow.' ';
 									}
 								} else {
@@ -2064,9 +2065,9 @@ class ExtraFields
 		$unique = $this->attributes[$extrafieldsobjectkey]['unique'][$key];
 		$required = $this->attributes[$extrafieldsobjectkey]['required'][$key];
 		$param = $this->attributes[$extrafieldsobjectkey]['param'][$key];
-		$perms = (int) dol_eval($this->attributes[$extrafieldsobjectkey]['perms'][$key], 1, 1, '2');
+		$perms = (int) dol_eval((string) $this->attributes[$extrafieldsobjectkey]['perms'][$key], 1, 1, '2');
 		$langfile = $this->attributes[$extrafieldsobjectkey]['langfile'][$key];
-		$list = (string) dol_eval($this->attributes[$extrafieldsobjectkey]['list'][$key], 1, 1, '2');
+		$list = (string) dol_eval((string) $this->attributes[$extrafieldsobjectkey]['list'][$key], 1, 1, '2');
 		$help = $this->attributes[$extrafieldsobjectkey]['help'][$key];
 		$cssview = $this->attributes[$extrafieldsobjectkey]['cssview'][$key];
 		$alwayseditable = $this->attributes[$extrafieldsobjectkey]['alwayseditable'][$key];
@@ -2216,6 +2217,7 @@ class ExtraFields
 					if (is_array($fields_label) && count($fields_label) > 1) {
 						foreach ($fields_label as $field_toshow) {
 							$translabel = '';
+							$field_toshow = preg_replace('/^.*\./', '', $field_toshow);
 							if (!empty($obj->$field_toshow)) {
 								$translabel = $outputlangs->trans($obj->$field_toshow);
 
@@ -2713,12 +2715,12 @@ class ExtraFields
 
 				$visibility = 1;
 				if (isset($this->attributes[$object->table_element]['list'][$key])) {		// 'list' is option for visibility
-					$visibility = (int) dol_eval($this->attributes[$object->table_element]['list'][$key], 1, 1, '2');
+					$visibility = (int) dol_eval((string) $this->attributes[$object->table_element]['list'][$key], 1, 1, '2');
 				}
 
 				$perms = 1;
 				if (isset($this->attributes[$object->table_element]['perms'][$key])) {
-					$perms = (int) dol_eval($this->attributes[$object->table_element]['perms'][$key], 1, 1, '2');
+					$perms = (int) dol_eval((string) $this->attributes[$object->table_element]['perms'][$key], 1, 1, '2');
 				}
 				if (empty($enabled)
 					|| (

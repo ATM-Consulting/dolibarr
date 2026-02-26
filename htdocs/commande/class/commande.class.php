@@ -1789,6 +1789,9 @@ class Commande extends CommonOrder
 			$this->line->total_localtax2 = (float) $total_localtax2;
 			$this->line->total_ttc = (float) $total_ttc;
 			$this->line->special_code = $special_code;
+			if (empty($qty) && empty($special_code)) {
+				$this->line->special_code = 3;
+			}
 			$this->line->origin = $origin;
 			$this->line->origin_id = $origin_id;
 			$this->line->fk_parent_line = $fk_parent_line;
@@ -3152,8 +3155,11 @@ class Commande extends CommonOrder
 			if (empty($remise_percent)) {
 				$remise_percent = 0;
 			}
-			if (empty($special_code) || $special_code == 3) {
-				$special_code = 0;
+			if (empty($qty) && empty($special_code)) {
+				$special_code = 3; // Set option tag
+			}
+			if (!empty($qty) && $special_code == 3) {
+				$special_code = 0; // Remove option tag
 			}
 			if (empty($ref_ext)) {
 				$ref_ext = '';
@@ -3700,8 +3706,7 @@ class Commande extends CommonOrder
 				$response->nbtodo++;
 				$response->total += $obj->total_ht;
 
-				$generic_commande->statut = $obj->fk_statut;
-				$generic_commande->date_commande = $this->db->jdate($obj->date_commande);
+				$generic_commande->status = $obj->fk_statut;
 				$generic_commande->date = $this->db->jdate($obj->date_commande);
 				$generic_commande->delivery_date = $this->db->jdate($obj->delivery_date);
 

@@ -15,7 +15,7 @@
  * Copyright (C) 2012-2016  Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2012       Cedric Salvador         <csalvador@gpcsolutions.fr>
  * Copyright (C) 2012-2015  Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
- * Copyright (C) 2014-2023  Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2014-2026  Alexandre Spangaro      <alexandre@inovea-conseil.com>
  * Copyright (C) 2018-2022  Ferran Marcet           <fmarcet@2byte.es>
  * Copyright (C) 2018-2024  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2018       Nicolas ZABOURI	        <info@inovea-conseil.com>
@@ -2994,8 +2994,9 @@ class Form
 
 		$out .= '<select class="flat' . ($morecss ? ' ' . $morecss : '') . '" name="' . $htmlname . '" id="' . $htmlname . '">';
 
-		$sql = 'SELECT b.rowid, b.ref, b.label, b.fk_product';
-		$sql .= ' FROM ' . MAIN_DB_PREFIX . 'bom_bom as b';
+		$sql = 'SELECT b.rowid, b.ref, b.label as bomLabel, p.label as productLabel';
+		$sql .= ' FROM ' . $this->db->prefix() . 'bom_bom as b';
+		$sql .= ' INNER JOIN ' . $this->db->prefix() . 'product as p ON b.fk_product = p.rowid';
 		$sql .= ' WHERE b.entity IN (' . getEntity('bom') . ')';
 		if (!empty($status)) {
 			$sql .= ' AND status = ' . (int) $status;
@@ -3019,13 +3020,11 @@ class Form
 				$out .= '>&nbsp;</option>';
 			}
 			while ($obj = $db->fetch_object($resql)) {
-				$product = new Product($db);
-				$res = $product->fetch($obj->fk_product);
 				$out .= '<option value="' . $obj->rowid . '"';
 				if ($obj->rowid == $selected) {
 					$out .= 'selected';
 				}
-				$out .= '>' . $obj->ref . ' - ' . $product->label . ' - ' . $obj->label . '</option>';
+				$out .= '>' . $obj->ref . ' - ' . $obj->productLabel . ' - ' . $obj->bomLabel . '</option>';
 			}
 		} else {
 			$error++;
@@ -3324,6 +3323,7 @@ class Form
 			$sql .= $this->db->order("p.ref");
 		}
 
+		$limit = getDolGlobalInt('SEARCH_LIMIT_AJAX') ?: $limit;
 		$sql .= $this->db->plimit($limit, 0);
 
 		// Build output string
@@ -4851,7 +4851,7 @@ class Form
 		$this->load_cache_conditions_paiements();
 
 		// Set default value if not already set by caller
-		if (empty($selected) && getDolGlobalString('MAIN_DEFAULT_PAYMENT_TERM_ID')) {
+		if (empty($selected) && strpos($htmlname, 'search_') !== 0 && getDolGlobalString('MAIN_DEFAULT_PAYMENT_TERM_ID')) {
 			dol_syslog(__METHOD__ . "Using deprecated option MAIN_DEFAULT_PAYMENT_TERM_ID", LOG_NOTICE);
 			$selected = getDolGlobalString('MAIN_DEFAULT_PAYMENT_TERM_ID');
 		}
@@ -4996,7 +4996,7 @@ class Form
 		$this->load_cache_types_paiements();
 
 		// Set default value if not already set by caller
-		if (empty($selected) && getDolGlobalString('MAIN_DEFAULT_PAYMENT_TYPE_ID')) {
+		if (empty($selected) && strpos($htmlname, 'search_') !== 0 && getDolGlobalString('MAIN_DEFAULT_PAYMENT_TYPE_ID')) {
 			dol_syslog(__METHOD__ . "Using deprecated option MAIN_DEFAULT_PAYMENT_TYPE_ID", LOG_NOTICE);
 			$selected = getDolGlobalString('MAIN_DEFAULT_PAYMENT_TYPE_ID');
 		}
@@ -7251,7 +7251,7 @@ class Form
 				if (!empty($user) && $user->admin && preg_match('/\'(..)\'/', $country_code, $reg)) {
 					$langs->load("errors");
 					$new_country_code = $reg[1];
-					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_pays', 'code', 'rowid');
+					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_country', 'code', 'rowid');
 					$this->error .= '<br>'.$langs->trans("ErrorFixThisHere", DOL_URL_ROOT.'/admin/dict.php?id=10'.($country_id > 0 ? '&countryidforinsert='.$country_id : ''));
 				}
 				$this->error .= '</span>';
@@ -7778,7 +7778,7 @@ class Form
 					$retstring .= '<input id="'.$prefix.'" name="'.$prefix.'" type="'.($usecalendar == 'html' ? "date" : "text").'" class="maxwidthdate center" maxlength="11" value="'.$formatted_date.'"';
 					$retstring .= ($disabled ? ' disabled' : '');
 					$retstring .= ($placeholder ? ' placeholder="' . dol_escape_htmltag($placeholder) . '"' : '');
-					$retstring .= ' onChange="dpChangeDay(\'' . dol_escape_js($prefix) . '\',\'' . dol_escape_js($langs->trans("FormatDateShortJavaInput")) . '\'); "'; // FormatDateShortInput for dol_print_date / FormatDateShortJavaInput that is same for javascript
+					$retstring .= ' onChange="dpChangeDay(\'' . dol_escape_js($prefix) . '\',\'' . dol_escape_js($usecalendar == 'html' ? 'yyyy-mm-dd' : $langs->trans("FormatDateShortJavaInput")) . '\'); "'; // FormatDateShortInput for dol_print_date / FormatDateShortJavaInput that is same for javascript
 					$retstring .= ' autocomplete="off">';
 
 					// Icon calendar
@@ -9096,7 +9096,7 @@ class Form
 		if (!empty($objecttmp->fields)) {    // For object that declare it, it is better to use declared fields (like societe, contact, ...)
 			$tmpfieldstoshow = '';
 			foreach ($objecttmp->fields as $key => $val) {
-				if (! (int) dol_eval($val['enabled'], 1, 1, '1')) {
+				if (! (int) dol_eval((string) $val['enabled'], 1, 1, '1')) {
 					continue;
 				}
 				if (!empty($val['showoncombobox'])) {
@@ -9106,6 +9106,8 @@ class Form
 			if ($tmpfieldstoshow) {
 				$fieldstoshow = $tmpfieldstoshow;
 			}
+		} elseif ($objecttmp->element === 'category') {
+			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
 			$objecttmp->fields['ref'] = array('type' => 'varchar(30)', 'label' => 'Ref', 'showoncombobox' => 1);
@@ -9139,13 +9141,17 @@ class Form
 		// Search data
 		$sql = "SELECT t.rowid, " . $fieldstoshow . " FROM " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . " as t";
 		if (!empty($objecttmp->isextrafieldmanaged)) {
-			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->sanitize($objecttmp->table_element) . "_extrafields as e ON t.rowid = e.fk_object";
+			$extrafieldTable = $objecttmp->table_element;
+			if ($extrafieldTable == 'categorie') {
+				$extrafieldTable = 'categories'; // For compatibility
+			}
+			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->db->sanitize($extrafieldTable) . "_extrafields as e ON t.rowid = e.fk_object";
 		}
 		if (!empty($objecttmp->parent_element)) {	// If parent_element is defined
 			$parent_properties = getElementProperties($objecttmp->parent_element);
 			$sql .= " INNER JOIN " . $this->db->prefix() . $this->db->sanitize($parent_properties['table_element']) . " as o ON o.rowid = t.".$objecttmp->fk_parent_attribute;
 		}
-		if (in_array($objecttmp->parent_element, ['commande', 'propal', 'facture', 'expedition'])) {
+		if (isset($objecttmp->parent_element) && in_array($objecttmp->parent_element, ['commande', 'propal', 'facture', 'expedition'])) {
 			$sql .= " LEFT JOIN " . $this->db->prefix() . "product as p ON p.rowid = t.fk_product";
 		}
 		if (!empty($objecttmp->ismultientitymanaged)) {
@@ -9175,7 +9181,7 @@ class Form
 			// If table need a multientity restriction
 			if (!empty($objecttmp->ismultientitymanaged)) {
 				if ($objecttmp->ismultientitymanaged == 1) {
-					$sql .= " AND t.entity IN (" . getEntity($objecttmp->table_element) . ")";
+					$sql .= " AND t.entity IN (" . getEntity($objecttmp->element) . ")";
 				}
 				if (!is_numeric($objecttmp->ismultientitymanaged)) {
 					$sql .= " AND parenttable.entity = t." . $this->db->sanitize($tmparray[0]);
@@ -12387,10 +12393,10 @@ class Form
 	 * @param	string		$modelType		Model type
 	 * @param	int<0,1>	$default		1=Show also Default mail template
 	 * @param	int<0,1>	$addjscombo		Add js combobox
-	 * @param   string      $selected       Selected model mail
+	 * @param   int|string  $selected       Selected model mail
 	 * @return	string						HTML select string
 	 */
-	public function selectModelMail($prefix, $modelType = '', $default = 0, $addjscombo = 0, $selected = '')
+	public function selectModelMail($prefix, $modelType = '', $default = 0, $addjscombo = 0, $selected = 0)
 	{
 		global $langs, $user;
 
@@ -12407,7 +12413,7 @@ class Form
 		}
 		if ($result > 0) {
 			foreach ($formmail->lines_model as $model) {
-				$TModels[$model->id] = $model->label;
+				$TModels[(int) $model->id] = $model->label;
 			}
 		}
 
@@ -12415,7 +12421,7 @@ class Form
 
 		foreach ($TModels as $id_model => $label_model) {
 			$retstring .= '<option value="' . $id_model . '"';
-			if (!empty($selected) && $selected == $id_model) {
+			if (!empty($selected) && ((int) $selected) == $id_model) {
 				$retstring .= "selected";
 			}
 			$retstring .= ">" . $label_model . "</option>";
