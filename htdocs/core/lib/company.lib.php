@@ -2011,11 +2011,12 @@ function show_actions_done($conf, $langs, $db, $filterobj, $objcon = null, $nopr
 				if ($filterobj->id) {
 					$sql .= " AND a.fk_element = ".((int) $filterobj->id);
 				}
-			} elseif (is_object($filterobj) && get_class($filterobj) == 'BOM') {
-				$sql .= " AND a.fk_element = o.rowid AND a.elementtype = 'bom'";
-				if ($filterobj->id) {
-					$sql .= " AND a.fk_element = ".((int) $filterobj->id);
-				}
+				} elseif (is_object($filterobj) && get_class($filterobj) == 'BOM') {
+					// Compatibility: older/newer auto-agenda entries may store BOM as "bom" or "bom@bom".
+					$sql .= " AND a.fk_element = o.rowid AND a.elementtype IN ('bom', 'bom@bom')";
+					if ($filterobj->id) {
+						$sql .= " AND a.fk_element = ".((int) $filterobj->id);
+					}
 			} elseif (is_object($filterobj) && get_class($filterobj) == 'Contrat') {
 				$sql .= " AND a.fk_element = o.rowid AND a.elementtype = 'contract'";
 				if ($filterobj->id) {

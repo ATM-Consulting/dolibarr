@@ -1375,9 +1375,14 @@ class ActionComm extends CommonObject
 				$sql .= " (SELECT r.rowid FROM ".MAIN_DB_PREFIX."actioncomm_resources as r WHERE";
 				$sql .= " r.element_type = 'user' AND r.fk_element = ".((int) $fk_element).' AND r.fk_actioncomm = a.id)';
 				$sql .= ")";
-			} else {
-				$sql .= " AND a.fk_element = ".((int) $fk_element)." AND a.elementtype = '".$this->db->escape($elementtype)."'";
-			}
+				} else {
+					if ($elementtype === 'bom') {
+						// Compatibility: accept both historical "bom" and module-qualified "bom@bom".
+						$sql .= " AND a.fk_element = ".((int) $fk_element)." AND a.elementtype IN ('bom', 'bom@bom')";
+					} else {
+						$sql .= " AND a.fk_element = ".((int) $fk_element)." AND a.elementtype = '".$this->db->escape($elementtype)."'";
+					}
+				}
 		}
 		if (!empty($filter)) {
 			$sql .= $filter;
