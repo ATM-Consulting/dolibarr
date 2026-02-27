@@ -57,6 +57,7 @@ $confirm = GETPOST('confirm', 'alpha');
 //$backtopagejsfields = GETPOST('backtopagejsfields', 'alpha');
 
 $id = GETPOSTINT('id');
+$projectid = GETPOSTINT('projectid');
 $ref = GETPOST("ref", 'alpha', 1); // task ref
 $taskref = GETPOST("taskref", 'alpha'); // task ref
 $withproject = GETPOSTINT('withproject');
@@ -149,6 +150,49 @@ if ($action == 'update' && !GETPOST("cancel") && $user->hasRight('projet', 'cree
 		}
 	} else {
 		$action = 'edit';
+	}
+}
+
+// Quick edit for extrafields
+if ($action == 'update_extras' && $user->hasRight('projet', 'creer')) {
+	$attribute_name = GETPOST('attribute', 'aZ09');
+	$objectforextra = $object;
+	$triggercode = 'TASK_MODIFY';
+
+	// When project extrafields are edited from task card, project id is carried in projectid.
+	if ($projectid > 0) {
+		if ($projectstatic->fetch($projectid) > 0) {
+			$objectforextra = $projectstatic;
+			$triggercode = 'PROJECT_MODIFY';
+		} else {
+			$error++;
+			setEventMessages($langs->trans("ErrorRecordNotFound"), null, 'errors');
+		}
+	}
+
+	if (!$error) {
+		$objectforextra->oldcopy = dol_clone($objectforextra, 2); // @phan-suppress-current-line PhanTypeMismatchProperty
+
+		// Ensure extrafield definitions are loaded for the targeted object type.
+		$extrafields->fetch_name_optionals_label($objectforextra->table_element);
+
+		// Fill array 'array_options' with data from update form
+		$ret = $extrafields->setOptionalsFromPost(null, $objectforextra, $attribute_name);
+		if ($ret < 0) {
+			$error++;
+		}
+
+		if (!$error) {
+			$result = $objectforextra->updateExtraField($attribute_name, $triggercode);
+			if ($result < 0) {
+				setEventMessages($objectforextra->error, $objectforextra->errors, 'errors');
+				$error++;
+			}
+		}
+	}
+
+	if ($error) {
+		$action = 'edit_extras';
 	}
 }
 
@@ -396,7 +440,14 @@ if ($id > 0 || !empty($ref)) {
 		$cols = 2;
 		$savobject = $object;
 		$object = $projectstatic;
+		$extrafields->fetch_name_optionals_label($object->table_element);
+		$forcefieldid = 'projectid';
+		$forceobjectid = $projectstatic->id;
+		$forceediturlparams = '&id='.$savobject->id.'&withproject='.((int) $withproject);
 		include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
+		unset($forcefieldid);
+		unset($forceobjectid);
+		unset($forceediturlparams);
 		$object = $savobject;
 
 		print '</table>';
