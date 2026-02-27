@@ -44,6 +44,19 @@ if (!is_object($form)) {
 	$form = new Form($db);
 }
 
+if (!isset($forceediturl)) {
+	$forceediturl = '';
+}
+if (!isset($forceediturlparams)) {
+	$forceediturlparams = '';
+}
+if (!isset($forcefieldid)) {
+	$forcefieldid = '';
+}
+if (!isset($forceobjectid)) {
+	$forceobjectid = 0;
+}
+
 $editextrasurl = empty($forceediturl) ? dol_escape_htmltag($_SERVER["PHP_SELF"]) : $forceediturl;
 $editextrassep = (strpos($editextrasurl, '?') === false) ? '?' : '&';
 $editextrasurlparams = '';
