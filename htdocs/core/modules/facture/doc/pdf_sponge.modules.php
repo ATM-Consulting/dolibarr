@@ -414,6 +414,19 @@ class pdf_sponge extends ModelePDFFactures
 						$this->atleastonediscount++;
 					}
 
+					// Do not take into account lines of the type “deposit.”
+					$is_deposit = false;
+					if (preg_match('/^\((.*)\)$/', $object->lines[$i]->desc, $reg)) {
+						if ($reg[1] == 'DEPOSIT') {
+							$is_deposit = true;
+						}
+					}
+					// If DEPOSIT, this line is completely ignored for calculations.
+					if ($is_deposit) {
+						continue;
+					}
+
+
 					// determine category of operation
 					if ($categoryOfOperation < 2) {
 						$lineProductType = $object->lines[$i]->product_type;
@@ -1761,7 +1774,8 @@ class pdf_sponge extends ModelePDFFactures
 			}
 		}
 		if ($total_line_remise > 0) {
-			if (!getDolGlobalString('MAIN_HIDE_AMOUNT_DISCOUNT')) {
+			// Show discount except on credit note type invoices
+			if (!getDolGlobalString('MAIN_HIDE_AMOUNT_DISCOUNT') && $object->type != 2) {
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $tab2_top + $tab2_hl);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("TotalDiscount").(is_object($outputlangsbis) ? ' / '.$outputlangsbis->transnoentities("TotalDiscount") : ''), 0, 'L', 1);
@@ -1769,8 +1783,8 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf->MultiCell($largcol2, $tab2_hl, price($total_line_remise_print, 0, $outputlangs), 0, 'R', 1);
 				$index++;
 			}
-			// Show total NET before discount
-			if (!getDolGlobalString('MAIN_HIDE_AMOUNT_BEFORE_DISCOUNT')) {
+			// Show total NET before discount except on credit note type invoices
+			if (!getDolGlobalString('MAIN_HIDE_AMOUNT_BEFORE_DISCOUNT') && $object->type != 2) {
 				$pdf->SetFillColor(255, 255, 255);
 				$pdf->SetXY($col1x, $tab2_top);
 				$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("TotalHTBeforeDiscount").(is_object($outputlangsbis) ? ' / '.$outputlangsbis->transnoentities("TotalHTBeforeDiscount") : ''), 0, 'L', 1);

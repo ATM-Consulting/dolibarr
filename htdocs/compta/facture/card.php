@@ -2125,6 +2125,9 @@ if (empty($reshook)) {
 					$newlang = GETPOST('lang_id', 'aZ09');
 				}
 				if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang)) {
+					if (empty($object->thirdparty)) {
+						$object->fetch_thirdparty();
+					}
 					$newlang = $object->thirdparty->default_lang;
 				}
 				if (!empty($newlang)) {
@@ -6026,7 +6029,7 @@ if ($action == 'create') {
 				}
 			}
 
-			// For situation invoice with excess received
+			// For situation invoice
 			if ($object->status > Facture::STATUS_DRAFT
 				&& $object->isSituationInvoice()
 				&& ($object->total_ttc - $totalpaid - $totalcreditnotes - $totaldeposits) > 0
