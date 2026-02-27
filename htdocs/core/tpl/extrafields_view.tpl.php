@@ -44,9 +44,20 @@ if (!is_object($form)) {
 	$form = new Form($db);
 }
 
-$editextrasurl = empty($forceediturl) ? $_SERVER['PHP_SELF'] : $forceediturl;
+$editextrasurl = empty($forceediturl) ? dol_escape_htmltag($_SERVER["PHP_SELF"]) : $forceediturl;
 $editextrassep = (strpos($editextrasurl, '?') === false) ? '?' : '&';
-$editextrasurlparams = empty($forceediturlparams) ? '' : $forceediturlparams;
+$editextrasurlparams = '';
+if (!empty($forceediturlparams)) {
+	if (is_array($forceediturlparams)) {
+		$editextrasurlparams = '&'.http_build_query($forceediturlparams, '', '&', PHP_QUERY_RFC3986);
+	} else {
+		// Keep only a conservative querystring subset when a raw string is provided.
+		$tmpeditextrasurlparams = (string) $forceediturlparams;
+		if (preg_match('/^(&[a-zA-Z0-9_]+=[a-zA-Z0-9_:%+.,@\\/-]*)*$/', $tmpeditextrasurlparams)) {
+			$editextrasurlparams = $tmpeditextrasurlparams;
+		}
+	}
+}
 
 
 ?>
@@ -226,7 +237,8 @@ if (empty($reshook) && !empty($object->table_element) && isset($extrafields->att
 					$fieldid = 'socid';
 				}
 
-				print '<td class="right"><a class="reposition editfielda" href="'.$editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams.'&action=edit_extras&token='.newToken().'&attribute='.$tmpkeyextra.'&ignorecollapsesetup=1">'.img_edit().'</a></td>';
+					$editextrashref = $editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams.'&action=edit_extras&token='.newToken().'&attribute='.$tmpkeyextra.'&ignorecollapsesetup=1';
+					print '<td class="right"><a class="reposition editfielda" href="'.dol_escape_htmltag($editextrashref).'">'.img_edit().'</a></td>';
 			}
 			print '</tr></table>';
 			print '</td>';
@@ -264,7 +276,8 @@ if (empty($reshook) && !empty($object->table_element) && isset($extrafields->att
 					$fieldid = 'socid';
 				}
 				$valueid = empty($forceobjectid) ? $object->id : $forceobjectid;
-				print '<form enctype="multipart/form-data" action="'.$editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams.'" method="post" name="formextra">';
+					$editextrasaction = $editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams;
+					print '<form enctype="multipart/form-data" action="'.dol_escape_htmltag($editextrasaction).'" method="post" name="formextra">';
 				print '<input type="hidden" name="action" value="update_extras">';
 				print '<input type="hidden" name="attribute" value="'.$tmpkeyextra.'">';
 				print '<input type="hidden" name="token" value="'.newToken().'">';

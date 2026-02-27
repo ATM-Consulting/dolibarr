@@ -153,8 +153,9 @@ if ($action == 'update' && !GETPOST("cancel") && $user->hasRight('projet', 'cree
 	}
 }
 
-// Quick edit for extrafields
-if ($action == 'update_extras' && $user->hasRight('projet', 'creer')) {
+// Quick edit for extrafields ('creer' is Dolibarr write right for projects/tasks).
+$permissiontoeditextra = $user->hasRight('projet', 'creer');
+if ($action == 'update_extras' && $permissiontoeditextra) {
 	$attribute_name = GETPOST('attribute', 'aZ09');
 	$objectforextra = $object;
 	$triggercode = 'TASK_MODIFY';
@@ -443,7 +444,15 @@ if ($id > 0 || !empty($ref)) {
 		$extrafields->fetch_name_optionals_label($object->table_element);
 		$forcefieldid = 'projectid';
 		$forceobjectid = $projectstatic->id;
-		$forceediturlparams = '&id='.$savobject->id.'&withproject='.((int) $withproject);
+		$forceediturlparams = '&'.http_build_query(
+			array(
+				'id' => (int) $savobject->id,
+				'withproject' => (int) $withproject
+			),
+			'',
+			'&',
+			PHP_QUERY_RFC3986
+		);
 		include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
 		unset($forcefieldid);
 		unset($forceobjectid);
