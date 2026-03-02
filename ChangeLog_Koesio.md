@@ -1,3 +1,4 @@
+- T260014 - Backport FIX https://github.com/Dolibarr/dolibarr/pull/37370 - **2026-03-02** 
 - T260007 - Backport InvoiceAPI LinkedObjects - **2026-02-17**
 - Backport productLot delete() method - **16/12/2025** 
 - Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
