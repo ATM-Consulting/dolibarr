@@ -1,3 +1,4 @@
+- Backport 24 Api document - e9a9c7ac, 00939544, 9b48e1a6 - **2026-03-03** 
 - T260007 - Backport InvoiceAPI LinkedObjects - **2026-02-17**
 - Backport productLot delete() method - **16/12/2025** 
 - Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
