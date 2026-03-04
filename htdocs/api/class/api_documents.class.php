@@ -618,6 +618,7 @@ class Documents extends DolibarrApi
 
 		if ($ref) {
 			$tmpreldir = '';
+			$fetchbyid = false;
 
 			if ($modulepart == 'facture' || $modulepart == 'invoice') {
 				$modulepart = 'facture';
@@ -677,20 +678,36 @@ class Documents extends DolibarrApi
 				$modulepart = 'propale';
 				require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 				$object = new Propal($this->db);
-			} else {
+			}
+			// BACKPORT V24 START - e9a9c7ac
+			elseif ($modulepart == 'ticket' ) {
+				require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
+				$object = new Ticket($this->db);
+				$fetchbyid = true;
+			}
+			// BACKPORT V24 END - e9a9c7ac
+			else {
 				// TODO Implement additional moduleparts
 				throw new RestException(500, 'Modulepart '.$modulepart.' not implemented yet.');
 			}
 
-			if (is_object($object)) {
-				$result = $object->fetch('', $ref);
-
-				if ($result == 0) {
-					throw new RestException(404, "Object with ref '".$ref."' was not found.");
-				} elseif ($result < 0) {
-					throw new RestException(500, 'Error while fetching object: '.$object->error);
-				}
+			// BACKPORT V24 START - 00939544
+			// at this step $object is always an object
+			if ($fetchbyid) {
+				// @phan-suppress-next-line PhanPluginSuspiciousParamPosition
+				$result = $object->fetch((int) $ref);
+			} else {
+				$result = $object->fetch(0, $ref);
 			}
+			// BACKPORT V24 END - 00939544
+
+			// BACkPORT V24 START - 9b48e1a6
+			if ($result == 0) {
+				throw new RestException(404, "Object with ref '".$ref."' was not found.");
+			} elseif ($result < 0) {
+				throw new RestException(500, 'Error while fetching object: '.$object->error);
+			}
+			// BACkPORT V24 END - 9b48e1a6
 
 			if (!($object->id > 0)) {
 				throw new RestException(404, 'The object '.$modulepart." with ref '".$ref."' was not found.");
@@ -749,9 +766,11 @@ class Documents extends DolibarrApi
 			throw new RestException(401, 'Directory not exists : '.dirname($destfile));
 		}
 
+		// BACKPORT v24 START - 4d259e2f
 		if (!$overwriteifexists && dol_is_file($destfile)) {
-			throw new RestException(500, "File with name '".$original_file."' already exists.");
+			throw new RestException(400, "File with name '".$original_file."' already exists.");
 		}
+		// BACKPORT v24 END - 4d259e2f
 
 		$fhandle = @fopen($destfiletmp, 'w');
 		if ($fhandle) {
