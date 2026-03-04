@@ -766,9 +766,11 @@ class Documents extends DolibarrApi
 			throw new RestException(401, 'Directory not exists : '.dirname($destfile));
 		}
 
+		// BACKPORT v24 START - 4d259e2f
 		if (!$overwriteifexists && dol_is_file($destfile)) {
-			throw new RestException(500, "File with name '".$original_file."' already exists.");
+			throw new RestException(400, "File with name '".$original_file."' already exists.");
 		}
+		// BACKPORT v24 END - 4d259e2f
 
 		$fhandle = @fopen($destfiletmp, 'w');
 		if ($fhandle) {
