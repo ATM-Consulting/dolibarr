@@ -1044,7 +1044,7 @@ class Documents extends DolibarrApi
 	 *
 	 * @url GET /list
 	 */
-	public function listFiles($modulepart, $id = 0, $ref = '') {
+	public function listFiles(string $modulepart, int $id = 0, string $ref = ''): array {
 
 		global $conf;
 
@@ -1119,7 +1119,7 @@ class Documents extends DolibarrApi
 	 *
 	 * @url POST /upload/ticket
 	 */
-	public function uploadTicketFile($filename, $ref, $content) {
+	public function uploadTicketFile(string $filename, string $ref, string $content): string {
 		// Check permissions early
 		if (!DolibarrApiAccess::$user->hasRight('ticket', 'write')) {
 			throw new RestException(403, 'Missing permission to write ticket documents');
@@ -1162,7 +1162,7 @@ class Documents extends DolibarrApi
 	 *
 	 * @url GET /download/ticket
 	 */
-	public function downloadTicketFile($ref, $filename) {
+	public function downloadTicketFile(string $ref, string $filename): array {
 		global $conf, $db;
 		require_once DOL_DOCUMENT_ROOT . '/ticket/class/ticket.class.php';
 
