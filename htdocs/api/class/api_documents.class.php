@@ -781,11 +781,10 @@ class Documents extends DolibarrApi
 				$modulepart = 'mrp';
 				require_once DOL_DOCUMENT_ROOT . '/mrp/class/mo.class.php';
 				$object = new Mo($this->db);
-			} elseif ($modulepart == 'ticket' ) {
+			} elseif ($modulepart == 'ticket') {
 				$modulepart = 'ticket';
 				require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
 				$object = new Ticket($this->db);
-//				$fetchbyid = true;
 			} else {
 				// TODO Implement additional moduleparts
 				throw new RestException(500, 'Modulepart '.$modulepart.' not implemented yet.');
@@ -1054,11 +1053,16 @@ class Documents extends DolibarrApi
 
 		$upload_dir = '';
 		if ($modulepart == 'ticket') {
+			if (!DolibarrApiAccess::$user->hasRight('ticket', 'read')) {
+				throw new RestException(403, 'Missing permission to read ticket documents');
+			}
 			require_once DOL_DOCUMENT_ROOT . '/ticket/class/ticket.class.php';
 			$object = new Ticket($this->db);
 
 			if ($object->fetch($id, $ref) > 0) {
 				$upload_dir = $conf->ticket->dir_output . "/" . dol_sanitizeFileName($object->ref);
+			} else {
+				throw new RestException(404, 'Ticket not found');
 			}
 		}
 
@@ -1091,29 +1095,29 @@ class Documents extends DolibarrApi
 	 * @url POST /upload/ticket
 	 */
 	public function uploadTicketFile($filename, $ref, $content) {
-		global $conf, $db;
-		require_once DOL_DOCUMENT_ROOT . '/ticket/class/ticket.class.php';
-		require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
-
-		$object = new Ticket($db);
-		// Fetch by Ref
-		if ($object->fetch(0, $ref) <= 0) {
-			throw new RestException(404, 'Ticket not found');
+		// Check permissions early
+		if (!DolibarrApiAccess::$user->hasRight('ticket', 'write')) {
+			throw new RestException(403, 'Missing permission to write ticket documents');
 		}
 
-		$upload_dir = $conf->ticket->dir_output . "/" . dol_sanitizeFileName($object->ref);
-
-		if (dol_mkdir($upload_dir) < 0) {
-			throw new RestException(500, 'Error creating dir');
+		// Check that file upload is enabled and enforce size limit (MAIN_UPLOAD_DOC is in KB)
+		$maxUploadKb = getDolGlobalInt('MAIN_UPLOAD_DOC');
+		if ($maxUploadKb <= 0) {
+			throw new RestException(403, 'File upload is disabled on this server');
 		}
 
-		$file_content = base64_decode($content);
-		$dest_file = $upload_dir . '/' . dol_sanitizeFileName($filename);
-
-		if (file_put_contents($dest_file, $file_content)) {
-			return dol_basename($dest_file);
+		// Validate base64 content and check decoded size before writing
+		$decodedContent = base64_decode($content, true);
+		if ($decodedContent === false) {
+			throw new RestException(400, 'Invalid base64 content');
 		}
-		throw new RestException(500, 'Error saving file');
+		if (strlen($decodedContent) > $maxUploadKb * 1024) {
+			throw new RestException(400, 'File size exceeds the allowed limit of '.$maxUploadKb.' KB');
+		}
+
+		// Delegate to post() which handles virus scan, .noexe renaming, path traversal checks
+		// and dol_check_secure_access_document for the full security pipeline
+		return $this->post($filename, 'ticket', $ref, '', $content, 'base64', 1, 1);
 	}
 
 	/**
@@ -1127,6 +1131,12 @@ class Documents extends DolibarrApi
 	 */
 	public function downloadTicketFile($ref, $filename) {
 		global $conf;
+
+		// Check permissions
+		if (!DolibarrApiAccess::$user->hasRight('ticket', 'read')) {
+			throw new RestException(403, 'Missing permission to read ticket documents');
+		}
+
 		// Build path: documents/ticket/REF/filename
 		$file_path = $conf->ticket->dir_output . '/' . dol_sanitizeFileName($ref) . '/' . dol_sanitizeFileName($filename);
 
