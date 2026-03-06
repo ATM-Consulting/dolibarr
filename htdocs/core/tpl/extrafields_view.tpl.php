@@ -44,6 +44,34 @@ if (!is_object($form)) {
 	$form = new Form($db);
 }
 
+if (!isset($forceediturl)) {
+	$forceediturl = '';
+}
+if (!isset($forceediturlparams)) {
+	$forceediturlparams = '';
+}
+if (!isset($forcefieldid)) {
+	$forcefieldid = '';
+}
+if (!isset($forceobjectid)) {
+	$forceobjectid = 0;
+}
+
+$editextrasurl = empty($forceediturl) ? dol_escape_htmltag($_SERVER["PHP_SELF"]) : $forceediturl;
+$editextrassep = (strpos($editextrasurl, '?') === false) ? '?' : '&';
+$editextrasurlparams = '';
+if (!empty($forceediturlparams)) {
+	if (is_array($forceediturlparams)) {
+		$editextrasurlparams = '&'.http_build_query($forceediturlparams, '', '&', PHP_QUERY_RFC3986);
+	} else {
+		// Keep only a conservative querystring subset when a raw string is provided.
+		$tmpeditextrasurlparams = (string) $forceediturlparams;
+		if (preg_match('/^(&[a-zA-Z0-9_]+=[a-zA-Z0-9_:%+.,@\\/-]*)*$/', $tmpeditextrasurlparams)) {
+			$editextrasurlparams = $tmpeditextrasurlparams;
+		}
+	}
+}
+
 
 ?>
 <!-- BEGIN PHP TEMPLATE extrafields_view.tpl.php -->
@@ -222,7 +250,8 @@ if (empty($reshook) && !empty($object->table_element) && isset($extrafields->att
 					$fieldid = 'socid';
 				}
 
-				print '<td class="right"><a class="reposition editfielda" href="'.$_SERVER['PHP_SELF'].'?'.$fieldid.'='.$valueid.'&action=edit_extras&token='.newToken().'&attribute='.$tmpkeyextra.'&ignorecollapsesetup=1">'.img_edit().'</a></td>';
+					$editextrashref = $editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams.'&action=edit_extras&token='.newToken().'&attribute='.$tmpkeyextra.'&ignorecollapsesetup=1';
+					print '<td class="right"><a class="reposition editfielda" href="'.dol_escape_htmltag($editextrashref).'">'.img_edit().'</a></td>';
 			}
 			print '</tr></table>';
 			print '</td>';
@@ -255,15 +284,17 @@ if (empty($reshook) && !empty($object->table_element) && isset($extrafields->att
 			// TODO Improve element and rights detection
 			if ($action == 'edit_extras' && $permok && GETPOST('attribute', 'restricthtml') == $tmpkeyextra) {
 				// Show the extrafield in create or edit mode
-				$fieldid = 'id';
+				$fieldid = empty($forcefieldid) ? 'id' : $forcefieldid;
 				if ($object->table_element == 'societe') {
 					$fieldid = 'socid';
 				}
-				print '<form enctype="multipart/form-data" action="'.$_SERVER["PHP_SELF"] . '?' . $fieldid . '=' . $object->id . '" method="post" name="formextra">';
+				$valueid = empty($forceobjectid) ? $object->id : $forceobjectid;
+					$editextrasaction = $editextrasurl.$editextrassep.$fieldid.'='.$valueid.$editextrasurlparams;
+					print '<form enctype="multipart/form-data" action="'.dol_escape_htmltag($editextrasaction).'" method="post" name="formextra">';
 				print '<input type="hidden" name="action" value="update_extras">';
 				print '<input type="hidden" name="attribute" value="'.$tmpkeyextra.'">';
 				print '<input type="hidden" name="token" value="'.newToken().'">';
-				print '<input type="hidden" name="'.$fieldid.'" value="'.$object->id.'">';
+				print '<input type="hidden" name="'.$fieldid.'" value="'.$valueid.'">';
 				print $extrafields->showInputField($tmpkeyextra, $value, '', '', '', 0, $object, $object->table_element);
 
 				print '<input type="submit" class="button" value="'.dolPrintHTMLForAttribute($langs->trans('Modify')).'">';

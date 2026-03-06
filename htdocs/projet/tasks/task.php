@@ -57,6 +57,7 @@ $confirm = GETPOST('confirm', 'alpha');
 //$backtopagejsfields = GETPOST('backtopagejsfields', 'alpha');
 
 $id = GETPOSTINT('id');
+$projectid = GETPOSTINT('projectid');
 $ref = GETPOST("ref", 'alpha', 1); // task ref
 $taskref = GETPOST("taskref", 'alpha'); // task ref
 $withproject = GETPOSTINT('withproject');
@@ -151,6 +152,10 @@ if ($action == 'update' && !GETPOST("cancel") && $user->hasRight('projet', 'cree
 		$action = 'edit';
 	}
 }
+
+// Quick edit for extrafields ('creer' is Dolibarr write right for projects/tasks).
+$permissiontoeditextra = $user->hasRight('projet', 'creer');
+include DOL_DOCUMENT_ROOT.'/projet/core/actions_task_extrafields.inc.php';
 
 if ($action == 'confirm_merge' && $confirm == 'yes' && $user->hasRight('projet', 'creer')) {
 	$task_origin_id = GETPOSTINT('task_origin');
@@ -396,7 +401,22 @@ if ($id > 0 || !empty($ref)) {
 		$cols = 2;
 		$savobject = $object;
 		$object = $projectstatic;
+		$extrafields->fetch_name_optionals_label($object->table_element);
+		$forcefieldid = 'projectid';
+		$forceobjectid = $projectstatic->id;
+		$forceediturlparams = '&'.http_build_query(
+			array(
+				'id' => (int) $savobject->id,
+				'withproject' => (int) $withproject
+			),
+			'',
+			'&',
+			PHP_QUERY_RFC3986
+		);
 		include DOL_DOCUMENT_ROOT . '/core/tpl/extrafields_view.tpl.php';
+		unset($forcefieldid);
+		unset($forceobjectid);
+		unset($forceediturlparams);
 		$object = $savobject;
 
 		print '</table>';
