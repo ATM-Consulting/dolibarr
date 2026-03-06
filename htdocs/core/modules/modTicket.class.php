@@ -153,7 +153,7 @@ class modTicket extends DolibarrModules
 			),
 			'tabsqlsort' => array("pos ASC", "pos ASC", "pos ASC", "pos ASC"),
 			'tabfield' => array("code,label,pos,use_default", "code,label,pos,use_default", "code,label,pos,use_default,public,fk_parent", "code,label,pos,use_default"),
-			'tabfieldvalue' => array("code,label,pos,use_default", "code,label,pos,use_default", "code,label,pos,use_default,public,fk_parent, entity", "code,label,pos,use_default"),
+			'tabfieldvalue' => array("code,label,pos,use_default", "code,label,pos,use_default", "code,label,pos,use_default,public,fk_parent,entity", "code,label,pos,use_default"),
 			'tabfieldinsert' => array("code,label,pos,use_default", "code,label,pos,use_default", "code,label,pos,use_default,public,fk_parent,entity", "code,label,pos,use_default"),
 			'tabrowid' => array("rowid", "rowid", "rowid", "rowid"),
 			'tabcond' => array($conf->ticket->enabled, $conf->ticket->enabled, $conf->ticket->enabled, $conf->ticket->enabled && getDolGlobalString('TICKET_ENABLE_RESOLUTION')),
