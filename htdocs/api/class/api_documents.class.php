@@ -1051,22 +1051,47 @@ class Documents extends DolibarrApi
 		// Include Files Lib
 		require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
 
+		// Validate inputs at API boundary before any modulepart-specific logic
+		$id  = (int) $id;
+		$ref = trim($ref);
+		if (empty($modulepart)) {
+			throw new RestException(400, 'Parameter modulepart is required');
+		}
+		if ($id <= 0 && empty($ref)) {
+			throw new RestException(400, 'Parameter id or ref is required');
+		}
+
 		$upload_dir = '';
 		if ($modulepart == 'ticket') {
 			if (!DolibarrApiAccess::$user->hasRight('ticket', 'read')) {
 				throw new RestException(403, 'Missing permission to read ticket documents');
 			}
+
 			require_once DOL_DOCUMENT_ROOT . '/ticket/class/ticket.class.php';
 			$object = new Ticket($this->db);
 
-			if ($object->fetch($id, $ref) > 0) {
-				$upload_dir = $conf->ticket->dir_output . "/" . dol_sanitizeFileName($object->ref);
-			} else {
+			if ($object->fetch($id, $ref) <= 0) {
 				throw new RestException(404, 'Ticket not found');
 			}
-		}
 
-		// Add other modules logic if needed...
+			// External user: can only access tickets linked to their company
+			if (DolibarrApiAccess::$user->socid > 0 && $object->fk_soc != DolibarrApiAccess::$user->socid) {
+				throw new RestException(403, 'Access to this ticket is forbidden');
+			}
+
+			// Internal user with restricted view: can only access tickets assigned to them
+			if (!DolibarrApiAccess::$user->socid
+				&& getDolGlobalString('TICKET_LIMIT_VIEW_ASSIGNED_ONLY')
+				&& $object->fk_user_assign != DolibarrApiAccess::$user->id
+				&& !DolibarrApiAccess::$user->hasRight('ticket', 'manage')
+			) {
+				throw new RestException(403, 'Access to this ticket is forbidden');
+			}
+
+			$upload_dir = $conf->ticket->dir_output . "/" . dol_sanitizeFileName($object->ref);
+		} else {
+			throw new RestException(501, 'modulepart '.$modulepart.' is not supported by this endpoint');
+		}
 		if ($upload_dir && dol_is_dir($upload_dir)) {
 			$filelist = dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$');
 			$res = array();
@@ -1117,7 +1142,15 @@ class Documents extends DolibarrApi
 
 		// Delegate to post() which handles virus scan, .noexe renaming, path traversal checks
 		// and dol_check_secure_access_document for the full security pipeline
-		return $this->post($filename, 'ticket', $ref, '', $content, 'base64', 1, 1);
+		try {
+			return $this->post($filename, 'ticket', $ref, '', $content, 'base64', 1, 1);
+		} catch (RestException $e) {
+			// Re-throw as-is: post() already produces meaningful RestExceptions
+			throw $e;
+		} catch (\Exception $e) {
+			dol_syslog('uploadTicketFile unexpected error ref='.$ref.' file='.$filename.': '.$e->getMessage(), LOG_ERR);
+			throw new RestException(500, 'Unexpected error while uploading file');
+		}
 	}
 
 	/**
@@ -1130,26 +1163,66 @@ class Documents extends DolibarrApi
 	 * @url GET /download/ticket
 	 */
 	public function downloadTicketFile($ref, $filename) {
-		global $conf;
+		global $conf, $db;
+		require_once DOL_DOCUMENT_ROOT . '/ticket/class/ticket.class.php';
 
-		// Check permissions
+		// Check global permission
 		if (!DolibarrApiAccess::$user->hasRight('ticket', 'read')) {
 			throw new RestException(403, 'Missing permission to read ticket documents');
 		}
 
-		// Build path: documents/ticket/REF/filename
-		$file_path = $conf->ticket->dir_output . '/' . dol_sanitizeFileName($ref) . '/' . dol_sanitizeFileName($filename);
-
-		if (file_exists($file_path)) {
-			$content = file_get_contents($file_path);
-			return array(
-				'filename' => $filename,
-				'content-type' => dol_mimetype($filename),
-				'content' => base64_encode($content),
-				'encoding' => 'base64'
-			);
+		// Fetch the ticket to apply per-object access restrictions
+		$object = new Ticket($db);
+		if ($object->fetch(0, $ref) <= 0) {
+			throw new RestException(404, 'Ticket not found');
 		}
-		throw new RestException(404, 'File not found at ' . $file_path);
+
+		// External user: can only access tickets linked to their company
+		if (DolibarrApiAccess::$user->socid > 0 && $object->fk_soc != DolibarrApiAccess::$user->socid) {
+			throw new RestException(403, 'Access to this ticket is forbidden');
+		}
+
+		// Internal user with restricted view: can only access tickets assigned to them
+		if (!DolibarrApiAccess::$user->socid
+			&& getDolGlobalString('TICKET_LIMIT_VIEW_ASSIGNED_ONLY')
+			&& $object->fk_user_assign != DolibarrApiAccess::$user->id
+			&& !DolibarrApiAccess::$user->hasRight('ticket', 'manage')
+		) {
+			throw new RestException(403, 'Access to this ticket is forbidden');
+		}
+
+		// Build path using the canonical ref from DB, not from user input
+		$ticket_dir = $conf->ticket->dir_output . '/' . dol_sanitizeFileName($object->ref);
+		$file_path   = $ticket_dir . '/' . dol_sanitizeFileName($filename);
+
+		// Path traversal protection: block .. and shell metacharacters (same checks as index())
+		if (preg_match('/\.\./', $file_path) || preg_match('/[<>|]/', $file_path)) {
+			dol_syslog('Path traversal attempt blocked: '.$file_path, LOG_WARNING);
+			throw new RestException(403, 'Access denied');
+		}
+
+		$file_path_os = dol_osencode($file_path);
+
+		if (!file_exists($file_path_os)) {
+			dol_syslog('Try to download not found file '.$file_path_os, LOG_WARNING);
+			throw new RestException(404, 'File not found');
+		}
+
+		// Confirm the resolved real path is strictly inside the ticket directory (symlink / race-condition guard)
+		$real_dir  = realpath(dol_osencode($ticket_dir));
+		$real_file = realpath($file_path_os);
+		if ($real_dir === false || $real_file === false || strpos($real_file, $real_dir . DIRECTORY_SEPARATOR) !== 0) {
+			dol_syslog('File outside expected directory blocked: '.$file_path_os, LOG_WARNING);
+			throw new RestException(403, 'Access denied');
+		}
+
+		$content = file_get_contents($real_file);
+		return array(
+			'filename'     => basename($real_file),
+			'content-type' => dol_mimetype($filename),
+			'content'      => base64_encode($content),
+			'encoding'     => 'base64'
+		);
 	}
 
 }
