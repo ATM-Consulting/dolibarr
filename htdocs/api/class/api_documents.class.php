@@ -1036,25 +1036,15 @@ class Documents extends DolibarrApi
 	}
 
 	/**
-
 	 * List documents for a module element
-
 	 *
-
 	 * @param string $modulepart Module part (ticket, invoice...)
-
 	 * @param int    $id         ID of object
-
 	 * @param string $ref        Ref of object
-
 	 * @return array             List of documents
-
 	 *
-
 	 * @url GET /list
-
 	 */
-
 	public function listFiles($modulepart, $id = 0, $ref = '') {
 
 		global $conf;
@@ -1070,7 +1060,6 @@ class Documents extends DolibarrApi
 			if ($object->fetch($id, $ref) > 0) {
 				$upload_dir = $conf->ticket->dir_output . "/" . dol_sanitizeFileName($object->ref);
 			}
-
 		}
 
 		// Add other modules logic if needed...
@@ -1090,6 +1079,7 @@ class Documents extends DolibarrApi
 		}
 		return array(); // Retourne vide si pas de dossier ou pas de fichiers
 	}
+
 	/**
 	 * Upload file for Ticket (Custom AskDoli)
 	 *

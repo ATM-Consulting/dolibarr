@@ -204,8 +204,10 @@ class AgendaEvents extends DolibarrApi
 
 		$user_cache = array();
 
-		foreach ($result as $key => $event) {
-			$author_id = $event->authorid ? $event->authorid : $event->userownerid;
+		// Fix: Loop through obj_ret instead of SQL result
+		$data_to_enrich = $pagination_data ? $obj_ret['data'] : $obj_ret;
+		foreach ($data_to_enrich as $key => $event) {
+			$author_id = property_exists($event, 'authorid') && $event->authorid ? $event->authorid : (property_exists($event, 'userownerid') ? $event->userownerid : 0);
 
 			if ($author_id > 0) {
 				if (!isset($user_cache[$author_id])) {
@@ -215,12 +217,18 @@ class AgendaEvents extends DolibarrApi
 				}
 
 				// On injecte les infos dans l'objet retourné
-				$result[$key]->user_author_firstname = $user_cache[$author_id]->firstname;
-				$result[$key]->user_author_lastname = $user_cache[$author_id]->lastname;
-				$result[$key]->user_author_name = $user_cache[$author_id]->getFullName($this->langs);
+				$data_to_enrich[$key]->user_author_firstname = $user_cache[$author_id]->firstname;
+				$data_to_enrich[$key]->user_author_lastname = $user_cache[$author_id]->lastname;
+				// Use simple concatenation instead of getFullName to avoid langs dependency
+				$data_to_enrich[$key]->user_author_name = trim($user_cache[$author_id]->firstname . ' ' . $user_cache[$author_id]->lastname);
 			}
 		}
-		// PATCH END
+		// Update the enriched data back
+		if ($pagination_data) {
+			$obj_ret['data'] = $data_to_enrich;
+		} else {
+			$obj_ret = $data_to_enrich;
+		}
 
 		return $obj_ret;
 	}
