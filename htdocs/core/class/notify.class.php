@@ -669,6 +669,10 @@ class Notify
 		}
 
 		$from = getDolGlobalString('NOTIFICATION_EMAIL_FROM');
+		if (empty($from)) {
+			$from = getDolGlobalString('MAIN_MAIL_EMAIL_FROM');
+		}
+
 		$object_type = '';
 		$link = '';
 		$num = 0;
@@ -1039,6 +1043,12 @@ class Notify
 							'notification'
 						);
 
+						if (! empty($mailfile->error) || ! empty($mailfile->errors)) {
+							$this->error = $mailfile->error;
+							$this->errors = $mailfile->errors;
+							return -1;
+						}
+
 						if ($mailfile->sendfile()) {
 							if ($obj->type_target == 'touserid') {
 								$sql = "INSERT INTO ".$this->db->prefix()."notify (daten, fk_action, fk_soc, fk_user, type, objet_type, type_target, objet_id, email)";
@@ -1359,6 +1369,12 @@ class Notify
 						'',
 						'notification'
 					);
+
+					if (! empty($mailfile->error) || ! empty($mailfile->errors)) {
+						$this->error = $mailfile->error;
+						$this->errors = $mailfile->errors;
+						return -1;
+					}
 
 					if ($mailfile->sendfile()) {
 						$sql = "INSERT INTO ".$this->db->prefix()."notify (daten, fk_action, fk_soc, fk_contact, type, type_target, objet_type, objet_id, email)";

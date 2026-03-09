@@ -947,7 +947,7 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					print $formfile->showPreview($file_list, $propal_static->element, $relativepath, 0);
+					print $formfile->showPreview($file_list, $propal_static->element, $relativepath, 0, 'entity=' . $objp->entity);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($propal_static->fk_project > 0) {
@@ -1066,7 +1066,7 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					print $formfile->showPreview($file_list, $commande_static->element, $relativepath, 0, $param);
+					print $formfile->showPreview($file_list, $commande_static->element, $relativepath, 0, 'entity=' . $objp->entity);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($commande_static->fk_project > 0) {
@@ -1099,6 +1099,8 @@ if ($object->id > 0) {
 	 *   Latest shipments
 	 */
 	if (isModEnabled("shipping") && $user->hasRight('expedition', 'lire')) {
+		$param = 'entity=' . ((int) $objp->entity);
+
 		$sql = 'SELECT e.rowid as id';
 		$sql .= ', e.ref, e.entity, e.fk_projet';
 		$sql .= ', e.date_creation';
@@ -1167,7 +1169,8 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					print $formfile->showPreview($file_list, $sendingstatic->table_element, $relativepath, 0, $param);
+
+					print $formfile->showPreview($file_list, $sendingstatic->element, $relativepath, 0, $param);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($sendingstatic->fk_project > 0) {
@@ -1281,7 +1284,7 @@ if ($object->id > 0) {
 							}
 						}
 						$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-						print $formfile->showPreview($file_list, $contrat->element, $relativepath, 0);
+						print $formfile->showPreview($file_list, $contrat->element, $relativepath, 0, 'entity=' . $objp->entity);
 					}
 				}
 				// $filename = dol_sanitizeFileName($objp->ref);
@@ -1381,7 +1384,7 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					print $formfile->showPreview($file_list, $fichinter_static->element, $relativepath, 0);
+					print $formfile->showPreview($file_list, $fichinter_static->element, $relativepath, 0, 'entity=' . $objp->entity);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($fichinter_static->fk_project > 0) {
@@ -1610,7 +1613,7 @@ if ($object->id > 0) {
 						}
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
-					print $formfile->showPreview($file_list, $facturestatic->element, $relativepath, 0);
+					print $formfile->showPreview($file_list, $facturestatic->element, $relativepath, 0, 'entity=' . $objp->entity);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($facturestatic->fk_project > 0) {

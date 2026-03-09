@@ -1069,6 +1069,9 @@ class FormMail extends Form
 					if (!dol_textishtml($this->substit['__SENDEREMAIL_SIGNATURE__'])) {
 						$this->substit['__SENDEREMAIL_SIGNATURE__'] = dol_nl2br($this->substit['__SENDEREMAIL_SIGNATURE__']);
 					}
+					if (!dol_textishtml($this->substit['__LINES__'])) {
+						$this->substit['__LINES__'] = dol_nl2br($this->substit['__LINES__']);
+					}
 					if (!dol_textishtml($this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__'])) {
 						$this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__'] = dol_nl2br($this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__']);
 					}
@@ -2437,7 +2440,7 @@ class ModelMail extends CommonObject
 	{
 		// The table llx_c_email_templates has no field ref. The field ref was named "label" instead. So we change the call to fetchCommon.
 		//$result = $this->fetchCommon($id, $ref, '', $noextrafields);
-		$result = $this->fetchCommon($id, '', " AND t.label = '".$this->db->escape($ref)."'", $noextrafields);
+		$result = $this->fetchCommon($id, '', (empty($ref) ? '' : " AND t.label = '".$this->db->escape($ref)."'"), $noextrafields);
 
 		if ($result > 0 && !empty($this->table_element_line) && empty($nolines)) {
 			$this->fetchLines($noextrafields);
