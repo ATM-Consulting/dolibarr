@@ -836,22 +836,22 @@ if ($action == 'create' || $action == 'presend') {
 			);
 
 			// BACKPORT V21 - cf220075
-			$formconfirm =  $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("CloseATicket"), $langs->trans("ConfirmCloseAticket"), "confirm_close", $formquestion, '', 1);
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("CloseATicket"), $langs->trans("ConfirmCloseAticket"), "confirm_close", $formquestion, '', 1);
 		}
 		// Confirmation abandon
 		if ($action == 'abandon') {
 			// BACKPORT V21 - cf220075
-			$formconfirm =  $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("AbandonTicket"), $langs->trans("ConfirmAbandonTicket"), "confirm_abandon", '', '', 1);
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("AbandonTicket"), $langs->trans("ConfirmAbandonTicket"), "confirm_abandon", '', '', 1);
 		}
 		// Confirmation delete
 		if ($action == 'delete') {
 			// BACKPORT V21 - cf220075
-			$formconfirm =  $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("Delete"), $langs->trans("ConfirmDeleteTicket"), "confirm_delete_ticket", '', '', 1);
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("Delete"), $langs->trans("ConfirmDeleteTicket"), "confirm_delete_ticket", '', '', 1);
 		}
 		// Confirm reopen
 		if ($action == 'reopen') {
 			// BACKPORT V21 - cf220075
-			$formconfirm =  $form->formconfirm($url_page_current.'?track_id='.$object->track_id, $langs->trans('ReOpen'), $langs->trans('ConfirmReOpenTicket'), 'confirm_reopen', '', '', 1);
+			$formconfirm = $form->formconfirm($url_page_current.'?track_id='.$object->track_id, $langs->trans('ReOpen'), $langs->trans('ConfirmReOpenTicket'), 'confirm_reopen', '', '', 1);
 		}
 		// Confirmation status change
 		if ($action == 'set_status') {
