@@ -7421,28 +7421,28 @@ span#select2-boxbookmark-container {
 }
 /* ------------ */
 /* Prevents the table cell from stretching indefinitely */
-.fichehalfleft table.tableforfield td:last-child {
-	max-width: 0 !important;
-	width: 100% !important;
-}
+//.fichehalfleft table.tableforfield td:last-child {
+//	max-width: 0 !important;
+//	width: 100% !important;
+//}
 
 /* Switches the container to flex layout to force tags to wrap */
-ul.select2-choices-dolibarr {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 4px !important;
-	padding: 2px !important;
-}
+//ul.select2-choices-dolibarr {
+//	display: flex !important;
+//	flex-wrap: wrap !important;
+//	gap: 4px !important;
+//	padding: 2px !important;
+//}
 
 /* Breaks very long tag text so it wraps to the next line */
-li.select2-search-choice-dolibarr {
-	float: none !important; /* Overrides the default float behavior of the Eldy theme */
-	display: block !important;
-	white-space: normal !important;
-	word-wrap: break-word !important;
-	max-width: 100% !important;
-	margin: 0 !important;
-}
+//li.select2-search-choice-dolibarr {
+//	float: none !important; /* Overrides the default float behavior of the Eldy theme */
+//	display: block !important;
+//	white-space: normal !important;
+//	word-wrap: break-word !important;
+//	max-width: 100% !important;
+//	margin: 0 !important;
+//}
 /* ------------ */
 span.select2-dropdown--below {
 	margin-top: -1px;
