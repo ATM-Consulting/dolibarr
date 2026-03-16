@@ -134,6 +134,7 @@ $permissiontoadd = $user->hasRight('ticket', 'write');
 $permissiontomanage = $user->hasRight('ticket', 'manage');
 $permissiontodelete = $user->hasRight('ticket', 'delete');
 
+// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 $closeStatuses = [Ticket::STATUS_CLOSED, Ticket::STATUS_CANCELED];
 
 $upload_dir = $conf->ticket->dir_output;
