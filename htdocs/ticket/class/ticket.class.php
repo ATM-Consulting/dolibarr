@@ -2851,8 +2851,9 @@ class Ticket extends CommonObject
 
 							$message_intro = $langs->trans('TicketNotificationEmailBody', "#".$object->id);
 							$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
-
-							$message = getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', $langs->trans('TicketMessageMailIntroText'));
+							/**SPECIFIQUE ATM **/
+							$message = $this->applyMailSubstitutions(getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', $langs->trans('TicketMessageMailIntroText')), $langs, $object);
+							/**SPECIFIQUE ATM **/
 							$message .= '<br><br>';
 							$messagePost = GETPOST('message', 'restricthtml');
 							if (!dol_textishtml($messagePost)) {
@@ -2933,9 +2934,10 @@ class Ticket extends CommonObject
 								$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
 								$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
-
-								$message_intro = GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
-								$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+								/**SPECIFIQUE ATM **/
+								$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+								$message_signature = $this->applyMailSubstitutions(GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE'), $langs, $object);
+								/**SPECIFIQUE ATM **/
 								if (!dol_textishtml($message_intro)) {
 									$message_intro = dol_nl2br($message_intro);
 								}
@@ -2971,12 +2973,6 @@ class Ticket extends CommonObject
 								// If public interface is not enable, use link to internal page into mail
 								$url_public_ticket = (getDolGlobalInt('TICKET_ENABLE_PUBLIC_INTERFACE') ?
 										(getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') !== '' ? getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') . '/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.urlencode($object->track_id);
-								/**DEBUT SPECIFIQUE ATM **/
-								if (!getDolGlobalString('TICKET_REMOVE_TRACK_URL')) {
-									$message .= '<br>' . $langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer') . ' : <a href="' . $url_public_ticket . '">' . $object->track_id . '</a><br>';
-									var_dump($message);exit();
-								}
-								/**FIN SPECIFIQUE ATM **/
 
 								// Build final message
 								$message = $message_intro.'<br><br>'.$message;
@@ -3044,6 +3040,23 @@ class Ticket extends CommonObject
 		}
 	}
 
+	/**SPECIFIQUE ATM **/
+	/**
+	 * Apply standard substitutions used by ticket email content.
+	 *
+	 * @param string			$content	Content before substitutions
+	 * @param Translate			$langs		Translation handler
+	 * @param CommonObject|null	$object		Object used for substitutions
+	 * @return string
+	 */
+	protected function applyMailSubstitutions($content, $langs, $object = null)
+	{
+		$substitutionarray = getCommonSubstitutionArray($langs, 0, array(), $object);
+		complete_substitutions_array($substitutionarray, $langs, $object);
+
+		return make_substitutions($content, $substitutionarray);
+	}
+	/**SPECIFIQUE ATM **/
 
 	/**
 	 * Send ticket by email to linked contacts

@@ -1,3 +1,4 @@
+- NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
 - FIX : DA027856 - Edition des extrafields "always editable" sur les projets avec une tache ouverte en bas de page.
 - FIX : DA027490 - BACKPORT 37132 - Date sur les temps passés sur les projets était erronée. 
 - FIX : DA027053 - Update tms on delete propalLine if propalLine is a product with a price of 0 or if product is not include.
