@@ -2272,6 +2272,13 @@ if ($action == 'create') {
 			print '<!-- origin line id = '.$lines[$i]->origin_line_id.' -->'; // id of order line
 			print '<tr class="oddeven" id="row-'.$lines[$i]->id.'" data-id="'.$lines[$i]->id.'" data-element="'.$lines[$i]->element.'" >';
 
+			$rowExtrafieldsView = '';
+			if (!empty($extrafields)) {
+				$lineExtrafieldsMode = (($action == 'editline' && $lines[$i]->id == $line_id) ? 'edit' : 'view');
+				$lines[$i]->fetch_optionals();
+				$rowExtrafieldsView = $lines[$i]->showOptionals($extrafields, $lineExtrafieldsMode, array(), !empty($indiceAsked) ? $indiceAsked : '', '', 0, 'line');
+			}
+
 			// #
 			if (!empty($conf->global->MAIN_VIEW_LINE_NUMBER)) {
 				print '<td class="center linecolnum">'.($i + 1).'</td>';
@@ -2319,6 +2326,9 @@ if ($action == 'create') {
 				if (getDolGlobalInt('PRODUIT_DESC_IN_FORM_ACCORDING_TO_DEVICE')) {
 					print (!empty($lines[$i]->description) && $lines[$i]->description != $lines[$i]->product) ? '<br>'.dol_htmlentitiesbr($lines[$i]->description) : '';
 				}
+				if (!empty($rowExtrafieldsView)) {
+					print '<br>'.$rowExtrafieldsView;
+				}
 				print "</td>\n";
 			} else {
 				print '<td class="linecoldescription" >';
@@ -2336,6 +2346,9 @@ if ($action == 'create') {
 				}
 
 				print_date_range($lines[$i]->date_start, $lines[$i]->date_end);
+				if (!empty($rowExtrafieldsView)) {
+					print '<br>'.$rowExtrafieldsView;
+				}
 				print "</td>\n";
 			}
 
@@ -2569,42 +2582,8 @@ if ($action == 'create') {
 				print '</td>';
 				// END BACKPORT
 
-				// Display lines extrafields
-				if (!empty($rowExtrafieldsStart)) {
-					print $rowExtrafieldsStart;
-					print $rowExtrafieldsView;
-					print $rowEnd;
-				}
 			}
 			print "</tr>";
-
-			// Display lines extrafields.
-			// $line is a line of shipment
-			if (!empty($extrafields)) {
-				$colspan = 6;
-				if ($origin && $origin_id > 0) {
-					$colspan++;
-				}
-				if (isModEnabled('productbatch')) {
-					$colspan++;
-				}
-				if (isModEnabled('stock')) {
-					$colspan++;
-				}
-				if ($object->statut == Expedition::STATUS_DRAFT) {
-					$colspan ++;
-				}
-
-				$line = $lines[$i];
-				$line->fetch_optionals();
-
-				// TODO Show all in same line by setting $display_type = 'line'
-				if ($action == 'editline' && $line->id == $line_id) {
-					print $lines[$i]->showOptionals($extrafields, 'edit', array('colspan'=>$colspan), !empty($indiceAsked) ? $indiceAsked : '', '', 0, 'card');
-				} else {
-					print $lines[$i]->showOptionals($extrafields, 'view', array('colspan'=>$colspan), !empty($indiceAsked) ? $indiceAsked : '', '', 0, 'card');
-				}
-			}
 		}
 	}
 
