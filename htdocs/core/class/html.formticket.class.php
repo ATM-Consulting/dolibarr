@@ -153,6 +153,9 @@ class FormTicket
 	{
 		global $conf, $langs, $user, $hookmanager;
 
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		$permissiontomanage = $user->hasRight('ticket', 'manage');
+
 		// Load translation files required by the page
 		$langs->loadLangs(array('other', 'mails', 'ticket'));
 
@@ -627,8 +630,16 @@ class FormTicket
 			print '<tr><td>';
 			print $langs->trans("AssignedTo");
 			print '</td><td>';
-			print img_picto('', 'user', 'class="pictofixedwidth"');
-			print $form->select_dolusers(GETPOST('fk_user_assign', 'int'), 'fk_user_assign', 1);
+			// BACKPORT v24 START - https://github.com/Dolibarr/dolibarr/pull/37490
+			if ($permissiontomanage) {
+				print img_picto('', 'user', 'class="pictofixedwidth"');
+				print $form->select_dolusers(GETPOST('fk_user_assign', 'int'), 'fk_user_assign', 1);
+			} else {
+				$userstat = new User($this->db);
+				$userstat->fetch(GETPOST('fk_user_assign', 'int'));
+				print $userstat->getNomUrl(-1);
+			}
+			// BACKPORT v24 END - https://github.com/Dolibarr/dolibarr/pull/37490
 			print '</td>';
 			print '</tr>';
 		}

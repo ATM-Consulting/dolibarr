@@ -130,7 +130,12 @@ $result = restrictedArea($user, 'ticket', $object->id);
 $triggermodname = 'TICKET_MODIFY';
 $permissiontoread = $user->hasRight('ticket', 'read');
 $permissiontoadd = $user->hasRight('ticket', 'write');
+// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+$permissiontomanage = $user->hasRight('ticket', 'manage');
 $permissiontodelete = $user->hasRight('ticket', 'delete');
+
+// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+$closeStatuses = [Ticket::STATUS_CLOSED, Ticket::STATUS_CANCELED];
 
 $upload_dir = $conf->ticket->dir_output;
 
@@ -265,7 +270,8 @@ if (empty($reshook)) {
 				}
 
 				// Auto mark as read if created from backend
-				if (!empty($conf->global->TICKET_AUTO_READ_WHEN_CREATED_FROM_BACKEND) && $user->rights->ticket->write) {
+				// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+				if (!empty($conf->global->TICKET_AUTO_READ_WHEN_CREATED_FROM_BACKEND) && $permissiontomanage) {
 					if ( ! $object->markAsRead($user) > 0) {
 						setEventMessages($object->error, $object->errors, 'errors');
 					}
@@ -373,7 +379,8 @@ if (empty($reshook)) {
 	}
 
 	// Mark as Read
-	if ($action == "mark_ticket_read" && $permissiontoadd) {
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == "mark_ticket_read" && $permissiontomanage) {
 		$object->fetch('', '', GETPOST("track_id", 'alpha'));
 
 		if ($object->markAsRead($user) > 0) {
@@ -388,7 +395,8 @@ if (empty($reshook)) {
 	}
 
 	// Assign to someone
-	if ($action == "assign_user" && GETPOST('btn_assign_user', 'alpha') && $permissiontoadd) {
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == "assign_user" && GETPOST('btn_assign_user', 'alpha') && $permissiontomanage) {
 		$object->fetch('', '', GETPOST("track_id", 'alpha'));
 		$useroriginassign = $object->fk_user_assign;
 		$usertoassign = GETPOST('fk_user_assign', 'int');
@@ -465,7 +473,8 @@ if (empty($reshook)) {
 		}
 	}
 
-	if (($action == "confirm_close" || $action == "confirm_abandon") && GETPOST('confirm', 'alpha') == 'yes' && $permissiontoadd) {
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if (($action == "confirm_close" || $action == "confirm_abandon") && GETPOST('confirm', 'alpha') == 'yes' && $permissiontomanage) {
 		$object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha'));
 
 		if ($object->close($user, ($action == "confirm_abandon" ? 1 : 0))) {
@@ -512,7 +521,8 @@ if (empty($reshook)) {
 	}
 
 	// Set parent company
-	if ($action == 'set_thirdparty' && $user->rights->ticket->write) {
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == 'set_thirdparty' && $permissiontoadd) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			$result = $object->setCustomer(GETPOST('editcustomer', 'int'));
 			$url = 'card.php?track_id='.GETPOST('track_id', 'alpha');
@@ -521,7 +531,9 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'set_progression' && $user->rights->ticket->write) {
+	// Set progress status
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == 'set_progression' && $permissiontoadd) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			$result = $object->setProgression(GETPOST('progress', 'alpha'));
 
@@ -531,7 +543,9 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'set_categories' && $user->rights->ticket->write) {
+	// Set categories
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == 'set_categories' && $permissiontoadd) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			$result = $object->setCategories(GETPOST('categories', 'array'));
 
@@ -541,7 +555,9 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'setsubject' && $user->rights->ticket->write) {
+	// Set Subject
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == 'setsubject' && $permissiontoadd) {
 		if ($object->fetch(GETPOST('id', 'int'))) {
 			if ($action == 'setsubject') {
 				$object->subject = GETPOST('subject', 'alphanohtml');
@@ -564,7 +580,8 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'confirm_reopen' && $user->rights->ticket->manage && !GETPOST('cancel')) {
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	if ($action == 'confirm_reopen' && $permissiontomanage && !GETPOST('cancel')) {
 		if ($object->fetch(GETPOST('id', 'int'), '', GETPOST('track_id', 'alpha')) >= 0) {
 			// prevent browser refresh from reopening ticket several times
 			if ($object->status == Ticket::STATUS_CLOSED || $object->status == Ticket::STATUS_CANCELED) {
@@ -601,7 +618,7 @@ if (empty($reshook)) {
 			header("Location: ".$url);
 			exit();
 		}
-	} elseif ($action == "set_message" && $user->rights->ticket->manage) {
+	} elseif ($action == "set_message" && $permissiontoadd) { // BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if (!GETPOST('cancel')) {
 			$object->fetch('', '', GETPOST('track_id', 'alpha'));
 			$oldvalue_message = $object->message;
@@ -624,7 +641,7 @@ if (empty($reshook)) {
 		}
 
 		$action = 'view';
-	} elseif ($action == 'confirm_set_status' && $permissiontoadd && !GETPOST('cancel')) {
+	} elseif ($action == 'confirm_set_status' && $permissiontomanage && !GETPOST('cancel')) { // BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		// Reopen ticket
 		if ($object->fetch(GETPOST('id', 'int'), GETPOST('track_id', 'alpha')) >= 0) {
 			$new_status = GETPOST('new_status', 'int');
@@ -692,7 +709,8 @@ if (empty($reshook)) {
 	}
 
 
-	$permissiondellink = $user->rights->ticket->write;
+	// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+	$permissiondellink = $permissiontoadd;
 	include DOL_DOCUMENT_ROOT.'/core/actions_dellink.inc.php'; // Must be include, not include_once
 
 	// Actions to build doc
@@ -804,7 +822,8 @@ if ($action == 'create' || $action == 'presend') {
 } elseif ($object->id) { // BACKPORT V22 - https://github.com/Dolibarr/dolibarr/pull/37473
 	if ($res > 0) {
 		// or for unauthorized internals users
-		if (!$user->socid && (!empty($conf->global->TICKET_LIMIT_VIEW_ASSIGNED_ONLY) && $object->fk_user_assign != $user->id) && !$user->rights->ticket->manage) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (!$user->socid && (!empty($conf->global->TICKET_LIMIT_VIEW_ASSIGNED_ONLY) && $object->fk_user_assign != $user->id) && !$permissiontomanage) {
 			accessforbidden('', 0, 1);
 		}
 
@@ -812,7 +831,8 @@ if ($action == 'create' || $action == 'presend') {
 		$formconfirm = '';
 
 		// Confirmation close
-		if ($action == 'close') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($action == 'close' && $permissiontomanage) {
 			$thirdparty_contacts = $object->getInfosTicketExternalContact();
 			$contacts_select = array(
 				'-2' => $langs->trans('TicketNotifyAllTiersAtClose'),
@@ -838,22 +858,26 @@ if ($action == 'create' || $action == 'presend') {
 			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("CloseATicket"), $langs->trans("ConfirmCloseAticket"), "confirm_close", $formquestion, '', 1);
 		}
 		// Confirmation abandon
-		if ($action == 'abandon') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($action == 'abandon' && $permissiontomanage) {
 			// BACKPORT V21 - cf220075
 			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("AbandonTicket"), $langs->trans("ConfirmAbandonTicket"), "confirm_abandon", '', '', 1);
 		}
 		// Confirmation delete
-		if ($action == 'delete') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($action == 'delete' && $permissiontodelete) {
 			// BACKPORT V21 - cf220075
 			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("Delete"), $langs->trans("ConfirmDeleteTicket"), "confirm_delete_ticket", '', '', 1);
 		}
 		// Confirm reopen
-		if ($action == 'reopen') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($action == 'reopen' && $permissiontomanage) {
 			// BACKPORT V21 - cf220075
 			$formconfirm = $form->formconfirm($url_page_current.'?track_id='.$object->track_id, $langs->trans('ReOpen'), $langs->trans('ConfirmReOpenTicket'), 'confirm_reopen', '', '', 1);
 		}
 		// Confirmation status change
-		if ($action == 'set_status') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($action == 'set_status' && $permissiontomanage) {
 			$new_status = GETPOST('new_status');
 			//var_dump($url_page_current . "?track_id=" . $object->track_id);
 			// BACKPORT V21 - cf220075
@@ -980,7 +1004,8 @@ if ($action == 'create' || $action == 'presend') {
 			$morehtmlref .= dol_escape_htmltag($object->origin_email).' <small class="hideonsmartphone opacitymedium">- '.$form->textwithpicto($langs->trans("CreatedByPublicPortal"), $htmltooptip, 1, 'help', '', 0, 3, 'tooltip').'</small>';
 		}
 
-		$permissiontoedit = $object->status < 8 && !$user->socid && $user->rights->ticket->write;
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		$permissiontoedit = $object->status < 8 && !$user->socid && $permissiontoadd;
 		//$permissiontoedit = 0;
 
 		// Thirdparty
@@ -1043,9 +1068,11 @@ if ($action == 'create' || $action == 'presend') {
 
 		// Subject
 		print '<tr><td>';
-		print $form->editfieldkey("Subject", 'subject', $object->subject, $object, $user->rights->ticket->write && !$user->socid, 'string');
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		print $form->editfieldkey("Subject", 'subject', $object->subject, $object, $permissiontoadd && !in_array($object->status, $closeStatuses) && !$user->socid, 'string');
 		print '</td><td>';
-		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $user->rights->ticket->write && !$user->socid, 'string');
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $$permissiontoadd && !$user->socid, 'string');
 		print '</td></tr>';
 
 		// Creation date
@@ -1091,7 +1118,8 @@ if ($action == 'create' || $action == 'presend') {
 		print '<tr><td>';
 		print '<table class="nobordernopadding" width="100%"><tr><td class="nowrap">';
 		print $langs->trans("AssignedTo");
-		if (isset($object->status) && $object->status < $object::STATUS_CLOSED && GETPOST('set', 'alpha') != "assign_ticket" && $user->rights->ticket->manage) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (isset($object->status) && $object->status < $object::STATUS_CLOSED && GETPOST('set', 'alpha') != "assign_ticket" && $permissiontomanage) {
 			print '</td><td class="right"><a class="editfielda" href="'.$url_page_current.'?track_id='.urlencode($object->track_id).'&set=assign_ticket">'.img_edit($langs->trans('Modify'), '').'</a>';
 		}
 		print '</td></tr></table>';
@@ -1102,7 +1130,8 @@ if ($action == 'create' || $action == 'presend') {
 		}
 
 		// Show user list to assignate one if status is "read"
-		if (GETPOST('set', 'alpha') == "assign_ticket" && $object->status < 8 && !$user->socid && $user->rights->ticket->write) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (GETPOST('set', 'alpha') == "assign_ticket" && $object->status < 8 && !$user->socid && $permissiontomanage) {
 			print '<form method="post" name="ticket" enctype="multipart/form-data" action="'.$url_page_current.'">';
 			print '<input type="hidden" name="token" value="'.newToken().'">';
 			print '<input type="hidden" name="action" value="assign_user">';
@@ -1119,12 +1148,14 @@ if ($action == 'create' || $action == 'presend') {
 		print '<table class="nobordernopadding centpercent"><tr><td class="nowrap">';
 		print $langs->trans('Progression').'</td><td class="left">';
 		print '</td>';
-		if ($action != 'progression' && isset($object->status) && $object->status < $object::STATUS_CLOSED && !$user->socid) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($permissiontoadd && $action != 'progression' && isset($object->status) && $object->status < $object::STATUS_CLOSED && !$user->socid) {
 			print '<td class="right"><a class="editfielda" href="'.$url_page_current.'?action=progression&token='.newToken().'&track_id='.urlencode($object->track_id).'">'.img_edit($langs->trans('Modify')).'</a></td>';
 		}
 		print '</tr></table>';
 		print '</td><td>';
-		if ($user->rights->ticket->write && $action == 'progression') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if ($permissiontoadd && $action == 'progression') {
 			print '<form action="'.$url_page_current.'" method="post">';
 			print '<input type="hidden" name="token" value="'.newToken().'">';
 			print '<input type="hidden" name="track_id" value="'.$track_id.'">';
@@ -1186,13 +1217,15 @@ if ($action == 'create' || $action == 'presend') {
 			print '<td class="valignmiddle titlefield">';
 			print '<table class="nobordernopadding centpercent"><tr><td class="titlefield">';
 			print $langs->trans("Categories");
-			if ($action != 'categories' && !$user->socid) {
+			// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+			if ($permissiontoadd && !in_array($object->status, $closeStatuses) && $action != 'categories' && !$user->socid) {
 				print '<td class="right"><a class="editfielda" href="'.$url_page_current.'?action=categories&amp;track_id='.$object->track_id.'">'.img_edit($langs->trans('Modify')).'</a></td>';
 			}
 			print '</table>';
 			print '</td>';
 
-			if ($user->rights->ticket->write && $action == 'categories') {
+			// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+			if ($permissiontoadd && $action == 'categories') {
 				$cate_arbo = $form->select_all_categories(Categorie::TYPE_TICKET, '', 'parent', 64, 0, 1);
 				if (is_array($cate_arbo)) {
 					// Categories
@@ -1234,18 +1267,21 @@ if ($action == 'create' || $action == 'presend') {
 		print $langs->trans('TicketProperties');
 		print '</td>';
 		print '<td>';
-		if (GETPOST('set', 'alpha') == 'properties' && $user->rights->ticket->write) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (GETPOST('set', 'alpha') == 'properties' && $permissiontoadd) {
 			print '<input type="submit" class="button small" name="btn_update_ticket_prop" value="'.$langs->trans("Modify").'" />';
 		} else {
 			//    Button to edit Properties
-			if (isset($object->status) && $object->status < $object::STATUS_NEED_MORE_INFO && $user->rights->ticket->write) {
+			// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+			if (isset($object->status) && $object->status < $object::STATUS_NEED_MORE_INFO && $permissiontoadd) {
 				print ' <a class="editfielda" href="card.php?track_id='.$object->track_id.'&set=properties">'.img_edit($langs->trans('Modify')).'</a>';
 			}
 		}
 		print '</td>';
 		print '</tr>';
 
-		if (GETPOST('set', 'alpha') == 'properties' && $user->rights->ticket->write) {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (GETPOST('set', 'alpha') == 'properties' && $permissiontoadd) {
 			print '<tr>';
 			// Type
 			print '<td class="titlefield">';
@@ -1297,7 +1333,8 @@ if ($action == 'create' || $action == 'presend') {
 
 		// Display navbar with links to change ticket status
 		print '<!-- navbar with status -->';
-		if (!$user->socid && $user->rights->ticket->write && isset($object->status) && $object->status < $object::STATUS_CLOSED && GETPOST('set') !== 'properties') {
+		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+		if (!$user->socid && $permissiontomanage && isset($object->status) && $object->status < $object::STATUS_CLOSED && GETPOST('set') !== 'properties') {
 			$actionobject->viewStatusActions($object);
 		}
 
@@ -1451,23 +1488,27 @@ if ($action == 'create' || $action == 'presend') {
 					print dolGetButtonAction('', $langs->trans('TicketAddIntervention'), 'default', DOL_URL_ROOT.'/fichinter/card.php?action=create&token='.newToken().'&socid='. $object->fk_soc.'&origin=ticket_ticket&originid='. $object->id, '');
 				}
 
-				// Close ticket if statut is read
-				if (isset($object->status) && $object->status > 0 && $object->status < Ticket::STATUS_CLOSED && $user->rights->ticket->write) {
+				// Close ticket if status is read
+				// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+				if (isset($object->status) && $object->status > 0 && $object->status < Ticket::STATUS_CLOSED && $permissiontomanage) {
 					print dolGetButtonAction('', $langs->trans('CloseTicket'), 'default', $_SERVER["PHP_SELF"].'?action=close&token='.newToken().'&track_id='.$object->track_id, '');
 				}
 
 				// Abadon ticket if statut is read
-				if (isset($object->status) && $object->status > 0 && $object->status < Ticket::STATUS_CLOSED && $user->rights->ticket->write) {
+				// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+				if (isset($object->status) && $object->status > 0 && $object->status < Ticket::STATUS_CLOSED && $permissiontomanage) {
 					print dolGetButtonAction('', $langs->trans('AbandonTicket'), 'default', $_SERVER["PHP_SELF"].'?action=abandon&token='.newToken().'&track_id='.$object->track_id, '');
 				}
 
 				// Re-open ticket
-				if (!$user->socid && (isset($object->status) && ($object->status == Ticket::STATUS_CLOSED || $object->status == Ticket::STATUS_CANCELED)) && !$user->socid) {
+				// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+				if ($permissiontomanage && !$user->socid && (isset($object->status) && ($object->status == Ticket::STATUS_CLOSED || $object->status == Ticket::STATUS_CANCELED)) && !$user->socid) {
 					print dolGetButtonAction('', $langs->trans('ReOpen'), 'default', $_SERVER["PHP_SELF"].'?action=reopen&token='.newToken().'&track_id='.$object->track_id, '');
 				}
 
 				// Delete ticket
-				if ($user->rights->ticket->delete && !$user->socid) {
+				// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
+				if ($permissiontodelete && !$user->socid) {
 					print dolGetButtonAction('', $langs->trans('Delete'), 'delete', $_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&track_id='.$object->track_id, '');
 				}
 			}
