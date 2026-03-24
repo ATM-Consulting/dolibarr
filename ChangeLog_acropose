@@ -2,3 +2,4 @@
 - FIX: Cast int param selected if neccessary selectMeasuringUnits()  - **30/01/2026**
 - FIX: Display TVA in shipping frame - **22/01/2026**
 - FIX : Add FACTURE_ENABLE_NEGATIVE_LINES in check pricemin  - **27/02/2026**
+- FIX : removed FACTURE_ENABLE_NEGATIVE_LINES for credit note in facture.class.php - **24/03/2026**
