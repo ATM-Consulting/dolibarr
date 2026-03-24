@@ -1072,7 +1072,7 @@ if ($action == 'create' || $action == 'presend') {
 		print $form->editfieldkey("Subject", 'subject', $object->subject, $object, $permissiontoadd && !in_array($object->status, $closeStatuses) && !$user->socid, 'string');
 		print '</td><td>';
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
-		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $$permissiontoadd && !$user->socid, 'string');
+		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $permissiontoadd && !$user->socid, 'string');
 		print '</td></tr>';
 
 		// Creation date
