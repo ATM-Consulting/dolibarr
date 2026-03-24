@@ -2935,7 +2935,29 @@ class Ticket extends CommonObject
 
 								$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
 								/**SPECIFIQUE ATM **/
-								$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+								$cliatm_intro = getDolGlobalString('CLIATM_TICKET_MAIL_INTRO');
+								if ($cliatm_intro) {
+									// Check if at least one SUPPORTCLI contact has an active portal account
+									$sqlPortal = 'SELECT COUNT(u.rowid) as nb';
+									$sqlPortal .= ' FROM '.$this->db->prefix().'element_contact ec';
+									$sqlPortal .= ' INNER JOIN '.$this->db->prefix().'c_type_contact tc ON tc.rowid = ec.fk_c_type_contact AND tc.element = \'ticket\' AND tc.source = \'external\' AND tc.code = \'SUPPORTCLI\'';
+									$sqlPortal .= ' INNER JOIN '.$this->db->prefix().'user u ON u.fk_socpeople = ec.fk_socpeople AND u.statut = 1 AND u.fk_soc > 0 AND u.entity IN ('.getEntity('user').')';
+									$sqlPortal .= ' WHERE ec.element_id = '.(int) $object->id;
+									$resPortal = $this->db->query($sqlPortal);
+									$hasPortalContact = false;
+									if ($resPortal) {
+										$objPortal = $this->db->fetch_object($resPortal);
+										$hasPortalContact = ($objPortal && $objPortal->nb > 0);
+										$this->db->free($resPortal);
+									}
+									if (!$hasPortalContact) {
+										$message_intro = $this->applyMailSubstitutions($cliatm_intro, $langs, $object);
+									} else {
+										$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+									}
+								} else {
+									$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+								}
 								$message_signature = $this->applyMailSubstitutions(GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE'), $langs, $object);
 								/**SPECIFIQUE ATM **/
 								if (!dol_textishtml($message_intro)) {
