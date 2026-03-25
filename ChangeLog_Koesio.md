@@ -1,6 +1,6 @@
-- Backport 24 - dfe8433b (https://doliboard.atm-consulting.fr/projet/tasks/task.php?id=16920) - **2026-03-25**
-- Backport 22 - https://github.com/Dolibarr/dolibarr/pull/37473 (https://doliboard.atm-consulting.fr/projet/tasks/task.php?id=16920) - **2026-03-25**
-- Backport 21 - cf220075 (https://doliboard.atm-consulting.fr/projet/tasks/task.php?id=16920) - **2026-03-25**
+- Backport 24 - dfe8433b (T260019) - **2026-03-25**
+- Backport 22 - https://github.com/Dolibarr/dolibarr/pull/37473 (T260019) - **2026-03-25**
+- Backport 21 - cf220075 (T260019) - **2026-03-25**
 - Backport 24 Api document - e9a9c7ac, 00939544, 9b48e1a6 - **2026-03-03** 
 - T260014 - Backport FIX https://github.com/Dolibarr/dolibarr/pull/37370 - **2026-03-02** 
 - T260007 - Backport InvoiceAPI LinkedObjects - **2026-02-17**
