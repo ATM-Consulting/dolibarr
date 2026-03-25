@@ -2516,7 +2516,7 @@ if ($resql) {
 		// Show shippable Icon (this creates subloops, so may be slow)
 		if (!empty($arrayfields['shippable']['checked'])) {
 			print '<td class="center">';
-			if (!empty($show_shippable_command) && isModEnabled('stock')) {
+			if ( isModEnabled('stock')) {
 				if (($obj->fk_statut > $generic_commande::STATUS_DRAFT) && ($obj->fk_statut < $generic_commande::STATUS_CLOSED)) {
 					$generic_commande->getLinesArray(); 	// Load array ->lines
 					$generic_commande->loadExpeditions();	// Load array ->expeditions

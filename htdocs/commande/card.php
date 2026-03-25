@@ -1865,20 +1865,6 @@ if ($action == 'create' && $usercancreate) {
 	print $form->selectDate($date_delivery ? $date_delivery : -1, 'liv_', 1, 1, 1);
 	print "</td>\n";
 	print '</tr>';
-	// --- SHIPPABLE icon ---
-	if (isModEnabled('stock') && isModEnabled('shipping') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && !empty($object->delivery_date)) {
-		$shippableInfos = $object->getShippableInfos();
-
-		if (!empty($shippableInfos['has_product'])) {
-			print ' ';
-			print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
-
-			if (!empty($shippableInfos['warning'])) {
-				print ' ';
-				print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
-			}
-		}
-	}
 	// Delivery delay
 	print '<tr class="fielddeliverydelay"><td>'.$langs->trans('AvailabilityPeriod').'</td><td>';
 	print img_picto('', 'clock', 'class="pictofixedwidth"');
@@ -2516,6 +2502,20 @@ if ($action == 'create' && $usercancreate) {
 			print $object->delivery_date ? dol_print_date($object->delivery_date, 'dayhour') : '&nbsp;';
 			if ($object->hasDelay() && !empty($object->delivery_date)) {
 				print ' '.img_picto($langs->trans("Late").' : '.$object->showDelay(), "warning");
+			}
+			// --- SHIPPABLE icon ---
+			if (isModEnabled('stock') && isModEnabled('expedition') && !empty($object->delivery_date)) {
+				$shippableInfos = $object->getShippableInfos();
+
+				if (!empty($shippableInfos['has_product'])) {
+					print ' ';
+					print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
+
+					if (!empty($shippableInfos['warning'])) {
+						print ' ';
+						print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
+					}
+				}
 			}
 		}
 		print '</td>';
