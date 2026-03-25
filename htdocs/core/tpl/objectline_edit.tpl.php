@@ -85,7 +85,7 @@ $coldisplay = 0;
 ?>
 <tr class="oddeven tredited">
 <?php if (!empty($conf->global->MAIN_VIEW_LINE_NUMBER)) { ?>
-		<td class="linecolnum center"><?php $coldisplay++; ?><?php echo ($i + 1); ?></td>
+		<td class="linecolnum center"><?php $coldisplay++; ?><?php /* @phan-suppress-current-line  PhanUndeclaredGlobalVariable */ echo($i + 1); ?></td>
 <?php }
 
 $coldisplay++;
