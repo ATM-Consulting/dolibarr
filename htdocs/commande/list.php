@@ -1729,7 +1729,7 @@ if ($resql) {
 			$commande->id     = (int) $obj->rowid;
 			$commande->status = (int) $obj->fk_statut;
 			$commande->statut = (int) $obj->fk_statut;
-
+			$shippableInfos = $commande->getShippableInfos();
 			if ($shippableInfos['has_product']) {
 				print '<a href="'.DOL_URL_ROOT.'/expedition/shipment.php?id='.(int) $obj->rowid.'">';
 				print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
