@@ -347,42 +347,40 @@ if ((($line->info_bits & 2) != 2) && $line->special_code != 3) {
 	print '&nbsp;';
 }
 print '</td>';
-
 //Shippable Status
-if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('shipping') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && ($object->status > 0 && $object->status < 3)) {
-	$coldisplay++;
-	print '<td class="linecolstock center">';
+// - Backport develop : df671ed38faa8a
+if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->statut > 0 && $object->statut < 3)) {
+    $coldisplay++;
+    print '<td class="linecolstock center">';
 
+    if ($line->fk_product > 0 && $line->product_type == 0) {
+       static $productstatcache = array();
 
-	if ($line->fk_product > 0 && $line->product_type == 0) {
-		static $productstatcache = array();
+       if (empty($productstatcache[$line->fk_product])) {
+          $prod = new Product($this->db);
+          $prod->fetch($line->fk_product);
+          $prod->load_stock('nobatch', 'warehouseopen');
+          $productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
+       }
 
-		if (empty($productstatcache[$line->fk_product])) {
-			$prod = new Product($this->db);
-			$prod->fetch($line->fk_product);
-			$prod->load_stock('nobatch,warehouseopen');
-			$productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
-		}
-		$stock = $productstatcache[$line->fk_product]['stockreel'];
-		$reliquat = $line->qty;
-		if (!empty($object->expeditions[$line->id])) {
-			$reliquat -= $object->expeditions[$line->id];
-		}
-		if ($reliquat > 0) {
-			if ($stock >= $reliquat) {
-				print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'green');
-			} else {
-				print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'error');
-			}
-		} else {
-			print img_picto($langs->trans("Shipped"), 'statut5');
-		}
-	} else {
-		print '&nbsp;';
-	}
-	print '</td>';
+       $stock = $productstatcache[$line->fk_product]['stockreel'];
+       $reliquat = $line->qty;
+       if (!empty($object->expeditions[$line->id])) {
+          $reliquat -= $object->expeditions[$line->id];
+       }
+
+       if ($reliquat > 0) {
+          if ($stock >= $reliquat) {
+             print img_picto($langs->trans("Stock").': '.$stock, 'statut4.png');
+          } else {
+             print img_picto($langs->trans("Stock").': '.$stock, 'statut8.png');
+          }
+       } else {
+          print img_picto($langs->trans("Shipped"), 'statut5.png');
+       }
+    }
+    print '</td>';
 }
-
 if (!empty($conf->global->PRODUCT_USE_UNITS)) {
 	print '<td class="linecoluseunit nowrap left">';
 	$label = $line->getLabelOfUnit('short');

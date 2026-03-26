@@ -1,3 +1,4 @@
+- Backport develop : df671ed38faa8a shipping indicator on order card and line order  **2025-03-25**
 - Backport 24 - dfe8433b (T260019) - **2026-03-25**
 - Backport 22 - https://github.com/Dolibarr/dolibarr/pull/37473 (T260019) - **2026-03-25**
 - Backport 21 - cf220075 (T260019) - **2026-03-25**
@@ -13,7 +14,7 @@
 - Backport 17.0 PR #35257: Fix condition for displaying the "create supplier order" button on customer order cards - **15/09/2025**
 - Backport 20.0 PR #28318: Misc conf `MAIN_SEE_SUBORDINATES` to allow supervisor to see all third parties her/his subordinates are allowed to see - **01/10/2025**
 - Backport develop PR #35172: Return false with return code 200 on API - **11/09/2025**
-- Backport develop fourn/card.php : add hook & manage product list displat - **01/09/2025**
+- Backport develop foursn/card.php : add hook & manage product list displat - **01/09/2025**
 - Backport 17.0 PR #34777 and #34778: `Facture::update()` fails when called in a trigger after `createFromClone()` + the clone of a template-generated invoice should not be linked to the template.
 - Backport develop PR #34293: Ajout $properties et $lines dans les API de contracts et invoices pour la gestion des données - *2025-05-27*
 - Backport develop PR #33891: FIX critical bug (extrafields of parent replaced with extrafields of line during `fetch_lines()`)

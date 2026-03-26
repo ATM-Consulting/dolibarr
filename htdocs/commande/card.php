@@ -2502,9 +2502,11 @@ if ($action == 'create' && $usercancreate) {
 			print $object->delivery_date ? dol_print_date($object->delivery_date, 'dayhour') : '&nbsp;';
 			if ($object->hasDelay() && !empty($object->delivery_date)) {
 				print ' '.img_picto($langs->trans("Late").' : '.$object->showDelay(), "warning");
+
 			}
+			//backport develop
 			// --- SHIPPABLE icon ---
-			if (isModEnabled('stock') && isModEnabled('expedition') && !empty($object->delivery_date)) {
+			if (isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && !empty($object->delivery_date)) {
 				$shippableInfos = $object->getShippableInfos();
 
 				if (!empty($shippableInfos['has_product'])) {
@@ -2513,14 +2515,17 @@ if ($action == 'create' && $usercancreate) {
 
 					if (!empty($shippableInfos['warning'])) {
 						print ' ';
-						print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
+						print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', 2), '', 2);
 					}
 				}
 			}
+
 		}
+
 		print '</td>';
 		print '</tr>';
 
+		//----
 		// Delivery delay
 		print '<tr class="fielddeliverydelay"><td>';
 		$editenable = $usercancreate;
@@ -2532,9 +2537,9 @@ if ($action == 'create' && $usercancreate) {
 			$form->form_availability($_SERVER['PHP_SELF'].'?id='.$object->id, $object->availability_id, 'none', 1);
 		}
 		print '</td></tr>';
-
+		// - Backport develop : df671ed38faa8a
 		// Shipping Method
-		if (isModEnabled('expedition')) {
+		if (isModEnabled('shipping')) {
 			print '<tr><td>';
 			$editenable = $usercancreate;
 			print $form->editfieldkey("SendingMethod", 'shippingmethod', '', $object, $editenable);
@@ -2547,6 +2552,7 @@ if ($action == 'create' && $usercancreate) {
 			print '</td>';
 			print '</tr>';
 		}
+		// backport end
 
 		// Warehouse
 		if (isModEnabled('stock') && !empty($conf->global->WAREHOUSE_ASK_WAREHOUSE_DURING_ORDER)) {

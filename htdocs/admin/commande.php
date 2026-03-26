@@ -678,6 +678,16 @@ print ajax_constantonoff('ORDER_ALLOW_EXTERNAL_DOWNLOAD', array(), null, 0, 0, 0
 print '</td></tr>';
 print '</form>';
 
+// backport df671ed38faa8a
+// Disable shippable icon on card (if Stock and Expedition are enabled)
+if (isModEnabled('stock') && isModEnabled('expedition')) {
+	print '<tr class="oddeven"><td class="titlefield">';
+	print $langs->trans("EnableShippableIconOnCard");
+	print '</td>';
+	print '<td class="left" colspan="2">';
+	print ajax_constantonoff('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD');
+	print '</td></tr>';
+}
 /*
 // Seems to be not so used. So kept hidden for the moment to avoid dangerous options inflation.
 // TODO Must be implemented by PDF templates
