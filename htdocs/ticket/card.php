@@ -819,14 +819,16 @@ if ($action == 'create' || $action == 'presend') {
 	print $form->buttonsSaveCancel();
 
 	print '</form>'; */
-} elseif (empty($action) || $action == 'view' || $action == 'addlink' || $action == 'dellink' || $action == 'presend' || $action == 'presend_addmessage' || $action == 'close' || $action == 'abandon' || $action == 'delete' || $action == 'editcustomer' || $action == 'progression' || $action == 'categories' || $action == 'reopen'
-	|| $action == 'editsubject' || $action == 'edit_extras' || $action == 'update_extras' || $action == 'edit_extrafields' || $action == 'set_extrafields' || $action == 'classify' || $action == 'sel_contract' || $action == 'edit_message_init' || $action == 'set_status' || $action == 'dellink') {
+} elseif ($object->id) { // BACKPORT V22 - https://github.com/Dolibarr/dolibarr/pull/37473
 	if ($res > 0) {
 		// or for unauthorized internals users
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if (!$user->socid && (!empty($conf->global->TICKET_LIMIT_VIEW_ASSIGNED_ONLY) && $object->fk_user_assign != $user->id) && !$permissiontomanage) {
 			accessforbidden('', 0, 1);
 		}
+
+		// BACKPORT V21 - cf220075
+		$formconfirm = '';
 
 		// Confirmation close
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
@@ -852,30 +854,49 @@ if ($action == 'create' || $action == 'presend') {
 				),
 			);
 
-			print $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("CloseATicket"), $langs->trans("ConfirmCloseAticket"), "confirm_close", $formquestion, '', 1);
+			// BACKPORT V21 - cf220075
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("CloseATicket"), $langs->trans("ConfirmCloseAticket"), "confirm_close", $formquestion, '', 1);
 		}
 		// Confirmation abandon
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if ($action == 'abandon' && $permissiontomanage) {
-			print $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("AbandonTicket"), $langs->trans("ConfirmAbandonTicket"), "confirm_abandon", '', '', 1);
+			// BACKPORT V21 - cf220075
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("AbandonTicket"), $langs->trans("ConfirmAbandonTicket"), "confirm_abandon", '', '', 1);
 		}
 		// Confirmation delete
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if ($action == 'delete' && $permissiontodelete) {
-			print $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("Delete"), $langs->trans("ConfirmDeleteTicket"), "confirm_delete_ticket", '', '', 1);
+			// BACKPORT V21 - cf220075
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id, $langs->trans("Delete"), $langs->trans("ConfirmDeleteTicket"), "confirm_delete_ticket", '', '', 1);
 		}
 		// Confirm reopen
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if ($action == 'reopen' && $permissiontomanage) {
-			print $form->formconfirm($url_page_current.'?track_id='.$object->track_id, $langs->trans('ReOpen'), $langs->trans('ConfirmReOpenTicket'), 'confirm_reopen', '', '', 1);
+			// BACKPORT V21 - cf220075
+			$formconfirm = $form->formconfirm($url_page_current.'?track_id='.$object->track_id, $langs->trans('ReOpen'), $langs->trans('ConfirmReOpenTicket'), 'confirm_reopen', '', '', 1);
 		}
 		// Confirmation status change
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
 		if ($action == 'set_status' && $permissiontomanage) {
 			$new_status = GETPOST('new_status');
 			//var_dump($url_page_current . "?track_id=" . $object->track_id);
-			print $form->formconfirm($url_page_current."?track_id=".$object->track_id."&new_status=".GETPOST('new_status'), $langs->trans("TicketChangeStatus"), $langs->trans("TicketConfirmChangeStatus", $langs->transnoentities($object->statuts_short[$new_status])), "confirm_set_status", '', '', 1);
+			// BACKPORT V21 - cf220075
+			$formconfirm = $form->formconfirm($url_page_current."?track_id=".$object->track_id."&new_status=".GETPOST('new_status'), $langs->trans("TicketChangeStatus"), $langs->trans("TicketConfirmChangeStatus", $langs->transnoentities($object->statuts_short[$new_status])), "confirm_set_status", '', '', 1);
 		}
+
+		// BACKPORT V21 START - cf220075
+		// Call Hook formConfirm
+		$parameters = array('formConfirm' => $formconfirm);
+		$reshook = $hookmanager->executeHooks('formConfirm', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+		if (empty($reshook)) {
+			$formconfirm .= $hookmanager->resPrint;
+		} elseif ($reshook > 0) {
+			$formconfirm = $hookmanager->resPrint;
+		}
+		// BACKPORT V21 END - cf220075
+
+		// Print form confirm
+		print $formconfirm;
 
 		// project info
 		if ($projectid > 0) {
@@ -1051,7 +1072,7 @@ if ($action == 'create' || $action == 'presend') {
 		print $form->editfieldkey("Subject", 'subject', $object->subject, $object, $permissiontoadd && !in_array($object->status, $closeStatuses) && !$user->socid, 'string');
 		print '</td><td>';
 		// BACKPORT v24 - https://github.com/Dolibarr/dolibarr/pull/37490
-		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $$permissiontoadd && !$user->socid, 'string');
+		print $form->editfieldval("Subject", 'subject', $object->subject, $object, $permissiontoadd && !$user->socid, 'string');
 		print '</td></tr>';
 
 		// Creation date

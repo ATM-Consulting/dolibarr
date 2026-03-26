@@ -85,7 +85,7 @@ $coldisplay = 0;
 ?>
 <tr class="oddeven tredited">
 <?php if (!empty($conf->global->MAIN_VIEW_LINE_NUMBER)) { ?>
-		<td class="linecolnum center"><?php $coldisplay++; ?><?php echo ($i + 1); ?></td>
+		<td class="linecolnum center"><?php $coldisplay++; ?><?php /* @phan-suppress-current-line  PhanUndeclaredGlobalVariable */ echo($i + 1); ?></td>
 <?php }
 
 $coldisplay++;
@@ -252,6 +252,15 @@ $coldisplay++;
 		&nbsp;
 	<?php } ?>
 	</td>
+
+	<?php
+	// Shippable Status (Empty cell for edit mode to keep column alignment)
+	if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('shipping') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && ($object->status > 0 && $object->status < 3)) {
+		print '<td class="linecolstock center">';
+		print '&nbsp;';
+		print '</td>';
+	}
+	?>
 
 	<?php
 	if (!empty($conf->global->PRODUCT_USE_UNITS)) {

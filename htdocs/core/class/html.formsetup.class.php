@@ -1201,6 +1201,32 @@ class FormSetupItem
 		return $this;
 	}
 
+	// BACKPORT v24 START - dfe8433b
+	/**
+	 * Set type of input as number
+	 * @param int $min minimum value for input number
+	 * @param int $max maximum value for input number
+	 * @param int $step legal number intervals
+	 *
+	 * @return self
+	 */
+	public function setAsNumber($min = null, $max = null, $step = null)
+	{
+		$this->type = 'number'; //for GETPOSTINT
+		$this->fieldAttr['type'] = 'number'; //generic thanks to generateAttributesStringFromArray
+		if (!is_null($min)) {
+			$this->fieldAttr['min'] = $min;
+		}
+		if (!is_null($max)) {
+			$this->fieldAttr['max'] = $max;
+		}
+		if (!is_null($step)) {
+			$this->fieldAttr['step'] = $step;
+		}
+		return $this;
+	}
+	// BACKPORT v24 END - dfe8433b
+
 	/**
 	 * Set type of input as color
 	 * @return self
