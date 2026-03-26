@@ -1221,3 +1221,5 @@ NoSpecificContactAddress=No specific contact or address
 NoSpecificContactAddressBis=This tab is dedicated to force specific contacts or addresses for the current object. Use it only if you want to define one or several specific contacts or addresses for the object when the information on the thirdparty is not enough or not accurate.
 TreeView=Tree view
 DateOfPrinting=Date of printing
+ShippableStatus=Shippable
+Shipped=Shipped
