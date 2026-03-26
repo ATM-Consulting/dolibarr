@@ -583,7 +583,6 @@ abstract class CommonObject
 	 */
 	public $fk_user_modif;
 
-
 	public $next_prev_filter;
 
 	/**
@@ -605,6 +604,10 @@ abstract class CommonObject
 	protected $labelStatus;
 	protected $labelStatusShort;
 
+	/**
+	 * @var string output
+	 */
+	public $output;
 
 	/**
 	 * @var array	List of child tables. To test if we can delete object.
@@ -4483,15 +4486,9 @@ abstract class CommonObject
 					}
 				}
 
-				/*
-				 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
-				 */
 				$this->context = array_merge($this->context, array('newstatus' => $status));
 
 				if ($trigkey) {
-					/*
-					 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
-					 */
 					$this->oldcopy = dol_clone($this);
 
 					// Call trigger
@@ -6226,7 +6223,8 @@ abstract class CommonObject
 	 *  @return int 						-1=error, O=did nothing, 1=OK
 	 *  @see insertExtraLanguages(), updateExtraField(), deleteExtraField(), setValueFrom()
 	 */
-	public function insertExtraFields($trigger = '', $userused = null) {
+	public function insertExtraFields($trigger = '', $userused = null)
+	{
 		global $conf, $langs, $user;
 
 		if (! empty($conf->global->MAIN_EXTRAFIELDS_DISABLED)) {
@@ -6346,23 +6344,20 @@ abstract class CommonObject
 								//global $action;		// $action may be 'create', 'update', 'update_extras'...
 								//var_dump($action);
 								//var_dump($this->oldcopy);exit;
-								if (is_object($this->oldcopy)) {        // If this->oldcopy is not defined, we can't know if we change attribute or not, so we must keep value
+								if (is_object($this->oldcopy)) {		// If this->oldcopy is not defined, we can't know if we change attribute or not, so we must keep value
 									//var_dump($this->oldcopy->array_options[$key]); var_dump($this->array_options[$key]);
-									if (isset($this->oldcopy->array_options[$key]) && $this->array_options[$key] == $this->oldcopy->array_options[$key]) {    // If old value crypted in database is same than submited new value, it means we don't change it, so we don't update.
+									if (isset($this->oldcopy->array_options[$key]) && $this->array_options[$key] == $this->oldcopy->array_options[$key]) {	// If old value crypted in database is same than submited new value, it means we don't change it, so we don't update.
 										$new_array_options[$key] = $this->array_options[$key]; // Value is kept
-									}
-									else {
+									} else {
 										// var_dump($algo);
 										$newvalue = dol_hash($this->array_options[$key], $algo);
 										$new_array_options[$key] = $newvalue;
 									}
-								}
-								else {
+								} else {
 									$new_array_options[$key] = $this->array_options[$key]; // Value is kept
 								}
 							}
-						}
-						else // Common usage
+						} else // Common usage
 						{
 							$new_array_options[$key] = $this->array_options[$key];
 						}
@@ -6370,7 +6365,7 @@ abstract class CommonObject
 					case 'date':
 					case 'datetime':
 						// If data is a string instead of a timestamp, we convert it
-						if (! is_numeric($this->array_options[$key]) || $this->array_options[$key] != intval($this->array_options[$key])) {
+						if (!is_numeric($this->array_options[$key]) || $this->array_options[$key] != intval($this->array_options[$key])) {
 							$this->array_options[$key] = strtotime($this->array_options[$key]);
 						}
 						$new_array_options[$key] = $this->db->idate($this->array_options[$key]);
@@ -6382,7 +6377,7 @@ abstract class CommonObject
 						$InfoFieldList = explode(":", $param_list[0]);
 						dol_include_once($InfoFieldList[1]);
 						if ($InfoFieldList[0] && class_exists($InfoFieldList[0])) {
-							if ($value == '-1') {    // -1 is key for no defined in combo list of objects
+							if ($value == '-1') {	// -1 is key for no defined in combo list of objects
 								$new_array_options[$key] = '';
 							}
 							else if ($value) {
@@ -6417,8 +6412,7 @@ abstract class CommonObject
 								}
 								/** END BACKPORT PR #33460 */
 							}
-						}
-						else {
+						} else {
 							dol_syslog('Error bad setup of extrafield', LOG_WARNING);
 						}
 						break;
@@ -6441,7 +6435,7 @@ abstract class CommonObject
 
 			foreach ($new_array_options as $key => $value) {
 				$attributeKey = substr($key, 8); // Remove 'options_' prefix
-				// Add field of attribute
+				// Add field of attribut
 				if ($extrafields->attributes[$this->table_element]['type'][$attributeKey] != 'separate') { // Only for other type than separator
 					$insertFieldNames[] = $attributeKey;
 					if ($new_array_options[$key] != '' || $new_array_options[$key] == '0') {
@@ -6511,19 +6505,17 @@ abstract class CommonObject
 			if ($error) {
 				$this->db->rollback();
 				return -1;
-			}
-			else {
+			} else {
 				$this->db->commit();
 				return 1;
 			}
-		}
-		else {
+		} else {
 			return 0;
 		}
 	}
 
 	/**
-	 *    Add/Update all extra fields values for the current object.
+	 *	Add/Update all extra fields values for the current object.
 	 *  Data to describe values to insert/update are stored into $this->array_options=array('options_codeforfield1'=>'valueforfield1', 'options_codeforfield2'=>'valueforfield2', ...)
 	 *  This function delete record with all extrafields and insert them again from the array $this->array_options.
 	 *

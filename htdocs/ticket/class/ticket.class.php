@@ -1510,18 +1510,12 @@ class Ticket extends CommonObject
 
 		if ($this->statut != self::STATUS_CANCELED) { // no closed
 			$this->oldcopy = dol_clone($this);
-			/*
-			 * BACKPORT Develop v17 -> PR #37117 - https://github.com/Dolibarr/dolibarr/pull/37117
-			 */
 			$this->status = Ticket::STATUS_READ;
 
 			$this->db->begin();
 
 			$sql = "UPDATE ".MAIN_DB_PREFIX."ticket";
-			/*
-			 * BACKPORT Develop v17 -> PR #37117 - https://github.com/Dolibarr/dolibarr/pull/37117
-			 */
-			$sql .= " SET fk_statut = ".$this->status.", date_read = '".$this->db->idate(dol_now())."'";
+			$sql .= " SET fk_statut = ".$this->status .", date_read = '".$this->db->idate(dol_now())."'";
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
 			dol_syslog(get_class($this)."::markAsRead");
@@ -1545,12 +1539,14 @@ class Ticket extends CommonObject
 				} else {
 					$this->db->rollback();
 					$this->error = join(',', $this->errors);
+					$this->status = $this->oldcopy->status;
 					dol_syslog(get_class($this)."::markAsRead ".$this->error, LOG_ERR);
 					return -1;
 				}
 			} else {
 				$this->db->rollback();
 				$this->error = $this->db->lasterror();
+				$this->status = $this->oldcopy->status;
 				dol_syslog(get_class($this)."::markAsRead ".$this->error, LOG_ERR);
 				return -1;
 			}
@@ -1750,16 +1746,10 @@ class Ticket extends CommonObject
 
 		if ($this->fk_statut != Ticket::STATUS_CLOSED && $this->fk_statut != Ticket::STATUS_CANCELED) { // not closed
 			$this->db->begin();
-			/*
-			 * BACKPORT Develop v17 -> PR #37117 - https://github.com/Dolibarr/dolibarr/pull/37117
-			 */
 			$this->oldcopy = dol_clone($this);
 			$this->status = ($mode ? Ticket::STATUS_CANCELED : Ticket::STATUS_CLOSED);
 
 			$sql = "UPDATE ".MAIN_DB_PREFIX."ticket";
-			/*
-			 * BACKPORT Develop v17 -> PR #37117 - https://github.com/Dolibarr/dolibarr/pull/37117
-			 */
 			$sql .= " SET fk_statut=".$this->status.", progress=100, date_close='".$this->db->idate(dol_now())."'";
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
@@ -2724,9 +2714,6 @@ class Ticket extends CommonObject
 				if (($object->status < self::STATUS_IN_PROGRESS && !$user->socid && !$private) ||
 					($object->status > self::STATUS_IN_PROGRESS && $public_area)
 				) {
-					/*
-					 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
-					 */
 					$object->setStatut(3, null, '', 'TICKET_MODIFY');
 				}
 				return 1;

@@ -2006,7 +2006,6 @@ class Form
                 else $sql.= " WHERE u.entity IN (0, ".$conf->entity.')';
 			}
 		}
-
 		if (!empty($user->socid)) {
 			$sql .= " AND u.fk_soc = ".((int) $user->socid);
 		}
@@ -8053,7 +8052,6 @@ class Form
 				$fieldstoshow = $tmpfieldstoshow;
 			}
 		} else if ($objecttmp->element === 'category') {
-			// SPE KOESIO: backport PR #36074, you can safely remove this block in Dolibarr 20 and higher
 			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
