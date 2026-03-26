@@ -2519,20 +2519,7 @@ if ($action == 'create' && $usercancreate) {
 					}
 				}
 			}
-			// --- SHIPPABLE icon ---
-			if (isModEnabled('stock') && isModEnabled('expedition') && !empty($object->delivery_date)) {
-				$shippableInfos = $object->getShippableInfos();
 
-				if (!empty($shippableInfos['has_product'])) {
-					print ' ';
-					print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
-
-					if (!empty($shippableInfos['warning'])) {
-						print ' ';
-						print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
-					}
-				}
-			}
 		}
 
 		print '</td>';
