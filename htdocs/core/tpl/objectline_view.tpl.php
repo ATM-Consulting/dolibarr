@@ -379,12 +379,41 @@ if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('exp
 		} else {
 			print img_picto($langs->trans("Shipped"), 'statut5.png');
 		}
-	} else {
-		print '&nbsp;';
+              //Shippable Status
+	if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('shipping') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && ($object->status > 0 && $object->status < 3)) {
+		$coldisplay++;
+		print '<td class="linecolstock center">';
+
+
+		if ($line->fk_product > 0 && $line->product_type == 0) {
+			static $productstatcache = array();
+
+			if (empty($productstatcache[$line->fk_product])) {
+				$prod = new Product($this->db);
+				$prod->fetch($line->fk_product);
+				$prod->load_stock('nobatch,warehouseopen');
+				$productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
+			}
+			$stock = $productstatcache[$line->fk_product]['stockreel'];
+			$reliquat = $line->qty;
+			if (!empty($object->expeditions[$line->id])) {
+				$reliquat -= $object->expeditions[$line->id];
+			}
+			if ($reliquat > 0) {
+				if ($stock >= $reliquat) {
+					print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'green');
+				} else {
+					print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'error');
+				}
+			} else {
+				print img_picto($langs->trans("Shipped"), 'statut5');
+			}
+		} else {
+			print '&nbsp;';
+		}
+		print '</td>';
 	}
-	print '</td>';
 }
-// backport end
 if (!empty($conf->global->PRODUCT_USE_UNITS)) {
 	print '<td class="linecoluseunit nowrap left">';
 	$label = $line->getLabelOfUnit('short');

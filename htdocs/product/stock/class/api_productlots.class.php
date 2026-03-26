@@ -274,6 +274,9 @@ class Productlots extends DolibarrApi
 			throw new RestException(404, 'productlot not found');
 		}
 
+		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'product_lot', '', 'fk_soc', 'rowid')) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
 		foreach ($request_data as $field => $value) {
 			if ($field == 'id') {
 				continue;
@@ -329,12 +332,12 @@ class Productlots extends DolibarrApi
 			throw new RestException(404, 'Product lot not found');
 		}
 
-		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'productlot', '', 'fk_soc', 'id')) {
+		if (!DolibarrApi::_checkAccessToResource('productlot', $this->productlot->id, 'product_lot', '', 'fk_soc', 'rowid')) {
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
-		if (!$this->productlot->delete(DolibarrApiAccess::$user)) {
-			throw new RestException(500, 'Error when delete Product lot : '.$this->productlot->error);
+		if ($this->productlot->delete(DolibarrApiAccess::$user) < 0) {
+			throw new RestException(500, 'Error when delete Product lot : '.implode(',', $this->productlot->errors));
 		}
 
 		return array(

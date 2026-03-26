@@ -4287,19 +4287,11 @@ class Commande extends CommonOrder
 	}
 
 	/**
-	 * backport develop
 	 * Compute shippable status and tooltip/icon for the order.
 	 *
-	 * Reuses logic previously embedded in commande/list.php
-	 * ("Show shippable Icon this creates subloops, so may be slow").
-	 *
-	 * @param   array   $options    Extra options (reserved for future use)
-	 * @return  array              Array with:
-	 *                             - has_product (bool)
-	 *                             - shippable   (bool)
-	 *                             - texticon    (string)
-	 *                             - textinfo    (string)
-	 *                             - warning     (bool)
+	 * @param array<mixed> $options Extra options (reserved for future use)
+	 * @return  array<string,mixed>        Array with keys: has_product, shippable, texticon, textinfo, warning
+	 * /
 	 */
 	public function getShippableInfos(array $options = array()) : array
 	{
@@ -4316,7 +4308,7 @@ class Commande extends CommonOrder
 		);
 
 		// Requested naming for statuses
-		if ($this->statut == self::STATUS_DRAFT || $this->statut == self::STATUS_CLOSED) {
+		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_CLOSED) {
 			return $result;
 		}
 
@@ -4356,7 +4348,7 @@ class Commande extends CommonOrder
 
 				if (empty($productstatcache[$orderLine->fk_product])) {
 					$genericProduct->fetch($orderLine->fk_product);
-					$genericProduct->load_stock('nobatch', 'warehouseopen'); // loadvirtualstock included
+					$genericProduct->load_stock('nobatch,warehouseopen'); // loadvirtualstock included
 
 					$productstatcache[$orderLine->fk_product]['stockreel'] = $genericProduct->stock_reel;
 					$productstatcachevirtual[$orderLine->fk_product]['stockreel'] = $genericProduct->stock_theorique;
@@ -4392,7 +4384,7 @@ class Commande extends CommonOrder
 
 								if (isModEnabled('supplier_order')) {
 									if (empty($productstatcache[$orderLine->fk_product]['statsordersupplier'])) {
-										$genericProduct->load_stats_commande_fournisseur(0, 3);
+										$genericProduct->load_stats_commande_fournisseur(0, '3');
 										$productstatcache[$orderLine->fk_product]['statsordersupplier'] = $genericProduct->stats_commande_fournisseur['qty'];
 									}
 									$genericProduct->stats_commande_fournisseur['qty'] = $productstatcache[$orderLine->fk_product]['statsordersupplier'];
@@ -4433,11 +4425,9 @@ class Commande extends CommonOrder
 
 		if ($nbprod) {
 			if (!$has_reliquat) {
-
 				$texticon = img_picto('', 'statut5', '', 0, 0, 0, '', 'paddingleft');
 				$textinfo = $texticon . ' ' . $langs->trans("Shipped");
 				$result['shippable'] = true;
-
 			} elseif ($notshippable) {
 				$texticon = img_picto('', 'dolly', '', 0, 0, 0, '', 'error paddingleft');
 				$textinfo = $texticon . ' ' . $langs->trans("NonShippable") . '<br>' . $textinfo;
@@ -4456,6 +4446,7 @@ class Commande extends CommonOrder
 
 		return $result;
 	}
+
 }
 
 

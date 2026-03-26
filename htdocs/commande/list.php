@@ -1723,15 +1723,25 @@ if ($resql) {
 	}
 	// Shippable
 	if (!empty($arrayfields['shippable']['checked'])) {
-		print '<td class="liste_titre maxwidthonsmartphone" align="center">';
-		//print $form->selectyesno('search_shippable', $search_shippable, 1, 0, 1, 1);
-		if (!empty($conf->global->ORDER_SHIPABLE_STATUS_DISABLED_BY_DEFAULT)) {
-			print '<input type="checkbox" name="show_shippable_command" value="1"'.($show_shippable_command ? ' checked' : '').'>';
-			print $langs->trans('ShowShippableStatus');
-		} else {
-			$show_shippable_command = 1;
+		print '<td class="center">';
+		if (!empty($show_shippable_command) && isModEnabled('stock')) {
+			$commande = new Commande($db);
+			$commande->id     = (int) $obj->rowid;
+			$commande->status = (int) $obj->fk_statut;
+			$commande->statut = (int) $obj->fk_statut;
+			$shippableInfos = $commande->getShippableInfos();
+			if ($shippableInfos['has_product']) {
+				print '<a href="'.DOL_URL_ROOT.'/expedition/shipment.php?id='.(int) $obj->rowid.'">';
+				print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
+				print '</a>';
+
+				if (!empty($shippableInfos['warning'])) {
+					// On ne remonte plus le détail textwarning, mais on garde l’icône d’avertissement
+					print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
+				}
+			}	
+			print '</td>';
 		}
-		print '</td>';
 	}
 	// Status billed
 	if (!empty($arrayfields['c.facture']['checked'])) {
@@ -2507,7 +2517,7 @@ if ($resql) {
 		if (!empty($arrayfields['shippable']['checked'])) {
 			print '<td class="center">';
 			if (!empty($show_shippable_command) && isModEnabled('stock')) {
-				// - Backport develop : df671ed38faa8a
+
 				$commande = new Commande($db);
 				$commande->id     = (int) $obj->rowid;
 				$commande->status = (int) $obj->fk_statut;
@@ -2525,7 +2535,6 @@ if ($resql) {
 					// On ne remonte plus le détail textwarning, mais on garde l’icône d’avertissement
 					print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', 2), '', 2);
 				}
-				// backport end
 			}
 			print '</td>';
 			if (!$i) {
