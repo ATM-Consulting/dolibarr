@@ -284,7 +284,10 @@ if (empty($reshook)) {
 				$result = $objecttmp->fetch($toselectid);
 				if ($result > 0) {
 					if ($objecttmp->status == Ticket::STATUS_CLOSED || $objecttmp->status == Ticket::STATUS_CANCELED) {
-						$result = $objecttmp->setStatut(Ticket::STATUS_ASSIGNED);
+						/*
+						 * BACKPORT Develop v17 -> PR #37129 - https://github.com/Dolibarr/dolibarr/pull/37129
+						 */
+						$result = $objecttmp->setStatut(Ticket::STATUS_ASSIGNED, null, '', 'TICKET_MODIFY');
 						if ($result < 0) {
 							setEventMessages($objecttmp->error, $objecttmp->errors, 'errors');
 							$error++;

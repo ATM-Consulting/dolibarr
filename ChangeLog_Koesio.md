@@ -1,3 +1,11 @@
+- Backport 24 - dfe8433b (T260019) - **2026-03-25**
+- Backport 22 - https://github.com/Dolibarr/dolibarr/pull/37473 (T260019) - **2026-03-25**
+- Backport 21 - cf220075 (T260019) - **2026-03-25**
+- FIX : Backport, display serial number on recpetion - **2026-24-03** 
+- Backport 24 Api document - e9a9c7ac, 00939544, 9b48e1a6 - **2026-03-03** 
+- T260014 - Backport FIX https://github.com/Dolibarr/dolibarr/pull/37370 - **2026-03-02** 
+- T260007 - Backport InvoiceAPI LinkedObjects - **2026-02-17**
+- Backport productLot delete() method - **16/12/2025** 
 - Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
 - Backport 16.0 PR #36074: Fix SQL error on lists when the object has an extrafield of type "link" to a category - **03/11/2025**

@@ -1723,15 +1723,25 @@ if ($resql) {
 	}
 	// Shippable
 	if (!empty($arrayfields['shippable']['checked'])) {
-		print '<td class="liste_titre maxwidthonsmartphone" align="center">';
-		//print $form->selectyesno('search_shippable', $search_shippable, 1, 0, 1, 1);
-		if (!empty($conf->global->ORDER_SHIPABLE_STATUS_DISABLED_BY_DEFAULT)) {
-			print '<input type="checkbox" name="show_shippable_command" value="1"'.($show_shippable_command ? ' checked' : '').'>';
-			print $langs->trans('ShowShippableStatus');
-		} else {
-			$show_shippable_command = 1;
+		print '<td class="center">';
+		if (!empty($show_shippable_command) && isModEnabled('stock')) {
+			$commande = new Commande($db);
+			$commande->id     = (int) $obj->rowid;
+			$commande->status = (int) $obj->fk_statut;
+			$commande->statut = (int) $obj->fk_statut;
+			$shippableInfos = $commande->getShippableInfos();
+			if ($shippableInfos['has_product']) {
+				print '<a href="'.DOL_URL_ROOT.'/expedition/shipment.php?id='.(int) $obj->rowid.'">';
+				print $form->textwithtooltip('', $shippableInfos['textinfo'], 2, 1, $shippableInfos['texticon'], '', 2);
+				print '</a>';
+
+				if (!empty($shippableInfos['warning'])) {
+					// On ne remonte plus le détail textwarning, mais on garde l’icône d’avertissement
+					print $form->textwithtooltip('', $langs->trans("NotEnoughForAllOrders"), 2, 1, img_picto('', 'error', '', 0, 0, 0, '', '2'), '', 2);
+				}
+			}
+
 		}
-		print '</td>';
 	}
 	// Status billed
 	if (!empty($arrayfields['c.facture']['checked'])) {
@@ -2506,7 +2516,31 @@ if ($resql) {
 		// Show shippable Icon (this creates subloops, so may be slow)
 		if (!empty($arrayfields['shippable']['checked'])) {
 			print '<td class="center">';
-			if (!empty($show_shippable_command) && isModEnabled('stock')) {
+			if ( isModEnabled('stock')) {
+				if (($obj->fk_statut > $generic_commande::STATUS_DRAFT) && ($obj->fk_statut < $generic_commande::STATUS_CLOSED)) {
+					$generic_commande->getLinesArray(); 	// Load array ->lines
+					$generic_commande->loadExpeditions();	// Load array ->expeditions
+
+					$numlines = count($generic_commande->lines); // Loop on each line of order
+					for ($lig = 0; $lig < $numlines; $lig++) {
+						if (isset($generic_commande->expeditions[$generic_commande->lines[$lig]->id])) {
+							$reliquat =  $generic_commande->lines[$lig]->qty - $generic_commande->expeditions[$generic_commande->lines[$lig]->id];
+						} else {
+							$reliquat = $generic_commande->lines[$lig]->qty;
+						}
+						if ($generic_commande->lines[$lig]->product_type == 0 && $generic_commande->lines[$lig]->fk_product > 0) {  // If line is a product and not a service
+							$nbprod++; // order contains real products
+							$generic_product->id = $generic_commande->lines[$lig]->fk_product;
+
+							// Get local and virtual stock and store it into cache
+							if (empty($productstat_cache[$generic_commande->lines[$lig]->fk_product])) {
+								$generic_product->load_stock('nobatch,warehouseopen'); // ->load_virtual_stock() is already included into load_stock()
+								$productstat_cache[$generic_commande->lines[$lig]->fk_product]['stock_reel'] = $generic_product->stock_reel;
+								$productstat_cachevirtual[$generic_commande->lines[$lig]->fk_product]['stock_reel'] = $generic_product->stock_theorique;
+							} else {
+								$generic_product->stock_reel = $productstat_cache[$generic_commande->lines[$lig]->fk_product]['stock_reel'];
+								$generic_product->stock_theorique = $productstat_cachevirtual[$generic_commande->lines[$lig]->fk_product]['stock_reel'];
+							}
 
 				$commande = new Commande($db);
 				$commande->id     = (int) $obj->rowid;

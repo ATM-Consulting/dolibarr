@@ -100,7 +100,7 @@ if (!empty($inputalsopricewithtax) && !getDolGlobalInt('MAIN_NO_INPUT_PRICE_WITH
 print '<th class="linecolqty right">'.$langs->trans('Qty').'</th>';
 
 //ShippableStatus
-if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->statut > 0 && $object->statut < 3)) {
+if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('shipping') && !getDolGlobalString('ORDER_DISABLE_SHIPPABLE_ICON_ON_CARD') && ($object->status > 0 && $object->status < 3)) {
 	print '<th class="linecolstock center" style="width: 30px;">'.$langs->trans("ShippableStatus").'</th>';
 }
 
