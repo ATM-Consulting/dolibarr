@@ -348,6 +348,7 @@ if ((($line->info_bits & 2) != 2) && $line->special_code != 3) {
 }
 print '</td>';
 //Shippable Status
+// - Backport develop : df671ed38faa8a
 if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->statut > 0 && $object->statut < 3)) {
 	$coldisplay++;
 	print '<td class="linecolstock center">';
@@ -383,6 +384,7 @@ if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('exp
 	}
 	print '</td>';
 }
+// backport end
 if (!empty($conf->global->PRODUCT_USE_UNITS)) {
 	print '<td class="linecoluseunit nowrap left">';
 	$label = $line->getLabelOfUnit('short');

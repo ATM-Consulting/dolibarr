@@ -252,12 +252,15 @@ $coldisplay++;
 		&nbsp;
 	<?php } ?>
 	</td>
+
 	<?php
+	// - Backport develop : df671ed38faa8a
 	// Shippable Status (Empty cell for edit mode to keep column alignment)
 	if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('expedition') && getDolGlobalString('ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD') && ($object->statut > 0 && $object->statut < 3)) {
 		print '<td class="linecolstock center">';
 		print '&nbsp;';
 		print '</td>';
+		// backport end
 	}
 	?>
 	<?php

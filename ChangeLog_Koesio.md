@@ -1,3 +1,4 @@
+- Backport develop : df671ed38faa8a shipping indicator on order card and line order  **2025-03-25**
 - Backport develop : PR #36243 - Add API ProductLot - **2025-11-27**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
 - Backport 16.0 PR #36074: Fix SQL error on lists when the object has an extrafield of type "link" to a category - **03/11/2025**

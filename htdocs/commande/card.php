@@ -2537,7 +2537,7 @@ if ($action == 'create' && $usercancreate) {
 			$form->form_availability($_SERVER['PHP_SELF'].'?id='.$object->id, $object->availability_id, 'none', 1);
 		}
 		print '</td></tr>';
-
+		// - Backport develop : df671ed38faa8a
 		// Shipping Method
 		if (isModEnabled('shipping')) {
 			print '<tr><td>';
@@ -2552,6 +2552,7 @@ if ($action == 'create' && $usercancreate) {
 			print '</td>';
 			print '</tr>';
 		}
+		// backport end
 
 		// Warehouse
 		if (isModEnabled('stock') && !empty($conf->global->WAREHOUSE_ASK_WAREHOUSE_DURING_ORDER)) {
