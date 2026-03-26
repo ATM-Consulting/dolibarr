@@ -366,7 +366,9 @@ if (!empty($conf->global->MAIN_ONLY_LOGIN_ALLOWED)) {
 		$ok = 1; // We let working pages that don't need database access (xxx.css.php)
 	} elseif (defined('EVEN_IF_ONLY_LOGIN_ALLOWED')) {
 		$ok = 1; // We let working pages that ask to work even if only login enabled (logout.php)
-	} elseif (session_id() && isset($_SESSION["dol_login"]) && $_SESSION["dol_login"] == $conf->global->MAIN_ONLY_LOGIN_ALLOWED) {
+	} 
+	//Spé Koesio 
+	elseif (session_id() && isset($_SESSION["dol_login"]) && in_array($_SESSION["dol_login"], explode(';', $conf->global->MAIN_ONLY_LOGIN_ALLOWED))) {
 		$ok = 1; // We let working if user is allowed admin
 	}
 	if (!$ok) {

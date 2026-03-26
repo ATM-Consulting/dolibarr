@@ -2216,7 +2216,8 @@ if ($action == 'create') {
 
 			// Show links to link elements
 			$linktoelem = $form->showLinkToObjectBlock($object, null, array('contrat'));
-			$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
+			//Spé Koesio
+			//$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
 
 			// Show online signature link
 			if ($object->statut != Contrat::STATUS_DRAFT && getDolGlobalString('CONTRACT_ALLOW_ONLINESIGN')) {

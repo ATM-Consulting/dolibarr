@@ -90,7 +90,10 @@ class Contracts extends DolibarrApi
 			throw new RestException(401, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
-		$this->contract->fetchObjectLinked();
+		//Spé Koesio 
+		// [FM 2025-09-12] j'enlève le fetchObjectLinked pour le moment afin d'éviter
+		// les erreurs 500 pour dépassement de memory limit
+		// $this->contract->fetchObjectLinked();
 
 		// BACKPORT PR 34293
 		if (!$withLines) {
@@ -596,7 +599,8 @@ class Contracts extends DolibarrApi
 
 		$updateRes = $this->contractLine->delete(DolibarrApiAccess::$user);
 		if ($updateRes > 0) {
-			return $this->get($id);
+			//Spé Koesio
+			return $this->get($id, '', false); // [fm] pour que l'appel mette moins de 90 secondes
 		} else {
 			throw new RestException(405, $this->contractLine->error);
 		}

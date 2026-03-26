@@ -6099,8 +6099,10 @@ abstract class CommonObject
 				$extrafields = new ExtraFields($this->db);
 			}
 
+			//Spé Koesio 
 			// Load array of extrafields for elementype = $this->table_element
-			if (empty($extrafields->attributes[$this->table_element]['loaded'])) {
+			// [FM] test en prod: on désactive le cache de chargement des clés des extrafields
+			if (true || empty($extrafields->attributes[$this->table_element]['loaded'])) {
 				$extrafields->fetch_name_optionals_label($this->table_element);
 			}
 			$optionsArray = (!empty($extrafields->attributes[$this->table_element]['label']) ? $extrafields->attributes[$this->table_element]['label'] : null);
