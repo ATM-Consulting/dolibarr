@@ -2134,7 +2134,7 @@ abstract class CommonDocGenerator
 	 * @param	array<string,mixed>	$resarray	Existing substitution array
 	 * @return	array<string,mixed>				Updated substitution array
 	 */
-	private function addProductSubstitutions(Product $product, $line, array $resarray): array
+	private function addProductSubstitutions(Product $product, CommonObjectLine $line, array $resarray): array
 	{
 		// List of internal properties to exclude from substitutions
 		$excludedProperties = [
