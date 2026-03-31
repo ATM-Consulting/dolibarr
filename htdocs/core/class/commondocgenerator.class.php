@@ -895,9 +895,6 @@ abstract class CommonDocGenerator
 			'line_multicurrency_total_ht_locale' => price($line->multicurrency_total_ht, 0, $outputlangs),
 			'line_multicurrency_total_tva_locale' => price($line->multicurrency_total_tva, 0, $outputlangs),
 			'line_multicurrency_total_ttc_locale' => price($line->multicurrency_total_ttc, 0, $outputlangs),
-
-			// TEST: Add a test key here to see if it works in ODT
-			'line_product_TEST_KEY' => 'VALEUR_DE_TEST_123',
 		);
 
 		if (property_exists($line, 'ref_fourn')) {
