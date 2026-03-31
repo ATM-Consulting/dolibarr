@@ -1019,6 +1019,18 @@ abstract class CommonDocGenerator
 			}
 		}
 
+		// DEBUG: Log final product keys before returning
+		$productKeys = array_filter(array_keys($resarray), function($k) {
+			return strpos($k, 'line_product_') === 0 && !strpos($k, 'line_product_options_');
+		});
+		dol_syslog("DEBUG: Final array contains ".count($productKeys)." line_product_* keys: ".implode(', ', array_slice($productKeys, 0, 20)), LOG_DEBUG);
+		// DEBUG: Check specific keys
+		$checkKeys = ['line_product_customcode', 'line_product_weight_total', 'line_product_country_label'];
+		foreach ($checkKeys as $ck) {
+			$val = isset($resarray[$ck]) ? $resarray[$ck] : 'NOT_SET';
+			dol_syslog("DEBUG: Key '$ck' = ".var_export($val, true), LOG_DEBUG);
+		}
+
 		return $resarray;
 	}
 
