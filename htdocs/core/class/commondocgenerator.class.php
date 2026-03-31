@@ -861,6 +861,32 @@ abstract class CommonDocGenerator
 	public function get_substitutionarray_lines($line, $outputlangs, $linenumber = 0)
 	{
 		// phpcs:enable
+
+		// Load product data if available (must be done BEFORE creating the array)
+		$productData = array();
+		if (isset($line->fk_product) && $line->fk_product > 0) {
+			$tmpproduct = new Product($this->db);
+			$result = $tmpproduct->fetch($line->fk_product);
+			if ($result > 0) {
+				// Get product custom code
+				$productData['line_product_customcode'] = $tmpproduct->customcode;
+
+				// Calculate weight total if applicable
+				if (!empty($tmpproduct->weight) && isset($line->qty) && $line->qty > 0) {
+					$productData['line_product_weight_total'] = $tmpproduct->weight * $line->qty;
+				}
+
+				// Get country information if available
+				if (!empty($tmpproduct->country_id)) {
+					$countryInfo = getCountry($tmpproduct->country_id, 'all');
+					if (!empty($countryInfo)) {
+						$productData['line_product_country_label'] = $countryInfo['label'];
+						$productData['line_product_country_code'] = $countryInfo['code'];
+					}
+				}
+			}
+		}
+
 		$resarray = array(
 			'line_pos' => $linenumber,
 			'line_fulldesc' => doc_getlinedesc($line, $outputlangs),
@@ -896,6 +922,9 @@ abstract class CommonDocGenerator
 			'line_multicurrency_total_tva_locale' => price($line->multicurrency_total_tva, 0, $outputlangs),
 			'line_multicurrency_total_ttc_locale' => price($line->multicurrency_total_ttc, 0, $outputlangs),
 		);
+
+		// Merge product data into the array
+		$resarray = array_merge($resarray, $productData);
 
 		if (property_exists($line, 'ref_fourn')) {
 			$resarray['line_product_ref_fourn'] = $line->ref_fourn; // for supplier doc lines @phan-suppress-current-line PhanUndeclaredProperty
@@ -985,50 +1014,6 @@ abstract class CommonDocGenerator
 			$resarray['line_length'] = empty($line->length) ? '' : $line->length * $line->qty_shipped.' '.measuringUnitString(0, 'size', $line->length_units);
 			$resarray['line_surface'] = empty($line->surface) ? '' : $line->surface * $line->qty_shipped.' '.measuringUnitString(0, 'surface', $line->surface_units);
 			$resarray['line_volume'] = empty($line->volume) ? '' : $line->volume * $line->qty_shipped.' '.measuringUnitString(0, 'volume', $line->volume_units);
-		}
-
-		// Load product data and extrafields to the line -> enables to use "line_product_{property}" and "line_product_options_{extrafield}"
-		if (isset($line->fk_product) && $line->fk_product > 0) {
-			$tmpproduct = new Product($this->db);
-			$result = $tmpproduct->fetch($line->fk_product);
-
-			if ($result > 0) {
-				// Add all product properties as substitution keys
-				dol_syslog("DEBUG: Product loaded (ID: ".$line->fk_product."), adding substitutions", LOG_DEBUG);
-				$resarray = $this->addProductSubstitutions($tmpproduct, $line, $resarray);
-
-				// Add product extrafields as substitution keys
-				if (!empty($tmpproduct->array_options) && is_array($tmpproduct->array_options)) {
-					foreach ($tmpproduct->array_options as $key => $value) {
-						$resarray["line_product_".$key] = $value;
-					}
-				}
-			} elseif ($result < 0) {
-				// Log error if fetch failed
-				dol_syslog("Error fetching product {$line->fk_product}: ".$tmpproduct->error, LOG_ERR);
-			}
-		} else {
-			// Set unused placeholders as blank
-			$extrafields->fetch_name_optionals_label("product");
-			if ($extrafields->attributes["product"]['count'] > 0) {
-				$extralabels = $extrafields->attributes["product"]['label'];
-
-				foreach ($extralabels as $key => $label) {
-					$resarray['line_product_options_'.$key] = '';
-				}
-			}
-		}
-
-		// DEBUG: Log final product keys before returning
-		$productKeys = array_filter(array_keys($resarray), function($k) {
-			return strpos($k, 'line_product_') === 0 && !strpos($k, 'line_product_options_');
-		});
-		dol_syslog("DEBUG: Final array contains ".count($productKeys)." line_product_* keys: ".implode(', ', array_slice($productKeys, 0, 20)), LOG_DEBUG);
-		// DEBUG: Check specific keys
-		$checkKeys = ['line_product_customcode', 'line_product_weight_total', 'line_product_country_label'];
-		foreach ($checkKeys as $ck) {
-			$val = isset($resarray[$ck]) ? $resarray[$ck] : 'NOT_SET';
-			dol_syslog("DEBUG: Key '$ck' = ".var_export($val, true), LOG_DEBUG);
 		}
 
 		return $resarray;
@@ -2123,100 +2108,5 @@ abstract class CommonDocGenerator
 			),
 		);
 		*/
-	}
-
-	/**
-	 * Add product properties as substitution keys
-	 *
-	 * This method iterates through all public properties of a Product object
-	 * and adds them to the substitution array with the prefix "line_product_".
-	 * Only scalar values (string, int, float, bool) are included.
-	 * Internal properties (db, errors, etc.), objects, and arrays are excluded.
-	 * It also calculates derived values based on the line quantity.
-	 *
-	 * Additional computed substitution keys:
-	 * - line_product_weight_total: Unit weight * quantity
-	 * - line_product_length_total: Unit length * quantity
-	 * - line_product_surface_total: Unit surface * quantity
-	 * - line_product_volume_total: Unit volume * quantity
-	 * - line_product_country_id: Country ID
-	 * - line_product_country_code: Country code (e.g., FR, US)
-	 * - line_product_country_label: Country name (translated)
-	 *
-	 * @param	Product				$product	Product object to extract data from
-	 * @param	CommonObjectLine	$line		Line object containing quantity and other line data
-	 * @param	array<string,mixed>	$resarray	Existing substitution array
-	 * @return	array<string,mixed>				Updated substitution array
-	 */
-	private function addProductSubstitutions(Product $product, CommonObjectLine $line, array $resarray): array
-	{
-		// List of internal properties to exclude from substitutions
-		$excludedProperties = [
-			'db', 'errors', 'error', 'element', 'table_element', 'ismultientitymanaged',
-			'isextrafieldmanaged', 'import_key', 'lines', 'labelStatus', 'labelStatusShort',
-			'fields', 'oldcopy', 'canvas', 'fk_element', 'childtables', 'cache_types_paiements',
-			'cache_vatrates', 'context'
-		];
-
-		// Iterate over public properties
-		$addedKeys = [];
-		$importantProps = [];
-		foreach ($product as $key => $value) {
-			// Skip excluded properties, objects, and arrays (ODT only accepts strings)
-			if (in_array($key, $excludedProperties) || is_object($value) || is_array($value)) {
-				continue;
-			}
-
-			// Add to substitution array with prefix (only scalar values)
-			$resarray["line_product_".$key] = $value;
-			$addedKeys[] = $key;
-
-			// Track important properties for debugging
-			if (in_array($key, ['ref', 'label', 'weight', 'customcode', 'country_id', 'country_code', 'barcode'])) {
-				$importantProps[$key] = var_export($value, true);
-			}
-		}
-		dol_syslog("DEBUG: Added ".count($addedKeys)." product properties. Important ones: ".json_encode($importantProps), LOG_DEBUG);
-
-		// Add calculated values based on line quantity
-		if (isset($line->qty) && $line->qty > 0) {
-			// Total weight = unit weight * quantity
-			if (!empty($product->weight)) {
-				$resarray['line_product_weight_total'] = $product->weight * $line->qty;
-				dol_syslog("DEBUG: Added weight_total = ".$product->weight." * ".$line->qty." = ".($product->weight * $line->qty), LOG_DEBUG);
-			} else {
-				dol_syslog("DEBUG: weight is empty, not adding weight_total", LOG_DEBUG);
-			}
-
-			// Total length = unit length * quantity (if applicable)
-			if (!empty($product->length)) {
-				$resarray['line_product_length_total'] = $product->length * $line->qty;
-			}
-
-			// Total surface = unit surface * quantity (if applicable)
-			if (!empty($product->surface)) {
-				$resarray['line_product_surface_total'] = $product->surface * $line->qty;
-			}
-
-			// Total volume = unit volume * quantity (if applicable)
-			if (!empty($product->volume)) {
-				$resarray['line_product_volume_total'] = $product->volume * $line->qty;
-			}
-		}
-
-		// Add country information if available
-		if (!empty($product->country_id)) {
-			$countryInfo = getCountry($product->country_id, 'all');
-			if (!empty($countryInfo)) {
-				$resarray['line_product_country_id'] = $countryInfo['id'];
-				$resarray['line_product_country_code'] = $countryInfo['code'];
-				$resarray['line_product_country_label'] = $countryInfo['label'];
-				dol_syslog("DEBUG: Added country: ".$countryInfo['label']." (code: ".$countryInfo['code'].")", LOG_DEBUG);
-			}
-		} else {
-			dol_syslog("DEBUG: country_id is empty, not adding country info", LOG_DEBUG);
-		}
-
-		return $resarray;
 	}
 }
