@@ -1166,6 +1166,9 @@ class Facture extends CommonInvoice
 		// Source invoice load
 		$facture = new Facture($this->db);
 
+		// Avoid updating the row ranks
+		$facture->context['createfromclone'] = 1;
+
 		// Retrieve all extrafield
 		// fetch optionals attributes and labels
 		$this->fetch_optionals();
@@ -4223,7 +4226,9 @@ class Facture extends CommonInvoice
 			$pu_ht_devise = (float) price2num($pu_ht_devise);
 			$pu_ttc = (float) price2num($pu_ttc);
 			$pa_ht = price2num($pa_ht); // do not convert to float here, it breaks the functioning of $pa_ht_isemptystring
-
+			if (strpos((string) $txtva, '*') !== false) {
+				$info_bits |= 1;
+			}
 			if (!preg_match('/\((.*)\)/', (string) $txtva)) {
 				$txtva = price2num($txtva); // $txtva can have format '5.0(XXX)' or '5'
 			}
@@ -4544,6 +4549,9 @@ class Facture extends CommonInvoice
 			$pu_ht_devise = (float) price2num($pu_ht_devise);
 			$pa_ht = price2num($pa_ht); // do not convert to float here, it breaks the functioning of $pa_ht_isemptystring
 
+			if (strpos((string) $txtva, '*') !== false) {
+				$info_bits |= 1;
+			}
 			if (!preg_match('/\((.*)\)/', (string) $txtva)) {
 				$txtva = price2num($txtva); // $txtva can have format '5.0(XXX)' or '5'
 			}
