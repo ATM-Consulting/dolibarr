@@ -2148,6 +2148,7 @@ abstract class CommonDocGenerator
 
 		// Iterate over public properties
 		$addedKeys = [];
+		$importantProps = [];
 		foreach ($product as $key => $value) {
 			// Skip excluded properties, objects, and arrays (ODT only accepts strings)
 			if (in_array($key, $excludedProperties) || is_object($value) || is_array($value)) {
@@ -2156,9 +2157,14 @@ abstract class CommonDocGenerator
 
 			// Add to substitution array with prefix (only scalar values)
 			$resarray["line_product_".$key] = $value;
-			$addedKeys[] = $key.'='.var_export($value, true);
+			$addedKeys[] = $key;
+
+			// Track important properties for debugging
+			if (in_array($key, ['ref', 'label', 'weight', 'customcode', 'country_id', 'country_code', 'barcode'])) {
+				$importantProps[$key] = var_export($value, true);
+			}
 		}
-		dol_syslog("DEBUG: Product properties added: ".implode(', ', array_slice($addedKeys, 0, 10))."...", LOG_DEBUG);
+		dol_syslog("DEBUG: Added ".count($addedKeys)." product properties. Important ones: ".json_encode($importantProps), LOG_DEBUG);
 
 		// Add calculated values based on line quantity
 		if (isset($line->qty) && $line->qty > 0) {
