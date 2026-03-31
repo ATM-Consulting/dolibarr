@@ -2147,6 +2147,7 @@ abstract class CommonDocGenerator
 		];
 
 		// Iterate over public properties
+		$addedKeys = [];
 		foreach ($product as $key => $value) {
 			// Skip excluded properties, objects, and arrays (ODT only accepts strings)
 			if (in_array($key, $excludedProperties) || is_object($value) || is_array($value)) {
@@ -2155,13 +2156,18 @@ abstract class CommonDocGenerator
 
 			// Add to substitution array with prefix (only scalar values)
 			$resarray["line_product_".$key] = $value;
+			$addedKeys[] = $key.'='.var_export($value, true);
 		}
+		dol_syslog("DEBUG: Product properties added: ".implode(', ', array_slice($addedKeys, 0, 10))."...", LOG_DEBUG);
 
 		// Add calculated values based on line quantity
 		if (isset($line->qty) && $line->qty > 0) {
 			// Total weight = unit weight * quantity
 			if (!empty($product->weight)) {
 				$resarray['line_product_weight_total'] = $product->weight * $line->qty;
+				dol_syslog("DEBUG: Added weight_total = ".$product->weight." * ".$line->qty." = ".($product->weight * $line->qty), LOG_DEBUG);
+			} else {
+				dol_syslog("DEBUG: weight is empty, not adding weight_total", LOG_DEBUG);
 			}
 
 			// Total length = unit length * quantity (if applicable)
@@ -2187,7 +2193,10 @@ abstract class CommonDocGenerator
 				$resarray['line_product_country_id'] = $countryInfo['id'];
 				$resarray['line_product_country_code'] = $countryInfo['code'];
 				$resarray['line_product_country_label'] = $countryInfo['label'];
+				dol_syslog("DEBUG: Added country: ".$countryInfo['label']." (code: ".$countryInfo['code'].")", LOG_DEBUG);
 			}
+		} else {
+			dol_syslog("DEBUG: country_id is empty, not adding country info", LOG_DEBUG);
 		}
 
 		return $resarray;
