@@ -2117,7 +2117,8 @@ abstract class CommonDocGenerator
 	 *
 	 * This method iterates through all public properties of a Product object
 	 * and adds them to the substitution array with the prefix "line_product_".
-	 * Internal properties (db, errors, etc.) and objects are excluded.
+	 * Only scalar values (string, int, float, bool) are included.
+	 * Internal properties (db, errors, etc.), objects, and arrays are excluded.
 	 * It also calculates derived values based on the line quantity.
 	 *
 	 * Additional computed substitution keys:
@@ -2146,17 +2147,12 @@ abstract class CommonDocGenerator
 
 		// Iterate over public properties
 		foreach ($product as $key => $value) {
-			// Skip excluded properties and objects
-			if (in_array($key, $excludedProperties) || is_object($value)) {
+			// Skip excluded properties, objects, and arrays (ODT only accepts strings)
+			if (in_array($key, $excludedProperties) || is_object($value) || is_array($value)) {
 				continue;
 			}
 
-			// Skip array_options (handled separately in calling code)
-			if ($key === 'array_options') {
-				continue;
-			}
-
-			// Add to substitution array with prefix
+			// Add to substitution array with prefix (only scalar values)
 			$resarray["line_product_".$key] = $value;
 		}
 
