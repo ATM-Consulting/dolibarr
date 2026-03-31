@@ -994,6 +994,7 @@ abstract class CommonDocGenerator
 
 			if ($result > 0) {
 				// Add all product properties as substitution keys
+				dol_syslog("DEBUG: Product loaded (ID: ".$line->fk_product."), adding substitutions", LOG_DEBUG);
 				$resarray = $this->addProductSubstitutions($tmpproduct, $line, $resarray);
 
 				// Add product extrafields as substitution keys
