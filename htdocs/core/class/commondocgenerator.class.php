@@ -987,14 +987,24 @@ abstract class CommonDocGenerator
 			$resarray['line_volume'] = empty($line->volume) ? '' : $line->volume * $line->qty_shipped.' '.measuringUnitString(0, 'volume', $line->volume_units);
 		}
 
-		// Load product data optional fields to the line -> enables to use "line_options_{extrafield}"
+		// Load product data and extrafields to the line -> enables to use "line_product_{property}" and "line_product_options_{extrafield}"
 		if (isset($line->fk_product) && $line->fk_product > 0) {
 			$tmpproduct = new Product($this->db);
 			$result = $tmpproduct->fetch($line->fk_product);
-			if (!empty($tmpproduct->array_options) && is_array($tmpproduct->array_options)) {
-				foreach ($tmpproduct->array_options as $key => $label) {
-					$resarray["line_product_".$key] = $label;
+
+			if ($result > 0) {
+				// Add all product properties as substitution keys
+				$resarray = $this->addProductSubstitutions($tmpproduct, $line, $resarray);
+
+				// Add product extrafields as substitution keys
+				if (!empty($tmpproduct->array_options) && is_array($tmpproduct->array_options)) {
+					foreach ($tmpproduct->array_options as $key => $value) {
+						$resarray["line_product_".$key] = $value;
+					}
 				}
+			} elseif ($result < 0) {
+				// Log error if fetch failed
+				dol_syslog("Error fetching product {$line->fk_product}: ".$tmpproduct->error, LOG_ERR);
 			}
 		} else {
 			// Set unused placeholders as blank
@@ -2100,5 +2110,89 @@ abstract class CommonDocGenerator
 			),
 		);
 		*/
+	}
+
+	/**
+	 * Add product properties as substitution keys
+	 *
+	 * This method iterates through all public properties of a Product object
+	 * and adds them to the substitution array with the prefix "line_product_".
+	 * Internal properties (db, errors, etc.) and objects are excluded.
+	 * It also calculates derived values based on the line quantity.
+	 *
+	 * Additional computed substitution keys:
+	 * - line_product_weight_total: Unit weight * quantity
+	 * - line_product_length_total: Unit length * quantity
+	 * - line_product_surface_total: Unit surface * quantity
+	 * - line_product_volume_total: Unit volume * quantity
+	 * - line_product_country_id: Country ID
+	 * - line_product_country_code: Country code (e.g., FR, US)
+	 * - line_product_country_label: Country name (translated)
+	 *
+	 * @param	Product				$product	Product object to extract data from
+	 * @param	CommonObjectLine	$line		Line object containing quantity and other line data
+	 * @param	array<string,mixed>	$resarray	Existing substitution array
+	 * @return	array<string,mixed>				Updated substitution array
+	 */
+	private function addProductSubstitutions(Product $product, $line, array $resarray): array
+	{
+		// List of internal properties to exclude from substitutions
+		$excludedProperties = [
+			'db', 'errors', 'error', 'element', 'table_element', 'ismultientitymanaged',
+			'isextrafieldmanaged', 'import_key', 'lines', 'labelStatus', 'labelStatusShort',
+			'fields', 'oldcopy', 'canvas', 'fk_element', 'childtables', 'cache_types_paiements',
+			'cache_vatrates', 'context'
+		];
+
+		// Iterate over public properties
+		foreach ($product as $key => $value) {
+			// Skip excluded properties and objects
+			if (in_array($key, $excludedProperties) || is_object($value)) {
+				continue;
+			}
+
+			// Skip array_options (handled separately in calling code)
+			if ($key === 'array_options') {
+				continue;
+			}
+
+			// Add to substitution array with prefix
+			$resarray["line_product_".$key] = $value;
+		}
+
+		// Add calculated values based on line quantity
+		if (isset($line->qty) && $line->qty > 0) {
+			// Total weight = unit weight * quantity
+			if (!empty($product->weight)) {
+				$resarray['line_product_weight_total'] = $product->weight * $line->qty;
+			}
+
+			// Total length = unit length * quantity (if applicable)
+			if (!empty($product->length)) {
+				$resarray['line_product_length_total'] = $product->length * $line->qty;
+			}
+
+			// Total surface = unit surface * quantity (if applicable)
+			if (!empty($product->surface)) {
+				$resarray['line_product_surface_total'] = $product->surface * $line->qty;
+			}
+
+			// Total volume = unit volume * quantity (if applicable)
+			if (!empty($product->volume)) {
+				$resarray['line_product_volume_total'] = $product->volume * $line->qty;
+			}
+		}
+
+		// Add country information if available
+		if (!empty($product->country_id)) {
+			$countryInfo = getCountry($product->country_id, 'all');
+			if (!empty($countryInfo)) {
+				$resarray['line_product_country_id'] = $countryInfo['id'];
+				$resarray['line_product_country_code'] = $countryInfo['code'];
+				$resarray['line_product_country_label'] = $countryInfo['label'];
+			}
+		}
+
+		return $resarray;
 	}
 }
