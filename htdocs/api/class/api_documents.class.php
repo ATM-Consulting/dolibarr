@@ -458,7 +458,25 @@ class Documents extends DolibarrApi
 			}
 
 			$upload_dir = $conf->expensereport->dir_output.'/'.dol_sanitizeFileName($object->ref);
-		} elseif ($modulepart == 'knowledgemanagement') {
+		}
+		// Backport V24 START - aac2ff7b
+		elseif ($modulepart == 'ticket') {
+			require_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
+
+			if (!DolibarrApiAccess::$user->hasRight('ticket', 'read')) {
+				throw new RestException(403);
+			}
+
+			$object = new Ticket($this->db);
+			$result = $object->fetch($id, $ref);
+			if (!$result) {
+				throw new RestException(404, 'Ticket not found');
+			}
+
+			$upload_dir = $conf->ticket->dir_output.'/'.dol_sanitizeFileName((string) $object->ref);
+		}
+		// Backport V24 FIN - aac2ff7b
+		elseif ($modulepart == 'knowledgemanagement') {
 			require_once DOL_DOCUMENT_ROOT.'/knowledgemanagement/class/knowledgerecord.class.php';
 
 			if (!DolibarrApiAccess::$user->rights->knowledgemanagement->knowledgerecord->read && !DolibarrApiAccess::$user->rights->knowledgemanagement->knowledgerecord->read) {
