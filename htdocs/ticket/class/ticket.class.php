@@ -2684,7 +2684,8 @@ class Ticket extends CommonObject
 									$object->socid = $object->fk_soc;
 									$object->fetch_thirdparty();
 									if (!empty($object->thirdparty->email)) {
-										$sendto[$object->thirdparty->email] = $object->thirdparty->email;
+										// demande CDP anthony 
+										//$sendto[$object->thirdparty->email] = $object->thirdparty->email;
 									}
 								}
 
