@@ -27,6 +27,10 @@
  * \brief Execute pendings jobs from command line
  */
 
+// Spé koesio
+ini_set('memory_limit', '2048M');
+
+
 if (!defined('NOTOKENRENEWAL')) {
 	define('NOTOKENRENEWAL', '1'); // Disables token renewal
 }
