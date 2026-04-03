@@ -8,7 +8,7 @@
  * Copyright (C) 2008       Patrick Raguin          <patrick.raguin@auguria.net>
  * Copyright (C) 2010-2018  Juanjo Menent           <jmenent@2byte.es>
  * Copyright (C) 2013       Florian Henry           <florian.henry@open-concept.pro>
- * Copyright (C) 2013-2023  Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2013-2026  Alexandre Spangaro      <alexandre@inovea-conseil.com>
  * Copyright (C) 2013       Peter Fontaine          <contact@peterfontaine.fr>
  * Copyright (C) 2014-2015  Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2015       Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
@@ -1403,7 +1403,7 @@ class Societe extends CommonObject
 		$this->supplier_order_min_amount = price2num($this->supplier_order_min_amount);
 
 		$this->tva_assuj			= (is_numeric($this->tva_assuj)) ? (int) trim((string) $this->tva_assuj) : 0;
-		$this->tva_intra			= dol_sanitizeFileName($this->tva_intra, '');
+		$this->tva_intra			= trim($this->tva_intra);
 		$this->vat_reverse_charge	= empty($this->vat_reverse_charge) ? 0 : 1;
 		if (empty($this->status)) {
 			$this->status = 0;
@@ -4863,6 +4863,8 @@ class Societe extends CommonObject
 	 */
 	public function getOutstandingBills($mode = 'customer', $late = 0)
 	{
+		include_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+
 		$table = 'facture';
 		if ($mode == 'supplier') {
 			$table = 'facture_fourn';
@@ -4875,10 +4877,12 @@ class Societe extends CommonObject
 		 $alreadypayed=price2num($paiement + $creditnotes + $deposits,'MT');
 		 $remaintopay=price2num($invoice->total_ttc - $paiement - $creditnotes - $deposits,'MT');
 		 */
+		$today = dol_get_first_hour(dol_now('tzuser')); // Returns today at 00:00 in the user's time zone
+
 		$sql = "SELECT rowid, ref, total_ht, total_ttc, paye, type, fk_statut as status, close_code FROM ".MAIN_DB_PREFIX.$table." as f";
 		$sql .= " WHERE fk_soc = ".((int) $this->id);
 		if (!empty($late)) {
-			$sql .= " AND date_lim_reglement < '".$this->db->idate(dol_now())."'";
+			$sql .= " AND date_lim_reglement < '".$this->db->idate($today)."'";
 		}
 		if ($mode == 'supplier') {
 			$sql .= " AND entity IN (".getEntity('facture_fourn').")";

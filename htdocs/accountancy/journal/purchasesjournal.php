@@ -374,7 +374,7 @@ if (!empty($tabfac)) {
 		fd.product_type <= 2
 		AND fd.fk_code_ventilation <= 0
 		AND fd.total_ttc <> 0
-		AND fk_facture_fourn IN (".$db->sanitize(join(",", array_keys($tabfac))).")
+		AND fk_facture_fourn IN (".$db->sanitize(implode(",", array_keys($tabfac))).")
 	GROUP BY fk_facture_fourn
 	";
 	$resql = $db->query($sql);
@@ -616,7 +616,14 @@ if ($action == 'writebookkeeping' && !$error && $user->hasRight('accounting', 'b
 
 				foreach ($arrayofvat[$key] as $k => $mt) {
 					if ($mt) {
-						$accountingaccount->fetch(null, $k, true);		// TODO Use a cache for label
+						if (empty($conf->cache['accountingaccountincurrententity_vat'][$k])) {
+							$accountingaccount = new AccountingAccount($db);
+							$accountingaccount->fetch(0, $k, true);
+							$conf->cache['accountingaccountincurrententity_vat'][$k] = $accountingaccount;
+						} else {
+							$accountingaccount = $conf->cache['accountingaccountincurrententity_vat'][$k];
+						}
+
 						$label_account = $accountingaccount->label;
 
 						$bookkeeping = new BookKeeping($db);

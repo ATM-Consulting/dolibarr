@@ -119,6 +119,9 @@ before_install:
 
 install:
 - |
+  if [ "$TRAVIS_PHP_VERSION" = '7.0' ]; then
+    sudo update-alternatives --set php /usr/bin/php7.0
+  fi
   if [ "$TRAVIS_PHP_VERSION" = '7.1' ]; then
     sudo update-alternatives --set php /usr/bin/php7.1
   fi
@@ -142,6 +145,7 @@ install:
   #sudo apt install composer
   composer -V
   sudo composer -n config -g vendor-dir htdocs/includes
+  sudo composer -n config audit.block-insecure false
   sudo chmod -R a+rwx /home/travis/.config/composer
   echo
 
