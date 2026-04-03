@@ -2665,10 +2665,12 @@ class Ticket extends CommonObject
 									}
 								}
 
-								// If public interface is not enable, use link to internal page into mail
-								$url_public_ticket = (!empty($conf->global->TICKET_ENABLE_PUBLIC_INTERFACE) ?
-										(!empty($conf->global->TICKET_URL_PUBLIC_INTERFACE) ? $conf->global->TICKET_URL_PUBLIC_INTERFACE.'/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.$object->track_id;
-								$message .= '<br>'.$langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer').' : <a href="'.$url_public_ticket.'">'.$object->track_id.'</a><br>';
+								// SPECIFIC KOESIO START - Disabling the ticket's public link
+								// // If public interface is not enable, use link to internal page into mail
+								// $url_public_ticket = (!empty($conf->global->TICKET_ENABLE_PUBLIC_INTERFACE) ?
+								// 		(!empty($conf->global->TICKET_URL_PUBLIC_INTERFACE) ? $conf->global->TICKET_URL_PUBLIC_INTERFACE.'/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.$object->track_id;
+								// $message .= '<br>'.$langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer').' : <a href="'.$url_public_ticket.'">'.$object->track_id.'</a><br>';
+								// SPECIFIC KOESIO END
 
 								// Build final message
 								$message = $message_intro.'<br><br>'.$message;
@@ -2684,7 +2686,8 @@ class Ticket extends CommonObject
 									$object->socid = $object->fk_soc;
 									$object->fetch_thirdparty();
 									if (!empty($object->thirdparty->email)) {
-										$sendto[$object->thirdparty->email] = $object->thirdparty->email;
+										// demande CDP anthony
+										//$sendto[$object->thirdparty->email] = $object->thirdparty->email;
 									}
 								}
 

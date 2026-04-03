@@ -1,3 +1,5 @@
+- FIX : SPECIFIC - Disabling the ticket's public link - **2026-04-03**
+- Backport 24 : aac2ff7b, b732fd2e - **2026-04-02**
 - Backport develop : df671ed38faa8a shipping indicator on order card and line order  **2025-03-25**
 - Backport 24 - dfe8433b (T260019) - **2026-03-25**
 - Backport 22 - https://github.com/Dolibarr/dolibarr/pull/37473 (T260019) - **2026-03-25**
