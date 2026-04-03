@@ -4437,6 +4437,7 @@ class Commande extends CommonOrder
 				$textinfo = $texticon . ' ' . $langs->trans("Shippable") . '<br>' . $textinfo;
 				$result['shippable'] = true;
 			}
+
 			$result['has_product'] = true;
 			$result['texticon'] = $texticon;
 			$result['textinfo'] = $textinfo;
@@ -5075,4 +5076,5 @@ class OrderLine extends CommonOrderLine
 			return -2;
 		}
 	}
+
 }
