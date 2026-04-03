@@ -1478,7 +1478,8 @@ class FactureFournisseur extends CommonInvoice
 		if (!$error) {
 			$main = MAIN_DB_PREFIX.'facture_fourn_det';
 			$ef = $main."_extrafields";
-			$sqlef = "DELETE FROM $ef WHERE fk_object IN (SELECT rowid FROM ".$main." WHERE fk_facture_fourn = ".((int) $rowid).")";
+			$sqlef = "DELETE ef FROM ".$ef." ef INNER JOIN ".$main." d ON d.rowid = ef.fk_object WHERE d.fk_facture_fourn = ".((int) $rowid);
+
 			$resqlef = $this->db->query($sqlef);
 			$sql = 'DELETE FROM '.MAIN_DB_PREFIX.'facture_fourn_det WHERE fk_facture_fourn = '.((int) $rowid);
 			dol_syslog(get_class($this)."::delete", LOG_DEBUG);

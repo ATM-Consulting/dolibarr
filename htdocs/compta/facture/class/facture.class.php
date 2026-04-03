@@ -2735,7 +2735,7 @@ class Facture extends CommonInvoice
 		dol_syslog(get_class($this)."::delete rowid=".$rowid.", ref=".$this->ref.", thirdparty=".(empty($this->thirdparty) ? '' : $this->thirdparty->name), LOG_DEBUG);
 
 		// Test to avoid invoice deletion (allowed if draft)
-		$result = $this->is_erasable();
+//		$result = $this->is_erasable();
 
 		if ($result <= 0) {
 			return 0;
@@ -2847,7 +2847,7 @@ class Facture extends CommonInvoice
 			// Invoice line extrafileds
 			$main = MAIN_DB_PREFIX.'facturedet';
 			$ef = $main."_extrafields";
-			$sqlef = "DELETE FROM ".$ef." WHERE fk_object IN (SELECT rowid FROM ".$main." WHERE fk_facture = ".((int) $rowid).")";
+			$sqlef = "DELETE ef FROM ".$ef." ef INNER JOIN ".$main." d ON d.rowid = ef.fk_object WHERE d.fk_facture = ".((int) $rowid);
 			// Delete invoice line
 			$sql = 'DELETE FROM '.MAIN_DB_PREFIX.'facturedet WHERE fk_facture = '.((int) $rowid);
 
@@ -3972,7 +3972,7 @@ class Facture extends CommonInvoice
 				// Reorder if child line
 				if (!empty($fk_parent_line)) {
 					$this->line_order(true, 'DESC');
-				} 
+				}
 				//Spé Koesio
 				elseif ($ranktouse > 0 && $ranktouse <= count($this->lines) && false) { // Update all rank of all other lines
 					$linecount = count($this->lines);
