@@ -910,7 +910,7 @@ if (empty($reshook)) {
 				$object->fk_incoterms       = GETPOSTINT('incoterm_id');
 				$object->location_incoterms	= GETPOST('location_incoterms', 'alpha');
 				$object->multicurrency_code	= GETPOST('multicurrency_code', 'alpha');
-				$object->multicurrency_tx   = GETPOSTINT('originmulticurrency_tx');
+				$object->multicurrency_tx   = GETPOSTFLOAT('originmulticurrency_tx');
 				$object->transport_mode_id	= GETPOSTINT('transport_mode_id');
 
 				// Proprietes particulieres a facture avoir
@@ -1013,7 +1013,7 @@ if (empty($reshook)) {
 				$object->fk_incoterms       = GETPOSTINT('incoterm_id');
 				$object->location_incoterms = GETPOST('location_incoterms', 'alpha');
 				$object->multicurrency_code = GETPOST('multicurrency_code', 'alpha');
-				$object->multicurrency_tx   = GETPOSTINT('originmulticurrency_tx');
+				$object->multicurrency_tx   = GETPOSTFLOAT('originmulticurrency_tx');
 
 				// Source facture
 				$object->fac_rec = $fac_recid;
@@ -1080,7 +1080,7 @@ if (empty($reshook)) {
 				$object->fk_incoterms		= GETPOSTINT('incoterm_id');
 				$object->location_incoterms	= GETPOST('location_incoterms', 'alpha');
 				$object->multicurrency_code	= GETPOST('multicurrency_code', 'alpha');
-				$object->multicurrency_tx	= GETPOSTINT('originmulticurrency_tx');
+				$object->multicurrency_tx	= GETPOSTFLOAT('originmulticurrency_tx');
 				$object->transport_mode_id	= GETPOSTINT('transport_mode_id');
 
 				// Auto calculation of date due if not filled by user
@@ -1122,7 +1122,7 @@ if (empty($reshook)) {
 					$object->origin_id = GETPOSTINT('originid');
 
 
-					require_once DOL_DOCUMENT_ROOT.'/'.$element.'/class/'.$subelement.'.class.php';
+					dol_include_once('/'.$element.'/class/'.$subelement.'.class.php');
 					$classname = ucfirst($subelement);
 					if ($classname == 'Fournisseur.commande') {
 						$classname = 'CommandeFournisseur';
@@ -1150,7 +1150,7 @@ if (empty($reshook)) {
 
 					// Add lines
 					if ($id > 0) {
-						require_once DOL_DOCUMENT_ROOT.'/'.$element.'/class/'.$subelement.'.class.php';
+						dol_include_once('/'.$element.'/class/'.$subelement.'.class.php');
 						$classname = ucfirst($subelement);
 						if ($classname == 'Fournisseur.commande') {
 							$classname = 'CommandeFournisseur';
@@ -2121,7 +2121,7 @@ if ($action == 'create') {
 			$subelement = 'fournisseur.commande';
 		}
 
-		require_once DOL_DOCUMENT_ROOT.'/'.$element.'/class/'.$subelement.'.class.php';
+		dol_include_once('/'.$element.'/class/'.$subelement.'.class.php');
 		$classname = ucfirst($subelement);
 		if ($classname == 'Fournisseur.commande') {
 			$classname = 'CommandeFournisseur';

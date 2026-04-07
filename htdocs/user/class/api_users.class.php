@@ -301,12 +301,12 @@ class Users extends DolibarrApi
 	 * @param array $request_data New user data
 	 * @return int
 	 *
-	 * @throws RestException 401 Not allowed
+	 * @throws RestException 403 Not allowed
 	 */
 	public function post($request_data = null)
 	{
 		// Check user authorization
-		if (!DolibarrApiAccess::$user->hasRight('user', 'creer') && empty(DolibarrApiAccess::$user->admin)) {
+		if (!DolibarrApiAccess::$user->hasRight('user', 'user', 'creer') && empty(DolibarrApiAccess::$user->admin)) {
 			throw new RestException(403, "User creation not allowed for login ".DolibarrApiAccess::$user->login);
 		}
 

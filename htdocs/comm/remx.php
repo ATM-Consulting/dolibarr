@@ -84,7 +84,7 @@ if ($action == 'confirm_split' && GETPOST("confirm", "alpha") == 'yes' && $permi
 		$error++;
 		setEventMessages($langs->trans("ErrorFailedToLoadDiscount"), null, 'errors');
 	}
-	if (!$error && price2num((float) $amount_ttc_1 + (float) $amount_ttc_2) != $discount->amount_ttc) {
+	if (!$error && price2num((float) $amount_ttc_1 + (float) $amount_ttc_2, 'MT') != $discount->amount_ttc) {
 		$error++;
 		setEventMessages($langs->trans("TotalOfTwoDiscountMustEqualsOriginal"), null, 'errors');
 	}
@@ -416,9 +416,9 @@ if ($socid > 0) {
 	 */
 
 	if ($isCustomer && !$isSupplier) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 	} elseif (!$isCustomer && $isSupplier) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=1&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=1&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 	} else {
 		$newcardbutton = '';
 	}
@@ -426,7 +426,7 @@ if ($socid > 0) {
 	print load_fiche_titre($langs->trans("DiscountStillRemaining"), $newcardbutton);
 
 	if ($isCustomer) {
-		$newcardbutton = dolGetButtonTitle($langs->trans("NewClientGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.$_SERVER["PHP_SELF"].'?id='.$id.'&token='.newToken());
+		$newcardbutton = dolGetButtonTitle($langs->trans("NewClientGlobalDiscount"), '', 'fa fa-plus-circle', $_SERVER['PHP_SELF'].'?action=create_remise&id='.$id.'&discount_type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'&token='.newToken());
 		if ($isSupplier) {
 			print '<div class="fichecenter">';
 			print '<div class="fichehalfleft fichehalfleft-lg">';
