@@ -365,6 +365,8 @@ if (empty($reshook)) {
 				if (!$error) {
 					setEventMessages($langs->trans('ThirdpartiesMergeSuccess'), null, 'mesgs');
 					$db->commit();
+					header("Location: ".$_SERVER["PHP_SELF"]."?socid=".$object->id);
+					exit;
 				} else {
 					$langs->load("errors");
 					setEventMessages($langs->trans('ErrorsThirdpartyMerge'), null, 'errors');
