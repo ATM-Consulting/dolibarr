@@ -5138,6 +5138,16 @@ class Societe extends CommonObject
 			$dbs->query('DELETE FROM '.MAIN_DB_PREFIX.'societe_commerciaux WHERE rowid = '.((int) $obj->rowid));
 		}
 
+		// Handle prospectingmap_coordinate (unique key on fk_soc): update or delete before generic replace
+		$resql = $dbs->query('SELECT rowid FROM '.$dbs->prefix().'prospectingmap_coordinate WHERE fk_soc = '.((int) $dest_id));
+		if ($resql && $dbs->num_rows($resql) > 0) {
+			// Destination already has coordinates — remove origin's entry to avoid unique key conflict
+			$dbs->query('DELETE FROM '.$dbs->prefix().'prospectingmap_coordinate WHERE fk_soc = '.((int) $origin_id));
+		} else {
+			// No coordinates for destination — reassign origin's entry
+			$dbs->query('UPDATE '.$dbs->prefix().'prospectingmap_coordinate SET fk_soc = '.((int) $dest_id).' WHERE fk_soc = '.((int) $origin_id));
+		}
+
 		/**
 		 * llx_societe_extrafields table must not be here because we don't care about the old thirdparty data
 		 * Do not include llx_societe because it will be replaced later
