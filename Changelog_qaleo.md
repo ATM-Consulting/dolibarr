@@ -1,5 +1,6 @@
 ------------------V21.0_Qaleo------------------------
-- ajout des clés pour les doc .odt suivantes : **08/04/2026** 
+- Modifications de /htdocs/includes/odtphp/odf.php, provoquer une erreur de génération du pdf depuis un odt  **08/04/2026**
+- ajout des clés pour les doc .odt suivantes :
 --- Clés ligne (dans segment row.lines) ---
 {line_product_weight}
 {line_product_weight_raw}
