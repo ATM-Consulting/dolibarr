@@ -716,34 +716,66 @@ IMG;
 	 */
 	private function _save()
 	{
-		$res=$this->file->open($this->tmpfile);    // tmpfile is odt template
 		$this->_parse('content');
 		$this->_parse('styles');
 		$this->_parse('meta');
 
 		$this->setMetaData();
-		//print $this->metaXml;exit;
 
-		if (! $this->file->addFromString('content.xml', $this->contentXml)) {
-			throw new OdfException('Error during file export addFromString content');
+		// Rebuild the ZIP from scratch to avoid overlapped components
+		// PHP ZipArchive::addFromString on existing entries leaves ghost data, corrupting the file
+		$newfile = $this->tmpfile . '.new';
+		$sourceZip = new \ZipArchive();
+		$destZip = new \ZipArchive();
+
+		if ($sourceZip->open($this->tmpfile) !== true) {
+			throw new OdfException('Error opening source template: ' . $this->tmpfile);
 		}
-		if (! $this->file->addFromString('meta.xml', $this->metaXml)) {
-			throw new OdfException('Error during file export addFromString meta');
-		}
-		if (! $this->file->addFromString('styles.xml', $this->stylesXml)) {
-			throw new OdfException('Error during file export addFromString styles');
+		if ($destZip->open($newfile, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+			$sourceZip->close();
+			throw new OdfException('Error creating new file: ' . $newfile);
 		}
 
+		// Map of files we will replace with modified content
+		$replacements = array(
+			'content.xml' => $this->contentXml,
+			'meta.xml' => $this->metaXml,
+			'styles.xml' => $this->stylesXml,
+		);
+
+		// Copy all entries from source, replacing modified ones
+		for ($i = 0; $i < $sourceZip->numFiles; $i++) {
+			$entryName = $sourceZip->getNameIndex($i);
+			if ($entryName === 'META-INF/manifest.xml') {
+				continue; // Will be added after images
+			}
+			if (isset($replacements[$entryName])) {
+				$destZip->addFromString($entryName, $replacements[$entryName]);
+			} elseif ($entryName === 'mimetype') {
+				// mimetype must be stored uncompressed
+				$destZip->addFromString($entryName, $sourceZip->getFromIndex($i));
+				$destZip->setCompressionName($entryName, \ZipArchive::CM_STORE);
+			} else {
+				$destZip->addFromString($entryName, $sourceZip->getFromIndex($i));
+			}
+		}
+
+		// Add new images
 		foreach ($this->images as $imageKey => $imageValue) {
-			// Add the image inside the ODT document
-			$this->file->addFile($imageKey, 'Pictures/' . $imageValue);
-			// Add the image to the Manifest (which maintains a list of images, necessary to avoid "Corrupt ODT file. Repair?" when opening the file with LibreOffice)
+			$destZip->addFile($imageKey, 'Pictures/' . $imageValue);
 			$this->addImageToManifest($imageValue);
 		}
-		if (! $this->file->addFromString('META-INF/manifest.xml', $this->manifestXml)) {
-			throw new OdfException('Error during file export: manifest.xml');
+
+		// Add manifest last (after images have been registered)
+		$destZip->addFromString('META-INF/manifest.xml', $this->manifestXml);
+
+		$sourceZip->close();
+		$destZip->close();
+
+		// Replace original with clean version
+		if (!rename($newfile, $this->tmpfile)) {
+			throw new OdfException('Error replacing file: ' . $this->tmpfile);
 		}
-		$this->file->close();
 	}
 
 	/**
@@ -844,80 +876,63 @@ IMG;
 			// using windows libreoffice that must be in path
 			// using linux/mac libreoffice that must be in path
 			// Note PHP Config "fastcgi.impersonate=0" must set to 0 - Default is 1
-			$command ='soffice --headless -env:UserInstallation=file:'.escapeshellarg((getDolGlobalString('MAIN_ODT_ADD_SLASH_FOR_WINDOWS') ? '///' : '').dol_sanitizePathName($conf->user->dir_temp).'/odtaspdf').' --convert-to pdf --outdir '. escapeshellarg(dirname($name)). " ".escapeshellarg($name);
-		} elseif (preg_match('/unoconv/', getDolGlobalString('MAIN_ODT_AS_PDF'))) {
-			// If issue with unoconv, see https://github.com/dagwieers/unoconv/issues/87
-
-			// MAIN_ODT_AS_PDF should be   "sudo -u unoconv /usr/bin/unoconv" and userunoconv must have sudo to be root by adding file /etc/sudoers.d/unoconv with content  www-data ALL=(unoconv) NOPASSWD: /usr/bin/unoconv .
-
-			// Try this with www-data user:    /usr/bin/unoconv -vvvv -f pdf /tmp/document-example.odt
-			// It must return:
-			//Verbosity set to level 4
-			//Using office base path: /usr/lib/libreoffice
-			//Using office binary path: /usr/lib/libreoffice/program
-			//DEBUG: Connection type: socket,host=127.0.0.1,port=2002;urp;StarOffice.ComponentContext
-			//DEBUG: Existing listener not found.
-			//DEBUG: Launching our own listener using /usr/lib/libreoffice/program/soffice.bin.
-			//LibreOffice listener successfully started. (pid=9287)
-			//Input file: /tmp/document-example.odt
-			//unoconv: file `/tmp/document-example.odt' does not exist.
-			//unoconv: RuntimeException during import phase:
-			//Office probably died. Unsupported URL <file:///tmp/document-example.odt>: "type detection failed"
-			//DEBUG: Terminating LibreOffice instance.
-			//DEBUG: Waiting for LibreOffice instance to exit
-
-			// If it fails:
-			// - set shell of user to bash instead of nologin.
-			// - set permission to read/write to user on home directory /var/www so user can create the libreoffice , dconf and .cache dir and files then set permission back
-
-			$command = getDolGlobalString('MAIN_ODT_AS_PDF').' '.escapeshellarg($name);
-			//$command = '/usr/bin/unoconv -vvv '.escapeshellcmd($name);
-		} else {
-			// deprecated old method using odt2pdf.sh (native, jodconverter, ...)
-			$tmpname=preg_replace('/\.odt/i', '', $name);
-
-			if (getDolGlobalString('MAIN_DOL_SCRIPTS_ROOT')) {
-				$command = dol_sanitizePathName(getDolGlobalString('MAIN_DOL_SCRIPTS_ROOT')).'/scripts/odt2pdf/odt2pdf.sh '.escapeshellarg($tmpname).' '.escapeshellarg(is_numeric(getDolGlobalString('MAIN_ODT_AS_PDF')) ? 'jodconverter' : getDolGlobalString('MAIN_ODT_AS_PDF'));
-			} else {
-				dol_syslog(get_class($this).'::exportAsAttachedPDF is used but the constant MAIN_DOL_SCRIPTS_ROOT with path to script directory was not defined.', LOG_WARNING);
-				$paramodt2pdf = (is_numeric(getDolGlobalString('MAIN_ODT_AS_PDF')) ? 'jodconverter' : getDolGlobalString('MAIN_ODT_AS_PDF'));
-				$paramodt2pdf = dol_sanitizePathName($paramodt2pdf);
-				$command = '../../scripts/odt2pdf/odt2pdf.sh '.escapeshellarg($tmpname).' '.escapeshellarg($paramodt2pdf);
+			$sofficebin = getDolGlobalString('MAIN_ODT_BINARY', 'soffice');
+			$userInstallationDir = '/tmp/odtaspdf_'.md5($conf->user->id.'_'.$conf->user->login);
+			if (!is_dir($userInstallationDir)) {
+				dol_mkdir($userInstallationDir);
 			}
-		}
+			$userInstallationUrl = 'file://'.$userInstallationDir;
 
-		//$dirname=dirname($name);
-		//$command = DOL_DOCUMENT_ROOT.'/includes/odtphp/odt2pdf.sh '.$name.' '.$dirname;
+			$command = $sofficebin.' --headless --nologo --nodefault --nofirststartwizard '.escapeshellarg('-env:UserInstallation='.$userInstallationUrl).' --convert-to pdf --outdir '. escapeshellarg(dol_sanitizePathName(dirname($name))). " ".escapeshellarg($name);
 
-		dol_syslog(get_class($this).'::exportAsAttachedPDF $execmethod='.$execmethod.' Run command='.$command, LOG_DEBUG);
-
-		// TODO Use:
-		// $outputfile = DOL_DATA_ROOT.'/odt2pdf.log';
-		// $result = $utils->executeCLI($command, $outputfile);  and replace test on $execmethod.
-		// $retval will be $result['result']
-		// $errorstring will be $result['output']
-		$retval=0; $output_arr=array();
-		if ($execmethod == 1) {
-			exec(escapeshellcmd($command), $output_arr, $retval);
-		}
-		if ($execmethod == 2) {
 			$outputfile = DOL_DATA_ROOT.'/odt2pdf.log';
-
 			$handle = fopen($outputfile, 'w');
 			if ($handle) {
-				dol_syslog(get_class($this)."Run command ".$command, LOG_DEBUG);
-				dol_syslog(get_class($this)."escapeshellcmd(command) = ".escapeshellcmd($command), LOG_DEBUG);
-				fwrite($handle, $command."\n");
-				$handlein = popen(escapeshellcmd($command), 'r');
-				while (!feof($handlein)) {
-					$read = fgets($handlein);
-					fwrite($handle, $read);
-					$output_arr[]=$read;
+				if (!file_exists($name)) {
+					fwrite($handle, "Error: Input file ".$name." does not exist before conversion!\n");
 				}
-				pclose($handlein);
-				fclose($handle);
+				fwrite($handle, "Command: ".$command."\n");
 			}
-			dolChmod($outputfile);
+
+			if ($execmethod == 1) {
+				exec($command, $output_arr, $retval);
+				if ($handle) {
+					foreach ($output_arr as $line) {
+						fwrite($handle, $line."\n");
+					}
+				}
+			}
+			if ($execmethod == 2) {
+				if ($handle) {
+					$handlein = popen($command, 'r');
+					while (!feof($handlein)) {
+						$read = fgets($handlein);
+						fwrite($handle, $read);
+						$output_arr[]=$read;
+					}
+					$res_pclose = pclose($handlein);
+					if ($res_pclose != -1) {
+						$retval = ($res_pclose >> 8) & 0xFF; // Get the exit code
+					} else {
+						$retval = 127; // Process could not be started
+					}
+				}
+			}
+
+			if ($handle) {
+				fwrite($handle, "Return value: ".$retval."\n");
+				$pdfname = preg_replace('/\.od(t|s|x)/i', '.pdf', $name);
+				if ($retval == 0 && !file_exists($pdfname)) {
+					fwrite($handle, "Warning: Conversion reported success but ".$pdfname." was not found.\n");
+					fwrite($handle, "Directory listing of ".dirname($name).":\n");
+					$files = scandir(dirname($name));
+					foreach ($files as $f) {
+						fwrite($handle, "- ".$f."\n");
+					}
+				}
+				fclose($handle);
+				dolChmod($outputfile);
+			}
 		}
 
 		if ($retval == 0) {
