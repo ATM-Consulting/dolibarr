@@ -756,6 +756,7 @@ abstract class CommonDocGenerator
 		// Calculate total weight from all lines
 		if (!empty($object->lines) && is_array($object->lines)) {
 			require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+			include_once DOL_DOCUMENT_ROOT.'/core/lib/product.lib.php';
 			$total_weight = 0;
 			$weight_unit = null;
 			foreach ($object->lines as $tmpline) {
@@ -946,6 +947,8 @@ abstract class CommonDocGenerator
 
 		// Load full product data to get weight, dimensions, customs code, etc.
 		if (!empty($line->fk_product) && $line->fk_product > 0) {
+			require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+			include_once DOL_DOCUMENT_ROOT.'/core/lib/product.lib.php';
 			$product = new Product($this->db);
 			if ($product->fetch($line->fk_product) > 0) {
 				// Dimensions & weight
