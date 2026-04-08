@@ -32,6 +32,7 @@
  *		\brief      File of parent class for documents generators
  */
 
+require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
 /**
  *	Parent class for documents (PDF, ODT, ...) generators
@@ -752,6 +753,31 @@ abstract class CommonDocGenerator
 			$array_key.'_remain_to_pay' => price2num($object->total_ttc - $already_payed_all, 'MT')
 		);
 
+		// Calculate total weight from all lines
+		if (!empty($object->lines) && is_array($object->lines)) {
+			require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+			$total_weight = 0;
+			$weight_unit = null;
+			foreach ($object->lines as $tmpline) {
+				if (!empty($tmpline->fk_product) && $tmpline->fk_product > 0) {
+					$tmpproduct = new Product($this->db);
+					if ($tmpproduct->fetch($tmpline->fk_product) > 0 && !empty($tmpproduct->weight)) {
+						// Convert all weights to kg (weight_units = 0) for consistent total
+						$weight_in_kg = $tmpproduct->weight * pow(10, (int) $tmpproduct->weight_units);
+						$total_weight += $weight_in_kg * (float) $tmpline->qty;
+						if ($weight_unit === null) {
+							$weight_unit = $tmpproduct->weight_units;
+						}
+					}
+				}
+			}
+			$resarray[$array_key.'_total_weight'] = ($total_weight ? $total_weight.' '.measuringUnitString(0, 'weight', 0) : '');
+			$resarray[$array_key.'_total_weight_raw'] = ($total_weight ? $total_weight : '');
+		} else {
+			$resarray[$array_key.'_total_weight'] = '';
+			$resarray[$array_key.'_total_weight_raw'] = '';
+		}
+
 		if (in_array($object->element, array('facture', 'invoice', 'supplier_invoice', 'facture_fournisseur'))) {
 			$bank_account = null;
 
@@ -862,31 +888,6 @@ abstract class CommonDocGenerator
 	{
 		// phpcs:enable
 
-		// Load product data if available (must be done BEFORE creating the array)
-		$productData = array();
-		if (isset($line->fk_product) && $line->fk_product > 0) {
-			$tmpproduct = new Product($this->db);
-			$result = $tmpproduct->fetch($line->fk_product);
-			if ($result > 0) {
-				// Get product custom code
-				$productData['line_product_customcode'] = $tmpproduct->customcode;
-
-				// Calculate weight total if applicable
-				if (!empty($tmpproduct->weight) && isset($line->qty) && $line->qty > 0) {
-					$productData['line_product_weight_total'] = $tmpproduct->weight * $line->qty;
-				}
-
-				// Get country information if available
-				if (!empty($tmpproduct->country_id)) {
-					$countryInfo = getCountry($tmpproduct->country_id, 'all');
-					if (!empty($countryInfo)) {
-						$productData['line_product_country_label'] = $countryInfo['label'];
-						$productData['line_product_country_code'] = $countryInfo['code'];
-					}
-				}
-			}
-		}
-
 		$resarray = array(
 			'line_pos' => $linenumber,
 			'line_fulldesc' => doc_getlinedesc($line, $outputlangs),
@@ -923,8 +924,120 @@ abstract class CommonDocGenerator
 			'line_multicurrency_total_ttc_locale' => price($line->multicurrency_total_ttc, 0, $outputlangs),
 		);
 
-		// Merge product data into the array
-		$resarray = array_merge($resarray, $productData);
+		// Initialize all product keys to empty (so they are substituted even on free lines without product)
+		$product_keys = array(
+			'line_product_weight', 'line_product_weight_raw', 'line_product_weight_units', 'line_product_weight_total', 'line_product_weight_total_units',
+			'line_product_length', 'line_product_length_raw', 'line_product_width', 'line_product_width_raw',
+			'line_product_height', 'line_product_height_raw',
+			'line_product_surface', 'line_product_surface_raw', 'line_product_volume', 'line_product_volume_raw',
+			'line_product_net_measure',
+			'line_product_customcode', 'line_product_country_code', 'line_product_country_id', 'line_product_country',
+			'line_product_finished', 'line_product_finished_raw', 'line_product_url',
+			'line_product_note_public', 'line_product_note_private',
+			'line_product_stock_reel', 'line_product_pmp', 'line_product_cost_price',
+			'line_product_accountancy_code_sell', 'line_product_accountancy_code_buy',
+			'line_product_packaging', 'line_product_status_batch', 'line_product_duration',
+			'line_product_fk_default_warehouse', 'line_product_default_warehouse',
+			'line_product_fk_default_bom', 'line_product_default_bom',
+		);
+		foreach ($product_keys as $key) {
+			$resarray[$key] = '';
+		}
+
+		// Load full product data to get weight, dimensions, customs code, etc.
+		if (!empty($line->fk_product) && $line->fk_product > 0) {
+			$product = new Product($this->db);
+			if ($product->fetch($line->fk_product) > 0) {
+				// Dimensions & weight
+				$resarray['line_product_weight'] = (!empty($product->weight) ? $product->weight.' '.measuringUnitString(0, 'weight', $product->weight_units) : '');
+				$resarray['line_product_weight_raw'] = (!empty($product->weight) ? $product->weight : '');
+				$resarray['line_product_weight_units'] = (isset($product->weight_units) ? measuringUnitString(0, 'weight', $product->weight_units) : '');
+				$resarray['line_product_weight_total'] = (!empty($product->weight) ? $product->weight * (float) $line->qty : '');
+				$resarray['line_product_weight_total_units'] = (!empty($product->weight) ? ($product->weight * (float) $line->qty).' '.measuringUnitString(0, 'weight', $product->weight_units) : '');
+				$resarray['line_product_length'] = (!empty($product->length) ? $product->length.' '.measuringUnitString(0, 'size', $product->length_units) : '');
+				$resarray['line_product_length_raw'] = (!empty($product->length) ? $product->length : '');
+				$resarray['line_product_width'] = (!empty($product->width) ? $product->width.' '.measuringUnitString(0, 'size', $product->width_units) : '');
+				$resarray['line_product_width_raw'] = (!empty($product->width) ? $product->width : '');
+				$resarray['line_product_height'] = (!empty($product->height) ? $product->height.' '.measuringUnitString(0, 'size', $product->height_units) : '');
+				$resarray['line_product_height_raw'] = (!empty($product->height) ? $product->height : '');
+				$resarray['line_product_surface'] = (!empty($product->surface) ? $product->surface.' '.measuringUnitString(0, 'surface', $product->surface_units) : '');
+				$resarray['line_product_surface_raw'] = (!empty($product->surface) ? $product->surface : '');
+				$resarray['line_product_volume'] = (!empty($product->volume) ? $product->volume.' '.measuringUnitString(0, 'volume', $product->volume_units) : '');
+				$resarray['line_product_volume_raw'] = (!empty($product->volume) ? $product->volume : '');
+				$resarray['line_product_net_measure'] = (!empty($product->net_measure) ? $product->net_measure : '');
+
+				// Customs / trade
+				$resarray['line_product_customcode'] = (!empty($product->customcode) ? $product->customcode : '');
+				$resarray['line_product_country_code'] = (!empty($product->country_code) ? $product->country_code : '');
+				$resarray['line_product_country_id'] = (!empty($product->country_id) ? $product->country_id : '');
+				// Country label from ID
+				if (!empty($product->country_id)) {
+					require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+					$resarray['line_product_country'] = getCountry($product->country_id, 0, $this->db, $outputlangs);
+				} else {
+					$resarray['line_product_country'] = '';
+				}
+
+				// Classification
+				$finished_label = '';
+				if (isset($product->finished) && $product->finished !== '') {
+					if ($product->finished == 0) {
+						$finished_label = $outputlangs->transnoentities('RawMaterial');
+					} elseif ($product->finished == 1) {
+						$finished_label = $outputlangs->transnoentities('FinishedProduct');
+					}
+				}
+				$resarray['line_product_finished'] = $finished_label;
+				$resarray['line_product_finished_raw'] = (isset($product->finished) ? $product->finished : '');
+				$resarray['line_product_url'] = (!empty($product->url) ? $product->url : '');
+
+				// Notes
+				$resarray['line_product_note_public'] = (!empty($product->note_public) ? $product->note_public : '');
+				$resarray['line_product_note_private'] = (!empty($product->note_private) ? $product->note_private : '');
+
+				// Stock
+				$resarray['line_product_stock_reel'] = (isset($product->stock_reel) ? $product->stock_reel : '');
+				$resarray['line_product_pmp'] = (!empty($product->pmp) ? price2num($product->pmp) : '');
+				$resarray['line_product_cost_price'] = (!empty($product->cost_price) ? price2num($product->cost_price) : '');
+
+				// Accounting codes
+				$resarray['line_product_accountancy_code_sell'] = (!empty($product->accountancy_code_sell) ? $product->accountancy_code_sell : '');
+				$resarray['line_product_accountancy_code_buy'] = (!empty($product->accountancy_code_buy) ? $product->accountancy_code_buy : '');
+
+				// Packaging & batch
+				$resarray['line_product_packaging'] = (!empty($product->packaging) ? $product->packaging : '');
+				$resarray['line_product_status_batch'] = (isset($product->status_batch) ? $product->status_batch : '');
+				$resarray['line_product_duration'] = (!empty($product->duration) ? $product->duration : '');
+
+				// Default warehouse
+				$resarray['line_product_fk_default_warehouse'] = (!empty($product->fk_default_warehouse) ? $product->fk_default_warehouse : '');
+				if (!empty($product->fk_default_warehouse)) {
+					require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
+					$warehouse = new Entrepot($this->db);
+					if ($warehouse->fetch($product->fk_default_warehouse) > 0) {
+						$resarray['line_product_default_warehouse'] = $warehouse->label;
+					} else {
+						$resarray['line_product_default_warehouse'] = '';
+					}
+				} else {
+					$resarray['line_product_default_warehouse'] = '';
+				}
+
+				// Default BOM
+				$resarray['line_product_fk_default_bom'] = (!empty($product->fk_default_bom) ? $product->fk_default_bom : '');
+				if (!empty($product->fk_default_bom)) {
+					require_once DOL_DOCUMENT_ROOT.'/bom/class/bom.class.php';
+					$bom = new BOM($this->db);
+					if ($bom->fetch($product->fk_default_bom) > 0) {
+						$resarray['line_product_default_bom'] = $bom->ref;
+					} else {
+						$resarray['line_product_default_bom'] = '';
+					}
+				} else {
+					$resarray['line_product_default_bom'] = '';
+				}
+			}
+		}
 
 		if (property_exists($line, 'ref_fourn')) {
 			$resarray['line_product_ref_fourn'] = $line->ref_fourn; // for supplier doc lines @phan-suppress-current-line PhanUndeclaredProperty
