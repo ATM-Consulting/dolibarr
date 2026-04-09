@@ -427,7 +427,10 @@ class CommandeFournisseur extends CommonOrder
 
 			$this->ref = $obj->ref;
 			$this->ref_supplier = $obj->ref_supplier;
+
 			$this->socid = $obj->fk_soc;
+			$this->thirdparty = null; // Clear if another value was already set by fetch_thirdparty
+
 			$this->fourn_id = $obj->fk_soc;
 			$this->statut = $obj->fk_statut;
 			$this->status = $obj->fk_statut;
@@ -613,7 +616,7 @@ class CommandeFournisseur extends CommonOrder
 						$objsearchpackage = $this->db->fetch_object($resqlsearchpackage);
 						if ($objsearchpackage) {
 							$line->fk_fournprice = $objsearchpackage->rowid;
-							$line->packaging     = $objsearchpackage->packaging;
+							$line->packaging     = (float) $objsearchpackage->packaging;
 						}
 					} else {
 						$this->error = $this->db->lasterror();
@@ -1610,8 +1613,13 @@ class CommandeFournisseur extends CommonOrder
 						// End call triggers
 					}
 
-					$this->db->commit();
-					return $this->id;
+					if (!$error) {
+						$this->db->commit();
+						return $this->id;
+					} else {
+						$this->db->rollback();
+						return -4;
+					}
 				} else {
 					$this->error = $this->db->lasterror();
 					$this->db->rollback();
@@ -1971,16 +1979,16 @@ class CommandeFournisseur extends CommonOrder
 				}
 
 				// Predefine quantity according to packaging
-				if (!empty($conf->global->PRODUCT_USE_SUPPLIER_PACKAGING)) {
+				if (getDolGlobalString('PRODUCT_USE_SUPPLIER_PACKAGING')) {
 					$prod = new Product($this->db);
-					$prod->get_buyprice($fk_prod_fourn_price, $qty, $fk_product, 'none', (empty($this->fk_soc) ? $this->socid : $this->fk_soc));
+					$prod->get_buyprice($fk_prod_fourn_price, (float) $qty, $fk_product, 'none', (empty($this->fk_soc) ? $this->socid : $this->fk_soc));
 
 					if ($qty < $prod->packaging) {
-						$qty = $prod->packaging;
+						$qty = (float) $prod->packaging;
 					} else {
-						if (!empty($prod->packaging) && ($qty % $prod->packaging) > 0) {
-							$coeff = intval($qty / $prod->packaging) + 1;
-							$qty = $prod->packaging * $coeff;
+						if (!empty($prod->packaging) && (fmod((float) $qty, (float) $prod->packaging)  > 0.000001)) {
+							$coeff = intval((float) $qty / $prod->packaging) + 1;
+							$qty = (float) $prod->packaging * $coeff;
 							setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'mesgs');
 						}
 					}
@@ -2302,9 +2310,9 @@ class CommandeFournisseur extends CommonOrder
 			}
 		}
 
-		$main = MAIN_DB_PREFIX.'commande_fournisseurdet';
+		$main = $this->db->prefix().'commande_fournisseurdet';
 		$ef = $main."_extrafields";
-		$sql = "DELETE FROM $ef WHERE fk_object IN (SELECT rowid FROM $main WHERE fk_commande = ".((int) $this->id).")";
+		$sql = "DELETE FROM ".$this->db->sanitize($ef)." WHERE fk_object IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
 		dol_syslog(get_class($this)."::delete extrafields lines", LOG_DEBUG);
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
@@ -2313,7 +2321,7 @@ class CommandeFournisseur extends CommonOrder
 		}
 
 		if (!$error) {
-			$sql1 = "UPDATE ".$this->db->prefix()."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet IN (SELECT rowid FROM ".$main." WHERE fk_commande = ".((int) $this->id).")";
+			$sql1 = "UPDATE ".$this->db->prefix()."commandedet SET fk_commandefourndet = NULL WHERE fk_commandefourndet IN (SELECT rowid FROM ".$this->db->sanitize($main)." WHERE fk_commande = ".((int) $this->id).")";
 			dol_syslog(__METHOD__." linked order lines", LOG_DEBUG);
 			if (!$this->db->query($sql1)) {
 				$error++;
@@ -2322,7 +2330,7 @@ class CommandeFournisseur extends CommonOrder
 			}
 		}
 
-		$sql = "DELETE FROM ".MAIN_DB_PREFIX."commande_fournisseurdet WHERE fk_commande =".((int) $this->id);
+		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseurdet WHERE fk_commande =".((int) $this->id);
 		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
 		if (!$this->db->query($sql)) {
 			$this->error = $this->db->lasterror();
@@ -2330,7 +2338,7 @@ class CommandeFournisseur extends CommonOrder
 			$error++;
 		}
 
-		$sql = "DELETE FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE rowid =".((int) $this->id);
+		$sql = "DELETE FROM ".$this->db->prefix()."commande_fournisseur WHERE rowid =".((int) $this->id);
 		dol_syslog(get_class($this)."::delete", LOG_DEBUG);
 		if ($resql = $this->db->query($sql)) {
 			if ($this->db->affected_rows($resql) < 1) {
@@ -2954,11 +2962,11 @@ class CommandeFournisseur extends CommonOrder
 			$this->line->desc = $desc;
 
 			// redefine quantity according to packaging
-			if (!empty($conf->global->PRODUCT_USE_SUPPLIER_PACKAGING)) {
+			if (getDolGlobalString('PRODUCT_USE_SUPPLIER_PACKAGING')) {
 				if ($qty < $this->line->packaging) {
 					$qty = $this->line->packaging;
 				} else {
-					if (!empty($this->line->packaging) && ($qty % $this->line->packaging) > 0) {
+					if (!empty($this->line->packaging) && is_numeric($this->line->packaging) && (float) $this->line->packaging > 0 && (fmod((float) $qty, $this->line->packaging) > 0)) {
 						$coeff = intval($qty / $this->line->packaging) + 1;
 						$qty = $this->line->packaging * $coeff;
 						setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'mesgs');
@@ -3021,6 +3029,8 @@ class CommandeFournisseur extends CommonOrder
 				$this->db->commit();
 				return $result;
 			} else {
+				$this->errors[] = $this->line->error;
+				$this->errors = array_merge($this->errors, $this->line->errors);
 				$this->error = $this->db->lasterror();
 				$this->db->rollback();
 				return -1;
@@ -3859,7 +3869,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
 						$objsearchpackage = $this->db->fetch_object($resqlsearchpackage);
 						if ($objsearchpackage) {
 							$this->fk_fournprice = $objsearchpackage->rowid;
-							$this->packaging     = $objsearchpackage->packaging;
+							$this->packaging     = (float) $objsearchpackage->packaging;
 						}
 					} else {
 						$this->error = $this->db->lasterror();
