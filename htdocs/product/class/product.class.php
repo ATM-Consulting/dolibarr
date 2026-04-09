@@ -1390,10 +1390,7 @@ class Product extends CommonObject
 			$this->error = "Object must be fetched before calling delete";
 			return -1;
 		}
-		if (($this->type == Product::TYPE_PRODUCT && empty($user->rights->produit->supprimer)) || ($this->type == Product::TYPE_SERVICE && empty($user->rights->service->supprimer))) {
-			$this->error = "ErrorForbidden";
-			return 0;
-		}
+
 
 		$objectisused = $this->isObjectUsed($this->id);
 		if (empty($objectisused)) {
