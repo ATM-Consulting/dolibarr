@@ -1640,18 +1640,6 @@ class Ticket extends CommonObject
 			$this->message = trim($this->message);
 		}
 
-		// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870
-		$socpeopleAssigned = [];
-
-		$parameters = array();
-		$reshook = $hookmanager->executeHooks('createTicketMessageExternalContacts', $parameters, $this);
-		if ($reshook > 0) {
-			$socpeopleAssigned = $hookmanager->resArray['result'];
-		} elseif ($reshook == 0) {
-			$socpeopleAssigned = $external_contacts + $hookmanager->resArray['result'];
-		}
-		// Backport V24 END - https://github.com/Dolibarr/dolibarr/pull/37870
-
 		$this->db->begin();
 
 		// Insert entry into agenda with code 'TICKET_MSG'
@@ -1669,8 +1657,17 @@ class Ticket extends CommonObject
 		$actioncomm->label = $this->subject;
 		$actioncomm->note_private = $this->message;
 		$actioncomm->userassigned = array($user->id);
-		// Backport V24 - https://github.com/Dolibarr/dolibarr/pull/37870
-		$actioncomm->socpeopleassigned = $socpeopleAssigned;
+
+		// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('createTicketMessageExternalContacts', $parameters, $actioncomm);
+		if ($reshook < 0) {
+			$actioncomm->socpeopleassigned = $external_contacts;
+		} elseif ($reshook == 0) {
+			$actioncomm->socpeopleassigned += $external_contacts;
+		}
+		// Backport V24 END - https://github.com/Dolibarr/dolibarr/pull/37870
+
 		$actioncomm->userownerid = $user->id;
 		$actioncomm->datep = $now;
 		$actioncomm->percentage = -1; // percentage is not relevant for punctual events
