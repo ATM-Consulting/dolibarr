@@ -1,0 +1,5 @@
+
+ FIX : includes/tcpdi/tcpdi_parser.php (marqués spé carflex) - **15/04/2026**
+  - Gestion des références PDF array/sans séparateur/objet 0_0                                                                                                                                                                  
+  - Reconstruction référence xref pour PDF LibreOffice                                                                                                                                                                          
+  - Protection $sarr contre les non-array     
