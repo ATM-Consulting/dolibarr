@@ -1717,7 +1717,7 @@ class Ticket extends CommonObject
 			$this->status = Ticket::STATUS_READ;
 
 			$sql = "UPDATE ".MAIN_DB_PREFIX."ticket";
-			$sql .= " SET fk_statut = ".Ticket::STATUS_READ.", date_read = '".$this->db->idate(dol_now())."'";
+			$sql .= " SET fk_statut = ".((int) $this->status) .", date_read = '".$this->db->idate(dol_now())."'";
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
 			dol_syslog(get_class($this)."::markAsRead");
@@ -1742,7 +1742,9 @@ class Ticket extends CommonObject
 					$this->status = $this->oldcopy->status;
 
 					$this->db->rollback();
+
 					$this->error = implode(',', $this->errors);
+
 					dol_syslog(get_class($this)."::markAsRead ".$this->error, LOG_ERR);
 					return -1;
 				}
@@ -2010,8 +2012,11 @@ class Ticket extends CommonObject
 		if ($this->status != Ticket::STATUS_CLOSED && $this->status != Ticket::STATUS_CANCELED) { // not closed
 			$this->db->begin();
 
+			$this->oldcopy = dol_clone($this);
+			$this->status = ($mode ? Ticket::STATUS_CANCELED : Ticket::STATUS_CLOSED);
+
 			$sql = "UPDATE ".MAIN_DB_PREFIX."ticket";
-			$sql .= " SET fk_statut=".($mode ? Ticket::STATUS_CANCELED : Ticket::STATUS_CLOSED).", progress=100, date_close='".$this->db->idate(dol_now())."'";
+			$sql .= " SET fk_statut = ".((int) $this->status).", progress=100, date_close='".$this->db->idate(dol_now())."'";
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
 			dol_syslog(get_class($this)."::close mode=".$mode);
@@ -2846,8 +2851,9 @@ class Ticket extends CommonObject
 
 							$message_intro = $langs->trans('TicketNotificationEmailBody', "#".$object->id);
 							$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
-
-							$message = getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', $langs->trans('TicketMessageMailIntroText'));
+							/**SPECIFIQUE ATM **/
+							$message = $this->applyMailSubstitutions(getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', $langs->trans('TicketMessageMailIntroText')), $langs, $object);
+							/**SPECIFIQUE ATM **/
 							$message .= '<br><br>';
 							$messagePost = GETPOST('message', 'restricthtml');
 							if (!dol_textishtml($messagePost)) {
@@ -2928,9 +2934,32 @@ class Ticket extends CommonObject
 								$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
 								$subject = GETPOST('subject') ? GETPOST('subject') : '['.$appli.' - '.$langs->trans("Ticket").' #'.$object->track_id.'] '.$langs->trans('TicketNewMessage');
-
-								$message_intro = GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO');
-								$message_signature = GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE');
+								/**SPECIFIQUE ATM **/
+								$cliatm_intro = getDolGlobalString('CLIATM_TICKET_MAIL_INTRO');
+								if ($cliatm_intro) {
+									// Check if at least one SUPPORTCLI contact has an active portal account
+									$sqlPortal = 'SELECT COUNT(u.rowid) as nb';
+									$sqlPortal .= ' FROM '.$this->db->prefix().'element_contact ec';
+									$sqlPortal .= ' INNER JOIN '.$this->db->prefix().'c_type_contact tc ON tc.rowid = ec.fk_c_type_contact AND tc.element = \'ticket\' AND tc.source = \'external\' AND tc.code = \'SUPPORTCLI\'';
+									$sqlPortal .= ' INNER JOIN '.$this->db->prefix().'user u ON u.fk_socpeople = ec.fk_socpeople AND u.statut = 1 AND u.fk_soc > 0 AND u.entity IN ('.getEntity('user').')';
+									$sqlPortal .= ' WHERE ec.element_id = '.(int) $object->id;
+									$resPortal = $this->db->query($sqlPortal);
+									$hasPortalContact = false;
+									if ($resPortal) {
+										$objPortal = $this->db->fetch_object($resPortal);
+										$hasPortalContact = ($objPortal && $objPortal->nb > 0);
+										$this->db->free($resPortal);
+									}
+									if (!$hasPortalContact) {
+										$message_intro = $this->applyMailSubstitutions($cliatm_intro, $langs, $object);
+									} else {
+										$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+									}
+								} else {
+									$message_intro = $this->applyMailSubstitutions(GETPOST('mail_intro') ? GETPOST('mail_intro', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO'), $langs, $object);
+								}
+								$message_signature = $this->applyMailSubstitutions(GETPOST('mail_signature') ? GETPOST('mail_signature', 'restricthtml') : getDolGlobalString('TICKET_MESSAGE_MAIL_SIGNATURE'), $langs, $object);
+								/**SPECIFIQUE ATM **/
 								if (!dol_textishtml($message_intro)) {
 									$message_intro = dol_nl2br($message_intro);
 								}
@@ -2966,12 +2995,6 @@ class Ticket extends CommonObject
 								// If public interface is not enable, use link to internal page into mail
 								$url_public_ticket = (getDolGlobalInt('TICKET_ENABLE_PUBLIC_INTERFACE') ?
 										(getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') !== '' ? getDolGlobalString('TICKET_URL_PUBLIC_INTERFACE') . '/view.php' : dol_buildpath('/public/ticket/view.php', 2)) : dol_buildpath('/ticket/card.php', 2)).'?track_id='.urlencode($object->track_id);
-								/**DEBUT SPECIFIQUE ATM **/
-								if (!getDolGlobalString('TICKET_REMOVE_TRACK_URL')) {
-									$message .= '<br>' . $langs->trans('TicketNewEmailBodyInfosTrackUrlCustomer') . ' : <a href="' . $url_public_ticket . '">' . $object->track_id . '</a><br>';
-									var_dump($message);exit();
-								}
-								/**FIN SPECIFIQUE ATM **/
 
 								// Build final message
 								$message = $message_intro.'<br><br>'.$message;
@@ -3021,9 +3044,11 @@ class Ticket extends CommonObject
 				if ((getDolGlobalInt('TICKET_SET_STATUS_ON_ANSWER', -1) < 0
 				&& ($object->status < self::STATUS_IN_PROGRESS && !$user->socid && !$private))
 				|| ($object->status > self::STATUS_IN_PROGRESS && $public_area)) {
-					$object->setStatut($object::STATUS_IN_PROGRESS);
+					// Set status
+					$object->setStatut($object::STATUS_IN_PROGRESS, null, '', 'TICKET_MODIFY');
 				} elseif (getDolGlobalInt('TICKET_SET_STATUS_ON_ANSWER', -1) >= 0 && empty($user->socid) && empty($private)) {
-					$object->setStatut(getDolGlobalInt('TICKET_SET_STATUS_ON_ANSWER'));
+					// Set status
+					$object->setStatut(getDolGlobalInt('TICKET_SET_STATUS_ON_ANSWER'), null, '', 'TICKET_MODIFY');
 				}
 
 				return 1;
@@ -3037,6 +3062,23 @@ class Ticket extends CommonObject
 		}
 	}
 
+	/**SPECIFIQUE ATM **/
+	/**
+	 * Apply standard substitutions used by ticket email content.
+	 *
+	 * @param string			$content	Content before substitutions
+	 * @param Translate			$langs		Translation handler
+	 * @param CommonObject|null	$object		Object used for substitutions
+	 * @return string
+	 */
+	protected function applyMailSubstitutions($content, $langs, $object = null)
+	{
+		$substitutionarray = getCommonSubstitutionArray($langs, 0, array(), $object);
+		complete_substitutions_array($substitutionarray, $langs, $object);
+
+		return make_substitutions($content, $substitutionarray);
+	}
+	/**SPECIFIQUE ATM **/
 
 	/**
 	 * Send ticket by email to linked contacts

@@ -3,6 +3,7 @@
  * Copyright (C) 2016		Christophe Battarel	<christophe@altairis.fr>
  * Copyright (C) 2019-2024  Frédéric France     <frederic.france@free.fr>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2025		Benjamin Falière	<benjamin@faliere.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -132,6 +133,15 @@ function ticket_prepare_head($object)
 
 
 	// History
+	$nbEvents = 0;
+	$sql = "SELECT COUNT(id) FROM " . $db->prefix() . "actioncomm";
+	$sql .= " WHERE fk_element = " . (int) $object->id . " AND elementtype = 'ticket'";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$row = $db->fetch_row($resql);
+		$nbEvents = $row[0];
+	}
+
 	$ticketViewType = "messaging";
 	if (empty($_SESSION['ticket-view-type'])) {
 		$_SESSION['ticket-view-type'] = $ticketViewType;
@@ -140,15 +150,18 @@ function ticket_prepare_head($object)
 	}
 
 	if ($ticketViewType == "messaging") {
-		$head[$h][0] = DOL_URL_ROOT.'/ticket/messaging.php?track_id='.$object->track_id;
+		$head[$h][0] = DOL_URL_ROOT . '/ticket/messaging.php?track_id=' . $object->track_id;
 	} else {
 		// $ticketViewType == "list"
-		$head[$h][0] = DOL_URL_ROOT.'/ticket/agenda.php?track_id='.$object->track_id;
+		$head[$h][0] = DOL_URL_ROOT . '/ticket/agenda.php?track_id=' . $object->track_id;
 	}
 	$head[$h][1] = $langs->trans('Events');
 	if (isModEnabled('agenda') && ($user->hasRight('agenda', 'myactions', 'read') || $user->hasRight('agenda', 'allactions', 'read'))) {
 		$head[$h][1] .= '/';
 		$head[$h][1] .= $langs->trans("Agenda");
+	}
+	if ($nbEvents > 0) {
+		$head[$h][1] .= '<span class="badge marginleftonlyshort">' . $nbEvents . '</span>';
 	}
 	$head[$h][2] = 'tabTicketLogs';
 	$h++;
@@ -274,7 +287,7 @@ function llxHeaderTicket($title, $head = "", $disablejs = 0, $disablehead = 0, $
 		print '</div>';
 	}
 
-	if (getDolGlobalInt('TICKET_IMAGE_PUBLIC_INTERFACE')) {
+	if (getDolGlobalString('TICKET_IMAGE_PUBLIC_INTERFACE')) {
 		print '<div class="backimagepublicticket">';
 		print '<img id="idTICKET_IMAGE_PUBLIC_INTERFACE" src="'.getDolGlobalString('TICKET_IMAGE_PUBLIC_INTERFACE').'">';
 		print '</div>';

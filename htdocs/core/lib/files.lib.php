@@ -3524,6 +3524,25 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			$accessallowed = 1;
 		}
 		$original_file = $conf->member->dir_output.'/'.$original_file;
+	} elseif ($modulepart == 'ticket' && !empty($conf->ticket->dir_output)) {
+		// Wrapping for tickets
+		if ($fuser->hasRight('ticket', $read) || preg_match('/^specimen/i', $original_file)) {
+			$accessallowed = 1;
+
+			// Per-ticket check for TICKET_LIMIT_VIEW_ASSIGNED_ONLY (internal users only)
+			if ($accessallowed && !$fuser->socid && getDolGlobalString('TICKET_LIMIT_VIEW_ASSIGNED_ONLY') && !$fuser->hasRight('ticket', 'manage')) {
+				if (!empty($refname) && !preg_match('/^specimen/i', $original_file)) {
+					include_once DOL_DOCUMENT_ROOT.'/ticket/class/ticket.class.php';
+					$tmpticket = new Ticket($db);
+					if ($tmpticket->fetch(0, $refname) > 0 && $tmpticket->fk_user_assign != $fuser->id) {
+						$accessallowed = 0;
+					}
+				}
+			}
+		}
+		$original_file = $conf->ticket->dir_output.'/'.$original_file;
+		// External user check: ticket may or may not be linked to a thirdparty
+		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."ticket WHERE ref='".$db->escape($refname)."' AND entity IN (".getEntity('ticket').")";
 		// If modulepart=module_user_temp	Allows any module to open a file if file is in directory called DOL_DATA_ROOT/modulepart/temp/iduser
 		// If modulepart=module_temp		Allows any module to open a file if file is in directory called DOL_DATA_ROOT/modulepart/temp
 		// If modulepart=module_user		Allows any module to open a file if file is in directory called DOL_DATA_ROOT/modulepart/iduser
