@@ -1786,9 +1786,12 @@ if ($action == 'create') {
 			print '</td></tr>';
 		}
 
-		// Ref supplier
-		print '<tr><td>'.$langs->trans('RefSupplier').'</td><td><input name="refsupplier" type="text"></td>';
-		print '</tr>';
+			// Ref supplier
+			/** START BACKPORT V23 **/
+			$refsupplier = GETPOSTISSET('refsupplier') ? GETPOST('refsupplier', 'alphanohtml') : (!empty($objectsrc->ref_supplier) ? $objectsrc->ref_supplier : '');
+			/** END BACKPORT V23 **/
+			print '<tr><td>'.$langs->trans('RefSupplier').'</td><td><input name="refsupplier" type="text" value="'.dol_escape_htmltag($refsupplier).'"></td>';
+			print '</tr>';
 
 		// Payment term
 		print '<tr><td class="nowrap">'.$langs->trans('PaymentConditionsShort').'</td><td>';
