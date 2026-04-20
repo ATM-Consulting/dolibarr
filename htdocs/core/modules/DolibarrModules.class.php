@@ -434,8 +434,8 @@ class DolibarrModules // Can not be abstract, because we need to instantiate it 
 
 		// Insert permission definitions of module into llx_rights_def. If user is admin, grant this permission to user.
 		if (!$err) {
-			//Provisoire, en attente du ticket MONK-212
-			$err += $this->insert_permissions(0, null, 1);
+			//Pour les reload : passer le premier argument à 0
+			$err += $this->insert_permissions(1, null, 1);
 		}
 
 		// Insert specific menus entries into database
