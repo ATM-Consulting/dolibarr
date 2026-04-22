@@ -2422,7 +2422,7 @@ class Ticket extends CommonObject
 	 */
 	public function newMessage($user, &$action, $private = 1, $public_area = 0)
 	{
-		global $mysoc, $conf, $langs;
+		global $mysoc, $conf, $langs, $hookmanager;
 
 		$error = 0;
 
@@ -2554,6 +2554,20 @@ class Ticket extends CommonObject
 								$message .= '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$val;
 							}
 
+							/*
+							 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+							 */
+							$parameters = array('sendto' => $sendto);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							/*
+							 * END BACKPORT
+							 */
+
 							// URL ticket
 							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
 							$message .= '<br><br>';
@@ -2629,6 +2643,20 @@ class Ticket extends CommonObject
 									$sendto[$conf->global->TICKET_NOTIFICATION_EMAIL_TO] = $conf->global->TICKET_NOTIFICATION_EMAIL_TO;
 								}
 							}
+
+							/*
+							 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+							 */
+							$parameters = array('sendto' => $sendto);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							/*
+							 * END BACKPORT
+							 */
 
 							// dont try to send email if no recipient
 							if (!empty($sendto)) {
@@ -2727,6 +2755,20 @@ class Ticket extends CommonObject
 										$sendto[$conf->global->TICKET_NOTIFICATION_EMAIL_TO] = $conf->global->TICKET_NOTIFICATION_EMAIL_TO;
 									}
 								}
+
+								/*
+								 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+								 */
+								$parameters = array('sendto' => $sendto);
+								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendto = array_merge($sendto, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendto = $hookmanager->resArray;
+								}
+								/*
+								 * END BACKPORT
+								 */
 
 								// Dont try to send email when no recipient
 								if (!empty($sendto)) {
