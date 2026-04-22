@@ -1,3 +1,7 @@
+- FIX : BACKPORT pour SENTRY : add null check before setting _renderItem on jQuery UI autocomplete widget #37597
+- NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
+- FIX : DA027856 - Edition des extrafields "always editable" sur les projets avec une tache ouverte en bas de page.
+- FIX : DA027490 - BACKPORT 37132 - Date sur les temps passés sur les projets était erronée. 
 - FIX : DA027053 - Update tms on delete propalLine if propalLine is a product with a price of 0 or if product is not include.
 - FIX : DA026698 - Backport from v23 - Recherche insensible aux diacritiques (accents)
 - FIX : DA026536 - Saut de ligne dans mail automatique - A supp en 21.0.3

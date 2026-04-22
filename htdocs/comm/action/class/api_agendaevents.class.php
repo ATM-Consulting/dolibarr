@@ -20,7 +20,7 @@
 use Luracast\Restler\RestException;
 
 require_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
-
+require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
 
 /**
  * API class for Agenda Events
@@ -200,6 +200,34 @@ class AgendaEvents extends DolibarrApi
 				'page_count' => ceil((int) $total / $limit),
 				'limit' => $limit
 			];
+		}
+
+		$user_cache = array();
+
+		// Fix: Loop through obj_ret instead of SQL result
+		$data_to_enrich = $pagination_data ? $obj_ret['data'] : $obj_ret;
+		foreach ($data_to_enrich as $key => $event) {
+			$author_id = property_exists($event, 'authorid') && $event->authorid ? $event->authorid : (property_exists($event, 'userownerid') ? $event->userownerid : 0);
+
+			if ($author_id > 0) {
+				if (!isset($user_cache[$author_id])) {
+					$tmp_user = new User($db);
+					$tmp_user->fetch($author_id);
+					$user_cache[$author_id] = $tmp_user;
+				}
+
+				// On injecte les infos dans l'objet retourné
+				$data_to_enrich[$key]->user_author_firstname = $user_cache[$author_id]->firstname;
+				$data_to_enrich[$key]->user_author_lastname = $user_cache[$author_id]->lastname;
+				// Use simple concatenation instead of getFullName to avoid langs dependency
+				$data_to_enrich[$key]->user_author_name = trim($user_cache[$author_id]->firstname . ' ' . $user_cache[$author_id]->lastname);
+			}
+		}
+		// Update the enriched data back
+		if ($pagination_data) {
+			$obj_ret['data'] = $data_to_enrich;
+		} else {
+			$obj_ret = $data_to_enrich;
 		}
 
 		return $obj_ret;
