@@ -15,7 +15,7 @@
  * Copyright (C) 2012-2016  Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2012       Cedric Salvador         <csalvador@gpcsolutions.fr>
  * Copyright (C) 2012-2015  Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
- * Copyright (C) 2014-2023  Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2014-2026  Alexandre Spangaro      <alexandre@inovea-conseil.com>
  * Copyright (C) 2018-2022  Ferran Marcet           <fmarcet@2byte.es>
  * Copyright (C) 2018-2024  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2018       Nicolas ZABOURI	        <info@inovea-conseil.com>
@@ -3323,6 +3323,7 @@ class Form
 			$sql .= $this->db->order("p.ref");
 		}
 
+		$limit = getDolGlobalInt('SEARCH_LIMIT_AJAX') ?: $limit;
 		$sql .= $this->db->plimit($limit, 0);
 
 		// Build output string
@@ -5779,7 +5780,7 @@ class Form
 		$arrayselected = array();
 		if (GETPOSTISARRAY($htmlname)) {
 			$arrayselected = GETPOST($htmlname, 'array:int');
-		} elseif (is_object($object)) {
+		} elseif (is_object($object) && $object->id > 0) {
 			$c = new Categorie($this->db);
 			$cats = $c->containing($object->id, $categtype);
 			$arrayselected = array();
@@ -7250,7 +7251,7 @@ class Form
 				if (!empty($user) && $user->admin && preg_match('/\'(..)\'/', $country_code, $reg)) {
 					$langs->load("errors");
 					$new_country_code = $reg[1];
-					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_pays', 'code', 'rowid');
+					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_country', 'code', 'rowid');
 					$this->error .= '<br>'.$langs->trans("ErrorFixThisHere", DOL_URL_ROOT.'/admin/dict.php?id=10'.($country_id > 0 ? '&countryidforinsert='.$country_id : ''));
 				}
 				$this->error .= '</span>';
@@ -12392,10 +12393,10 @@ class Form
 	 * @param	string		$modelType		Model type
 	 * @param	int<0,1>	$default		1=Show also Default mail template
 	 * @param	int<0,1>	$addjscombo		Add js combobox
-	 * @param   string      $selected       Selected model mail
+	 * @param   int|string  $selected       Selected model mail
 	 * @return	string						HTML select string
 	 */
-	public function selectModelMail($prefix, $modelType = '', $default = 0, $addjscombo = 0, $selected = '')
+	public function selectModelMail($prefix, $modelType = '', $default = 0, $addjscombo = 0, $selected = 0)
 	{
 		global $langs, $user;
 
@@ -12412,7 +12413,7 @@ class Form
 		}
 		if ($result > 0) {
 			foreach ($formmail->lines_model as $model) {
-				$TModels[$model->id] = $model->label;
+				$TModels[(int) $model->id] = $model->label;
 			}
 		}
 
@@ -12420,7 +12421,7 @@ class Form
 
 		foreach ($TModels as $id_model => $label_model) {
 			$retstring .= '<option value="' . $id_model . '"';
-			if (!empty($selected) && $selected == $id_model) {
+			if (!empty($selected) && ((int) $selected) == $id_model) {
 				$retstring .= "selected";
 			}
 			$retstring .= ">" . $label_model . "</option>";
