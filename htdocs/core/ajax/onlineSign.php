@@ -289,6 +289,9 @@ if ($action == "importSignature") {
 						//customer is not a user !?! so could we use same user as validation ?
 						$user = new User($db);
 						$user->fetch($object->user_validation_id);
+						if (empty($object->thirdparty)) {
+							$object->fetch_thirdparty();
+						}
 						$object->context = array('closedfromonlinesignature' => 'closedfromonlinesignature');
 						$result = $object->call_trigger('PROPAL_CLOSE_SIGNED', $user);
 						if ($result < 0) {
