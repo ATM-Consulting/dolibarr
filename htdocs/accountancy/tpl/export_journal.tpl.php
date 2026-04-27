@@ -87,6 +87,10 @@ if ((substr($accountancyexport->getFormatCode($formatexportset), 0, 3) == 'fec')
 	$completefilename = ($code ? $code."_" : "").($prefix ? $prefix."_" : "").$filename.($nodateexport ? "" : $date_export).".".$format;
 }
 
+// START SPE LES SUCCES DU PILAT
+$completefilename='ECRITURE.WIN';
+// END SPE LES SUCCES DU PILAT
+
 // --- Hook: allow external modules to override export filename ---
 if (is_object($hookmanager)) {
 	// Dedicated context (non-blocking if other hooks are already initialized)
