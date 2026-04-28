@@ -2825,6 +2825,7 @@ class Product extends CommonObject
 			}
 
 			$this->db->begin();
+  dol_syslog("DEBUG updatePrice CALLED FROM: ".(new Exception())->getTraceAsString(), LOG_DEBUG);                                                                                                                            
 
 			// Ne pas mettre de quote sur les numeriques decimaux.
 			// Ceci provoque des stockages avec arrondis en base au lieu des valeurs exactes.
