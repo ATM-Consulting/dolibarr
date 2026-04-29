@@ -96,5 +96,5 @@ ErrorInBatch=Erreur lors de l'exécution du travail %s
 # Cron Boxes
 LastExecutedScheduledJob=Dernier travail planifié exécuté
 NextScheduledJobExecute=Prochaine travail planifié à exécuter
-NumberScheduledJobError=Nombre de travaux planifiées en erreur
+NumberScheduledJobError=Nombre de travaux planifiés en erreur
 NumberScheduledJobNeverFinished=Nombre de tâches planifiées jamais terminées
