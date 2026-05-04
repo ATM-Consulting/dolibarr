@@ -6703,10 +6703,17 @@ abstract class CommonObject
 
 				switch ($attributeType) {
 					case 'int':
+					case 'duration':
+					case 'stars':
 						if (!is_numeric($value) && $value != '') {
 							$this->errors[] = $langs->trans("ExtraFieldHasWrongValue", $attributeLabel);
 							return -1;
-						} elseif ($value == '') {
+						} elseif ($value === '' || $value === false || $value === null) {
+							$new_array_options[$key] = null;
+						}
+						break;
+					case 'boolean':
+						if ($value === '' || $value === false || $value === null) {
 							$new_array_options[$key] = null;
 						}
 						break;
@@ -6797,6 +6804,10 @@ abstract class CommonObject
 						$new_array_options[$key] = $this->db->idate($this->array_options[$key], 'gmt');
 						break;
 					case 'link':
+						if ($value === '' || $value === false || $value === null) {
+							$new_array_options[$key] = null;
+							break;
+						}
 						$param_list = array_keys($attributeParam['options']);
 						// 0 : ObjectName
 						// 1 : classPath
