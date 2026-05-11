@@ -1457,8 +1457,15 @@ abstract class CommonDocGenerator
 					$enabled = (int) dol_eval((string) $extrafields->attributes[$object->table_element]['enabled'][$key], 1, 1, '2');
 				}
 
+				if (!$enabled) {
+					continue;
+				}
+
+				// Reset enabled: only printable attribute determines PDF visibility
+				$enabled = 0;
+
 				$disableOnEmpty = 0;
-				if ($enabled && !empty($extrafields->attributes[$object->table_element]['printable'][$key])) {
+				if (!empty($extrafields->attributes[$object->table_element]['printable'][$key])) {
 					$printable = intval($extrafields->attributes[$object->table_element]['printable'][$key]);
 					if (in_array($printable, $params['printableEnable']) || in_array($printable, $params['printableEnableNotEmpty'])) {
 						$enabled = 1;
@@ -1703,6 +1710,7 @@ abstract class CommonDocGenerator
 
 		if (!empty($extrafields->attributes[$object->table_element]) && is_array($extrafields->attributes[$object->table_element]) && array_key_exists('label', $extrafields->attributes[$object->table_element]) && is_array($extrafields->attributes[$object->table_element]['label'])) {
 			foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $label) {
+
 				// Dont display separator yet even is set to be displayed (not compatible yet)
 				if ($extrafields->attributes[$object->table_element]['type'][$key] == 'separate') {
 					continue;
