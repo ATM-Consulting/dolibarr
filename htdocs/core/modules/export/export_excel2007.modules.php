@@ -369,6 +369,8 @@ class ExportExcel2007 extends ModeleExports
 				$coord = $this->workbook->getActiveSheet()->getCellByColumnAndRow($this->col, $this->row + 1)->getCoordinate();
 				$this->workbook->getActiveSheet()->getStyle($coord)->getNumberFormat()->setFormatCode('yyyy-mm-dd h:mm:ss');
 			} else {
+				// If $newvalue starts with '=' we don't want it to be interpreted as a formula
+				$newvalue = (dol_substr($newvalue, 0, 1) === '=' ? '\'' : '').$newvalue;
 				if ($typefield == 'Text' || $typefield == 'TextAuto') {
 					// If $newvalue start with an equal sign we don't want it to be interpreted as a formula, so we add a '. Such transformation should be
 					// done by SetCellValueByColumnAndRow but it is not, so we do it ourself.
@@ -400,6 +402,8 @@ class ExportExcel2007 extends ModeleExports
 				$coord = $this->workbook->getActiveSheet()->getCellByColumnAndRow($this->col, $this->row + 1)->getCoordinate();
 				$this->workbook->getActiveSheet()->getStyle($coord)->getNumberFormat()->setFormatCode('yyyy-mm-dd h:mm:ss');
 			} else {
+				// If $newvalue starts with '=' we don't want it to be interpreted as a formula
+				$newvalue = (dol_substr($newvalue, 0, 1) === '=' ? '\'' : '').$newvalue;
 				if ($typefield == 'Text' || $typefield == 'TextAuto') {
 					$this->workbook->getActiveSheet()->SetCellValueByColumnAndRow($this->col, $this->row + 1, (string) $newvalue);
 					$coord = $this->workbook->getActiveSheet()->getCellByColumnAndRow($this->col, $this->row + 1)->getCoordinate();

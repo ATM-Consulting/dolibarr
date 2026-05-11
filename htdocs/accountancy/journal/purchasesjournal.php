@@ -256,13 +256,22 @@ if ($result) {
 			}
 		}
 
-		$tax_id = $obj->tva_tx . ($obj->vat_src_code ? ' (' . $obj->vat_src_code . ')' : '');
-		if (array_key_exists($tax_id, $vatdata_cache)) {
-			$vatdata = $vatdata_cache[$tax_id];
-		} else {
-			$vatdata = getTaxesFromId($tax_id, $mysoc, $mysoc, 0);
-			$vatdata_cache[$tax_id] = $vatdata;
-		}
+		 $seller = new Societe($db);
+		  $seller->fetch($obj->socid);
+
+		  $tax_id = $obj->tva_tx . ($obj->vat_src_code ? ' (' . $obj->vat_src_code . ')' : '');
+
+		  // Important: le cache ne doit pas être seulement sur le taux,
+		  // sinon 2 fournisseurs de pays différents peuvent partager un mauvais résultat.
+		  $vat_cache_key = $tax_id.'|'.$seller->id.'|'.$seller->country_code;
+
+		  if (array_key_exists($vat_cache_key, $vatdata_cache)) {
+		  	$vatdata = $vatdata_cache[$vat_cache_key];
+		  } else {
+		  	$vatdata = getTaxesFromId($tax_id, $mysoc, $seller, 0);
+		  	$vatdata_cache[$vat_cache_key] = $vatdata;
+		  }
+
 		$compta_tva = (!empty($vatdata['accountancy_code_buy']) ? $vatdata['accountancy_code_buy'] : $cpttva);
 		$compta_localtax1 = (!empty($vatdata['accountancy_code_buy']) ? $vatdata['accountancy_code_buy'] : $cptlocaltax1);
 		$compta_localtax2 = (!empty($vatdata['accountancy_code_buy']) ? $vatdata['accountancy_code_buy'] : $cptlocaltax2);
