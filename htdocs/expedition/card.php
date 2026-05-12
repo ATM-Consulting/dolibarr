@@ -138,8 +138,6 @@ $date_delivery = dol_mktime(GETPOSTINT('date_deliveryhour'), GETPOSTINT('date_de
 
 $date_shipping = dol_mktime(GETPOSTINT('date_shippinghour'), GETPOSTINT('date_shippingmin'), 0, GETPOSTINT('date_shippingmonth'), GETPOSTINT('date_shippingday'), GETPOSTINT('date_shippingyear'));
 
-
-
 // Security check
 
 if ($user->socid) {
@@ -912,43 +910,6 @@ if (empty($reshook)) {
 				}
 			}
 		} elseif ($origin && $origin_id > 0) {
-			$debugMatchingLine = null;
-			if (!empty($object->lines) && is_array($object->lines)) {
-				foreach ($object->lines as $tmpLine) {
-					if ((int) $tmpLine->id === (int) $line_id) {
-						$debugMatchingLine = array(
-							'id' => $tmpLine->id,
-							'fk_product' => $tmpLine->fk_product,
-							'qty_shipped' => $tmpLine->qty_shipped,
-							'weight' => $tmpLine->weight,
-							'weight_units' => $tmpLine->weight_units,
-							'volume' => $tmpLine->volume,
-							'volume_units' => $tmpLine->volume_units,
-							'array_options' => $tmpLine->array_options,
-						);
-						break;
-					}
-				}
-			}
-
-			$debugExtrafields = $extrafields->getOptionalsFromPost($object->table_element_line);
-			var_dump(array(
-				'DEBUG_EXPEDITION_UPDATELINE' => true,
-				'line_id' => $line_id,
-				'origin' => $origin,
-				'origin_id' => $origin_id,
-				'post' => $_POST,
-				'get' => $_GET,
-				'parsed_extrafields' => $debugExtrafields,
-				'raw_weight_keys' => array(
-					'weight' => $_POST['weight'] ?? null,
-					'volume' => $_POST['volume'] ?? null,
-					'dimensions' => $_POST['options_dimensions'] ?? null,
-				),
-				'matching_line_before_update' => $debugMatchingLine,
-			));
-			exit;
-
 			// Update a line
 			// Clean parameters
 			$qty = 0;
@@ -997,7 +958,8 @@ if (empty($reshook)) {
 									$line->detail_batch->id = $detail_batch->id;
 									$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 									$line->detail_batch->qty = $batch_qty;
-									if ($line->update($user) < 0) {
+									$lineUpdateResult = $line->update($user);
+									if ($lineUpdateResult < 0) {
 										setEventMessages($line->error, $line->errors, 'errors');
 										$error++;
 									} else {
@@ -1041,7 +1003,8 @@ if (empty($reshook)) {
 										$line->detail_batch->batch = $lotStock->batch;
 										$line->detail_batch->entrepot_id = $lotStock->warehouseid;
 										$line->detail_batch->qty = $batch_qty;
-										if ($line->update($user) < 0) {
+										$lineUpdateResult = $line->update($user);
+										if ($lineUpdateResult < 0) {
 											setEventMessages($line->error, $line->errors, 'errors');
 											$error++;
 										} else {
@@ -1060,7 +1023,8 @@ if (empty($reshook)) {
 									$line->detail_batch[0]->batch = $lotStock->batch;
 									$line->detail_batch[0]->entrepot_id = $lotStock->warehouseid;
 									$line->detail_batch[0]->qty = $batch_qty;
-									if ($object->create_line_batch($line, $line->array_options) < 0) {
+									$createLineBatchResult = $object->create_line_batch($line, $line->array_options);
+									if ($createLineBatchResult < 0) {
 										setEventMessages($object->error, $object->errors, 'errors');
 										$error++;
 									} else {
@@ -1082,7 +1046,8 @@ if (empty($reshook)) {
 								$line->id = $line_id;
 								$line->entrepot_id = GETPOSTINT((string) $stockLocation);
 								$line->qty = GETPOSTFLOAT($qty);
-								if ($line->update($user) < 0) {
+								$lineUpdateResult = $line->update($user);
+								if ($lineUpdateResult < 0) {
 									setEventMessages($line->error, $line->errors, 'errors');
 									$error++;
 								}
@@ -1095,7 +1060,8 @@ if (empty($reshook)) {
 								$line->id = $line_id;
 								$line->entrepot_id = GETPOSTINT($stockLocation);
 								$line->qty = GETPOSTFLOAT($qty);
-								if ($line->update($user) < 0) {
+								$lineUpdateResult = $line->update($user);
+								if ($lineUpdateResult < 0) {
 									setEventMessages($line->error, $line->errors, 'errors');
 									$error++;
 								}
@@ -3181,6 +3147,8 @@ if ($action == 'create' && $usercancreate) {
 			<input type="hidden" name="action" value="updateline">
 			<input type="hidden" name="mode" value="">
 			<input type="hidden" name="id" value="' . $object->id . '">
+			<input type="hidden" name="origin" value="' . $object->origin . '">
+			<input type="hidden" name="origin_id" value="' . $object->origin_id . '">
 			';
 		}
 		print '<br>';
@@ -3758,6 +3726,9 @@ if ($action == 'create' && $usercancreate) {
 		print '</tbody>';
 		print "</table>\n";
 		print '</div>';
+		if ($action == 'editline') {
+			print "</form>\n";
+		}
 
 		$object->fetchObjectLinked($object->id, $object->element);
 	}
