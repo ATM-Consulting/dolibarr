@@ -217,6 +217,7 @@ if (empty($reshook)) {
 	}
 
 	include DOL_DOCUMENT_ROOT . '/core/actions_dellink.inc.php'; // Must be 'include', not 'include_once'
+	include DOL_DOCUMENT_ROOT . '/core/actions_lineupdown.inc.php'; // Fallback when drag and drop is not available
 
 	// Actions to build doc
 	include DOL_DOCUMENT_ROOT . '/core/actions_builddoc.inc.php';
@@ -3147,8 +3148,14 @@ if ($action == 'create' && $usercancreate) {
 		}
 		print '<br>';
 
+		if (!empty($conf->use_javascript_ajax) && $object->status == Expedition::STATUS_DRAFT && $usercancreate && $num_prod > 1) {
+			$nboflines = $num_prod;
+			$tagidfortablednd = 'tablelinesorigin';
+			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
+		}
+
 		print '<div class="div-table-responsive-no-min">';
-		print '<table class="noborder centpercent" id="tablelines" >';
+		print '<table class="noborder centpercent" id="tablelinesorigin" >';
 		print '<thead>';
 		print '<tr class="liste_titre">';
 		// Adds a line numbering column
@@ -3296,9 +3303,9 @@ if ($action == 'create' && $usercancreate) {
 
 				// Predefined product or service
 				$lines[$i]->fetch_optionals();
-				if ($action == 'editline' && $lines[$i]->id == $line_id) {
-					$lineExtrafieldsInline = $lines[$i]->showOptionals($extrafields, 'edit', array(), !empty($indiceAsked) ? $indiceAsked : '', '', '1', 'line');
-				} else {
+				$isEditLine = ($action == 'editline' && $lines[$i]->id == $line_id);
+				$lineExtrafieldsInline = '';
+				if (!$isEditLine) {
 					$lineExtrafieldsInline = $lines[$i]->showOptionals($extrafields, 'view', array(), !empty($indiceAsked) ? $indiceAsked : '', '', '1', 'line');
 				}
 
@@ -3638,7 +3645,7 @@ if ($action == 'create' && $usercancreate) {
 
 				$showMoveCol = ($object->status == Expedition::STATUS_DRAFT);
 
-				if ($action == 'editline' && $lines[$i]->id == $line_id) {
+				if ($isEditLine) {
 					print '<td class="center" colspan="2" valign="middle">';
 					print '<input type="submit" class="button button-save" id="savelinebutton marginbottomonly" name="save" value="' . $langs->trans("Save") . '"><br>';
 					print '<input type="submit" class="button button-cancel" id="cancellinebutton" name="cancel" value="' . $langs->trans("Cancel") . '"><br>';
@@ -3682,6 +3689,21 @@ if ($action == 'create' && $usercancreate) {
 					print '</td>';
 				}
 				print "</tr>";
+
+				if ($isEditLine && !empty($extrafields)) {
+					$colspan = 6;
+					if ($origin_id > 0) {
+						$colspan++;
+					}
+					if (isModEnabled('productbatch')) {
+						$colspan++;
+					}
+					if (isModEnabled('stock')) {
+						$colspan++;
+					}
+
+					print $lines[$i]->showOptionals($extrafields, 'edit', array('colspan' => $colspan), !empty($indiceAsked) ? $indiceAsked : '', '', 0, 'card');
+				}
 			} elseif (empty($reshook) && $lines[$i]->product_type == "9") {
 				$objectsrc = new OrderLine($db);
 				$objectsrc->fetch($lines[$i]->origin_line_id);
