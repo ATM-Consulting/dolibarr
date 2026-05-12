@@ -3203,6 +3203,7 @@ if ($action == 'create' && $usercancreate) {
 		if ($object->status == 0) {
 			print '<td class="linecoledit"></td>';
 			print '<td class="linecoldelete" width="10"></td>';
+			print '<td class="linecolmove"></td>';
 		}
 		print "</tr>\n";
 		print '</thead>';
@@ -3294,6 +3295,13 @@ if ($action == 'create' && $usercancreate) {
 				}
 
 				// Predefined product or service
+				$lines[$i]->fetch_optionals();
+				if ($action == 'editline' && $lines[$i]->id == $line_id) {
+					$lineExtrafieldsInline = $lines[$i]->showOptionals($extrafields, 'edit', array(), !empty($indiceAsked) ? $indiceAsked : '', '', '1', 'line');
+				} else {
+					$lineExtrafieldsInline = $lines[$i]->showOptionals($extrafields, 'view', array(), !empty($indiceAsked) ? $indiceAsked : '', '', '1', 'line');
+				}
+
 				if ($lines[$i]->fk_product > 0) {
 					// Define output language
 					if (getDolGlobalInt('MAIN_MULTILANGS') && getDolGlobalString('PRODUIT_TEXTS_IN_THIRDPARTY_LANGUAGE')) {
@@ -3342,6 +3350,11 @@ if ($action == 'create' && $usercancreate) {
 					if (getDolGlobalInt('PRODUIT_DESC_IN_FORM_ACCORDING_TO_DEVICE')) {
 						print (!empty($lines[$i]->description) && $lines[$i]->description != $lines[$i]->product) ? '<br>' . dol_htmlentitiesbr($lines[$i]->description) : '';
 					}
+					if (!empty($lineExtrafieldsInline)) {
+						print '<div style="padding-top: 10px" id="extrafield_lines_area_' . $lines[$i]->id . '" name="extrafield_lines_area_' . $lines[$i]->id . '">';
+						print $lineExtrafieldsInline;
+						print '</div>';
+					}
 					print "</td>\n";
 				} else {
 					print '<td class="linecoldescription" >';
@@ -3359,6 +3372,11 @@ if ($action == 'create' && $usercancreate) {
 					}
 
 					print_date_range($lines[$i]->date_start, $lines[$i]->date_end);
+					if (!empty($lineExtrafieldsInline)) {
+						print '<div style="padding-top: 10px" id="extrafield_lines_area_' . $lines[$i]->id . '" name="extrafield_lines_area_' . $lines[$i]->id . '">';
+						print $lineExtrafieldsInline;
+						print '</div>';
+					}
 					print "</td>\n";
 				}
 
@@ -3618,12 +3636,17 @@ if ($action == 'create' && $usercancreate) {
 				// Size
 				//print '<td class="center">'.$lines[$i]->volume*$lines[$i]->qty_shipped.' '.measuringUnitString(0, "volume", $lines[$i]->volume_units).'</td>';
 
+				$showMoveCol = ($object->status == Expedition::STATUS_DRAFT);
+
 				if ($action == 'editline' && $lines[$i]->id == $line_id) {
 					print '<td class="center" colspan="2" valign="middle">';
 					print '<input type="submit" class="button button-save" id="savelinebutton marginbottomonly" name="save" value="' . $langs->trans("Save") . '"><br>';
 					print '<input type="submit" class="button button-cancel" id="cancellinebutton" name="cancel" value="' . $langs->trans("Cancel") . '"><br>';
 					print '</td>';
-				} elseif ($object->status == Expedition::STATUS_DRAFT) {
+					if ($showMoveCol) {
+						print '<td class="linecolmove tdlineupdown center"></td>';
+					}
+				} elseif ($showMoveCol) {
 					$edit_url = $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=editline&token=' . newToken() . '&lineid=' . $lines[$i]->id;
 					if (getDolGlobalInt('PRODUIT_SOUSPRODUITS')) {
 						$product_id = $lines[$i]->fk_product;
@@ -3647,39 +3670,18 @@ if ($action == 'create' && $usercancreate) {
 					print '<td class="linecoldelete" width="10">';
 					print '<a class="reposition" href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=deleteline&token=' . newToken() . '&lineid=' . $lines[$i]->id . '">' . img_delete() . '</a>';
 					print '</td>';
-
-					// Display lines extrafields
-					if (!empty($rowExtrafieldsStart)) {
-						print $rowExtrafieldsStart;
-						print $rowExtrafieldsView;
-						print $rowEnd;
+					print '<td class="linecolmove tdlineupdown center">';
+					if (!empty($user->rights->expedition->creer) && $num_prod > 1) {
+						if ($i > 0) {
+							print '<a class="lineupdown" href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=up&token=' . newToken() . '&rowid=' . $lines[$i]->id . '">' . img_up('default', 0, 'imgupforline') . '</a>';
+						}
+						if ($i < $num_prod - 1) {
+							print '<a class="lineupdown" href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=down&token=' . newToken() . '&rowid=' . $lines[$i]->id . '">' . img_down('default', 0, 'imgdownforline') . '</a>';
+						}
 					}
+					print '</td>';
 				}
 				print "</tr>";
-
-				// Display lines extrafields.
-				// $line is a line of shipment
-
-				$colspan = 6;
-				if ($origin_id > 0) {
-					$colspan++;
-				}
-				if (isModEnabled('productbatch')) {
-					$colspan++;
-				}
-				if (isModEnabled('stock')) {
-					$colspan++;
-				}
-
-				$line = $lines[$i];
-				$line->fetch_optionals();
-
-				// TODO Show all in same line by setting $display_type = 'line'
-				if ($action == 'editline' && $line->id == $line_id) {
-					print $lines[$i]->showOptionals($extrafields, 'edit', array('colspan' => $colspan), !empty($indiceAsked) ? $indiceAsked : '', '', '', 'card');
-				} else {
-					print $lines[$i]->showOptionals($extrafields, 'view', array('colspan' => $colspan), !empty($indiceAsked) ? $indiceAsked : '', '', '', 'card');
-				}
 			} elseif (empty($reshook) && $lines[$i]->product_type == "9") {
 				$objectsrc = new OrderLine($db);
 				$objectsrc->fetch($lines[$i]->origin_line_id);
