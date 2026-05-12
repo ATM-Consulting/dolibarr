@@ -912,6 +912,43 @@ if (empty($reshook)) {
 				}
 			}
 		} elseif ($origin && $origin_id > 0) {
+			$debugMatchingLine = null;
+			if (!empty($object->lines) && is_array($object->lines)) {
+				foreach ($object->lines as $tmpLine) {
+					if ((int) $tmpLine->id === (int) $line_id) {
+						$debugMatchingLine = array(
+							'id' => $tmpLine->id,
+							'fk_product' => $tmpLine->fk_product,
+							'qty_shipped' => $tmpLine->qty_shipped,
+							'weight' => $tmpLine->weight,
+							'weight_units' => $tmpLine->weight_units,
+							'volume' => $tmpLine->volume,
+							'volume_units' => $tmpLine->volume_units,
+							'array_options' => $tmpLine->array_options,
+						);
+						break;
+					}
+				}
+			}
+
+			$debugExtrafields = $extrafields->getOptionalsFromPost($object->table_element_line);
+			var_dump(array(
+				'DEBUG_EXPEDITION_UPDATELINE' => true,
+				'line_id' => $line_id,
+				'origin' => $origin,
+				'origin_id' => $origin_id,
+				'post' => $_POST,
+				'get' => $_GET,
+				'parsed_extrafields' => $debugExtrafields,
+				'raw_weight_keys' => array(
+					'weight' => $_POST['weight'] ?? null,
+					'volume' => $_POST['volume'] ?? null,
+					'dimensions' => $_POST['options_dimensions'] ?? null,
+				),
+				'matching_line_before_update' => $debugMatchingLine,
+			));
+			exit;
+
 			// Update a line
 			// Clean parameters
 			$qty = 0;
