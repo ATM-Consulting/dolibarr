@@ -84,6 +84,11 @@ class pdf_rouget extends ModelePdfExpedition
 	 */
 	public $posxqtyordered;
 
+	/**
+	 * Spé IMMECA : décalage vertical (mm) appliqué aux cadres expéditeur/destinataire
+	 * pour absorber la ligne "DateShipping" ajoutée dans l'en-tête.
+	 */
+	const IMMECA_HEADER_EXTRA_OFFSET = 5;
 
 	/**
 	 *	Constructor
@@ -1083,8 +1088,8 @@ class pdf_rouget extends ModelePdfExpedition
 			$carac_emetteur .= pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'source', $object);
 
 			// Show sender
-			// Spé IMMECA : cadres décalés de +5 vers le bas pour laisser de la place aux lignes ajoutées dans l'en-tête (date d'expédition + date de livraison prévue).
-			$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 45 : 47;
+			// Spé IMMECA : cadre décalé via self::IMMECA_HEADER_EXTRA_OFFSET pour laisser la place aux lignes ajoutées dans l'en-tête (date d'expédition + date de livraison prévue).
+			$posy = (getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42) + self::IMMECA_HEADER_EXTRA_OFFSET;
 			$posx = $this->marge_gauche;
 			if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
 				$posx = $this->page_largeur - $this->marge_droite - 80;
@@ -1145,7 +1150,7 @@ class pdf_rouget extends ModelePdfExpedition
 				$widthrecbox = 84; // To work with US executive format
 			}
 			// Spé IMMECA : aligné sur le cadre expéditeur décalé plus haut.
-			$posy = getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 45 : 47;
+			$posy = (getDolGlobalString('MAIN_PDF_USE_ISO_LOCATION') ? 40 : 42) + self::IMMECA_HEADER_EXTRA_OFFSET;
 			$posx = $this->page_largeur - $this->marge_droite - $widthrecbox;
 			if (getDolGlobalString('MAIN_INVERT_SENDER_RECIPIENT')) {
 				$posx = $this->marge_gauche;
