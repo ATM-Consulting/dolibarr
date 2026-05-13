@@ -295,6 +295,9 @@ if ($result) {
 		$tabfac[$obj->rowid]["date"] = $db->jdate($obj->df);
 		$tabfac[$obj->rowid]["datereg"] = $db->jdate($obj->dlr);
 		$tabfac[$obj->rowid]["ref"] = $obj->ref;
+		/*  ————————— START SPÉ ISETA ————————— */
+		$tabfac[$obj->rowid]["pref"] = $obj->pref;
+		/*  —————————— END SPÉ ISETA —————————— */
 		$tabfac[$obj->rowid]["type"] = $obj->type;
 		$tabfac[$obj->rowid]["description"] = $obj->label_compte;
 		$tabfac[$obj->rowid]["close_code"] = $obj->close_code; // close_code = 'replaced' for replacement invoices (not used in most european countries)
@@ -613,9 +616,14 @@ if ($action == 'writebookkeeping' && !$error && $user->hasRight('accounting', 'b
 				$bookkeeping->subledger_label = $tabcompany[$key]['name'];
 
 				$bookkeeping->numero_compte = (!empty($tabcompany[$key]['accountancy_code_customer_general']) && $tabcompany[$key]['accountancy_code_customer_general'] != '-1') ? $tabcompany[$key]['accountancy_code_customer_general'] : $cptcli;
-				$bookkeeping->label_compte = $accountingaccountcustomer->label;
 
-				$bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("SubledgerAccount"));
+				/*  ————————— START SPÉ ISETA ————————— */
+				// $bookkeeping->label_compte = $accountingaccountcustomer->label;
+				$bookkeeping->label_compte = $companystatic->name;
+				// $bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("SubledgerAccount"));
+				$bookkeeping->label_operation = $val['pref'];
+				/*  —————————— END SPÉ ISETA —————————— */
+
 				$bookkeeping->montant = $mt;
 				$bookkeeping->sens = ($mt >= 0) ? 'D' : 'C';
 				$bookkeeping->debit = ($mt >= 0) ? $mt : 0;
@@ -691,9 +699,14 @@ if ($action == 'writebookkeeping' && !$error && $user->hasRight('accounting', 'b
 					}
 
 					$bookkeeping->numero_compte = $k;
-					$bookkeeping->label_compte = $label_account;
 
-					$bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $label_account);
+					/*  ————————— START SPÉ ISETA ————————— */
+					// $bookkeeping->label_compte = $label_account;
+					$bookkeeping->label_compte = $companystatic->name;
+					// $bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $label_account);
+					$bookkeeping->label_operation = $companystatic->name . ' ' . $val['pref'];
+					/*  —————————— END SPÉ ISETA —————————— */
+
 					$bookkeeping->montant = $mt;
 					$bookkeeping->sens = ($mt < 0) ? 'D' : 'C';
 					$bookkeeping->debit = ($mt < 0) ? -$mt : 0;
@@ -766,9 +779,12 @@ if ($action == 'writebookkeeping' && !$error && $user->hasRight('accounting', 'b
 
 
 						$tmpvatrate = (empty($def_tva[$key][$k]) ? (empty($arrayofvat[$key][$k]) ? '' : $arrayofvat[$key][$k]) : implode(', ', $def_tva[$key][$k]));
-						$labelvataccount = $langs->trans("Taxes").' '.$tmpvatrate.' %';
-						$labelvataccount .= ($numtax ? ' - Localtax '.$numtax : '');
-						$bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $labelvataccount);
+						/*  ————————— START SPÉ ISETA ————————— */
+						// $labelvataccount = $langs->trans("Taxes").' '.$tmpvatrate.' %';
+						// $labelvataccount .= ($numtax ? ' - Localtax '.$numtax : '');
+						// $bookkeeping->label_operation = $bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $labelvataccount);
+						$bookkeeping->label_operation = $companystatic->name.' - '.$invoicestatic->ref.' - '.$langs->trans("VAT").' '.join(', ', $def_tva[$key][$k]).' %'.($numtax ? ' - Localtax '.$numtax : '');
+						/*  —————————— END SPÉ ISETA —————————— */
 
 						$bookkeeping->montant = $mt;
 						$bookkeeping->sens = ($mt < 0) ? 'D' : 'C';
@@ -990,12 +1006,18 @@ if ($action == 'exportcsv' && !$error) {		// ISO and not UTF8 !
 			print '"'.$key.'"'.$sep;
 			print '"'.$date.'"'.$sep;
 			print '"'.$val["ref"].'"'.$sep;
-			print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+			print '"'.csvClean($companystatic->name).'"'.$sep;
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '"'.length_accounta(html_entity_decode($k)).'"'.$sep;
 			print '"'.length_accountg($companystatic->accountancy_code_customer_general).'"'.$sep;
 			print '"'.length_accounta(html_entity_decode($k)).'"'.$sep;
 			print '"'.$langs->trans("ThirdParty").'"'.$sep;
-			print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("ThirdParty"))).'"'.$sep;
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("ThirdParty"))).'"'.$sep;
+			print '"'.csvClean(dol_trunc($companystatic->name, 16)).' - '.$invoicestatic->ref.' - '.$langs->trans("Thirdparty").'"'.$sep;
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '"'.($mt >= 0 ? price($mt) : '').'"'.$sep;
 			print '"'.($mt < 0 ? price(-$mt) : '').'"'.$sep;
 			print '"'.$journal.'"';
@@ -1011,12 +1033,18 @@ if ($action == 'exportcsv' && !$error) {		// ISO and not UTF8 !
 			print '"'.$key.'"'.$sep;
 			print '"'.$date.'"'.$sep;
 			print '"'.$val["ref"].'"'.$sep;
-			print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+			print '"'.csvClean($companystatic->name).'"'.$sep;
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '"'.length_accountg(html_entity_decode($k)).'"'.$sep;
 			print '"'.length_accountg(html_entity_decode($k)).'"'.$sep;
 			print '""'.$sep;
 			print '"'.csvClean(dol_trunc($accountingaccount->label, 32)).'"'.$sep;
-			print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $accountingaccount->label)).'"'.$sep;
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $accountingaccount->label)).'"'.$sep;
+			print '"'.csvClean($companystatic->name).' - '.dol_trunc($accountingaccount->label, 32).'"'.$sep;
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '"'.($mt < 0 ? price(-$mt) : '').'"'.$sep;
 			print '"'.($mt >= 0 ? price($mt) : '').'"'.$sep;
 			print '"'.$journal.'"';
@@ -1040,12 +1068,18 @@ if ($action == 'exportcsv' && !$error) {		// ISO and not UTF8 !
 					print '"'.$key.'"'.$sep;
 					print '"'.$date.'"'.$sep;
 					print '"'.$val["ref"].'"'.$sep;
-					print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+					/*  ————————— START SPÉ ISETA ————————— */
+					// print '"'.csvClean(dol_trunc($companystatic->name, 32)).'"'.$sep;
+					print '"'.csvClean($companystatic->name).'"'.$sep;
+					/*  —————————— END SPÉ ISETA —————————— */
 					print '"'.length_accountg(html_entity_decode($k)).'"'.$sep;
 					print '"'.length_accountg(html_entity_decode($k)).'"'.$sep;
 					print '""'.$sep;
 					print '"'.$langs->trans("VAT").' - '.implode(', ', $def_tva[$key][$k]).' %"'.$sep;
-					print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("VAT").implode($def_tva[$key][$k]).' %'.($numtax ? ' - Localtax '.$numtax : ''))).'"'.$sep;
+					/*  ————————— START SPÉ ISETA ————————— */
+					// print '"'.csvClean($bookkeepingstatic->accountingLabelForOperation($companystatic->name, $invoicestatic->ref, $langs->trans("VAT").implode($def_tva[$key][$k]).' %'.($numtax ? ' - Localtax '.$numtax : ''))).'"'.$sep;
+					print '"'.csvClean($companystatic->name).' - '.$invoicestatic->ref.' - '.$langs->trans("VAT").join(', ', $def_tva[$key][$k]).' %'.($numtax ? ' - Localtax '.$numtax : '').'"'.$sep;
+					/*  —————————— END SPÉ ISETA —————————— */
 					print '"'.($mt < 0 ? price(-$mt) : '').'"'.$sep;
 					print '"'.($mt >= 0 ? price($mt) : '').'"'.$sep;
 					print '"'.$journal.'"';
@@ -1304,14 +1338,20 @@ if (empty($action) || $action == 'view') {
 			print '</td>';
 			// Subledger account
 			print "<td>";
-			$accountoshow = length_accounta($k);
-			if (($accountoshow == "") || $accountoshow == 'NotDefined') {
-				print '<span class="error">'.$langs->trans("ThirdpartyAccountNotDefined").'</span>';
-			} else {
-				print $accountoshow;
-			}
+			/*  ————————— START SPÉ ISETA ————————— */
+			// $accountoshow = length_accounta($k);
+			// if (($accountoshow == "") || $accountoshow == 'NotDefined') {
+			// 	print '<span class="error">'.$langs->trans("ThirdpartyAccountNotDefined").'</span>';
+			// } else {
+			// 	print $accountoshow;
+			// }
+			print $companystatic->getNomUrl(0, 'customer');
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '</td>';
-			print "<td>" . $bookkeepingstatic->accountingLabelForOperation($companystatic->getNomUrl(0, 'customer'), $invoicestatic->ref, $langs->trans("SubledgerAccount"), 1) . "</td>";
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print "<td>" . $bookkeepingstatic->accountingLabelForOperation($companystatic->getNomUrl(0, 'customer'), $invoicestatic->ref, $langs->trans("SubledgerAccount"), 1) . "</td>";
+			print "<td>".$val['pref']."</td>";
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '<td class="right nowraponall amount">'.($mt >= 0 ? price($mt) : '')."</td>";
 			print '<td class="right nowraponall amount">'.($mt < 0 ? price(-$mt) : '')."</td>";
 			print "</tr>";
@@ -1344,17 +1384,23 @@ if (empty($action) || $action == 'view') {
 			print "</td>";
 			// Subledger account
 			print "<td>";
-			if (getDolGlobalString('ACCOUNTING_ACCOUNT_CUSTOMER_USE_AUXILIARY_ON_DEPOSIT')) {
-				if ($k == getDolGlobalString('ACCOUNTING_ACCOUNT_CUSTOMER_DEPOSIT')) {
-					print length_accounta($tabcompany[$key]['code_compta']);
-				}
-			} elseif (($accountoshow == "") || $accountoshow == 'NotDefined') {
-				print '<span class="error">' . $langs->trans("ThirdpartyAccountNotDefined") . '</span>';
-			}
+			/*  ————————— START SPÉ ISETA ————————— */
+			// if (getDolGlobalString('ACCOUNTING_ACCOUNT_CUSTOMER_USE_AUXILIARY_ON_DEPOSIT')) {
+			// 	if ($k == getDolGlobalString('ACCOUNTING_ACCOUNT_CUSTOMER_DEPOSIT')) {
+			// 		print length_accounta($tabcompany[$key]['code_compta']);
+			// 	}
+			// } elseif (($accountoshow == "") || $accountoshow == 'NotDefined') {
+			// 	print '<span class="error">' . $langs->trans("ThirdpartyAccountNotDefined") . '</span>';
+			// }
+			print $companystatic->getNomUrl(0, 'customer');
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '</td>';
 			$companystatic->id = $tabcompany[$key]['id'];
 			$companystatic->name = $tabcompany[$key]['name'];
-			print "<td>" . $bookkeepingstatic->accountingLabelForOperation($companystatic->getNomUrl(0, 'customer'), $invoicestatic->ref, $accountingaccount->label, 1) . "</td>";
+			/*  ————————— START SPÉ ISETA ————————— */
+			// print "<td>" . $bookkeepingstatic->accountingLabelForOperation($companystatic->getNomUrl(0, 'customer'), $invoicestatic->ref, $accountingaccount->label, 1) . "</td>";
+			print "<td>".$companystatic->getNomUrl(0, 'customer')." ".$val['pref']."</td>";
+			/*  —————————— END SPÉ ISETA —————————— */
 			print '<td class="right nowraponall amount">'.($mt < 0 ? price(-$mt) : '')."</td>";
 			print '<td class="right nowraponall amount">'.($mt >= 0 ? price($mt) : '')."</td>";
 			print "</tr>";

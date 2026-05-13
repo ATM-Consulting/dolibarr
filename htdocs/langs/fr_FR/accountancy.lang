@@ -564,3 +564,7 @@ ReturnAccount=Extourne
 Clone=Cloner
 AlreadyReturnedAccount=L'écriture n°%s a déjà été annulée
 SuccessReturnedAccount=L'écriture n°%s a été extournée
+## START -- SPE ISETA --
+SupplierPaymentMethod=Mode de règlement fournisseur
+SupplierDueDate=Date de l'échéance fournisseur
+## END -- SPE ISETA --

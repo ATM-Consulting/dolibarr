@@ -2376,11 +2376,15 @@ class AccountancyExport
 	 */
 	public function exportCharlemagne($objectLines, $exportFile = null)
 	{
-		global $langs;
+		global $db, $langs;
 		$langs->load('compta');
 
 		$separator = "\t";
 		$end_line = "\n";
+
+		/*  ————————— START SPÉ ISETA ————————— */
+		$langs->tab_translate['SeparatorThousand']='None'; // Retrait du séparateur des milliers (agit sur la fonction price())
+		/*  —————————— END SPÉ ISETA —————————— */
 
 		$tab = array();
 
@@ -2398,8 +2402,15 @@ class AccountancyExport
 		$tab[] = self::trunc($langs->transnoentitiesnoconv('AnalyticLabel').' 2', 60);
 		$tab[] = self::trunc($langs->transnoentitiesnoconv('Analytic').' 3', 15);
 		$tab[] = self::trunc($langs->transnoentitiesnoconv('AnalyticLabel').' 3', 60);
+		/*  ————————— START SPÉ ISETA ————————— */
+		$tab[] = self::trunc($langs->transnoentitiesnoconv('SupplierPaymentMethod'), 60);
+		$tab[] = self::trunc($langs->transnoentitiesnoconv('SupplierDueDate'), 60);
+		/*  —————————— END SPÉ ISETA —————————— */
 
 		$output = implode($separator, $tab).$end_line;
+		/*  ————————— START SPÉ ISETA ————————— */
+		$output = mb_convert_encoding($output, 'ISO-8859-1', 'UTF-8');
+		/*  —————————— END SPÉ ISETA —————————— */
 		if ($exportFile) {
 			fwrite($exportFile, $output);
 		} else {
@@ -2407,6 +2418,25 @@ class AccountancyExport
 		}
 
 		foreach ($objectLines as $line) {
+			/*  ————————— START SPÉ ISETA ————————— */
+			$analytique1 = '';
+			$analytique1Label = '';
+			// pour l'analytique, on est obligé de fetcher la facture ce qui est très dommage
+			$analytique1Label = 'Code Analytique';
+			if ($line->doc_type === 'customer_invoice') {
+				if (empty($line->fk_docdet) && !empty($line->fk_doc)) {
+					$sqlAnalytique1 = 'SELECT lef.cd_analytique AS analytique1 FROM ' . $db->prefix() . 'facturedet_extrafields lef'
+						. ' INNER JOIN ' . $db->prefix() . 'facturedet l ON lef.fk_object = l.rowid'
+						. ' WHERE l.fk_facture = ' . intval($line->fk_doc);
+				} elseif (!empty($line->fk_docdet)) {
+					$sqlAnalytique1 = 'SELECT lef.cd_analytique AS analytique1 FROM ' . $db->prefix() . 'facturedet_extrafields lef'
+						. ' WHERE lef.fk_object = ' . intval($line->fk_docdet);
+				}
+				$res = $db->getRow($sqlAnalytique1);
+				if ($res) $analytique1 = $res->analytique1;
+			}
+			/*  —————————— END SPÉ ISETA —————————— */
+
 			$date_document = dol_print_date($line->doc_date, '%Y%m%d');
 
 			$tab = array();
@@ -2429,14 +2459,19 @@ class AccountancyExport
 			$tab[] = self::trunc($line->label_operation, 60); //Operation label
 			$tab[] = price(abs($line->debit - $line->credit)); //Amount
 			$tab[] = $line->sens; //Direction
-			$tab[] = ""; //Analytic
-			$tab[] = ""; //Analytic
+			/*  ————————— START SPÉ ISETA ————————— */
+			$tab[] = $analytique1; // Analytic 1
+			$tab[] = $analytique1Label; // Label Analytic 1
+			/*  —————————— END SPÉ ISETA —————————— */
 			$tab[] = ""; //Analytic
 			$tab[] = ""; //Analytic
 			$tab[] = ""; //Analytic
 			$tab[] = ""; //Analytic
 
 			$output = implode($separator, $tab).$end_line;
+			/*  ————————— START SPÉ ISETA ————————— */
+			$output = mb_convert_encoding($output, 'ISO-8859-1', 'UTF-8');
+			/*  —————————— END SPÉ ISETA —————————— */
 			if ($exportFile) {
 				fwrite($exportFile, $output);
 			} else {
