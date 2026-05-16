@@ -30,8 +30,10 @@ if (!empty($extrafieldsobjectkey) && !empty($extrafields->attributes[$extrafield
 					}
 					$value = $datenotinstring;
 				} else {
-					$value = (!empty($obj->$tmpkey) ? $obj->$tmpkey : '');
-				}
+                    /* BACKPORT V19 #29613 */
+                    $value = (isset($obj->$tmpkey) ? $obj->$tmpkey : '');
+                    /* ------------------- */
+                }
 				// If field is a computed field, we make computation to get value
 				if ($extrafields->attributes[$extrafieldsobjectkey]['computed'][$key]) {
 					//global $obj, $object;
