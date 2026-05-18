@@ -70,6 +70,29 @@ if (strpos($full_secure_url, 'http') !== 0) {
 $db->commit();
 
 $redirect_url = getOnlineSignatureUrl(0, $internal_type, $ref, 1, $obj); // 1 = URL Externe
-header("Location: " . $redirect_url);
-exit;
-
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Signature de document - ATM</title>
+	<style>
+		/* On enlève les marges pour que l'iframe prenne 100% de l'écran */
+		body, html {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			overflow: hidden; /* Empêche le double scrollbar */
+		}
+		iframe {
+			width: 100%;
+			height: 100%;
+			border: none;
+		}
+	</style>
+</head>
+<body>
+<iframe src="<?php echo htmlspecialchars($redirect_url); ?>"></iframe>
+</body>
+</html>
