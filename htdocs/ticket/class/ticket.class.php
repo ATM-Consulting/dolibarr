@@ -2465,9 +2465,6 @@ class Ticket extends CommonObject
 			$listofmimes = $resarray['listofmimes'];
 
 			// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870
-			// Retrieve internal contact datas
-			$internal_contacts = $object->getInfosTicketInternalContact(1);
-
 			// Retrieve email of all contacts (external)
 			$external_contacts = $object->getInfosTicketExternalContact(1);
 			$external_resources = [];
@@ -2583,10 +2580,8 @@ class Ticket extends CommonObject
 					 * Send emails to internal users (linked contacts) then, if private is not set, to external users (linked contacts or thirdparty email if no contact set)
 					 */
 					if ($send_email > 0) {
-						// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870 - Delete code
-						// // Retrieve internal contact datas
-						// $internal_contacts = $object->getInfosTicketInternalContact();
-						// Backport V24 END - https://github.com/Dolibarr/dolibarr/pull/37870
+						// Retrieve internal contact datas
+						$internal_contacts = $object->getInfosTicketInternalContact();
 
 						$sendto = array();
 						if (is_array($internal_contacts) && count($internal_contacts) > 0) {
