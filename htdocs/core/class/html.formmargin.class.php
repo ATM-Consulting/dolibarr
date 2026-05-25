@@ -84,6 +84,9 @@ class FormMargin
 				'total_mark_rate' => ''
 		);
 
+		// SPE SYAGE START (DEV-18) : null check defensif sur $object->lines
+		if (!empty($object->lines)) {
+		// SPE SYAGE END (DEV-18)
 		foreach ($object->lines as $line) {
 			if (empty($line->pa_ht) && isset($line->fk_fournprice) && !$force_price) {
 				require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
@@ -178,6 +181,9 @@ class FormMargin
 				}
 			}
 		}
+		// SPE SYAGE START (DEV-18) : ferme le if (!empty($object->lines)) ouvert avant la boucle foreach
+		}
+		// SPE SYAGE END (DEV-18)
 		if ($marginInfos['pa_products'] > 0) {
 			$marginInfos['margin_rate_products'] = 100 * $marginInfos['margin_on_products'] / $marginInfos['pa_products'];
 		}

@@ -83,9 +83,19 @@ $enddateyear    = GETPOSTINT('enddateyear');
 
 if (!empty($startdatemonth)) {
 	$startdate = dol_mktime(0, 0, 0, $startdatemonth, $startdateday, $startdateyear);
+} else {
+	// SPE SYAGE START (DEV-18) : date de debut par defaut = debut de l'annee fiscale courante
+	$fiscalMonthStart = getDolGlobalInt('SOCIETE_FISCAL_MONTH_START', 1);
+	$startdate = dol_mktime(0, 0, 0, $fiscalMonthStart, 1, ((int) date("m") >= $fiscalMonthStart) ? (int) date("Y") : (int) date("Y") - 1);
+	// SPE SYAGE END (DEV-18)
 }
 if (!empty($enddatemonth)) {
 	$enddate = dol_mktime(23, 59, 59, $enddatemonth, $enddateday, $enddateyear);
+} else {
+	// SPE SYAGE START (DEV-18) : date de fin par defaut = veille du debut de l'annee fiscale suivante
+	$fiscalMonthStart = getDolGlobalInt('SOCIETE_FISCAL_MONTH_START', 1);
+	$enddate = dol_mktime(23, 59, 59, $fiscalMonthStart - 1, 30, ((int) date("m") < $fiscalMonthStart) ? (int) date("Y") : (int) date("Y") + 1);
+	// SPE SYAGE END (DEV-18)
 }
 
 $hookmanager->initHooks(array('marginagentlist'));
