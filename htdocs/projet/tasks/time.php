@@ -134,6 +134,14 @@ $object = new Task($db);
 $extrafields = new ExtraFields($db);
 $projectstatic = new Project($db);
 
+// SPE SYAGE START (DEV-12) : init des variables pour la saisie/affichage en jour decimal
+$working_hours_per_day  = getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+$working_days_per_weeks = getDolGlobalInt('PROJECT_WORKING_DAYS_PER_WEEKS', 5);
+$working_hours_per_day_in_seconds = 3600 * $working_hours_per_day;
+$task_duration_outputformat = getDolGlobalString('PROJECT_TASK_DURATION_FORMAT', 'allhourmin');
+$working_task_duration_outputformat = getDolGlobalString('PROJECT_WORKING_TASK_DURATION_FORMAT', 'all');
+// SPE SYAGE END (DEV-12)
+
 // fetch optionals attributes and labels
 $extrafields->fetch_name_optionals_label($projectstatic->table_element);
 $extrafields->fetch_name_optionals_label($object->table_element);
@@ -1876,7 +1884,9 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 			if (GETPOSTISSET('timespent_durationhour') || GETPOSTISSET('timespent_durationmin')) {
 				$durationtouse = ((int) GETPOST('timespent_durationhour') * 3600 + (int) GETPOST('timespent_durationmin') * 60);
 			}
-			print $form->select_duration('timespent_duration', $durationtouse, 0, 'text');
+			// SPE SYAGE START (DEV-12) : saisie en jours decimaux si conf active
+			print $form->select_duration('timespent_duration', $durationtouse, 0, (getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'days' : 'text'));
+			// SPE SYAGE END (DEV-12)
 			print '</td>';
 
 			// Progress declared
@@ -2412,9 +2422,21 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 				print '<td class="right nowraponall">';
 				if ($action == 'editline' && GETPOSTINT('lineid') == $task_time->rowid) {
 					print '<input type="hidden" name="old_duration" value="'.$task_time->element_duration.'">';
-					print $form->select_duration('new_duration', $task_time->element_duration, 0, 'text');
+					// SPE SYAGE START (DEV-12) : saisie en jours decimaux si conf active
+					print $form->select_duration('new_duration', $task_time->element_duration, 0, (getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'days' : 'text'));
+					// SPE SYAGE END (DEV-12)
 				} else {
-					print convertSecondToTime($task_time->element_duration, 'allhourmin');
+					// SPE SYAGE START (DEV-12) : affichage avec format configurable + working delay en parallele
+					$fulltime = convertSecondToTime($task_time->element_duration, $task_duration_outputformat);
+					print $fulltime;
+					$workingdelay = convertSecondToTime($task_time->element_duration, $working_task_duration_outputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+					if ($workingdelay != $fulltime) {
+						if (!empty($fulltime)) {
+							print '<br>';
+						}
+						print '('.$workingdelay.')';
+					}
+					// SPE SYAGE END (DEV-12)
 				}
 				print '</td>';
 				if (!$i) {
@@ -2950,7 +2972,19 @@ if (($id > 0 || !empty($ref)) || $projectidforalltimes > 0 || $allprojectforuser
 						print '<td class="left">'.$form->textwithpicto($langs->trans("Total"), $langs->trans("Totalforthispage")).'</td>';
 					}
 				} elseif (isset($totalarray['totaldurationfield']) && $totalarray['totaldurationfield'] == $i) {
-					print '<td class="right">' . convertSecondToTime($totalarray['totalduration'], 'allhourmin') . '</td>';
+					// SPE SYAGE START (DEV-12) : total avec format configurable + working delay
+					print '<td class="right">';
+					$fulltime = convertSecondToTime($totalarray['totalduration'], $task_duration_outputformat);
+					print $fulltime;
+					$workingdelay = convertSecondToTime($totalarray['totalduration'], $working_task_duration_outputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+					if ($workingdelay != $fulltime) {
+						if (!empty($fulltime)) {
+							print '<br>';
+						}
+						print '('.$workingdelay.')';
+					}
+					print '</td>';
+					// SPE SYAGE END (DEV-12)
 				} elseif (isset($totalarray['totalvaluefield']) && $totalarray['totalvaluefield'] == $i) {
 					print '<td class="right">' . price($totalarray['totalvalue']) . '</td>';
 					//} elseif ($totalarray['totalvaluebilledfield'] == $i) { print '<td class="center">'.price($totalarray['totalvaluebilled']).'</td>';

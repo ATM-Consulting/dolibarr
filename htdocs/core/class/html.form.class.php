@@ -8263,6 +8263,23 @@ class Form
 			$retstring .= "</select>";
 		} elseif ($typehour == 'text' || $typehour == 'textselect') {
 			$retstring .= '<input placeholder="' . $langs->trans('HourShort') . '" type="number" min="0" name="' . $prefix . 'hour"' . ($disabled ? ' disabled' : '') . ' class="flat maxwidth50 inputhour right" value="' . (($hourSelected != '') ? ((int) $hourSelected) : '') . '">';
+		} elseif ($typehour == 'days') {
+			// SPE SYAGE START (DEV-12) : saisie d'une duree en jours decimaux (1 seul input "X,Y jours")
+			$working_hours_per_day = getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+			$whpd_in_seconds = 3600 * $working_hours_per_day;
+			$daySelected = '';
+			if ($iSecond != '' && $whpd_in_seconds > 0) {
+				$daySelected = $iSecond / $whpd_in_seconds;
+			}
+			$retstring .= '<input placeholder="" id="' . $prefix . 'days" data-working-hours-per-day="' . $working_hours_per_day . '" type="text" name="' . $prefix . 'days"' . ($disabled ? ' disabled' : '') . ' class="flat maxwidth50 inputdays" value="' . $daySelected . '">';
+			$retstring .= ' ' . $langs->trans('Days');
+			$retstring .= '</span>';
+			if (!empty($nooutput)) {
+				return $retstring;
+			}
+			print $retstring;
+			return '';
+			// SPE SYAGE END (DEV-12)
 		} else {
 			return 'BadValueForParameterTypeHour';
 		}

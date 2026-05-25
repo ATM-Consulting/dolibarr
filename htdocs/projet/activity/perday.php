@@ -125,6 +125,14 @@ if (empty($search_usertoprocessid) || $search_usertoprocessid == $user->id) {
 $object = new Task($db);
 $project = new Project($db);
 
+// SPE SYAGE START (DEV-12) : init des variables pour la saisie/affichage en jour decimal
+$working_hours_per_day  = getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+$working_days_per_weeks = getDolGlobalInt('PROJECT_WORKING_DAYS_PER_WEEKS', 5);
+$working_hours_per_day_in_seconds = 3600 * $working_hours_per_day;
+$timespentoutputformat = getDolGlobalString('PROJECT_TIME_SPENT_FORMAT', 'allhourmin');
+$working_timespentoutputformat = getDolGlobalString('PROJECT_WORKING_TIMES_SPENT_FORMAT', 'all');
+// SPE SYAGE END (DEV-12)
+
 // Extra fields
 $extrafields = new ExtraFields($db);
 
@@ -264,7 +272,23 @@ if ($action == 'addtime' && $user->hasRight('projet', 'lire') && GETPOST('assign
 if ($action == 'addtime' && $user->hasRight('projet', 'lire') && GETPOST('formfilteraction') != 'listafterchangingselectedfields') {
 	$timespent_duration = array();
 
-	if (is_array($_POST)) {
+	// SPE SYAGE START (DEV-12) : saisie en jour decimal si PROJECT_USE_DECIMAL_DAY active
+	if (getDolGlobalInt('PROJECT_USE_DECIMAL_DAY')) {
+		$post = GETPOST('task', 'array');
+		if (is_array($post)) {
+			foreach ($post as $key => $time) {
+				if (!empty($time[0]) && (float) $time[0] > 0) {
+					$tmpduration = price2num($time[0]);
+					if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+						$timespent_duration[$key] = (int) ((float) $tmpduration * $working_hours_per_day_in_seconds);
+					} else {
+						$timespent_duration[$key] = (int) ((float) $tmpduration * 24 * 60 * 60);
+					}
+				}
+			}
+		}
+	} elseif (is_array($_POST)) {
+	// SPE SYAGE END (DEV-12)
 		foreach ($_POST as $key => $time) {
 			if (intval($time) > 0) {
 				$matches = array();
@@ -765,7 +789,19 @@ if (count($tasksarray) > 0) {
 		$timeonothertasks = ($totalforeachday[$daytoparse] - $totalforvisibletasks[$daytoparse]);
 		print '<span class="timesheetalreadyrecorded" title="texttoreplace"><input type="text" class="center width50" disabled="" id="timespent[-1][0]" name="task[-1][0]" value="';
 		if ($timeonothertasks) {
-			print convertSecondToTime($timeonothertasks, 'allhourmin');
+			// SPE SYAGE START (DEV-12) : affichage en jour decimal en parallele si conf active
+			$fullhour = convertSecondToTime($timeonothertasks, $timespentoutputformat);
+			print $fullhour;
+			if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+				$workingdelay = convertSecondToTime($timeonothertasks, $working_timespentoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+				if ($workingdelay != $fullhour) {
+					if (!empty($fullhour)) {
+						print '<br>';
+					}
+					print '('.$workingdelay.')';
+				}
+			}
+			// SPE SYAGE END (DEV-12)
 		}
 		print '"></span>';
 		print '</td>';
@@ -808,7 +844,9 @@ print '</div>';
 print '</form>';
 
 if (!empty($conf->use_javascript_ajax)) {
-	$modeinput = 'hours';
+	// SPE SYAGE START (DEV-12) : bascule modeinput en mode decimal si conf active
+	$modeinput = getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'timeChar' : 'hours';
+	// SPE SYAGE END (DEV-12)
 	print "\n<!-- JS CODE TO ENABLE Tooltips on all object with class classfortooltip -->\n";
 	print '<script type="text/javascript">'."\n";
 	print "jQuery(document).ready(function () {\n";
