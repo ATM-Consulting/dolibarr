@@ -258,7 +258,9 @@ function convertSecondToTime($iSecond, $format = 'all', $lengthOfDay = 86400, $l
 
 	$sTime = '';
 
-	if ($format == 'all' || $format == 'allwithouthour' || $format == 'allhour' || $format == 'allhourmin' || $format == 'allhourminsec') {
+	// SPE SYAGE START (DEV-12) : ajout du format 'alldaydecimal' a la liste des formats avec jour/semaine
+	if ($format == 'all' || $format == 'allwithouthour' || $format == 'allhour' || $format == 'allhourmin' || $format == 'allhourminsec' || $format == 'alldaydecimal') {
+	// SPE SYAGE END (DEV-12)
 		if ((int) $iSecond === 0) {
 			return '0'; // This is to avoid having 0 return a 12:00 AM for en_US
 		}
@@ -309,6 +311,22 @@ function convertSecondToTime($iSecond, $format = 'all', $lengthOfDay = 86400, $l
 		} elseif ($format == 'allhour') {
 			return sprintf("%02d", ($sWeek * $lengthOfWeek * $nbHbyDay + $sDay * $nbHbyDay + (int) floor($iSecond / 3600)));
 		}
+		// SPE SYAGE START (DEV-12) : format 'alldaydecimal' = duree exprimee en jours decimaux (ex: "1,5 jours")
+		elseif ($format == 'alldaydecimal') {
+			$total_days = ($sWeek * $lengthOfWeek + $sDay) + ($iSecond / $lengthOfDay);
+			if ($total_days == 0) {
+				$sTime = '';
+			} else {
+				if ($total_days >= 2) {
+					$dayTranslate = $langs->trans("Days");
+				} else {
+					$dayTranslate = $langs->trans("Day");
+				}
+				$frounding = getDolGlobalInt('PROJECT_FORCE_ROUNDING_DECIMAL_DAY', 3);
+				$sTime = price($total_days, 0, '', 1, -1, $frounding).' '.$dayTranslate;
+			}
+		}
+		// SPE SYAGE END (DEV-12)
 	} elseif ($format == 'hour') {	// only hour part
 		$sTime = dol_print_date($iSecond, '%H', true);
 	} elseif ($format == 'fullhour') {
@@ -327,6 +345,17 @@ function convertSecondToTime($iSecond, $format = 'all', $lengthOfDay = 86400, $l
 	} elseif ($format == 'year') {	// only year part
 		$sTime = dol_print_date($iSecond, '%Y', true);
 	}
+	// SPE SYAGE START (DEV-12) : format 'fulldaydecimal' = nombre brut de jours decimaux sans libelle
+	elseif ($format == 'fulldaydecimal') {
+		$nb_weeks = floor($iSecond / ($lengthOfWeek * $lengthOfDay));
+		$iSecond  = $iSecond - ($nb_weeks * ($lengthOfWeek * $lengthOfDay));
+
+		$nb_days = floor($iSecond / $lengthOfDay);
+		$iSecond = $iSecond - ($nb_days * $lengthOfDay);
+
+		$sTime = $nb_weeks * $lengthOfWeek + $nb_days + ($iSecond / $lengthOfDay);
+	}
+	// SPE SYAGE END (DEV-12)
 	return trim((string) $sTime);
 }
 
