@@ -1,4 +1,5 @@
 - BACKPORT 24 - T260087 - (PR #30949) Backport: Added a list of supplier invoice templates in the supplier tab of third-party records - **2026-05-26**
+- Backport : https://github.com/Dolibarr/dolibarr/pull/37885
 - FIX : SPECIFIC - Disabling the ticket's public link - **2026-04-03**
 - Backport 24 : aac2ff7b, b732fd2e - **2026-04-02**
 - Backport develop : df671ed38faa8a shipping indicator on order card and line order  **2025-03-25**
