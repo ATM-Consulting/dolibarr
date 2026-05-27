@@ -8,3 +8,5 @@
 - Fix invoice partial payment flow to reload page after escompte validation
 - Fix display bank account **17/12/2025**
 - Fix order line edit: enforce product price_min on updateline (the editline form does not POST productid, which caused the min-price check to be skipped) **27/05/2026**
+- Fix proposal line edit: enforce product price_min on updateline (same productid-missing bug as for orders) **27/05/2026**
+- Fix invoice line edit: enforce product price_min on updateline (same productid-missing + price_base_type-not-initialized bugs as for orders) **27/05/2026**
