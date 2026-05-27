@@ -8264,15 +8264,36 @@ class Form
 		} elseif ($typehour == 'text' || $typehour == 'textselect') {
 			$retstring .= '<input placeholder="' . $langs->trans('HourShort') . '" type="number" min="0" name="' . $prefix . 'hour"' . ($disabled ? ' disabled' : '') . ' class="flat maxwidth50 inputhour right" value="' . (($hourSelected != '') ? ((int) $hourSelected) : '') . '">';
 		} elseif ($typehour == 'days') {
-			// SPE SYAGE START (DEV-12) : saisie d'une duree en jours decimaux (1 seul input "X,Y jours")
+			// SPE SYAGE START (DEV-12) : saisie d'une duree en jours decimaux (portage v16).
+			// L'input visible est en jours ; un champ cache "<prefix>min" est alimente par
+			// JS au blur (jours x heures/jour x 60), puis lu tel quel par le backend standard
+			// (qui calcule duration = hour*3600 + min*60, hour restant a 0). Aucune modif backend.
 			$working_hours_per_day = getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
 			$whpd_in_seconds = 3600 * $working_hours_per_day;
 			$daySelected = '';
+			$minSelectedDays = '';
 			if ($iSecond != '' && $whpd_in_seconds > 0) {
 				$daySelected = $iSecond / $whpd_in_seconds;
+				$minSelectedDays = (int) round($iSecond / 60);
 			}
 			$retstring .= '<input placeholder="" id="' . $prefix . 'days" data-working-hours-per-day="' . $working_hours_per_day . '" type="text" name="' . $prefix . 'days"' . ($disabled ? ' disabled' : '') . ' class="flat maxwidth50 inputdays" value="' . $daySelected . '">';
 			$retstring .= ' ' . $langs->trans('Days');
+			$retstring .= '<input type="hidden" id="' . $prefix . 'min" name="' . $prefix . 'min" value="' . $minSelectedDays . '">';
+			$retstring .= '<script type="text/javascript">
+				$(function() {
+					$("#' . $prefix . 'days").blur(function() {
+						var whpd = $(this).data("working-hours-per-day");
+						var value = parseFloat(($(this).val() || "").replace(",", "."));
+						if (isNaN(value)) {
+							$(this).val("");
+							$("#' . $prefix . 'min").val("");
+						} else {
+							$("#' . $prefix . 'min").val(Math.round(whpd * 60 * value));
+						}
+					});
+					$("#' . $prefix . 'days").blur();
+				});
+			</script>';
 			$retstring .= '</span>';
 			if (!empty($nooutput)) {
 				return $retstring;
