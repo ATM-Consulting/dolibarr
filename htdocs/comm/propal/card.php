@@ -1612,6 +1612,15 @@ if (empty($reshook)) {
 
 		// Check minimum price
 		$productid = GETPOSTINT('productid');
+		// FIX ATM (price-min on editline): le formulaire d'édition de ligne envoie lineid mais pas productid.
+		// Sans ce fallback, tout le bloc de vérification du prix minimum ci-dessous est sauté,
+		// permettant à un utilisateur sans la permission 'produit > ignore_price_min_advance'
+		// de modifier le PU sous le price_min. Récupère fk_product depuis la ligne postée.
+		if (empty($productid) && GETPOSTINT('lineid')) {
+			foreach ($object->lines as $oldl) {
+				if ((int) $oldl->id === GETPOSTINT('lineid')) { $productid = (int) $oldl->fk_product; break; }
+			}
+		}
 		if (!empty($productid)) {
 			$product = new Product($db);
 			$res = $product->fetch($productid);
