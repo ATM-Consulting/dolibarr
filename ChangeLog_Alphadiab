@@ -7,3 +7,4 @@
 - backport issue on categorie : Create a new instance for each object to avoid reference issues
 - Fix invoice partial payment flow to reload page after escompte validation
 - Fix display bank account **17/12/2025**
+- Fix order line edit: enforce product price_min on updateline (the editline form does not POST productid, which caused the min-price check to be skipped) **27/05/2026**
