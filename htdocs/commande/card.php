@@ -1287,6 +1287,14 @@ if (empty($reshook)) {
 
 		$remise_percent = GETPOST('remise_percent') != '' ? price2num(GETPOST('remise_percent'), '', 2) : 0;
 
+		// FIX ATM (price-min on editline): $price_base_type n'est jamais initialisé dans le bloc updateline
+		// avant le check ci-dessous (il reste à null défini ligne 118), donc `$price_base_type == 'HT'`
+		// échouait silencieusement et le check était sauté. On initialise ici comme ligne 1370 plus bas.
+		$price_base_type = 'HT';
+		if (empty($pu_ht) && !empty($pu_ttc)) {
+			$price_base_type = 'TTC';
+		}
+
 		// Check minimum price
 		$productid = GETPOSTINT('productid');
 		// FIX ATM (price-min on editline): le formulaire d'édition de ligne envoie lineid mais pas productid.
