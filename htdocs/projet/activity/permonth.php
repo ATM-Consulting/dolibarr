@@ -120,6 +120,11 @@ if (empty($search_usertoprocessid) || $search_usertoprocessid == $user->id) {
 
 $object = new Task($db);
 
+// SPE SYAGE START (DEV-12) : init des variables pour la saisie en jour decimal
+$working_hours_per_day  = getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+$working_hours_per_day_in_seconds = 3600 * $working_hours_per_day;
+// SPE SYAGE END (DEV-12)
+
 // Extra fields
 $extrafields = new ExtraFields($db);
 
@@ -273,6 +278,16 @@ if ($action == 'addtime' && $user->hasRight('projet', 'lire') && GETPOST('formfi
 			foreach ($tmpvalue as $key => $val) {          // Loop on each day
 				$amountoadd = $timetoadd[$tmptaskid][$key];
 				if (!empty($amountoadd)) {
+					// SPE SYAGE START (DEV-12) : saisie en jour decimal si PROJECT_USE_DECIMAL_DAY active
+					if (getDolGlobalInt('PROJECT_USE_DECIMAL_DAY')) {
+						$tmpduration = price2num($amountoadd);
+						if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+							$newduration = (int) ((float) $tmpduration * $working_hours_per_day_in_seconds);
+						} else {
+							$newduration = (int) ((float) $tmpduration * 24 * 60 * 60);
+						}
+					} else {
+					// SPE SYAGE END (DEV-12)
 					$tmpduration = explode(':', $amountoadd);
 					$newduration = 0;
 					if (!empty($tmpduration[0])) {
@@ -284,6 +299,9 @@ if ($action == 'addtime' && $user->hasRight('projet', 'lire') && GETPOST('formfi
 					if (!empty($tmpduration[2])) {
 						$newduration += ((int) $tmpduration[2]);
 					}
+					// SPE SYAGE START (DEV-12) : ferme le else du bloc decimal day
+					}
+					// SPE SYAGE END (DEV-12)
 
 					if ($newduration > 0) {
 						$object->fetch($tmptaskid);
@@ -337,7 +355,6 @@ if ($action == 'addtime' && $user->hasRight('projet', 'lire') && GETPOST('formfi
 			$param .= ($search_usertoprocessid ? '&search_usertoprocessid='.urlencode((string) $search_usertoprocessid) : '');
 			$param .= ($day ? '&day='.urlencode((string) ($day)) : '').($month ? '&month='.urlencode((string) ($month)) : '').($year ? '&year='.urlencode((string) ($year)) : '');
 			$param .= ($search_project_ref ? '&search_project_ref='.urlencode($search_project_ref) : '');
-			$param .= ($search_usertoprocessid > 0 ? '&search_usertoprocessid='.urlencode((string) $search_usertoprocessid) : '');
 			$param .= ($search_thirdparty ? '&search_thirdparty='.urlencode($search_thirdparty) : '');
 			$param .= ($search_declared_progress ? '&search_declared_progress='.urlencode($search_declared_progress) : '');
 			$param .= ($search_task_ref ? '&search_task_ref='.urlencode($search_task_ref) : '');
@@ -821,7 +838,9 @@ print $form->buttonsSaveCancel("Save", '');
 
 print '</form>'."\n\n";
 
-$modeinput = 'hours';
+// SPE SYAGE START (DEV-12) : bascule modeinput en mode decimal si conf active
+$modeinput = getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'timeChar' : 'hours';
+// SPE SYAGE END (DEV-12)
 
 if ($conf->use_javascript_ajax) {
 	print "\n<!-- JS CODE TO ENABLE Tooltips on all object with class classfortooltip -->\n";

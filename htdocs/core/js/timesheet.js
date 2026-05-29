@@ -269,6 +269,14 @@ function updateTotal(days,mode)
     {
         var total =0;
         var nbline = document.getElementById('numberOfLines').value;
+        var startline = 0;
+        if (document.getElementById('numberOfFirstLine')) {
+            startline = parseInt(document.getElementById('numberOfFirstLine').value);
+        }
+        var parseDecimalTime = function(value) {
+            var parsed = parseFloat(String(value).replace(',', '.'));
+            return isNaN(parsed) ? 0 : parsed;
+        };
         for (var i=-1; i<nbline; i++)
         {
             var id='timespent['+i+']['+days+']';
@@ -278,12 +286,12 @@ function updateTotal(days,mode)
             {
                 if (element.value)
                 {
-                    total+=parseInt(element.value);
+                    total += parseDecimalTime(element.value);
 
                    }
                 else
                 {
-                    total+=parseInt(element.innerHTML);
+                    total += parseDecimalTime(element.innerHTML);
                 }
             }
 
@@ -294,12 +302,12 @@ function updateTotal(days,mode)
             {
                 if (element.value)
                 {
-                    total+=parseInt(element.value);
+                    total += parseDecimalTime(element.value);
 
                    }
                 else
                 {
-                    total+=parseInt(element.innerHTML);
+                    total += parseDecimalTime(element.innerHTML);
                 }
             }
         }
@@ -312,6 +320,6 @@ function updateTotal(days,mode)
 
         if (total) jQuery('.totalDay'+stringdays).addClass("bold");
         else jQuery('.totalDay'+stringdays).removeClass("bold");
-    	jQuery('.totalDay'+stringdays).text(total);
+    	jQuery('.totalDay'+stringdays).text(Number(total.toFixed(3)));
     }
 }

@@ -2150,7 +2150,9 @@ function projectLinesPerWeek(&$inc, $firstdaytoshow, $fuser, $parent, $lines, &$
 
 				// Fields to show current time
 				$tableCell = '';
-				$modeinput = 'hours';
+				// SPE SYAGE START (DEV-12) : saisie en jour decimal si PROJECT_USE_DECIMAL_DAY active
+				$modeinput = getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'timeChar' : 'hours';
+				// SPE SYAGE END (DEV-12)
 				$j = 0;
 				for ($idw = 0; $idw < 7; $idw++) {
 					$j++;
@@ -2471,7 +2473,9 @@ function projectLinesPerMonth(&$inc, $firstdaytoshow, $fuser, $parent, $lines, &
 				//TODO
 				// Fields to show current time
 				$tableCell = '';
-				$modeinput = 'hours';
+				// SPE SYAGE START (DEV-12) : saisie en jour decimal si PROJECT_USE_DECIMAL_DAY active
+				$modeinput = getDolGlobalInt('PROJECT_USE_DECIMAL_DAY') ? 'timeChar' : 'hours';
+				// SPE SYAGE END (DEV-12)
 				$TFirstDay = getFirstDayOfEachWeek($TWeek, (int) date('Y', $firstdaytoshow));
 				$TFirstDay[reset($TWeek)] = 1;
 
