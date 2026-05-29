@@ -575,12 +575,7 @@ class pdf_cyan extends ModelePDFPropales
 
 							$curY = $tab_top_newpage;
 
-							// Allows data in the first page if description is long enough to break in multiples pages
-							if (getDolGlobalString('MAIN_PDF_DATA_ON_FIRST_PAGE')) {
-								$showpricebeforepagebreak = 1;
-							} else {
-								$showpricebeforepagebreak = 0;
-							}
+							$showpricebeforepagebreak = 1;
 						}
 
 
@@ -618,12 +613,8 @@ class pdf_cyan extends ModelePDFPropales
 								}
 							} else {
 								// We found a page break
-								// Allows data in the first page if description is long enough to break in multiples pages
-								if (getDolGlobalString('MAIN_PDF_DATA_ON_FIRST_PAGE')) {
-									$showpricebeforepagebreak = 1;
-								} else {
-									$showpricebeforepagebreak = 0;
-								}
+								// Keep prices on starting page unless curY is too close to the physical footer boundary
+								$showpricebeforepagebreak = ($curY < ($this->page_hauteur - $heightforfooter - 5)) ? 1 : 0;
 							}
 						} else { // No pagebreak
 							$pdf->commitTransaction();
@@ -632,6 +623,7 @@ class pdf_cyan extends ModelePDFPropales
 					}
 
 					$nexY = $pdf->GetY();
+					$nexYAfterDesc = $nexY;
 					$pageposafter = $pdf->getPage();
 
 					$pdf->setPage($pageposbefore);
@@ -706,6 +698,12 @@ class pdf_cyan extends ModelePDFPropales
 								$nexY = max($pdf->GetY(), $nexY);
 							}
 						}
+					}
+
+					// Restore nexY from the correct page when prices were printed on a previous page
+					if ($pageposafter > $pageposbefore && !empty($showpricebeforepagebreak)) {
+						$nexY = $nexYAfterDesc;
+						$pdf->setPage($pageposafter);
 					}
 
 					$parameters = array(
