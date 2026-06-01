@@ -1266,6 +1266,14 @@ class Task extends CommonObjectLine
 		// Add where from extra fields
 		$extrafieldsobjectkey = 'projet_task';
 		$extrafieldsobjectprefix = 'efpt.';
+		// SPE SYAGE : backport en attendant le merge upstream Dolibarr.
+		// Sans ce $search_options_pattern, le template SQL retombe sur 'search_options_'
+		// (defaut), ce qui empeche le preg_replace de retirer le bon prefixe et genere
+		// une colonne fantome efpt.search_task_options_<field> -> DB_ERROR_NOSUCHFIELD
+		// des qu'un module declare un extrafield sur projet_task (ex: doc2project / fk_product).
+		// PR upstream : https://github.com/ATM-Consulting/dolibarr/tree/FIX/task-getTasksArray-missing-search-options-pattern
+		// A SUPPRIMER une fois le fix integre dans le core (Dolibarr >= 24.0 si merge).
+		$search_options_pattern = 'search_task_options_';
 		global $db, $conf; // needed for extrafields_list_search_sql.tpl
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 
