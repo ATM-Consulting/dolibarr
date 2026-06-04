@@ -1454,7 +1454,7 @@ class AccountancyExport
 				$tab[] = $line->doc_ref;
 
 				// FEC:PieceDate
-				$tab[] = dol_string_unaccent($date_creation);
+				$tab[] = dol_string_unaccent($date_document);
 
 				// FEC:EcritureLib
 				// Clean label operation to prevent problem on export with tab separator & other character
