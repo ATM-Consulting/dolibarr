@@ -226,6 +226,16 @@ if ($result) {
 	while ($i < $num) {
 		$obj = $db->fetch_object($result);
 
+		// BEGIN ATM-FIX bankjournal-cartesian-product - UPGRADE: verify if upstream fixed this
+		// The main SQL uses multiple LEFT JOINs on llx_bank_url (company, payment, payment_supplier).
+		// When a bank entry is linked to N company links and M payment links, the JOIN produces N×M rows
+		// for the same bank rowid. We process only the first occurrence and skip the duplicates.
+		if (array_key_exists($obj->rowid, $tabpay)) {
+			$i++;
+			continue;
+		}
+		// END ATM-FIX bankjournal-cartesian-product
+
 		$lineisapurchase = -1;
 		$lineisasale = -1;
 		// Old method to detect if it's a sale or purchase
@@ -310,6 +320,39 @@ if ($result) {
 			$amounttouse = $obj->amount_main_currency;
 		}
 
+		// BEGIN ATM-FIX bankjournal-cartesian-product - UPGRADE: verify if upstream fixed this
+		// For bank entries linked to multiple payments from different clients (e.g. one bank line
+		// covering two separate règlements), build a societe_id → payment_amount mapping so each
+		// 411 account line gets the correct individual amount instead of the full bank total.
+		// $nbcompanylinks is also used in the company handler below.
+		$amountbysociete = array();
+		$nbcompanylinks = 0;
+		if (is_array($links)) {
+			foreach ($links as $lk => $lv) {
+				if ($lv['type'] == 'company') {
+					$nbcompanylinks++;
+				}
+			}
+			if ($nbcompanylinks > 1) {
+				foreach ($links as $lk => $lv) {
+					if ($lv['type'] == 'payment' && !empty($lv['url_id'])) {
+						$pmt4soc = new Paiement($db);
+						$pmt4soc->fetch((int) $lv['url_id']);
+						if (!empty($pmt4soc->fk_soc)) {
+							$amountbysociete[$pmt4soc->fk_soc] = ($amountbysociete[$pmt4soc->fk_soc] ?? 0) + $pmt4soc->amount;
+						}
+					} elseif ($lv['type'] == 'payment_supplier' && !empty($lv['url_id'])) {
+						$pmt4soc = new PaiementFourn($db);
+						$pmt4soc->fetch((int) $lv['url_id']);
+						if (!empty($pmt4soc->fk_soc)) {
+							$amountbysociete[$pmt4soc->fk_soc] = ($amountbysociete[$pmt4soc->fk_soc] ?? 0) + $pmt4soc->amount;
+						}
+					}
+				}
+			}
+		}
+		// END ATM-FIX bankjournal-cartesian-product
+
 		// get_url may return -1 which is not traversable
 		if (is_array($links) && count($links) > 0) {
 			// Test if entry is for a social contribution, salary or expense report.
@@ -369,11 +412,44 @@ if ($result) {
 					$societestatic->name = $links[$key]['label'];
 					$societestatic->email = $tabcompany[$obj->rowid]['email'];
 					$tabpay[$obj->rowid]["soclib"] = $societestatic->getNomUrl(1, '', 30);
-					if ($compta_soc) {
-						if (empty($tabtp[$obj->rowid][$compta_soc])) {
-							$tabtp[$obj->rowid][$compta_soc] = $amounttouse;
+
+					// BEGIN ATM-FIX bankjournal-cartesian-product - UPGRADE: verify if upstream fixed this
+					// Default: single-company/payment case — use the accounting code and amount from the SQL row.
+					$compta_soc_for_link = $compta_soc;
+					$amount_for_link = $amounttouse;
+
+					if ($nbcompanylinks > 1) {
+						$soc_id_for_link = (int) $links[$key]['url_id'];
+
+						if (!empty($amountbysociete)) {
+							// Per-company amounts available (each payment has fk_soc): use exact amount,
+							// or 0 if this company has no matching payment.
+							$amount_for_link = isset($amountbysociete[$soc_id_for_link]) ? $amountbysociete[$soc_id_for_link] : 0;
+						} elseif ($soc_id_for_link != (int) $tabcompany[$obj->rowid]['id']) {
+							// No payment mapping (fk_soc null on payments): only the company from the SQL
+							// row gets the amount; extra company links get 0 to stay balanced.
+							$amount_for_link = 0;
+						}
+
+						// For any company link that differs from the SQL row's company, fetch its own
+						// accounting code — the SQL JOIN only surfaces one company's code.
+						if ($soc_id_for_link != (int) $tabcompany[$obj->rowid]['id']) {
+							$socsub = new Societe($db);
+							$socsub->fetch($soc_id_for_link);
+							if ($lineisasale > 0) {
+								$compta_soc_for_link = !empty($socsub->code_compta) ? $socsub->code_compta : $account_customer;
+							} elseif ($lineisapurchase > 0) {
+								$compta_soc_for_link = !empty($socsub->code_compta_fournisseur) ? $socsub->code_compta_fournisseur : $account_supplier;
+							}
+						}
+					}
+					// END ATM-FIX bankjournal-cartesian-product
+
+					if ($compta_soc_for_link) {
+						if (empty($tabtp[$obj->rowid][$compta_soc_for_link])) {
+							$tabtp[$obj->rowid][$compta_soc_for_link] = $amount_for_link;
 						} else {
-							$tabtp[$obj->rowid][$compta_soc] += $amounttouse;
+							$tabtp[$obj->rowid][$compta_soc_for_link] += $amount_for_link;
 						}
 					}
 				} elseif ($links[$key]['type'] == 'user') {
