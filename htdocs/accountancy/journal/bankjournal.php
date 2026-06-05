@@ -327,25 +327,32 @@ if ($result) {
 		// $nbcompanylinks is also used in the company handler below.
 		$amountbysociete = array();
 		$nbcompanylinks = 0;
+		$paymentlinksformapping = array();
 		if (is_array($links)) {
-			foreach ($links as $lk => $lv) {
-				if ($lv['type'] == 'company') {
+			foreach ($links as $linkkey => $linkdata) {
+				if ($linkdata['type'] == 'company') {
 					$nbcompanylinks++;
+				} elseif (in_array($linkdata['type'], array('payment', 'payment_supplier')) && !empty($linkdata['url_id'])) {
+					$paymentlinksformapping[] = $linkdata;
 				}
 			}
 			if ($nbcompanylinks > 1) {
-				foreach ($links as $lk => $lv) {
-					if ($lv['type'] == 'payment' && !empty($lv['url_id'])) {
+				foreach ($paymentlinksformapping as $linkdata) {
+					if ($linkdata['type'] == 'payment') {
 						$pmt4soc = new Paiement($db);
-						$pmt4soc->fetch((int) $lv['url_id']);
-						if (!empty($pmt4soc->fk_soc)) {
+						$ret = $pmt4soc->fetch((int) $linkdata['url_id']);
+						if ($ret > 0 && !empty($pmt4soc->fk_soc)) {
 							$amountbysociete[$pmt4soc->fk_soc] = ($amountbysociete[$pmt4soc->fk_soc] ?? 0) + $pmt4soc->amount;
+						} elseif ($ret <= 0) {
+							dol_syslog('bankjournal: failed to fetch Paiement id='.(int)$linkdata['url_id'], LOG_WARNING);
 						}
-					} elseif ($lv['type'] == 'payment_supplier' && !empty($lv['url_id'])) {
+					} elseif ($linkdata['type'] == 'payment_supplier') {
 						$pmt4soc = new PaiementFourn($db);
-						$pmt4soc->fetch((int) $lv['url_id']);
-						if (!empty($pmt4soc->fk_soc)) {
+						$ret = $pmt4soc->fetch((int) $linkdata['url_id']);
+						if ($ret > 0 && !empty($pmt4soc->fk_soc)) {
 							$amountbysociete[$pmt4soc->fk_soc] = ($amountbysociete[$pmt4soc->fk_soc] ?? 0) + $pmt4soc->amount;
+						} elseif ($ret <= 0) {
+							dol_syslog('bankjournal: failed to fetch PaiementFourn id='.(int)$linkdata['url_id'], LOG_WARNING);
 						}
 					}
 				}
@@ -435,11 +442,15 @@ if ($result) {
 						// accounting code — the SQL JOIN only surfaces one company's code.
 						if ($soc_id_for_link != (int) $tabcompany[$obj->rowid]['id']) {
 							$socsub = new Societe($db);
-							$socsub->fetch($soc_id_for_link);
-							if ($lineisasale > 0) {
-								$compta_soc_for_link = !empty($socsub->code_compta) ? $socsub->code_compta : $account_customer;
-							} elseif ($lineisapurchase > 0) {
-								$compta_soc_for_link = !empty($socsub->code_compta_fournisseur) ? $socsub->code_compta_fournisseur : $account_supplier;
+							$ret = $socsub->fetch($soc_id_for_link);
+							if ($ret > 0) {
+								if ($lineisasale > 0) {
+									$compta_soc_for_link = !empty($socsub->code_compta) ? $socsub->code_compta : $account_customer;
+								} elseif ($lineisapurchase > 0) {
+									$compta_soc_for_link = !empty($socsub->code_compta_fournisseur) ? $socsub->code_compta_fournisseur : $account_supplier;
+								}
+							} else {
+								dol_syslog('bankjournal: failed to fetch Societe id='.$soc_id_for_link, LOG_WARNING);
 							}
 						}
 					}
