@@ -1366,6 +1366,7 @@ class Ticket extends CommonObject
 		$labelStatus = $this->statuts[$status];
 		$labelStatusShort = $this->statuts_short[$status];
 
+		$isUnknown = false;
 		if ($status == self::STATUS_NOT_READ) {
 			$statusType = 'status0';
 		} elseif ($status == self::STATUS_READ) {
@@ -1383,10 +1384,7 @@ class Ticket extends CommonObject
 		} elseif ($status == self::STATUS_CLOSED) {
 			$statusType = 'status6';
 		} else {
-			$labelStatus = 'Unknown';
-			$labelStatusShort = 'Unknown';
-			$statusType = 'status0';
-			$mode = 0;
+			$isUnknown = true;
 		}
 
 		$parameters = array(
@@ -1399,6 +1397,13 @@ class Ticket extends CommonObject
 
 		if ($reshook > 0) {
 			return $hookmanager->resPrint;
+		}
+
+		if ($isUnknown) {
+			$labelStatus = 'Unknown';
+			$labelStatusShort = 'Unknown';
+			$statusType = 'status0';
+			$mode = 0;
 		}
 
 		$params = array();
