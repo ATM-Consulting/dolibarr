@@ -1,0 +1,14 @@
+--------------------------------------------------------------
+ATHRIUM Dolibarr ChangeLog
+--------------------------------------------------------------
+
+
+***** BACKPORT v20 *****
+Retirer le code avec les commentaires "BACKPORT" lors du passage en v20.
+Sprint 115 - ATM-Lucas
+Fichiers :
+- htdocs/compta/paiement/document.php
+- htdocs/core/class/conf.class.php
+- htdocs/core/lib/files.lib.php
+- htdocs/core/lib/payments.lib.php
+- htdocs/core/tpl/document_actions_post_headers.tpl.php
