@@ -825,7 +825,10 @@ if (empty($reshook)) {
 		if (!(GETPOSTINT('statut') > 0)) {
 			setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("CloseAs")), null, 'errors');
 			$action = 'closeas';
-		} elseif (GETPOSTINT('statut') == $object::STATUS_SIGNED || GETPOSTINT('statut') == $object::STATUS_NOTSIGNED) {
+		}
+		/** SPE CERIBOIS */
+		elseif (GETPOSTINT('statut') == $object::STATUS_SIGNED || GETPOSTINT('statut') == $object::STATUS_NOTSIGNED || GETPOSTINT('statut') == $object::STATUS_NOTFEASIBLE) {
+		/** FIN SPE */
 			$locationTarget = '';
 			// prevent browser refresh from closing proposal several times
 			if ($object->status == $object::STATUS_VALIDATED || (getDolGlobalString('PROPAL_SKIP_ACCEPT_REFUSE') && $object->status == $object::STATUS_DRAFT)) {
@@ -907,7 +910,9 @@ if (empty($reshook)) {
 	} elseif ($action == 'confirm_reopen' && $usercanreopen && !GETPOST('cancel', 'alpha')) {
 		// Reopen proposal
 		// prevent browser refresh from reopening proposal several times
-		if ($object->status == Propal::STATUS_SIGNED || $object->status == Propal::STATUS_NOTSIGNED || $object->status == Propal::STATUS_BILLED || $object->status == Propal::STATUS_CANCELED) {
+		/** SPE CERIBOIS */
+		if ($object->status == Propal::STATUS_SIGNED || $object->status == Propal::STATUS_NOTSIGNED || $object->status == Propal::STATUS_BILLED || $object->status == Propal::STATUS_CANCELED || $object->status == Propal::STATUS_NOTFEASIBLE) {
+		/** FIN SPE */
 			$db->begin();
 
 			$newstatus = (getDolGlobalInt('PROPAL_SKIP_ACCEPT_REFUSE') ? Propal::STATUS_DRAFT : Propal::STATUS_VALIDATED);
@@ -2773,7 +2778,9 @@ if ($action == 'create') {
 		//Form to close proposal (signed or not)
 		$formquestion = array();
 		if (!getDolGlobalString('PROPAL_SKIP_ACCEPT_REFUSE')) {
-			$formquestion[] = array('type' => 'select', 'name' => 'statut', 'label' => '<span class="fieldrequired">' . $langs->trans("CloseAs") . '</span>', 'values' => array($object::STATUS_SIGNED => $object->LibStatut($object::STATUS_SIGNED), $object::STATUS_NOTSIGNED => $object->LibStatut($object::STATUS_NOTSIGNED)));
+			/** SPE CERIBOIS */
+			$formquestion[] = array('type' => 'select', 'name' => 'statut', 'label' => '<span class="fieldrequired">' . $langs->trans("CloseAs") . '</span>', 'values' => array($object::STATUS_SIGNED => $object->LibStatut($object::STATUS_SIGNED), $object::STATUS_NOTSIGNED => $object->LibStatut($object::STATUS_NOTSIGNED), $object::STATUS_NOTFEASIBLE => $object->LibStatut($object::STATUS_NOTFEASIBLE)));
+			/** FIN SPE */
 		}
 		$formquestion[] = array('type' => 'text', 'name' => 'note_private', 'label' => $langs->trans("Note"), 'value' => '');				// Field to complete private note (not replace)
 
@@ -3580,7 +3587,9 @@ if ($action == 'create') {
 				}
 
 				// ReOpen
-				if (((getDolGlobalString('PROPAL_REOPEN_UNSIGNED_ONLY') && $object->status == Propal::STATUS_NOTSIGNED) || (!getDolGlobalString('PROPAL_REOPEN_UNSIGNED_ONLY') && ($object->status == Propal::STATUS_SIGNED || $object->status == Propal::STATUS_NOTSIGNED || $object->status == Propal::STATUS_BILLED || $object->status == Propal::STATUS_CANCELED)))) {
+				/** SPE CERIBOIS */
+				if (((getDolGlobalString('PROPAL_REOPEN_UNSIGNED_ONLY') && $object->status == Propal::STATUS_NOTSIGNED) || (!getDolGlobalString('PROPAL_REOPEN_UNSIGNED_ONLY') && ($object->status == Propal::STATUS_SIGNED || $object->status == Propal::STATUS_NOTSIGNED || $object->status == Propal::STATUS_BILLED || $object->status == Propal::STATUS_CANCELED || $object->status == Propal::STATUS_NOTFEASIBLE)))) {
+				/** FIN SPE */
 					if ($usercanreopen) {
 						print '<a class="butAction" href="' . $_SERVER["PHP_SELF"] . '?id=' . $object->id . '&action=reopen&token=' . newToken() . (!getDolGlobalString('MAIN_JUMP_TAG') ? '' : '#reopen') . '"';
 						print '>' . $langs->trans('ReOpen') . '</a>';

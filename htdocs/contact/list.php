@@ -1688,7 +1688,9 @@ while ($i < $imaxinloop) {
 			if ($contextpage == 'poslist') {
 				print $obj->email;
 			} else {
-				print dol_print_email($obj->email, $obj->rowid, $obj->socid, 1, 18, 0, 1);
+				/** SPE CERIBOIS */
+				print dol_print_email($obj->email, $obj->rowid, $obj->socid, 1, 35, 0, 1);
+				/** FIN SPE */
 			}
 			print '</td>';
 			if (!$i) {

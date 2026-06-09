@@ -2265,7 +2265,12 @@ if (empty($reshook)) {
 					$extrafields->fetch_name_optionals_label($nextSituationInvoice->table_element);
 					$ret = $extrafields->setOptionalsFromPost(null, $nextSituationInvoice);
 					if ($ret > 0) {
-						$nextSituationInvoice->insertExtraFields();
+						/** SPE CERIBOIS
+						* [DA021525]
+						* Activation du trigger ici pour vider le champ complémentaire "date_compta" sur création de facture de situation (hors première facture de situation)
+						*/
+						$nextSituationInvoice->insertExtraFields('BILL_CREATE');
+						/** FIN spé CERIBOIS */
 					}
 
 					// Hooks

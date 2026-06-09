@@ -134,6 +134,9 @@ if (!$error && $massaction == 'confirm_presend') {
 	$resaction = '';
 	$nbsent = 0;
 	$nbignored = 0;
+	/** SPE CERIBOIS */
+	$langs->load("main");
+	/** FIN SPE */
 	$langs->load("mails");
 	include_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 	include_once DOL_DOCUMENT_ROOT.'/core/lib/signature.lib.php';

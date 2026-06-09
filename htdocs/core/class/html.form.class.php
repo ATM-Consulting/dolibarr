@@ -9317,6 +9317,9 @@ class Form
 		$reshook = $hookmanager->executeHooks('selectForFormsListWhere', $parameters); // Note that $action and $object may have been modified by hook
 		if (!empty($hookmanager->resPrint)) {
 			$sql .= $hookmanager->resPrint;
+			/** SPE CERIBOIS */
+			$hookmanager->resPrint = '';
+			/** FIN SPE */
 		} else {
 			$sql .= " WHERE 1=1";
 

@@ -708,7 +708,9 @@ if ($object->id > 0) {
 	print '</div><div class="fichehalfright">';
 
 	// Prospection level and status
-	if ($object->client == 2 || $object->client == 3) {
+	/** SPE CERIBOIS */
+	if ($object->client == 2 || $object->client == 3 || $object->client == 1) {
+	/** FIN SPE */
 		print '<div class="underbanner clearboth"></div>';
 		print '<table class="border centpercent tableforfield">';
 

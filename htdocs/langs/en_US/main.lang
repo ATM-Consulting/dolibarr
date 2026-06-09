@@ -512,6 +512,9 @@ CompanyFoundation=Company/Organization
 Accountant=Accountant
 ContactsForCompany=Contacts for this third party
 ContactsAddressesForCompany=Contacts/addresses for this third party
+# SPE CERIBOIS
+ReplaceSelectedAdressesWithThirdpartyAddress=Replace with thirdparty address
+# FIN SPE
 AddressesForCompany=Addresses for this third party
 ActionsOnCompany=Events for this third party
 ActionsOnContact=Events for this contact/address

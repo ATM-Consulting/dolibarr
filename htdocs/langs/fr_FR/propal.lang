@@ -40,12 +40,18 @@ PropalStatusSigned=Signée (à facturer)
 PropalStatusNotSigned=Non signée (fermée)
 PropalStatusBilled=Facturée
 PropalStatusCanceledShort=Annulé
+# SPE CERIBOIS
+PropalStatusNotFeasible=Non réalisable (fermée)
+# FIN SPE
 PropalStatusDraftShort=Brouillon
 PropalStatusValidatedShort=Ouvert
 PropalStatusClosedShort=Fermée
 PropalStatusSignedShort=Signée
 PropalStatusNotSignedShort=Non signée
 PropalStatusBilledShort=Facturée
+# SPE CERIBOIS
+PropalStatusNotFeasibleShort=Non réalisable
+# FIN SPE
 PropalsToClose=Propositions commerciales à fermer
 PropalsToBill=Propositions commerciales signées à facturer
 ListOfProposals=Liste des devis/propositions commerciales

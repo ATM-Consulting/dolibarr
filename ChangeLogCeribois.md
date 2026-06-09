@@ -1,0 +1,3 @@
+- NEW : Ajout bouton "Parcourir le serveur" pour l'ajout d'image dans les modèles de mail
+- NEW : Ajout de statut STATUS_NOTFEASIBLE sur les proposition commerciales
+- NEW : DA021525 - Activation du trigger pour vider le champ complémentaire "date_compta" sur création de facture de situation (hors première facture de situation)

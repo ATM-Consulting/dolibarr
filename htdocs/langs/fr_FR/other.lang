@@ -106,7 +106,9 @@ PredefinedMailTestHtml=__(Hello)__<br>Ceci est un mail de <b>test</b> envoyé à
 PredefinedMailContentContract=__(Hello)__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendInvoice=__(Hello)__\n\nVous trouverez ci-joint la facture __REF__\n\n__ONLINE_PAYMENT_TEXT_AND_URL__\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendInvoiceReminder=__(Hello)__\n\nNous souhaitons vous prévenir que la facture __REF__ ne semble pas avoir été payée. Revoici donc la facture en pièce jointe, à titre de rappel.\n\n__ONLINE_PAYMENT_TEXT_AND_URL__\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
-PredefinedMailContentSendProposal=__(Hello)__\n\nVeuillez trouver, ci-joint, la proposition commerciale __REF__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
+# SPE CERIBOIS
+PredefinedMailContentSendProposal=__CONTACTCIVNAME__\n\nSuite à notre échange téléphonique, veuillez trouver ci-joint le devis pour les essais demandés.\n\nVous trouverez également en pièce jointe le dossier technique de préparation.\n\nJe reste à votre disposition pour tout renseignement complémentaire.\n\nCordialement\n\n__SIGNATURE__
+# FIN SPE
 PredefinedMailContentSendSupplierProposal=__(Hello)__\n\nVeuillez trouver, ci-joint, une demande de prix avec la référence __REF__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendOrder=__(Hello)__\n\nVeuillez trouver, ci-joint, la commande __REF__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__
 PredefinedMailContentSendSupplierOrder=__(Hello)__\n\nVeuillez trouver, ci-joint, notre commande __REF__\n\n\n__(Sincerely)__\n\n__SENDEREMAIL_SIGNATURE__

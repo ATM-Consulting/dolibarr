@@ -1411,6 +1411,9 @@ function get_left_menu_commercial($mainmenu, &$newmenu, $usemenuhider = 1, $left
 				$newmenu->add("/comm/propal/list.php?leftmenu=propals&search_status=2", $langs->trans("PropalStatusSigned"), 2, $user->hasRight('propal', 'read'));
 				$newmenu->add("/comm/propal/list.php?leftmenu=propals&search_status=3", $langs->trans("PropalStatusNotSigned"), 2, $user->hasRight('propal', 'read'));
 				$newmenu->add("/comm/propal/list.php?leftmenu=propals&search_status=4", $langs->trans("PropalStatusBilled"), 2, $user->hasRight('propal', 'read'));
+				/** SPE CERIBOIS */
+				$newmenu->add("/comm/propal/list.php?leftmenu=propals&search_status=5", $langs->trans("PropalStatusNotFeasible"), 2, $user->hasRight('propal', 'read'));
+				/** FIN SPE */
 				//$newmenu->add("/comm/propal/list.php?leftmenu=propals&search_status=2,3,4", $langs->trans("PropalStatusClosedShort"), 2, $user->hasRight('propal',  'read'));
 			}
 			$newmenu->add("/comm/propal/stats/index.php?leftmenu=propals", $langs->trans("Statistics"), 1, $user->hasRight('propal', 'read'));

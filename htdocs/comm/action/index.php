@@ -845,6 +845,13 @@ if (!empty($actioncode)) {
 		}
 	}
 }
+
+/** SPE CERIBOIS */
+if (getDolGlobalInt("DONT_SHOW_AUTO_EVENT") && !strpos($actioncode, 'AC_OTH_AUTO')) {
+	$sql.=" AND ca.code != 'AC_OTH_AUTO'";
+}
+/** FIN SPE */
+
 if ($resourceid > 0) {
 	$sql .= " AND r.element_type = 'action' AND r.element_id = a.id AND r.resource_id = ".((int) $resourceid);
 }

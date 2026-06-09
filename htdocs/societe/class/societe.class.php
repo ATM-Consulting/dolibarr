@@ -1784,6 +1784,9 @@ class Societe extends CommonObject
 					unset($this->state);
 				}
 
+				/** SPE CERIBOIS */
+				if(empty($this->cond_reglement_id)) $this->setPaymentTerms(2); //30 jours
+				/** FIN SPE */
 				$nbrowsaffected = $this->db->affected_rows($resql);
 
 				if ($nbrowsaffected) {
@@ -3943,6 +3946,10 @@ class Societe extends CommonObject
 	 */
 	public function check_codeclient()
 	{
+		/** SPE CERIBOIS */
+		return 0;
+		/** FIN SPE */
+
 		// phpcs:enable
 		global $conf;
 		if (getDolGlobalString('SOCIETE_CODECLIENT_ADDON')) {

@@ -115,6 +115,13 @@ $tmpe = dol_getdate($date_end);
 $month_end = $tmpe['mon'];
 $year_end = $tmpe['year'];
 $nbofyear = ($year_end - $year_start) + 1;
+/** SPE CERIBOIS */
+$tmps=dol_getdate($date_start);
+$year_start = $tmps['year'];
+$tmpe=dol_getdate($date_end);
+$year_end = $tmpe['year'];
+$nbofyear = ($year_end - $year_start) + 1;
+/** FIN SPE */
 
 // Define modecompta ('CREANCES-DETTES' or 'RECETTES-DEPENSES' or 'BOOKKEEPING')
 $modecompta = getDolGlobalString('ACCOUNTING_MODE');

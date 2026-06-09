@@ -1315,6 +1315,8 @@ class Task extends CommonObjectLine
 
 				$obj = $this->db->fetch_object($resql);
 
+				/** SPE CERIBOIS */
+				/*
 				if ($loadRoleMode) {
 					if ((!$obj->public) && (is_object($userp))) {    // If not public project and we ask a filter on project owned by a user
 						if (!$this->getUserRolesForProjectsOrTasks($userp, null, $obj->projectid, 0)) {
@@ -1327,6 +1329,8 @@ class Task extends CommonObjectLine
 						}
 					}
 				}
+				*/
+				/** FIN SPE */
 
 				if (!$error) {
 					$tasks[$i] = new Task($this->db);
