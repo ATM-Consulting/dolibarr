@@ -161,14 +161,16 @@ class pdf_standard extends ModelePDFEvaluation
 
 		if ($conf->hrm->dir_output) {
 			// Definition of $dir and $file
+			// BACKPORT of https://github.com/Dolibarr/dolibarr/pull/38640 — remove when the upstream PR is merged and this file is updated
+			$entity = isset($object->entity) ? $object->entity : 1;
+			$basedir = empty($conf->hrm->multidir_output[$entity]) ? $conf->hrm->dir_output : $conf->hrm->multidir_output[$entity];
+			// END BACKPORT
 			if ($object->specimen) {
-				//$dir = $conf->hrm->dir_output;
-				$dir = $conf->hrm->multidir_output[isset($object->entity) ? $object->entity : 1].'/evaluation';
+				$dir = $basedir.'/evaluation';
 				$file = $dir."/SPECIMEN.pdf";
 			} else {
 				$objectref = dol_sanitizeFileName($object->ref);
-				//$dir = $conf->hrm->dir_output."/".$objectref;
-				$dir = $conf->hrm->multidir_output[isset($object->entity) ? $object->entity : 1].'/evaluation'."/".$objectref;
+				$dir = $basedir.'/evaluation'."/".$objectref;
 				$file = $dir."/".$objectref.".pdf";
 			}
 

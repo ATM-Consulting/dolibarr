@@ -43,7 +43,9 @@ function holiday_prepare_head($object)
 	// Attachments
 	require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 	require_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
-	$upload_dir = $conf->holiday->multidir_output[$object->entity].'/'.dol_sanitizeFileName($object->ref);
+	// BACKPORT of https://github.com/Dolibarr/dolibarr/pull/38641 — remove when the upstream PR is merged and this file is updated
+	$upload_dir = $conf->holiday->multidir_output[$object->entity].'/'.get_exdir(0, 0, 0, 1, $object, 'holiday');
+	// END BACKPORT
 	$nbFiles = count(dol_dir_list($upload_dir, 'files', 0, '', '(\.meta|_preview.*\.png)$'));
 	$nbLinks = Link::count($db, $object->element, $object->id);
 	$head[$h][0] = DOL_URL_ROOT.'/holiday/document.php?id='.$object->id;
