@@ -1,3 +1,4 @@
+- BACKPORT 24 - T2605-4267 - (PR #38656) Backport Add hook getTicketMessageEmailFrom to override sender in Ticket::sendTicketMessageByEmail - **2026-06-09**
 - BACKPORT 24 - T260152 - (PR #38620) Backport: enforce status mode - **2026-06-05**
 - BACKPORT 24 - T260087 - (PR #30949) Backport: Added a list of supplier invoice templates in the supplier tab of third-party records - **2026-05-26**
 - Backport : https://github.com/Dolibarr/dolibarr/pull/37885
