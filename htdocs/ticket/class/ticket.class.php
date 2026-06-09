@@ -1367,6 +1367,7 @@ class Ticket extends CommonObject
 		$labelStatusShort = $this->statuts_short[$status];
 
 		// BACKPORT v24 - PR #38620
+		$statusType = '';
 		$isUnknown = false;
 		if ($status == self::STATUS_NOT_READ) {
 			$statusType = 'status0';
