@@ -2651,7 +2651,7 @@ class Ticket extends CommonObject
 							/*
 							 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
 							 */
-							$parameters = array('sendto' => $sendto);
+							$parameters = array('sendto' => $sendto, 'internal' => 1);
 							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 							if (empty($reshook)) {
 								$sendto = array_merge($sendto, $hookmanager->resArray);
@@ -2763,7 +2763,7 @@ class Ticket extends CommonObject
 								/*
 								 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
 								 */
-								$parameters = array('sendto' => $sendto);
+								$parameters = array('sendto' => $sendto, 'internal' => 0);
 								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 								if (empty($reshook)) {
 									$sendto = array_merge($sendto, $hookmanager->resArray);
