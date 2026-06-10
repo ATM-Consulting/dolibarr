@@ -1366,6 +1366,8 @@ class Ticket extends CommonObject
 		$labelStatus = $this->statuts[$status];
 		$labelStatusShort = $this->statuts_short[$status];
 
+		// BACKPORT v24 - PR #38620
+		$isUnknown = false;
 		if ($status == self::STATUS_NOT_READ) {
 			$statusType = 'status0';
 		} elseif ($status == self::STATUS_READ) {
@@ -1383,10 +1385,8 @@ class Ticket extends CommonObject
 		} elseif ($status == self::STATUS_CLOSED) {
 			$statusType = 'status6';
 		} else {
-			$labelStatus = 'Unknown';
-			$labelStatusShort = 'Unknown';
-			$statusType = 'status0';
-			$mode = 0;
+			// BACKPORT v24 - PR #38620
+			$isUnknown = true;
 		}
 
 		$parameters = array(
@@ -1400,6 +1400,15 @@ class Ticket extends CommonObject
 		if ($reshook > 0) {
 			return $hookmanager->resPrint;
 		}
+
+		// BACKPORT v24 START - PR #38620
+		if ($isUnknown) {
+			$labelStatus = 'Unknown';
+			$labelStatusShort = 'Unknown';
+			$statusType = 'status0';
+			$mode = 0;
+		}
+		// BACKPORT v24 END - PR #38620
 
 		$params = array();
 		if ($notooltip) {
