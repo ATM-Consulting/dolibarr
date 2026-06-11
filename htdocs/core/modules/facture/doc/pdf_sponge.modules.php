@@ -1327,27 +1327,38 @@ class pdf_sponge extends ModelePDFFactures
 		if ($object->total_tva != 0 && getDolGlobalInt('PDF_INVOICE_SHOW_VAT_ANALYSIS')) {
 			$pdf->SetFillColor(224, 224, 224);
 
+			// DA027918 - START - Fix VAT analysis table: a long translated header (e.g. "VATAmount" =
+			// "Montant de la TVA") may wrap on several lines in the 25mm wide column. Render every
+			// header cell with the same height (the tallest one) so the grey background stays even
+			// and the label cannot overlap the first data row below.
 			$pdf->SetFont('', '', $default_font_size - 2);
-			$pdf->SetXY($this->marge_gauche, $posy);
-			$titre = $outputlangs->transnoentities("VAT");
-			$pdf->MultiCell(25, 4, $titre, 0, 'L', true);
 
-			$pdf->SetFont('', '', $default_font_size - 2);
-			$pdf->SetXY($this->marge_gauche + 25, $posy);
-			$titre = $outputlangs->transnoentities("NetTotal");
-			$pdf->MultiCell(25, 4, $titre, 0, 'L', true);
+			$header_height = 4;
+			foreach (["VAT", "NetTotal", "VATAmount", "AmountTotal"] as $vatcolkey) {
+				$header_height = max($header_height, $pdf->getStringHeight(25, $outputlangs->transnoentities($vatcolkey)));
+			}
 
-			$pdf->SetFont('', '', $default_font_size - 2);
-			$pdf->SetXY($this->marge_gauche + 50, $posy);
-			$titre = $outputlangs->transnoentities("VATAmount");
-			$pdf->MultiCell(25, 4, $titre, 0, 'L', true);
+			$posy_header = $posy;
+			$posy_after_header = $posy;
 
-			$pdf->SetFont('', '', $default_font_size - 2);
-			$pdf->SetXY($this->marge_gauche + 75, $posy);
-			$titre = $outputlangs->transnoentities("AmountTotal");
-			$pdf->MultiCell(25, 4, $titre, 0, 'L', true);
+			$pdf->SetXY($this->marge_gauche, $posy_header);
+			$pdf->MultiCell(25, $header_height, $outputlangs->transnoentities("VAT"), 0, 'L', true);
+			$posy_after_header = max($posy_after_header, $pdf->GetY());
 
-			$posy = $pdf->GetY();
+			$pdf->SetXY($this->marge_gauche + 25, $posy_header);
+			$pdf->MultiCell(25, $header_height, $outputlangs->transnoentities("NetTotal"), 0, 'L', true);
+			$posy_after_header = max($posy_after_header, $pdf->GetY());
+
+			$pdf->SetXY($this->marge_gauche + 50, $posy_header);
+			$pdf->MultiCell(25, $header_height, $outputlangs->transnoentities("VATAmount"), 0, 'L', true);
+			$posy_after_header = max($posy_after_header, $pdf->GetY());
+
+			$pdf->SetXY($this->marge_gauche + 75, $posy_header);
+			$pdf->MultiCell(25, $header_height, $outputlangs->transnoentities("AmountTotal"), 0, 'L', true);
+			$posy_after_header = max($posy_after_header, $pdf->GetY());
+
+			$posy = $posy_after_header;
+			// DA027918 - END
 			$tot_ht = 0;
 			$tot_tva = 0;
 			$tot_ttc = 0;
