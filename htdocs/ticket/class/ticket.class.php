@@ -2821,7 +2821,8 @@ class Ticket extends CommonObject
 	 */
 	public function sendTicketMessageByEmail($subject, $message, $send_internal_cc = 0, $array_receiver = array(), $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array())
 	{
-		global $conf, $langs;
+		// BACKPORT v24 - PR #38656
+		global $conf, $langs, $hookmanager;
 
 		if ($conf->global->TICKET_DISABLE_ALL_MAILS) {
 			dol_syslog(get_class($this).'::sendTicketMessageByEmail: Emails are disable into ticket setup by option TICKET_DISABLE_ALL_MAILS', LOG_WARNING);
@@ -2844,6 +2845,18 @@ class Ticket extends CommonObject
 		}
 
 		$from = $conf->global->TICKET_NOTIFICATION_EMAIL_FROM;
+
+		// BACKPORT v24 START - PR #38656
+		// Hook to let modules override the sender (From) of ticket message emails
+		$hookmanager->initHooks(array('ticketsendticketmessage'));
+		$parameters = array('from' => $from);
+		$action = '';
+		$reshook = $hookmanager->executeHooks('getTicketMessageEmailFrom', $parameters, $this, $action);
+		if ($reshook && !empty($hookmanager->resArray['from'])) {
+			$from = $hookmanager->resArray['from'];
+		}
+		// BACKPORT v24 END - PR #38656
+
 		$is_sent = false;
 		if (is_array($array_receiver) && count($array_receiver) > 0) {
 			foreach ($array_receiver as $key => $receiver) {
