@@ -77,16 +77,18 @@ if ($reshook < 0) {
 }
 
 if (empty($reshook)) {
-	if ($cancel) {
-		if (!empty($backtopage)) {
-			header("Location: ".$backtopage);
-			exit;
+	$error = 0;
+
+	$backurlforlist = dol_buildpath('/resource/list.php', 1);
+
+	if (empty($backtopage) || ($cancel && empty($id))) {
+		if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
+			if (empty($id) && (($action != 'add' && $action != 'create') || $cancel)) {
+				$backtopage = $backurlforlist;
+			} else {
+				$backtopage = dol_buildpath('/resource/card.php', 1).'?id='.((!empty($id) && $id > 0) ? $id : '__ID__');
+			}
 		}
-		if ($action == 'add') {
-			header("Location: ".DOL_URL_ROOT.'/resource/list.php');
-			exit;
-		}
-		$action = '';
 	}
 
 	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
@@ -118,8 +120,11 @@ if ($action == 'create' || $object->fetch($id, $ref) > 0) {
 		}
 
 		// Create/Edit object
-
-		print '<form action="'.$_SERVER["PHP_SELF"].'?id='.$id.'" method="POST">';
+		if($action == 'create') {
+			print '<form action="'.$_SERVER["PHP_SELF"].'" method="POST">';
+		} elseif ($action == 'edit') {
+			print '<form action="'.$_SERVER["PHP_SELF"].'?id='.$id.'" method="POST">';
+		}
 		print '<input type="hidden" name="token" value="'.newToken().'">';
 		print '<input type="hidden" name="action" value="'.($action == "create" ? "add" : "update").'">';
 
