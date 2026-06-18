@@ -8882,6 +8882,7 @@ function dol_osencode($str)
  */
 function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid = 'id', $entityfilter = 0, $filters = '', $useCache = true)
 {
+	/* START SPE KOESIO T240540: BACKPORT PR #32621 */
 	global $cache_codes;
 
 	// If key empty
@@ -8921,6 +8922,7 @@ function dol_getIdFromCode($db, $key, $tablename, $fieldkey = 'code', $fieldid =
 	} else {
 		return -1;
 	}
+	/* END SPE KOESIO T240540: BACKPORT PR #32621 */
 }
 
 /**
