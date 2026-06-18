@@ -57,3 +57,8 @@ yarn.lock
 package-lock.json
 
 doc/install.lock
+
+# Docker
+.docker
+.env
+.ssh

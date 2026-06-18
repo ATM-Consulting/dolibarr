@@ -1,0 +1,353 @@
+{
+    "name": "atm-consulting/dolibarr",
+    "type": "project",
+    "require": {
+        "composer/installers": "~1.0",
+        "atm-consulting/dolibarr_module_abricot": "dev-main",
+        "atm-consulting/dolibarr_module_assetatm": "dev-main",
+        "atm-consulting/dolibarr_module_financement": "dev-main",
+        "atm-consulting/dolibarr_module_jouroff": "dev-main",
+        "atm-consulting/dolibarr_module_moveitconnector": "dev-main",
+        "atm-consulting/dolibarr_module_samlconnector": "dev-main",
+        "atm-consulting/dolibarr_module_upbuttons": "dev-main",
+        "atm-consulting/dolibarr_module_advancedictionaries": "dev-main",
+        "atm-consulting/dolibarr_module_clicpro": "dev-main",
+        "atm-consulting/dolibarr_module_infolegaleconnector": "dev-main",
+        "atm-consulting/dolibarr_module_listincsv": "dev-main",
+        "atm-consulting/dolibarr_module_multicompany": "dev-main",
+        "atm-consulting/dolibarr_module_reloadcustom": "dev-main",
+        "atm-consulting/dolibarr_module_serverobserver": "dev-main",
+        "atm-consulting/dolibarr_module_usernavhistory": "dev-main",
+        "atm-consulting/dolibarr_module_advancednotifier": "dev-main",
+        "atm-consulting/dolibarr_module_exportcompta": "dev-main",
+        "atm-consulting/dolibarr_module_isiworkconnector": "dev-main",
+        "atm-consulting/dolibarr_module_massaction": "dev-main",
+        "atm-consulting/dolibarr_module_query": "dev-main",
+        "atm-consulting/dolibarr_module_report": "dev-main",
+        "atm-consulting/dolibarr_module_sirene": "dev-main"
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_abricot",
+                "version": "dev-main",
+                "type": "dolibarr-module-abricot",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_abricot.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_assetatm",
+                "version": "dev-main",
+                "type": "dolibarr-module-assetatm",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_assetatm.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_financement",
+                "version": "dev-main",
+                "type": "dolibarr-module-financement",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_financement.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_jouroff",
+                "version": "dev-main",
+                "type": "dolibarr-module-jouroff",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_jouroff.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_moveitconnector",
+                "version": "dev-main",
+                "type": "dolibarr-module-moveitconnector",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_moveitconnector.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_samlconnector",
+                "version": "dev-main",
+                "type": "dolibarr-module-samlconnector",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_samlconnector.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_upbuttons",
+                "version": "dev-main",
+                "type": "dolibarr-module-upbuttons",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_upbuttons.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_advancedictionaries",
+                "version": "dev-main",
+                "type": "dolibarr-module-advancedictionaries",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_advancedictionaries.git",
+                    "type": "git",
+                    "reference": "master"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_clicpro",
+                "version": "dev-main",
+                "type": "dolibarr-module-clicpro",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_clicpro.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_infolegaleconnector",
+                "version": "dev-main",
+                "type": "dolibarr-module-infolegaleconnector",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_infolegaleconnector.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_listincsv",
+                "version": "dev-main",
+                "type": "dolibarr-module-listincsv",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_listincsv.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_multicompany",
+                "version": "dev-main",
+                "type": "dolibarr-module-multicompany",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_multicompany.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_reloadcustom",
+                "version": "dev-main",
+                "type": "dolibarr-module-reloadcustom",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_reloadcustom.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_serverobserver",
+                "version": "dev-main",
+                "type": "dolibarr-module-serverobserver",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_serverobserver.git",
+                    "type": "git",
+                    "reference": "master"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_usernavhistory",
+                "version": "dev-main",
+                "type": "dolibarr-module-usernavhistory",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_usernavhistory.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_advancednotifier",
+                "version": "dev-main",
+                "type": "dolibarr-module-advancednotifier",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_advancednotifier.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_exportcompta",
+                "version": "dev-main",
+                "type": "dolibarr-module-exportcompta",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_exportcompta.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_isiworkconnector",
+                "version": "dev-main",
+                "type": "dolibarr-module-isiworkconnector",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_isiworkconnector.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_massaction",
+                "version": "dev-main",
+                "type": "dolibarr-module-massaction",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_massaction.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_query",
+                "version": "dev-main",
+                "type": "dolibarr-module-query",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_query.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_report",
+                "version": "dev-main",
+                "type": "dolibarr-module-report",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_report.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "atm-consulting/dolibarr_module_sirene",
+                "version": "dev-main",
+                "type": "dolibarr-module-sirene",
+                "source": {
+                    "url": "git@github.com:ATM-Consulting/dolibarr_module_sirene.git",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        }
+    ],
+    "extra": {
+        "installer-paths": {
+            "htdocs/custom/abricot": ["type:dolibarr-module-abricot"],
+            "htdocs/custom/assetatm": ["type:dolibarr-module-assetatm"],
+            "htdocs/custom/financement": ["type:dolibarr-module-financement"],
+            "htdocs/custom/jouroff": ["type:dolibarr-module-jouroff"],
+            "htdocs/custom/moveitconnector": ["type:dolibarr-module-moveitconnector"],
+            "htdocs/custom/samlconnector": ["type:dolibarr-module-samlconnector"],
+            "htdocs/custom/upbuttons": ["type:dolibarr-module-upbuttons"],
+            "htdocs/custom/advancedictionaries": ["type:dolibarr-module-advancedictionaries"],
+            "htdocs/custom/clicpro": ["type:dolibarr-module-clicpro"],
+            "htdocs/custom/infolegaleconnector": ["type:dolibarr-module-infolegaleconnector"],
+            "htdocs/custom/listincsv": ["type:dolibarr-module-listincsv"],
+            "htdocs/custom/multicompany": ["type:dolibarr-module-multicompany"],
+            "htdocs/custom/reloadcustom": ["type:dolibarr-module-reloadcustom"],
+            "htdocs/custom/serverobserver": ["type:dolibarr-module-serverobserver"],
+            "htdocs/custom/usernavhistory": ["type:dolibarr-module-usernavhistory"],
+            "htdocs/custom/advancednotifier": ["type:dolibarr-module-advancednotifier"],
+            "htdocs/custom/exportcompta": ["type:dolibarr-module-exportcompta"],
+            "htdocs/custom/isiworkconnector": ["type:dolibarr-module-isiworkconnector"],
+            "htdocs/custom/massaction": ["type:dolibarr-module-massaction"],
+            "htdocs/custom/query": ["type:dolibarr-module-query"],
+            "htdocs/custom/report": ["type:dolibarr-module-report"],
+            "htdocs/custom/sirene": ["type:dolibarr-module-sirene"]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "rm -rf vendor"
+        ]
+    }
+}
