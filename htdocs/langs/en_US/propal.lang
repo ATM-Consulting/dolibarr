@@ -40,18 +40,12 @@ PropalStatusSigned=Signed (needs billing)
 PropalStatusNotSigned=Not signed (closed)
 PropalStatusBilled=Billed
 PropalStatusCanceledShort=Canceled
-# SPE CERIBOIS
-PropalStatusNotFeasible=Not Feasible (closed)
-# FIN SPE
 PropalStatusDraftShort=Draft
 PropalStatusValidatedShort=Open
 PropalStatusClosedShort=Closed
 PropalStatusSignedShort=Signed
 PropalStatusNotSignedShort=Not signed
 PropalStatusBilledShort=Billed
-# SPE CERIBOIS
-PropalStatusBilledShort=Not Feasible
-# FIN SPE
 PropalsToClose=Commercial proposals to close
 PropalsToBill=Signed commercial proposals to bill
 ListOfProposals=List of commercial proposals

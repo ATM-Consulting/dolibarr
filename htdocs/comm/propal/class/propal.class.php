@@ -445,10 +445,6 @@ class Propal extends CommonObject
 	 */
 	const STATUS_BILLED = 4; // Todo rename into STATUS_CLOSE ?
 
-	/** SPE CERIBOIS */
-	const STATUS_NOTFEASIBLE = 5;
-	/** FIN SPE */
-
 
 	/**
 	 *	Constructor
@@ -459,20 +455,11 @@ class Propal extends CommonObject
 	 */
 	public function __construct($db, $socid = 0, $propalid = 0)
 	{
-		/** SPE CERIBOIS */
-		global $langs;
-		/** FIN SPE */
-
 		$this->db = $db;
 
 		$this->ismultientitymanaged = 1;
 		$this->socid = $socid;
 		$this->id = $propalid;
-
-		/** SPE CERIBOIS */
-		$this->labelstatut[5]=(! empty($conf->global->PROPAL_STATUS_NOTFEASIBLE_LABEL) ? $conf->global->PROPAL_STATUS_NOTFEASIBLE_LABEL : $langs->trans("PropalStatusNotFeasible"));
-		$this->labelstatut_short[5]=(! empty($conf->global->PROPAL_STATUS_NOTFEASIBLESHORT_LABEL) ? $conf->global->PROPAL_STATUS_NOTFEASIBLESHORT_LABEL : $langs->trans("PropalStatusNotFeasibleShort"));
-		/** FIN SPE */
 
 		$this->duree_validite = getDolGlobalInt('PROPALE_VALIDITY_DURATION');
 
@@ -3467,21 +3454,12 @@ class Propal extends CommonObject
 			$this->labelStatus[2] = $langs->transnoentitiesnoconv("PropalStatusSigned");
 			$this->labelStatus[3] = $langs->transnoentitiesnoconv("PropalStatusNotSigned");
 			$this->labelStatus[4] = $langs->transnoentitiesnoconv("PropalStatusBilled");
-
-			/** SPE CERIBOIS */
-			$this->labelStatus[5] = $langs->transnoentitiesnoconv("PropalStatusNotFeasible");
-			/** FIN SPE */
-
 			$this->labelStatusShort[-1] = $langs->transnoentitiesnoconv("PropalStatusCanceledShort");
 			$this->labelStatusShort[0] = $langs->transnoentitiesnoconv("PropalStatusDraftShort");
 			$this->labelStatusShort[1] = $langs->transnoentitiesnoconv("PropalStatusValidatedShort");
 			$this->labelStatusShort[2] = $langs->transnoentitiesnoconv("PropalStatusSignedShort");
 			$this->labelStatusShort[3] = $langs->transnoentitiesnoconv("PropalStatusNotSignedShort");
 			$this->labelStatusShort[4] = $langs->transnoentitiesnoconv("PropalStatusBilledShort");
-
-			/** SPE CERIBOIS */
-			$this->labelStatusShort[5] = $langs->transnoentitiesnoconv("PropalStatusNotFeasibleShort");
-			/** FIN SPE */
 		}
 
 		$statusType = '';
@@ -3497,8 +3475,6 @@ class Propal extends CommonObject
 			$statusType = 'status9';
 		} elseif ($status == self::STATUS_BILLED) {
 			$statusType = 'status6';
-		}elseif ($status == self::STATUS_NOTFEASIBLE) {
-			$statusType = 'statut5';
 		}
 
 		$parameters = array('status' => $status, 'mode' => $mode);
