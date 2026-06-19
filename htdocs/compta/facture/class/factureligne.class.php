@@ -996,12 +996,15 @@ class FactureLigne extends CommonInvoiceLine
 	public function getSituationRatio()
 	{
 		if (getDolGlobalInt('INVOICE_USE_SITUATION') === 1) {
-			// in legacy mode, the situation invoice line stores the (cumulative) state of the
-			// cycle at the current situation. To get the delta, we need to subtract the
-			// state at the previous situation (if applicable).
+			// Legacy mode: line stores the cumulative state (e.g. 70%). To get the delta ratio
+			// we divide by situation_percent, not by 100 — because total_ht is already scaled
+			// by situation_percent/100, so the multiplier must cancel that factor out.
+			if (empty($this->situation_percent)) {
+				return 0;
+			}
 			$prevProgress = $this->get_prev_progress($this->fk_facture);
 
-			return ($this->situation_percent - $prevProgress) / 100;
+			return ($this->situation_percent - $prevProgress) / $this->situation_percent;
 		}
 		// new mode (INVOICE_USE_SITUATION == 2):
 		// no ratio needed (data stored on line is already a delta)
