@@ -980,6 +980,7 @@ class FactureLigne extends CommonInvoiceLine
 		}
 	}
 
+	// LOUKTA DA028241 - START
 	/**
 	 * Determines if we are using situation invoices.
 	 * If so, determines if we are using the new mode (2) or legacy mode (1).
@@ -1022,4 +1023,5 @@ class FactureLigne extends CommonInvoiceLine
 		// or not a situation invoice: no ratio needed either
 		return 1;
 	}
+	// LOUKTA DA028241 - END
 }
