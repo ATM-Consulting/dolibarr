@@ -1229,7 +1229,8 @@ class ExtraFields
 		} elseif (preg_match('/varchar/', $type)) {
 			$out = '<input type="text" class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" maxlength="'.$size.'" value="'.dol_escape_htmltag($value).'"'.($moreparam ? $moreparam : '').'>';
 		} elseif (in_array($type, array('mail', 'ip', 'phone', 'url'))) {
-			$out = '<input type="text" class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" value="'.dol_escape_htmltag($value).'" '.($moreparam ? $moreparam : '').'>';
+			$placeholderhtml = (!empty($default) ? ' placeholder="'.dol_escape_htmltag($default).'"' : '');
+			$out = '<input type="text" class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" value="'.dol_escape_htmltag($value).'"'.$placeholderhtml.' '.($moreparam ? $moreparam : '').'>';
 		} elseif ($type == 'icon') {
 			/* External lib inclusion are not allowed in backoffice. Also lib is included several time if there is several icon file.
 			 Some code must be added into main when MAIN_ADD_ICONPICKER_JS is set to add of lib in html header
