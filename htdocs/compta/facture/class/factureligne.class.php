@@ -991,6 +991,17 @@ class FactureLigne extends CommonInvoiceLine
 	 * New mode = the values on the line already represent the delta between the previous
 	 * state and the current state, so we don't need a conversion (we return 1).
 	 *
+	 * LOCAL CORE PATCH (technical debt) — DA027405 / DA028241:
+	 * This method and its consumers in core/lib/pdf.lib.php are a Loukta-local backport of
+	 * upstream PR Dolibarr#36503. They modify core files and WILL be overwritten on the next
+	 * Dolibarr core upgrade — re-apply, or preferably drop them, once #36503 is merged upstream.
+	 *
+	 * SCOPE LIMITATION — DA028241:
+	 * This fix only corrects the mode-1 denominator. It does NOT handle credit notes: in
+	 * get_prev_progress() the credit-note percents are still ADDED (+=) to the previous
+	 * progress, so a situation cycle that contains a credit note can still produce a wrong
+	 * (possibly negative) delta here. Credit-note progression is tracked separately.
+	 *
 	 * @return int
 	 */
 	public function getSituationRatio()

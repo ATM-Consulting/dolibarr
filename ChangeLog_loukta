@@ -1,5 +1,6 @@
 ***** ChangeLog for loukta *****
 - FIX DA028241 - FactureLigne::getSituationRatio() - wrong denominator (100 instead of situation_percent) in mode 1 caused incorrect line amounts in situation invoice PDFs. - *18/06/2026*
+- NOTE DA028241 - getSituationRatio() is a LOCAL CORE PATCH (factureligne.class.php + core/lib/pdf.lib.php), overwritten on each Dolibarr core upgrade; to be dropped once upstream PR Dolibarr#36503 lands. Scope is the mode-1 denominator only - credit notes in a situation cycle are NOT handled (get_prev_progress() still adds credit-note percents), so such a cycle may still yield a wrong/negative delta. - *19/06/2026*
 - FIX DA027405 - merging PR Dolibarr#36503 in advance for Loukta: PDF for situation invoices uses legacy calculations
  (cumulative) instead of the new algorithm (delta). Once the community PR is merged, this specific code can be discarded
  and replaced with the community equivalent. - *03/12/2025*
