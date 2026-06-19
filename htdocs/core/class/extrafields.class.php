@@ -1229,7 +1229,10 @@ class ExtraFields
 		} elseif (preg_match('/varchar/', $type)) {
 			$out = '<input type="text" class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" maxlength="'.$size.'" value="'.dol_escape_htmltag($value).'"'.($moreparam ? $moreparam : '').'>';
 		} elseif (in_array($type, array('mail', 'ip', 'phone', 'url'))) {
+			// @ATM-PATCH BEGIN extrafields-url-placeholder — use fielddefault as placeholder for url/mail/ip/phone inputs
+			// grep: git grep '@ATM-PATCH' -- htdocs/
 			$placeholderhtml = (!empty($default) ? ' placeholder="'.dol_escape_htmltag($default).'"' : '');
+			// @ATM-PATCH END extrafields-url-placeholder
 			$out = '<input type="text" class="flat '.$morecss.' maxwidthonsmartphone" name="'.$keyprefix.$key.$keysuffix.'" id="'.$keyprefix.$key.$keysuffix.'" value="'.dol_escape_htmltag($value).'"'.$placeholderhtml.' '.($moreparam ? $moreparam : '').'>';
 		} elseif ($type == 'icon') {
 			/* External lib inclusion are not allowed in backoffice. Also lib is included several time if there is several icon file.
