@@ -504,6 +504,238 @@ class Users extends DolibarrApi
 	}
 
 	/**
+	 * Get the password policy of this instance
+	 *
+	 * Returns the password constraints (minimum length and minimum count of
+	 * uppercase, digit and special characters) derived from the active password
+	 * generator (USER_PASSWORD_GENERATED / USER_PASSWORD_PATTERN), so a portal
+	 * front-end can display and pre-validate them before a reset. Read-only.
+	 *
+	 * Gated by the constant USER_PASSWORD_RESET_PUBLIC_API (off by default) and
+	 * meant to be called server-to-server with a system API key.
+	 *
+	 * @return  array   Password policy {minLength, minUpper, minDigits, minSpecial, generator}
+	 * @phan-return array<string,int|string>
+	 *
+	 * @throws RestException 403 Feature disabled or not allowed
+	 *
+	 * @url GET passwordpolicy
+	 */
+	public function passwordPolicy()
+	{
+		global $conf, $langs;
+
+		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
+			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
+		}
+		if (!DolibarrApiAccess::$user->hasRight('user', 'user', 'password') && empty(DolibarrApiAccess::$user->admin)) {
+			throw new RestException(403, 'Not allowed');
+		}
+
+		$generator = getDolGlobalString('USER_PASSWORD_GENERATED');
+		$policy = array('minLength' => 0, 'minUpper' => 0, 'minDigits' => 0, 'minSpecial' => 0, 'generator' => $generator);
+
+		if (!empty($generator)) {
+			$classname = 'modGeneratePass'.ucfirst($generator);
+			$file = DOL_DOCUMENT_ROOT.'/core/modules/security/generate/'.$classname.'.class.php';
+			if (file_exists($file)) {
+				include_once $file;
+				if (class_exists($classname)) {
+					$modgen = new $classname($this->db, $conf, $langs, DolibarrApiAccess::$user);
+					$policy['minLength'] = (int) (isset($modgen->length2) ? $modgen->length2 : (isset($modgen->length) ? $modgen->length : 0));
+					$policy['minUpper'] = (int) (isset($modgen->NbMaj) ? $modgen->NbMaj : 0);
+					$policy['minDigits'] = (int) (isset($modgen->NbNum) ? $modgen->NbNum : 0);
+					$policy['minSpecial'] = (int) (isset($modgen->NbSpe) ? $modgen->NbSpe : 0);
+				}
+			}
+		}
+
+		return $policy;
+	}
+
+	/**
+	 * Request a password reset link
+	 *
+	 * Generates a temporary password for the matching user and emails a reset
+	 * LINK pointing to the provided portal returnurl (no password is included in
+	 * the email body). The response is identical whether or not an account
+	 * matches (anti-enumeration). Gated by USER_PASSWORD_RESET_PUBLIC_API and
+	 * meant to be called server-to-server with a system API key holding the
+	 * user/password right.
+	 *
+	 * @param   array   $request_data   Request data {login_or_email, returnurl}
+	 * @return  array   Neutral acknowledgement {success}
+	 * @phan-return array<string,bool>
+	 *
+	 * @throws RestException 400 Bad parameters or returnurl host not allowed
+	 * @throws RestException 403 Feature disabled or not allowed
+	 *
+	 * @url POST passwordresetrequest
+	 */
+	public function passwordResetRequest($request_data = null)
+	{
+		global $conf;
+
+		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
+			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
+		}
+		if (!DolibarrApiAccess::$user->hasRight('user', 'user', 'password') && empty(DolibarrApiAccess::$user->admin)) {
+			throw new RestException(403, 'Not allowed');
+		}
+
+		$loginoremail = (is_array($request_data) && isset($request_data['login_or_email'])) ? trim((string) $request_data['login_or_email']) : '';
+		$returnurl = (is_array($request_data) && isset($request_data['returnurl'])) ? trim((string) $request_data['returnurl']) : '';
+		if ($loginoremail === '' || $returnurl === '') {
+			throw new RestException(400, 'Parameters login_or_email and returnurl are mandatory');
+		}
+
+		// Validate the returnurl host against the whitelist (anti open-redirect / phishing)
+		$allowedhosts = array_filter(array_map('trim', explode(',', getDolGlobalString('USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS'))));
+		$returnhost = parse_url($returnurl, PHP_URL_HOST);
+		if (empty($returnhost) || !in_array($returnhost, $allowedhosts, true)) {
+			throw new RestException(400, 'returnurl host is not in the allowed list (constant USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS)');
+		}
+
+		$edituser = new User($this->db);
+		if (strpos($loginoremail, '@') !== false) {
+			$resfetch = $edituser->fetch(0, '', '', 0, -1, $loginoremail);
+		} else {
+			$resfetch = $edituser->fetch(0, $loginoremail);
+		}
+
+		if ($resfetch > 0 && !empty($edituser->email)) {
+			$newpassword = $edituser->setPassword(DolibarrApiAccess::$user, '', 1);	// Generate + store a temporary password (clear) in pass_temp
+			if (is_int($newpassword) && $newpassword < 0) {
+				dol_syslog("Users::passwordResetRequest failed to set temporary password for user ".((int) $edituser->id)." : ".$edituser->error, LOG_ERR);
+			} else {
+				$hash = dol_hash($newpassword.'-'.$edituser->id.'-'.$conf->file->instance_unique_id);
+				$this->sendPasswordResetLinkEmail($edituser, $returnurl, $hash);
+			}
+		} else {
+			usleep(20000);	// Simulate processing delay so response time does not leak account existence
+		}
+
+		// Always neutral: never reveal whether the account exists
+		return array('success' => true);
+	}
+
+	/**
+	 * Confirm a password reset and set the user-chosen new password
+	 *
+	 * Verifies the possession hash received by email, then sets the new password.
+	 * The new password is validated against the instance password policy by
+	 * User::setPassword (returns < 0 with an error if it does not comply). Gated
+	 * by USER_PASSWORD_RESET_PUBLIC_API and meant to be called server-to-server
+	 * with a system API key holding the user/password right.
+	 *
+	 * @param   array   $request_data   Request data {username, passworduidhash, newpassword}
+	 * @return  array   {success}
+	 * @phan-return array<string,bool>
+	 *
+	 * @throws RestException 400 Bad parameters
+	 * @throws RestException 403 Feature disabled, not allowed, or invalid/expired link
+	 * @throws RestException 422 New password does not meet the password policy
+	 *
+	 * @url POST passwordresetconfirm
+	 */
+	public function passwordResetConfirm($request_data = null)
+	{
+		global $conf;
+
+		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
+			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
+		}
+		if (!DolibarrApiAccess::$user->hasRight('user', 'user', 'password') && empty(DolibarrApiAccess::$user->admin)) {
+			throw new RestException(403, 'Not allowed');
+		}
+
+		$username = (is_array($request_data) && isset($request_data['username'])) ? trim((string) $request_data['username']) : '';
+		$hash = (is_array($request_data) && isset($request_data['passworduidhash'])) ? trim((string) $request_data['passworduidhash']) : '';
+		$newpassword = (is_array($request_data) && isset($request_data['newpassword'])) ? (string) $request_data['newpassword'] : '';
+		if ($username === '' || $hash === '' || $newpassword === '') {
+			throw new RestException(400, 'Parameters username, passworduidhash and newpassword are mandatory');
+		}
+
+		$edituser = new User($this->db);
+		$resfetch = $edituser->fetch(0, $username);
+		if ($resfetch <= 0 || empty($edituser->pass_temp)
+			|| !dol_verifyHash($edituser->pass_temp.'-'.$edituser->id.'-'.$conf->file->instance_unique_id, $hash)) {
+			// Generic message: never reveal which part failed (anti-enumeration)
+			throw new RestException(403, 'Invalid or expired password reset link');
+		}
+
+		$result = $edituser->setPassword(DolibarrApiAccess::$user, $newpassword, 0);
+		if (is_int($result) && $result < 0) {
+			throw new RestException(422, $edituser->error ? $edituser->error : 'New password does not meet the password policy');
+		}
+
+		return array('success' => true);
+	}
+
+	/**
+	 * Send a password-reset LINK email pointing to a portal returnurl (no password in body)
+	 *
+	 * @param   User    $edituser   User to email (must hold an email address)
+	 * @param   string  $returnurl  Portal base URL of the reset page (already whitelisted)
+	 * @param   string  $hash       Possession hash to append to the link
+	 * @return  int                 Return integer < 0 if KO, > 0 if OK
+	 */
+	private function sendPasswordResetLinkEmail($edituser, $returnurl, $hash)
+	{
+		global $conf, $langs;
+
+		require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
+
+		$outputlangs = $langs;
+		if (getDolGlobalString('MAIN_LANG_DEFAULT')) {
+			$outputlangs = new Translate('', $conf);
+			$outputlangs->setDefaultLang(getDolGlobalString('MAIN_LANG_DEFAULT'));
+		}
+		$outputlangs->loadLangs(array('main', 'errors', 'users', 'other'));
+
+		$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', constant('DOL_APPLICATION_TITLE'));
+
+		$link = $returnurl.((strpos($returnurl, '?') === false) ? '?' : '&');
+		$link .= 'username='.urlencode($edituser->login).'&passworduidhash='.urlencode($hash);
+
+		$subject = '['.$appli.'] '.$outputlangs->transnoentitiesnoconv('SubjectNewPassword', $appli);
+
+		$mesg = $outputlangs->transnoentitiesnoconv('RequestToResetPasswordReceived')."<br>\n<br>\n";
+		$mesg .= $outputlangs->transnoentitiesnoconv('YouMustClickToChange')." :<br>\n";
+		$mesg .= '<a href="'.dol_escape_htmltag($link).'" rel="noopener">'.$outputlangs->transnoentitiesnoconv('ConfirmPasswordChange').'</a>'."<br>\n<br>\n";
+		$mesg .= $outputlangs->transnoentitiesnoconv('ForgetIfNothing')."<br>\n";
+
+		$trackid = 'use'.$edituser->id;
+		$sendcontext = 'passwordreset';
+
+		$mailfile = new CMailFile(
+			$subject,
+			$edituser->email,
+			getDolGlobalString('MAIN_MAIL_EMAIL_FROM'),
+			$mesg,
+			array(),
+			array(),
+			array(),
+			'',
+			'',
+			0,
+			1,
+			'',
+			'',
+			$trackid,
+			'',
+			$sendcontext
+		);
+
+		if (!$mailfile->sendfile()) {
+			dol_syslog("Users::sendPasswordResetLinkEmail failed to send to user ".((int) $edituser->id)." : ".$mailfile->error, LOG_ERR);
+			return -1;
+		}
+
+		return 1;
+	}
+
+	/**
 	 * List the groups of a user
 	 *
 	 * @param int $id     Id of user

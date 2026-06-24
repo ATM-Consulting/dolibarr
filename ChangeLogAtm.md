@@ -1,3 +1,4 @@
+- NEW : API REST réinitialisation de mot de passe (`passwordpolicy` / `passwordresetrequest` / `passwordresetconfirm` dans api_users) pour un flux "mot de passe oublié" transparent côté portail ; opt-in `USER_PASSWORD_RESET_PUBLIC_API`, lien email vers `returnurl` whitelisté (`USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS`), anti-énumération, validation politique via setPassword. - *2026-06-24*
 - FIX : BACKPORT pour SENTRY : add null check before setting _renderItem on jQuery UI autocomplete widget #37597
 - NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
 - FIX : DA027856 - Edition des extrafields "always editable" sur les projets avec une tache ouverte en bas de page.
