@@ -758,6 +758,22 @@ class Holiday extends CommonObject
 
 
 	/**
+	 *	Convert a local timezone date to the UTC midnight of the same calendar day, as required by
+	 *	num_open_day()/num_public_holiday() (UTC timestamp with hour, min and sec set to 0). This keeps
+	 *	the day count independent from the server/user timezone. Same pattern as dol_get_first_hour()
+	 *	but the day is read in the server timezone and re-anchored to UTC midnight.
+	 *
+	 *	@param	int		$date		Local timezone timestamp (date holding a local midnight)
+	 *	@return	int					UTC timestamp at midnight of the same calendar day
+	 */
+	private function convertToGmtMidnight($date)
+	{
+		$tmparray = dol_getdate($date, false);
+		return dol_mktime(0, 0, 0, $tmparray['mon'], $tmparray['mday'], $tmparray['year'], 1);
+	}
+
+
+	/**
 	 *	Validate leave request
 	 *
 	 *  @param	User		$user        	User that validate
@@ -775,7 +791,9 @@ class Holiday extends CommonObject
 
 		if ($checkBalance > 0) {
 			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
-			$daysAsked = num_open_day($this->date_debut, $this->date_fin, 0, 1);
+			$dateDebutGmt = $this->convertToGmtMidnight($this->date_debut);
+			$dateFinGmt = $this->convertToGmtMidnight($this->date_fin);
+			$daysAsked = num_open_day($dateDebutGmt, $dateFinGmt, 0, 1);
 
 			if (($balance - $daysAsked) < 0 && getDolGlobalString('HOLIDAY_DISALLOW_NEGATIVE_BALANCE')) {
 				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
@@ -899,7 +917,9 @@ class Holiday extends CommonObject
 
 		if ($checkBalance > 0) {
 			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
-			$daysAsked = num_open_day($this->date_debut, $this->date_fin, 0, 1);
+			$dateDebutGmt = $this->convertToGmtMidnight($this->date_debut);
+			$dateFinGmt = $this->convertToGmtMidnight($this->date_fin);
+			$daysAsked = num_open_day($dateDebutGmt, $dateFinGmt, 0, 1);
 
 			if (($balance - $daysAsked) < 0 && getDolGlobalString('HOLIDAY_DISALLOW_NEGATIVE_BALANCE')) {
 				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
@@ -1028,7 +1048,9 @@ class Holiday extends CommonObject
 
 		if ($checkBalance > 0 && $this->statut != self::STATUS_DRAFT && $this->statut != self::STATUS_CANCELED) {
 			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
-			$daysAsked = num_open_day($this->date_debut, $this->date_fin, 0, 1);
+			$dateDebutGmt = $this->convertToGmtMidnight($this->date_debut);
+			$dateFinGmt = $this->convertToGmtMidnight($this->date_fin);
+			$daysAsked = num_open_day($dateDebutGmt, $dateFinGmt, 0, 1);
 
 			if (($balance - $daysAsked) < 0 && getDolGlobalString('HOLIDAY_DISALLOW_NEGATIVE_BALANCE')) {
 				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
