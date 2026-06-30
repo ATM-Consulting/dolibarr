@@ -32,6 +32,11 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/ticket.lib.php';
 class Tickets extends DolibarrApi
 {
 	/**
+	 * Maximum number of contacts that can be attached in a single ticket creation call
+	 */
+	const TICKET_MAX_CONTACTS = 20;
+
+	/**
 	 * @var string[]       Mandatory fields, checked when create and update object
 	 */
 	public static $FIELDS = array(
@@ -343,10 +348,19 @@ class Tickets extends DolibarrApi
 	/**
 	 * Create ticket object
 	 *
+	 * Optional payload fields:
+	 *  - contacts: array of {id:int, role:string (c_type_contact code), type:'internal'|'external'},
+	 *    max Tickets::TICKET_MAX_CONTACTS items. External contacts must belong to the ticket thirdparty (socid).
+	 *  - notrigger: int (default 1) - when 1, contact links do not fire the TICKET_ADD_CONTACT trigger.
+	 *
 	 * @param array $request_data   Request data
 	 * @phan-param ?array<string,string> $request_data
 	 * @phpstan-param ?array<string,string> $request_data
 	 * @return int  ID of ticket
+	 *
+	 * @throws RestException 400 Invalid contacts payload
+	 * @throws RestException 403 Insufficient rights
+	 * @throws RestException 500 Error creating ticket
 	 */
 	public function post($request_data = null)
 	{
@@ -354,8 +368,35 @@ class Tickets extends DolibarrApi
 		if (!DolibarrApiAccess::$user->hasRight('ticket', 'write')) {
 			throw new RestException(403);
 		}
+
 		// Check mandatory fields
-		$result = $this->_validate($request_data);
+		$this->_validate($request_data);
+
+		// Extract the optional contacts list and notrigger flag before assigning fields to the object
+		$contacts = array();
+		if (array_key_exists('contacts', $request_data)) {
+			$contacts = $request_data['contacts'];
+			unset($request_data['contacts']);
+		}
+		$notrigger = 1;
+		if (array_key_exists('notrigger', $request_data)) {
+			$notrigger = (int) $request_data['notrigger'];
+			unset($request_data['notrigger']);
+		}
+
+		// Thirdparty the ticket is attached to (used to check ownership of external contacts).
+		// Note: post() does not validate socid access on create; we keep that behavior and only use
+		// socid to enforce that external contacts belong to it (see _validateContacts).
+		$socid = (int) (isset($request_data['socid']) ? $request_data['socid'] : 0);
+
+		// Validate the contacts payload before creating anything (fail fast, no orphan ticket)
+		$validatedContacts = array();
+		if (!empty($contacts)) {
+			if (!is_array($contacts)) {
+				throw new RestException(400, "Field 'contacts' must be an array");
+			}
+			$validatedContacts = $this->_validateContacts($contacts, $socid);
+		}
 
 		foreach ($request_data as $field => $value) {
 			if ($field === 'caller') {
@@ -373,9 +414,23 @@ class Tickets extends DolibarrApi
 			$this->ticket->track_id = generate_random_id(16);
 		}
 
+		// All-or-nothing: wrap ticket creation and contact links in a single (reentrant) transaction
+		$this->db->begin();
+
 		if ($this->ticket->create(DolibarrApiAccess::$user) < 0) {
+			$this->db->rollback();
 			throw new RestException(500, "Error creating ticket", array_merge(array($this->ticket->error), $this->ticket->errors));
 		}
+
+		foreach ($validatedContacts as $contact) {
+			$res = $this->ticket->add_contact($contact['id'], $contact['code'], $contact['source'], $notrigger);
+			if ($res < 0) {
+				$this->db->rollback();
+				throw new RestException(400, "Failed to link contact id=".$contact['id']." role=".$contact['code']." (error ".$res.": ".$this->ticket->error.")");
+			}
+		}
+
+		$this->db->commit();
 
 		return $this->ticket->id;
 	}
@@ -635,6 +690,138 @@ class Tickets extends DolibarrApi
 			$ticket[$field] = $data[$field];
 		}
 		return $ticket;
+	}
+
+	/**
+	 * Validate the optional contacts list provided at ticket creation.
+	 *
+	 * Each entry must be an associative array {id, role, type} where:
+	 *  - id   : rowid of the user (type=internal) or socpeople (type=external), > 0
+	 *  - role : code of a c_type_contact row for element 'ticket', active, matching the source
+	 *  - type : 'internal' or 'external' (mapped to c_type_contact.source)
+	 * External contacts must belong to the ticket thirdparty ($socid).
+	 *
+	 * @param  array $contacts  Raw list of contact entries from the request payload
+	 * @phan-param  array<int,array<string,mixed>> $contacts
+	 * @phpstan-param array<int,array<string,mixed>> $contacts
+	 * @param  int   $socid     Thirdparty id the ticket is attached to (0 if none)
+	 * @return array            Normalized list: [['id'=>int,'code'=>string,'source'=>string], ...]
+	 * @phan-return array<int,array{id:int,code:string,source:string}>
+	 * @phpstan-return array<int,array{id:int,code:string,source:string}>
+	 * @throws RestException    400 on any invalid entry, 500 on a database error
+	 */
+	private function _validateContacts($contacts, $socid)
+	{
+		if (count($contacts) > self::TICKET_MAX_CONTACTS) {
+			throw new RestException(400, "Too many contacts (max ".self::TICKET_MAX_CONTACTS.")");
+		}
+
+		$normalized = array();
+		$externalIds = array();
+		$internalIds = array();
+
+		// Pass 1: structural validation + id collection
+		foreach ($contacts as $i => $contact) {
+			if (!is_array($contact)) {
+				throw new RestException(400, "contacts[".((int) $i)."] must be an object");
+			}
+			$id = isset($contact['id']) ? (int) $contact['id'] : 0;
+			$role = isset($contact['role']) ? trim((string) $contact['role']) : '';
+			$type = isset($contact['type']) ? (string) $contact['type'] : '';
+
+			if ($id <= 0) {
+				throw new RestException(400, "contacts[".((int) $i)."].id is invalid");
+			}
+			if ($role === '') {
+				throw new RestException(400, "contacts[".((int) $i)."].role is required");
+			}
+			if ($type !== 'internal' && $type !== 'external') {
+				throw new RestException(400, "contacts[".((int) $i)."].type must be 'internal' or 'external'");
+			}
+
+			$normalized[] = array('id' => $id, 'code' => $role, 'source' => $type);
+			if ($type === 'external') {
+				$externalIds[$id] = $id;
+			} else {
+				$internalIds[$id] = $id;
+			}
+		}
+
+		// Load valid ticket contact roles once: $validRoles[source][code] = true
+		$validRoles = array('internal' => array(), 'external' => array());
+		$sql = "SELECT tc.code, tc.source";
+		$sql .= " FROM ".$this->db->prefix()."c_type_contact as tc";
+		$sql .= " WHERE tc.element = 'ticket'";
+		$sql .= " AND tc.active = 1";
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			throw new RestException(500, "Error loading contact types: ".$this->db->lasterror());
+		}
+		while ($obj = $this->db->fetch_object($resql)) {
+			if ($obj->source === 'internal' || $obj->source === 'external') {
+				$validRoles[$obj->source][$obj->code] = true;
+			}
+		}
+		$this->db->free($resql);
+
+		// Pass 2: role/source coherence
+		foreach ($normalized as $contact) {
+			if (!isset($validRoles[$contact['source']][$contact['code']])) {
+				throw new RestException(400, "Role code '".$contact['code']."' unknown for source '".$contact['source']."' on element 'ticket'");
+			}
+		}
+
+		// External contacts: existence + thirdparty ownership (grouped query)
+		if (!empty($externalIds)) {
+			if ($socid <= 0) {
+				throw new RestException(400, "socid is required to attach external contacts");
+			}
+			$sql = "SELECT sp.rowid, sp.fk_soc";
+			$sql .= " FROM ".$this->db->prefix()."socpeople as sp";
+			$sql .= " WHERE sp.rowid IN (".implode(',', array_map('intval', $externalIds)).")";
+			$sql .= " AND sp.entity IN (".getEntity('contact').")";
+			$resql = $this->db->query($sql);
+			if (!$resql) {
+				throw new RestException(500, "Error checking external contacts: ".$this->db->lasterror());
+			}
+			$found = array();
+			while ($obj = $this->db->fetch_object($resql)) {
+				$found[(int) $obj->rowid] = (int) $obj->fk_soc;
+			}
+			$this->db->free($resql);
+			foreach ($externalIds as $id) {
+				if (!isset($found[$id])) {
+					throw new RestException(400, "Contact id=".((int) $id)." unknown");
+				}
+				if ($found[$id] != $socid) {
+					throw new RestException(400, "Contact id=".((int) $id)." does not belong to thirdparty ".((int) $socid));
+				}
+			}
+		}
+
+		// Internal contacts: existence (grouped query)
+		if (!empty($internalIds)) {
+			$sql = "SELECT u.rowid";
+			$sql .= " FROM ".$this->db->prefix()."user as u";
+			$sql .= " WHERE u.rowid IN (".implode(',', array_map('intval', $internalIds)).")";
+			$sql .= " AND u.entity IN (".getEntity('user').")";
+			$resql = $this->db->query($sql);
+			if (!$resql) {
+				throw new RestException(500, "Error checking internal contacts: ".$this->db->lasterror());
+			}
+			$found = array();
+			while ($obj = $this->db->fetch_object($resql)) {
+				$found[(int) $obj->rowid] = true;
+			}
+			$this->db->free($resql);
+			foreach ($internalIds as $id) {
+				if (!isset($found[$id])) {
+					throw new RestException(400, "User id=".((int) $id)." unknown");
+				}
+			}
+		}
+
+		return $normalized;
 	}
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.PublicUnderscore
