@@ -12617,3 +12617,22 @@ function GETPOSTDATE($prefix, $hourTime = '', $gm = 'auto', $saverestore = '')
 	return dol_mktime($hour, $minute, $second, $month, $day, $year, $gm);
 }
 // BACKPORT V24 END - Commit e8ac6cdd
+
+// BACKPORT V24 START - Commit 0b4cacd2
+/**
+ *	Change mod of a file
+ *
+ *  @param	string		$filepath		Full file path
+ *  @param	string		$newmask		Force new mask. For example '0644'
+ *	@return void
+ */
+function dolChmod($filepath, $newmask = '')
+{
+	if (!empty($newmask)) {
+		@chmod($filepath, octdec($newmask));
+	} elseif (getDolGlobalString('MAIN_UMASK')) {
+		@chmod($filepath, octdec(getDolGlobalString('MAIN_UMASK')));
+	}
+}
+
+// BACKPORT V24 END - Commit 0b4cacd2

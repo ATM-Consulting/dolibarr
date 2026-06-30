@@ -1,3 +1,4 @@
+- Backport 24 : Commit 0b4cacd2 - Add dolChmod - **2026-06-30**
 - Backport 24 : Commit e8ac6cdd - Add GETPOSTDATE - **2026-06-30**
 - Backport 24 : Commit 7faa9bad, e412dbbe, 16f4f4a6 - Add dropdown on button  - **2026-06-30**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
