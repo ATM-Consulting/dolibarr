@@ -9,3 +9,8 @@ NEW : Backport d'un développement proposé dans le standard en develop (22.0)
 FIX :  La fusion de deux tiers échouait avec une erreur de contrainte FK sur llx_prospectingmap_coordinate
 /home/client/weneos/dolibarr/htdocs/societe/class/societe.class.php => L5141 - 5150
 /home/client/weneos/dolibarr/htdocs/societe/card.php => L368 - 369
+
+FIX : DA028159 - Introduction des Pages PDF pour les signatures (htdocs/core/ajax/onlineSign.php).
+Pour éviter que la signature en ligne n'atterrisse pas sur une mauvaise page. 
+A supp en V22.
+
