@@ -1,3 +1,5 @@
+- Backport 24 : Commit e8ac6cdd - Add GETPOSTDATE - **2026-06-30**
+- Backport 24 : Commit 7faa9bad, e412dbbe, 16f4f4a6 - Add dropdown on button  - **2026-06-30**
 - NEW - LEAS-151 : Use of c_financement_periodicite instead of c_periodicity  - **2025-11-05**
 - Backport 16.0 PR #36074: Fix SQL error on lists when the object has an extrafield of type "link" to a category - **03/11/2025**
 - Backport 22.0 admin.langs / product/card.php / product.class.php / mouvementstock.class.php for products without movements - **09/10/2025**
