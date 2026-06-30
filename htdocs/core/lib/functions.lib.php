@@ -10867,6 +10867,93 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 {
 	global $hookmanager, $action, $object, $langs;
 
+	// BACKPORT V24 START - Commit 16f4f4a6
+	// If $url is an array, we must build a dropdown button or recursively iterate over each value
+	if (is_array($url)) {
+		// Loop on $url array to remove entries of disabled modules
+		foreach ($url as $key => $subbutton) {
+			if (isset($subbutton['enabled']) && empty($subbutton['enabled'])) {
+				unset($url[$key]);
+			}
+		}
+
+		$out = '';
+
+		if (array_key_exists('areDropdownButtons', $params) && $params["areDropdownButtons"] === false) {  // @phan-suppress-current-line PhanTypeInvalidDimOffset
+			foreach ($url as $button) {
+				if (!empty($button['lang'])) {
+					$langs->load($button['lang']);
+				}
+				$label = $langs->trans($button['label']);
+				$text = $button['text'] ?? '';
+				$actionType = $button['actionType'] ?? '';
+				$tmpUrl = DOL_URL_ROOT . $button['url'] . (empty($params['backtopage']) ? '' : '&amp;backtopage=' . urlencode($params['backtopage']));
+				$id = $button['id'] ?? '';
+				$userRight = $button['perm'] ?? 1;
+				$button['params'] = $button['params'] ?? [];  // @phan-suppress-current-line PhanPluginDuplicateExpressionAssignmentOperation
+
+				$out .= dolGetButtonAction($label, $text, $actionType, $tmpUrl, $id, $userRight, $button['params']);
+			}
+			return $out;
+		}
+
+		if (count($url) > 1) {
+			$out .= '<div class="dropdown inline-block dropdown-holder">';
+			// SPE KOESIO START - As v17 behavior differs from v24, we need a small hack to avoid generating a title-only tooltip. Remove when upgrading to v24
+			// $out .= '<a style="margin-right: auto;" class="dropdown-toggle classfortooltip butAction' . ($userRight ? '' : 'Refused') . '" title="' . dol_escape_htmltag($label) . '" data-toggle="dropdown">' . ($text ? $text : $label) . '</a>';
+			$out .= '<a style="margin-right: auto;" class="dropdown-toggle butAction' . ($userRight ? '' : 'Refused') . '" data-toggle="dropdown">' . ($text ? $text : $label) . '</a>';
+			// SPE KOESIO END
+			$out .= '<div class="dropdown-content">';
+			foreach ($url as $subbutton) {
+				if (!empty($subbutton['lang'])) {
+					$langs->load($subbutton['lang']);
+				}
+
+				if (!empty($subbutton['urlraw'])) {
+					$tmpurl = $subbutton['urlraw']; // Use raw url, no url completion, use only what developer send
+				} else {
+					$tmpurl = !empty($subbutton['urlroot']) ? $subbutton['urlroot'] : $subbutton['url'];
+					$tmpurl = dolCompletUrlForDropdownButton($tmpurl, $params, empty($subbutton['urlroot']));
+				}
+
+				$subbuttonparam = array();
+				if (!empty($subbutton['attr'])) {
+					$subbuttonparam['attr'] = $subbutton['attr'];
+				}
+				$subbuttonparam['isDropDown'] = (empty($params['isDropDown']) ? ($subbutton['isDropDown'] ?? false) : $params['isDropDown']);
+
+				$out .= dolGetButtonAction($subbutton['text'], $langs->trans($subbutton['label']), 'default', $tmpurl, $subbutton['id'] ?? '', $subbutton['perm'], $subbuttonparam);
+			}
+			$out .= "</div>";
+			$out .= "</div>";
+		} else {
+			foreach ($url as $subbutton) {	// Should loop on 1 record only
+				if (!empty($subbutton['lang'])) {
+					$langs->load($subbutton['lang']);
+				}
+
+				if (!empty($subbutton['urlraw'])) {
+					$tmpurl = $subbutton['urlraw']; // Use raw url, no url completion, use only what developer send
+				} else {
+					$tmpurl = !empty($subbutton['urlroot']) ? $subbutton['urlroot'] : $subbutton['url'];
+					$tmpurl = dolCompletUrlForDropdownButton($tmpurl, $params, empty($subbutton['urlroot']));
+				}
+
+				$label = $langs->trans($subbutton['label']);
+				$text = $subbutton['text'] ?? '';
+				if (empty($text)) {
+					$text = $label;
+					$label = '';
+				}
+
+				$out .= dolGetButtonAction($label, $text, 'default', $tmpurl, '', $subbutton['perm'], $params);
+			}
+		}
+
+		return $out;
+	}
+	// BACKPORT V24 END - Commit 16f4f4a6
+
 	//var_dump($params);
 	if (!empty($params['isDropdown']))
 		$class = "dropdown-item";
@@ -12425,3 +12512,39 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = '', $n
 		print $out;
 	}
 }
+
+// BACKPORT V24 START - Commit 7faa9bad
+/**
+ * An function to complete dropdown url in dolGetButtonAction
+ *
+ * @param string 				$url 			the Url to complete
+ * @param array<string,mixed> 	$params 		params of dolGetButtonAction function
+ * @param bool 					$addDolUrlRoot 	to add root url
+ * @return string
+ */
+function dolCompletUrlForDropdownButton(string $url, array $params, bool $addDolUrlRoot = true)
+{
+	if (empty($url)) {
+		return '';
+	}
+
+	$parsedUrl = parse_url($url);
+	if ((isset($parsedUrl['scheme']) && in_array($parsedUrl['scheme'], ['javascript', 'mailto', 'tel'])) || strpos($url, '#') === 0) {
+		return $url;
+	}
+
+	if (!empty($parsedUrl['query'])) {
+		// Use parse_str() function to parse the string passed via URL
+		parse_str($parsedUrl['query'], $urlQuery);
+		if (!isset($urlQuery['backtopage']) && isset($params['backtopage'])) {
+			$url .= '&amp;backtopage=' . urlencode($params['backtopage']);
+		}
+	}
+
+	if (!isset($parsedUrl['scheme']) && $addDolUrlRoot) {
+		$url = DOL_URL_ROOT . $url;
+	}
+
+	return $url;
+}
+// BACKPORT V24 END - Commit 7faa9bad
