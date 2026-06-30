@@ -736,7 +736,7 @@ class FormMail extends Form
 
 						// Add also email aliases from the c_email_senderprofile table
 						$sql = "SELECT rowid, label, email FROM ".$this->db->prefix()."c_email_senderprofile";
-						$sql .= " WHERE active = 1 AND (private = 0 OR private = ".((int) $user->id).")";
+						$sql .= " WHERE active = 1 AND (private = 0 OR private = ".((int) $user->id).") AND entity IN (".getEntity('c_email_senderprofile').")";
 						$sql .= " ORDER BY position";
 						$resql = $this->db->query($sql);
 						if ($resql) {
@@ -1038,7 +1038,7 @@ class FormMail extends Form
 				$defaultlines = $arraydefaultmessage->content_lines;
 				if (isset($defaultlines)) {
 					foreach ($this->substit_lines as $lineid => $substit_line) {
-						$lines .= make_substitutions($defaultlines, $substit_line)."\n";
+						$lines .= make_substitutions($defaultlines, $substit_line, $outputlangs)."\n";
 					}
 				}
 				$this->substit['__LINES__'] = $lines;
@@ -1069,6 +1069,9 @@ class FormMail extends Form
 					if (!dol_textishtml($this->substit['__SENDEREMAIL_SIGNATURE__'])) {
 						$this->substit['__SENDEREMAIL_SIGNATURE__'] = dol_nl2br($this->substit['__SENDEREMAIL_SIGNATURE__']);
 					}
+					if (!dol_textishtml($this->substit['__LINES__'])) {
+						$this->substit['__LINES__'] = dol_nl2br($this->substit['__LINES__']);
+					}
 					if (!dol_textishtml($this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__'])) {
 						$this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__'] = dol_nl2br($this->substit['__ONLINE_PAYMENT_TEXT_AND_URL__']);
 					}
@@ -1080,7 +1083,10 @@ class FormMail extends Form
 				if (GETPOSTISSET("message") && !GETPOST('modelselected')) {
 					$defaultmessage = GETPOST("message", "restricthtml");
 				} else {
-					$defaultmessage = make_substitutions($defaultmessage, $this->substit);
+					// Pass $outputlangs so __(TranslationKey)__ in the template body is resolved
+					// in the language of the selected email template, not the operator's language
+					// (see issue #34540).
+					$defaultmessage = make_substitutions($defaultmessage, $this->substit, $outputlangs);
 					// Clean first \n and br (to avoid empty line when CONTACTCIVNAME is empty)
 					$defaultmessage = preg_replace("/^(<br>)+/", "", $defaultmessage);
 					$defaultmessage = preg_replace("/^\n+/", "", $defaultmessage);
@@ -1457,7 +1463,7 @@ class FormMail extends Form
 	 */
 	public function getHtmlForTopic($arraydefaultmessage, $helpforsubstitution)
 	{
-		global $langs, $form;
+		global $conf, $langs, $form;
 
 		$defaulttopic = GETPOST('subject', 'restricthtml');
 
@@ -1469,7 +1475,17 @@ class FormMail extends Form
 			}
 		}
 
-		$defaulttopic = make_substitutions($defaulttopic, $this->substit);
+		// Resolve __(TranslationKey)__ in the language of the selected template
+		// (see issue #34540). Falls back to the caller's language when the template
+		// has no explicit language pinned.
+		$outputlangs = $langs;
+		if (is_object($arraydefaultmessage) && !empty($arraydefaultmessage->lang)) {
+			$outputlangs = new Translate("", $conf);
+			$outputlangs->setDefaultLang($arraydefaultmessage->lang);
+			$outputlangs->load('other');
+		}
+
+		$defaulttopic = make_substitutions($defaulttopic, $this->substit, $outputlangs);
 
 		$out = '<tr>';
 		$out .= '<td class="fieldrequired">';
@@ -2437,7 +2453,7 @@ class ModelMail extends CommonObject
 	{
 		// The table llx_c_email_templates has no field ref. The field ref was named "label" instead. So we change the call to fetchCommon.
 		//$result = $this->fetchCommon($id, $ref, '', $noextrafields);
-		$result = $this->fetchCommon($id, '', " AND t.label = '".$this->db->escape($ref)."'", $noextrafields);
+		$result = $this->fetchCommon($id, '', (empty($ref) ? '' : " AND t.label = '".$this->db->escape($ref)."'"), $noextrafields);
 
 		if ($result > 0 && !empty($this->table_element_line) && empty($nolines)) {
 			$this->fetchLines($noextrafields);

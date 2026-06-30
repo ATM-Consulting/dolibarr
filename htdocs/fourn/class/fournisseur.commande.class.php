@@ -221,32 +221,32 @@ class CommandeFournisseur extends CommonOrder
 	public $fk_project;
 
 	/**
-	 * @var int Payment conditions ID
+	 * @var ?int 	Payment conditions ID
 	 */
 	public $cond_reglement_id;
 
 	/**
-	 * @var string Payment conditions code
+	 * @var string 	Payment conditions code
 	 */
 	public $cond_reglement_code;
 
 	/**
-	 * @var string Payment conditions label
+	 * @var string 	Payment conditions label
 	 */
 	public $cond_reglement_label;
 
 	/**
-	 * @var string Payment conditions label on documents
+	 * @var string 	Payment conditions label on documents
 	 */
 	public $cond_reglement_doc;
 
 	/**
-	 * @var int Account ID
+	 * @var int 	Account ID
 	 */
 	public $fk_account;
 
 	/**
-	 * @var int Payment choice ID
+	 * @var ?int 	Payment choice ID
 	 */
 	public $mode_reglement_id;
 
@@ -545,7 +545,10 @@ class CommandeFournisseur extends CommonOrder
 
 			$this->ref = $obj->ref;
 			$this->ref_supplier = $obj->ref_supplier;
+
 			$this->socid = $obj->fk_soc;
+			$this->thirdparty = null; // Clear if another value was already set by fetch_thirdparty
+
 			$this->fourn_id = $obj->fk_soc;
 			$this->statut = $obj->status;	// deprecated
 			$this->status = $obj->status;
@@ -723,7 +726,7 @@ class CommandeFournisseur extends CommonOrder
 						$objsearchpackage = $this->db->fetch_object($resqlsearchpackage);
 						if ($objsearchpackage) {
 							$line->fk_fournprice = $objsearchpackage->rowid;
-							$line->packaging     = $objsearchpackage->packaging;
+							$line->packaging     = (float) $objsearchpackage->packaging;
 						}
 					} else {
 						$this->error = $this->db->lasterror();
@@ -2127,12 +2130,12 @@ class CommandeFournisseur extends CommonOrder
 				// Predefine quantity according to packaging
 				if (getDolGlobalString('PRODUCT_USE_SUPPLIER_PACKAGING')) {
 					$prod = new Product($this->db);
-					$prod->get_buyprice($fk_prod_fourn_price, $qty, $fk_product, 'none', (empty($this->fk_soc) ? $this->socid : $this->fk_soc));
+					$prod->get_buyprice($fk_prod_fourn_price, (float) $qty, $fk_product, 'none', (empty($this->fk_soc) ? $this->socid : $this->fk_soc));
 
 					if ($qty < $prod->packaging) {
-						$qty = $prod->packaging;
+						$qty = (float) $prod->packaging;
 					} else {
-						if (!empty($prod->packaging) && (fmod((float) $qty, $prod->packaging)  > 0.000001)) {
+						if (!empty($prod->packaging) && (fmod((float) $qty, (float) $prod->packaging)  > 0.000001)) {
 							$coeff = intval((float) $qty / $prod->packaging) + 1;
 							$qty = (float) $prod->packaging * $coeff;
 							setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'mesgs');
@@ -3094,7 +3097,7 @@ class CommandeFournisseur extends CommonOrder
 				if ($qty < $this->line->packaging) {
 					$qty = $this->line->packaging;
 				} else {
-					if (!empty($this->line->packaging) && ($qty % $this->line->packaging) > 0) {
+					if (!empty($this->line->packaging) && is_numeric($this->line->packaging) && (float) $this->line->packaging > 0 && (fmod((float) $qty, (float) $this->line->packaging) > 0)) {
 						$coeff = intval($qty / $this->line->packaging) + 1;
 						$qty = $this->line->packaging * $coeff;
 						setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'mesgs');

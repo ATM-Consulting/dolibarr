@@ -934,8 +934,9 @@ abstract class CommonDocGenerator
 
 		// Units
 		if (getDolGlobalInt('PRODUCT_USE_UNITS')) {
-			$resarray['line_unit'] = $outputlangs->trans($line->getLabelOfUnit('long'));
-			$resarray['line_unit_short'] = $outputlangs->trans($line->getLabelOfUnit('short'));
+			$resarray['line_unit'] = $line->getLabelOfUnit('long', $outputlangs);
+			$resarray['line_unit_short'] = $line->getLabelOfUnit('short', $outputlangs);
+			//$resarray['line_unit_code'] = $line->getLabelOfUnit('code', $outputlangs);
 		}
 
 		// Retrieve extrafields
@@ -1732,9 +1733,16 @@ abstract class CommonDocGenerator
 			foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $label) {
 				// Enable extrafield ?
 				$enabled = 0;
+				if (!empty($extrafields->attributes[$object->table_element]['enabled'][$key])) {
+					$enabled = (int) dol_eval((string) $extrafields->attributes[$object->table_element]['enabled'][$key], 1, 1, '2');
+				}
+
 				$disableOnEmpty = 0;
-				if (!empty($extrafields->attributes[$object->table_element]['printable'][$key])) {
-					$printable = intval($extrafields->attributes[$object->table_element]['printable'][$key]);
+				$printable = 0;
+				if (isset($extrafields->attributes[$object->table_element]['printable'][$key])) {
+					$printable = (int) $extrafields->attributes[$object->table_element]['printable'][$key];
+				}
+				if ($enabled && !empty($printable)) {
 					if (in_array($printable, $params['printableEnable']) || in_array($printable, $params['printableEnableNotEmpty'])) {
 						$enabled = 1;
 					}
@@ -1744,7 +1752,7 @@ abstract class CommonDocGenerator
 					}
 				}
 
-				if (empty($enabled)) {
+				if (empty($enabled) || empty($printable)) {
 					continue;
 				}
 

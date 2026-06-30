@@ -15,7 +15,7 @@
  * Copyright (C) 2012-2016  Marcos García           <marcosgdf@gmail.com>
  * Copyright (C) 2012       Cedric Salvador         <csalvador@gpcsolutions.fr>
  * Copyright (C) 2012-2015  Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
- * Copyright (C) 2014-2023  Alexandre Spangaro      <aspangaro@open-dsi.fr>
+ * Copyright (C) 2014-2026  Alexandre Spangaro      <alexandre@inovea-conseil.com>
  * Copyright (C) 2018-2022  Ferran Marcet           <fmarcet@2byte.es>
  * Copyright (C) 2018-2024  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2018       Nicolas ZABOURI	        <info@inovea-conseil.com>
@@ -437,7 +437,10 @@ class Form
 			}
 			$extralanguages->fetch_name_extralanguages('societe');
 
-			if (!is_array($extralanguages->attributes[$object->element]) || empty($extralanguages->attributes[$object->element][$fieldname])) {
+			// ExtraLanguages::fetch_name_extralanguages() leaves $this->attributes empty
+			// when MAIN_USE_ALTERNATE_TRANSLATION_FOR is not configured, so PHP 8 raises
+			// 'Undefined array key' on the read below if we do not guard it (issue #34596).
+			if (empty($extralanguages->attributes[$object->element]) || !is_array($extralanguages->attributes[$object->element]) || empty($extralanguages->attributes[$object->element][$fieldname])) {
 				return ''; // No extralang field to show
 			}
 
@@ -6843,7 +6846,7 @@ class Form
 
 					$tmparray = array();
 					$tmparray['rowid']			= $obj->rowid;
-					$tmparray['type_vat']		= $obj->type_vat;
+					$tmparray['type_vat']		= ($obj->type_vat <= 0 ? 0 : $obj->type_vat);	// Some version have type_vat corrupted with value -1
 					$tmparray['code']			= $obj->code;
 					$tmparray['txtva']			= $obj->taux;
 					$tmparray['nprtva']			= $obj->recuperableonly;
@@ -6879,7 +6882,7 @@ class Form
 				if (!empty($user) && $user->admin && preg_match('/\'(..)\'/', $country_code, $reg)) {
 					$langs->load("errors");
 					$new_country_code = $reg[1];
-					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_pays', 'code', 'rowid');
+					$country_id = dol_getIdFromCode($this->db, $new_country_code, 'c_country', 'code', 'rowid');
 					$this->error .= '<br>'.$langs->trans("ErrorFixThisHere", DOL_URL_ROOT.'/admin/dict.php?id=10'.($country_id > 0 ? '&countryidforinsert='.$country_id : ''));
 				}
 				$this->error .= '</span>';
@@ -6957,12 +6960,13 @@ class Form
 		} else {
 			$code_country = "'" . $mysoc->country_code . "'"; // Pour compatibilite ascendente
 		}
-		if (getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC')) {    // If option to have vat for end customer for services is on
+
+		if ($societe_vendeuse == $mysoc && getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC')) {    // If option to have vat for end customer for services is on
 			require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 			// If SERVICE_ARE_ECOMMERCE_200238EC=1 combo list vat rate of purchaser and seller countries
 			// If SERVICE_ARE_ECOMMERCE_200238EC=2 combo list only the vat rate of the purchaser country
 			$selectVatComboMode = getDolGlobalString('SERVICE_ARE_ECOMMERCE_200238EC');
-			if (isInEEC($societe_vendeuse) && isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()) {
+			if (is_object($societe_vendeuse) && is_object($societe_acheteuse) && isInEEC($societe_vendeuse) && isInEEC($societe_acheteuse) && !$societe_acheteuse->isACompany()) {
 				// We also add the buyer country code
 				if (is_numeric($type)) {
 					if ($type == 1) { // We know product is a service
@@ -7006,7 +7010,6 @@ class Form
 		}
 
 		$num = count($arrayofvatrates);
-
 		if ($num > 0) {
 			// Define the rate to pre-select (if defaulttx not forced so is -1 or '')
 			if ($defaulttx < 0 || dol_strlen($defaulttx) == 0) {
@@ -7467,11 +7470,12 @@ class Form
 					$hour = "0" . $hour;
 				}
 				$retstring .= '<option value="' . $hour . '"' . (($hour == $shour) ? ' selected' : '') . '>' . $hour;
-				//$retstring .= (empty($conf->dol_optimize_smallscreen) ? '' : 'H');
 				$retstring .= '</option>';
 			}
 			$retstring .= '</select>';
-			//if ($m && empty($conf->dol_optimize_smallscreen)) $retstring .= ":";
+			if ($disabled) {
+				$retstring .= '<input type="hidden" id="' . $prefix . 'hour"   name="' . $prefix . 'hour"   value="' . $shour . '">' . "\n";
+			}
 			if ($m) {
 				$retstring .= ":";
 			}
@@ -7488,7 +7492,10 @@ class Form
 				$retstring .= '<option value="' . $min_str . '"' . (($min_str == $smin) ? ' selected' : '') . '>' . $min_str . '</option>';
 			}
 			$retstring .= '</select>';
-
+			if ($disabled) {
+				$retstring .= '<input type="hidden" id="' . $prefix . 'min"   name="' . $prefix . 'min"   value="' . $smin . '">' . "\n";
+			}
+			// Add also seconds
 			$retstring .= '<input type="hidden" name="' . $prefix . 'sec" value="' . $ssec . '">';
 		}
 
@@ -8696,6 +8703,8 @@ class Form
 			if ($tmpfieldstoshow) {
 				$fieldstoshow = $tmpfieldstoshow;
 			}
+		} elseif ($objecttmp->element === 'category') {
+			$fieldstoshow = 't.label';
 		} else {
 			// For backward compatibility
 			$objecttmp->fields['ref'] = array('type' => 'varchar(30)', 'label' => 'Ref', 'showoncombobox' => 1);
@@ -10306,7 +10315,9 @@ class Form
 				}
 				$extralanguages->fetch_name_extralanguages('societe');
 
-				if (!empty($extralanguages->attributes['societe']['name'])) {
+				// Guard against PHP 8 'Undefined array key' when MAIN_USE_ALTERNATE_TRANSLATION_FOR
+				// is not configured and fetch_name_extralanguages() leaves attributes empty (issue #34596).
+				if (!empty($extralanguages->attributes['societe']) && !empty($extralanguages->attributes['societe']['name'])) {
 					$object->fetchValuesForExtraLanguages();
 
 					$htmltext = '';

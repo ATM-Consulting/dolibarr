@@ -1627,6 +1627,9 @@ if (empty($reshook)) {
 
 								$amount_ttc_diff = 0.;
 								foreach ($TTotalByTva as $tva => &$total) {
+									if (empty($amountdeposit[$tva])) {
+										$amountdeposit[$tva] = 0;
+									}
 									$coef = $total / $srcobject->total_ttc; // Calc coef
 									$am = $amount * $coef;
 									$amount_ttc_diff += $am;
@@ -1651,6 +1654,10 @@ if (empty($reshook)) {
 											if ($qualified) {
 												$totalamount += $lines[$i]->total_ht; // Fixme : is it not for the customer ? Shouldn't we take total_ttc ?
 												$tva_tx = $lines[$i]->tva_tx;
+
+												if (empty($amountdeposit[$tva_tx])) {
+													$amountdeposit[$tva_tx] = 0;
+												}
 												$amountdeposit[$tva_tx] += ($lines[$i]->total_ht * (float) $valuedeposit) / 100;
 											}
 										}
@@ -2118,6 +2125,9 @@ if (empty($reshook)) {
 					$newlang = GETPOST('lang_id', 'aZ09');
 				}
 				if (getDolGlobalInt('MAIN_MULTILANGS') && empty($newlang)) {
+					if (empty($object->thirdparty)) {
+						$object->fetch_thirdparty();
+					}
 					$newlang = $object->thirdparty->default_lang;
 				}
 				if (!empty($newlang)) {
@@ -2488,12 +2498,15 @@ if (empty($reshook)) {
 			$currency_tx = $object->multicurrency_tx;
 
 			// Check if we have a foreign currency
-			// If so, we update the pu_equiv as the equivalent price in base currency
+			// If so, we update the pu_equiv as the equivalent price in base currency.
+			// multicurrency_tx is the number of foreign currency units for 1 unit of base
+			// (see calcul_price_total() in price.lib.php which uses $pu = $pu_devise / $multicurrency_tx),
+			// so the conversion back to base must divide, not multiply (see issue #33042).
 			if ($pu_ht == '' && $pu_ht_devise != '' && $currency_tx != '') {
-				$pu_equivalent = (float) $pu_ht_devise * $currency_tx;
+				$pu_equivalent = (float) $pu_ht_devise / (float) $currency_tx;
 			}
 			if ($pu_ttc == '' && $pu_ttc_devise != '' && $currency_tx != '') {
-				$pu_equivalent_ttc = (float) $pu_ttc_devise * $currency_tx;
+				$pu_equivalent_ttc = (float) $pu_ttc_devise / (float) $currency_tx;
 			}
 
 			// TODO $pu_equivalent or $pu_equivalent_ttc must be calculated from the one not null taking into account all taxes
@@ -2552,8 +2565,10 @@ if (empty($reshook)) {
 					}
 				}
 
+				$situation_percent = GETPOSTISSET('progress') ? GETPOSTINT('progress') : 100;
+
 				// Insert line
-				$result = $object->addline($desc, $pu_ht, $qty, $tva_tx, $localtax1_tx, $localtax2_tx, $idprod, $remise_percent, $date_start, $date_end, 0, $info_bits, 0, $price_base_type, $pu_ttc, $type, min($rank, count($object->lines) + 1), $special_code, '', 0, GETPOST('fk_parent_line'), $fournprice, $buyingprice, $label, $array_options, GETPOST('progress'), 0, $fk_unit, $pu_ht_devise);
+				$result = $object->addline($desc, $pu_ht, $qty, $tva_tx, $localtax1_tx, $localtax2_tx, $idprod, $remise_percent, $date_start, $date_end, 0, $info_bits, 0, $price_base_type, $pu_ttc, $type, min($rank, count($object->lines) + 1), $special_code, '', 0, GETPOST('fk_parent_line'), $fournprice, $buyingprice, $label, $array_options, $situation_percent, 0, $fk_unit, $pu_ht_devise);
 
 				if ($result > 0) {
 					// Define output language and generate document
@@ -2664,12 +2679,15 @@ if (empty($reshook)) {
 		$currency_tx = $object->multicurrency_tx;
 
 		// Check if we have a foreign currency
-		// If so, we update the pu_equiv as the equivalent price in base currency
+		// If so, we update the pu_equiv as the equivalent price in base currency.
+		// multicurrency_tx is the number of foreign currency units for 1 unit of base
+		// (see calcul_price_total() in price.lib.php which uses $pu = $pu_devise / $multicurrency_tx),
+		// so the conversion back to base must divide, not multiply (see issue #33042).
 		if ($pu_ht == '' && $pu_ht_devise != '' && $currency_tx != '') {
-			$pu_equivalent = (float) $pu_ht_devise * (float) $currency_tx;
+			$pu_equivalent = (float) $pu_ht_devise / (float) $currency_tx;
 		}
 		if ($pu_ttc == '' && $pu_ttc_devise != '' && $currency_tx != '') {
-			$pu_equivalent_ttc = (float) $pu_ttc_devise * (float) $currency_tx;
+			$pu_equivalent_ttc = (float) $pu_ttc_devise / (float) $currency_tx;
 		}
 
 		// TODO $pu_equivalent or $pu_equivalent_ttc must be calculated from the one not null taking into account all taxes
@@ -5237,6 +5255,7 @@ if ($action == 'create') {
 			print '<td>'.$langs->trans('ListOfSituationInvoices').'</td>';
 			print '<td></td>';
 			print '<td class="center">'.$langs->trans('Situation').'</td>';
+
 			if (isModEnabled("bank")) {
 				print '<td class="right"></td>';
 			}
@@ -5337,7 +5356,6 @@ if ($action == 'create') {
 					$totalpaid = $next_invoice->getSommePaiement(0);
 					$totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
 					$totaldeposits = $next_invoice->getSumDepositsUsed(0);
-
 					$total_next_ht += $next_invoice->total_ht;
 					$total_next_ttc += $next_invoice->total_ttc;
 
@@ -6017,7 +6035,7 @@ if ($action == 'create') {
 				}
 			}
 
-			// For situation invoice with excess received
+			// For situation invoice
 			if ($object->status > Facture::STATUS_DRAFT
 				&& $object->isSituationInvoice()
 				&& ($object->total_ttc - $totalpaid - $totalcreditnotes - $totaldeposits) > 0

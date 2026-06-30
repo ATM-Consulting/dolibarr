@@ -29,14 +29,14 @@
  * - you can set MAIN_SECURITY_ANTI_SSRF_SERVER_IP to set static ip of server
  * - common local lookup ips like 127.*.*.* are automatically added
  *
- * @param	string	  $url 				    URL to call.
- * @param	'POST'|'GET'|'HEAD'|'PUT'|'PUTALREADYFORMATED'|'POSTALREADYFORMATED'|'DELETE'	$postorget		    'POST', 'GET', 'HEAD', 'PUT', 'PUTALREADYFORMATED', 'POSTALREADYFORMATED', 'DELETE'
- * @param	string    $param			    Parameters of URL (x=value1&y=value2) or may be a formatted content with $postorget='PUTALREADYFORMATED'
- * @param	int<0,1>  $followlocation		0=Do not follow, 1=Follow location.
- * @param	string[]  $addheaders			Array of string to add into header. Example: ('Accept: application/xrds+xml', ....)
- * @param	string[]  $allowedschemes		List of schemes that are allowed ('http' + 'https' only by default)
- * @param	int<0,2>  $localurl				0=Only external URL are possible, 1=Only local URL, 2=Both external and local URL are allowed.
- * @param	int<-1,1>  $ssl_verifypeer		-1=Auto (no ssl check on dev, check on prod), 0=No ssl check, 1=Always ssl check
+ * @param	string	  					$url 				    URL to call.
+ * @param	'POST'|'GET'|'HEAD'|'PUT'|'PATCH'|'PUTALREADYFORMATED'|'POSTALREADYFORMATED'|'PATCHALREADYFORMATED'|'DELETE'	$postorget		    'POST', 'GET', 'HEAD', 'PUT', 'PATCH', 'PUTALREADYFORMATED', 'POSTALREADYFORMATED', 'PATCHALREADYFORMATED', 'DELETE'
+ * @param	string|array<mixed,mixed>	$param			    Parameters of URL (x=value1&y=value2) or may be a formatted content with $postorget='PUTALREADYFORMATED'
+ * @param	int<0,1>  					$followlocation		0=Do not follow, 1=Follow location.
+ * @param	string[]  					$addheaders			Array of string to add into header. Example: ('Accept: application/xrds+xml', ....)
+ * @param	string[]  					$allowedschemes		List of schemes that are allowed ('http' + 'https' only by default)
+ * @param	int<0,2>  					$localurl			0=Only external URL are possible, 1=Only local URL, 2=Both external and local URL are allowed.
+ * @param	int<-1,1>  					$ssl_verifypeer		-1=Auto (no ssl check on dev, check on prod), 0=No ssl check, 1=Always ssl check
  * @return	array{http_code:int,content:string,curl_error_no:int,curl_error_msg:string}    Returns an associative array containing the response from the server array('http_code'=>http response code, 'content'=>response, 'curl_error_no'=>errno, 'curl_error_msg'=>errmsg...)
  */
 function getURLContent($url, $postorget = 'GET', $param = '', $followlocation = 1, $addheaders = array(), $allowedschemes = array('http', 'https'), $localurl = 0, $ssl_verifypeer = -1)
@@ -49,7 +49,7 @@ function getURLContent($url, $postorget = 'GET', $param = '', $followlocation = 
 	$PROXY_USER = !getDolGlobalString('MAIN_PROXY_USER') ? 0 : $conf->global->MAIN_PROXY_USER;
 	$PROXY_PASS = !getDolGlobalString('MAIN_PROXY_PASS') ? 0 : $conf->global->MAIN_PROXY_PASS;
 
-	dol_syslog("getURLContent postorget=".$postorget." URL=".$url." param=".$param);
+	dol_syslog("getURLContent postorget=".$postorget." URL=".$url." json_encode(param)=".json_encode($param));
 
 	if (!function_exists('curl_init')) {
 		return array('http_code' => 500, 'content' => '', 'curl_error_no' => 1, 'curl_error_msg' => 'PHP curl library must be installed');
@@ -148,6 +148,19 @@ function getURLContent($url, $postorget = 'GET', $param = '', $followlocation = 
 	} elseif ($postorget == 'PUTALREADYFORMATED') {
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT'); // HTTP request is 'PUT'
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $param); // param = content of post, like a xml string
+	} elseif ($postorget == 'PATCH') {
+		$array_param = null;
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH'); // RFC 5789
+		if (!is_array($param)) {
+			parse_str($param, $array_param);  // @phan-suppress-current-line PhanPluginConstantVariableNull
+		} else {
+			dol_syslog("parameter param must be a string", LOG_WARNING);
+			$array_param = $param;
+		}
+		curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($array_param));
+	} elseif ($postorget == 'PATCHALREADYFORMATED') {
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH'); // RFC 5789
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $param);
 	} elseif ($postorget == 'HEAD') {
 		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'HEAD'); // HTTP request is 'HEAD'
 		curl_setopt($ch, CURLOPT_NOBODY, true);

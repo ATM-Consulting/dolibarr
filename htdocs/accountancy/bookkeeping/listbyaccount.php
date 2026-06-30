@@ -47,7 +47,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
  */
 
 // Load translation files required by the page
-$langs->loadLangs(array("accountancy", "compta"));
+$langs->loadLangs(array("accountancy", "categories", "compta"));
 
 $action = GETPOST('action', 'aZ09');
 $socid = GETPOSTINT('socid');
@@ -328,7 +328,12 @@ if (empty($reshook)) {
 				$listofaccountsforgroup2[] = "'".$db->escape($tmpval['account_number'])."'";
 			}
 		}
-		$filter['t.search_accounting_code_in'] = implode(',', $listofaccountsforgroup2);
+		if (!empty($listofaccountsforgroup2)) {
+			$filter['t.search_accounting_code_in'] = implode(',', $listofaccountsforgroup2);
+		} else {
+			$filter['t.search_accounting_code_in'] = "''";
+			setEventMessages($langs->trans("ThisCategoryHasNoItems"), null, 'warnings');
+		}
 		$param .= '&search_account_category='.urlencode((string) ($search_account_category));
 	}
 	if (!empty($search_accountancy_code_start)) {
@@ -735,7 +740,7 @@ if ($reshook < 0) {
 $newcardbutton = empty($hookmanager->resPrint) ? '' : $hookmanager->resPrint;
 
 if (empty($reshook)) {
-	$newcardbutton = dolGetButtonTitle($langs->trans('ViewFlatList'), '', 'fa fa-list paddingleft imgforviewmode', DOL_URL_ROOT.'/accountancy/bookkeeping/list.php?'.$param);
+	$newcardbutton .= dolGetButtonTitle($langs->trans('ViewFlatList'), '', 'fa fa-list paddingleft imgforviewmode', DOL_URL_ROOT.'/accountancy/bookkeeping/list.php?'.$param);
 	if ($type == 'sub') {
 		$newcardbutton .= dolGetButtonTitle($langs->trans('GroupByAccountAccounting'), '', 'fa fa-stream paddingleft imgforviewmode', DOL_URL_ROOT . '/accountancy/bookkeeping/listbyaccount.php?' . $url_param, '', 1, array('morecss' => 'marginleftonly'));
 		$newcardbutton .= dolGetButtonTitle($langs->trans('GroupBySubAccountAccounting'), '', 'fa fa-align-left vmirror paddingleft imgforviewmode', DOL_URL_ROOT . '/accountancy/bookkeeping/listbyaccount.php?type=sub&' . $url_param, '', 1, array('morecss' => 'marginleftonly btnTitleSelected'));

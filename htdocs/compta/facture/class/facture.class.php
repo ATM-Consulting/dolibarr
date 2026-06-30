@@ -1276,6 +1276,12 @@ class Facture extends CommonInvoice
 		$this->db->begin();
 
 		$object->fetch($fromid);
+		// fetch() clears $object->thirdparty, but the subsequent $object->create() path
+		// reaches addLine() -> getLocalTaxesFromRate() -> get_localtax() and uses the
+		// buyer thirdparty to decide whether IRPF/localtax2 applies. Without this fetch,
+		// get_localtax() sees $thirdparty_buyer = null, returns 0 and the cloned lines
+		// lose their localtax2_tx (see issue #29052).
+		$object->fetch_thirdparty();
 
 		// Load source object
 		$objFrom = clone $object;
@@ -1418,6 +1424,9 @@ class Facture extends CommonInvoice
 		// Closed order
 		$this->date = dol_now();
 		$this->source = 0;
+
+		// Avoid updating the row ranks
+		$this->context['createfromclone'] = 1;
 
 		$num = count($object->lines);
 		for ($i = 0; $i < $num; $i++) {
@@ -3953,7 +3962,7 @@ class Facture extends CommonInvoice
 			if (empty($fk_prev_id)) {
 				$fk_prev_id = 'null';
 			}
-			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null) {
+			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '') {
 				// INVOICE_USE_SITUATION = 2 - Lines situation percent on new lines must be 0 (No cumulative)
 				if ($this->isSituationInvoice() && getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
 					$situation_percent = 0;

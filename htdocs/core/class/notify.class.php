@@ -669,6 +669,10 @@ class Notify
 		}
 
 		$from = getDolGlobalString('NOTIFICATION_EMAIL_FROM');
+		if (empty($from)) {
+			$from = getDolGlobalString('MAIN_MAIL_EMAIL_FROM');
+		}
+
 		$object_type = '';
 		$link = '';
 		$num = 0;
@@ -821,26 +825,26 @@ class Notify
 							case 'FICHINTER_ADD_CONTACT':
 								$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$dir_output = $conf->ficheinter->dir_output;
-								$object_type = 'ficheinter';
+								$object_type = 'fichinter';
 								$mesg = $outputlangs->transnoentitiesnoconv("EMailTextInterventionAddedContact", $link);
 								break;
 							case 'FICHINTER_VALIDATE':
 								$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$dir_output = $conf->ficheinter->dir_output;
-								$object_type = 'ficheinter';
+								$object_type = 'fichinter';
 								$mesg = $outputlangs->transnoentitiesnoconv("EMailTextInterventionValidated", $link);
 								break;
 							case 'FICHINTER_MODIFY':
 								$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$context_info = array_key_exists('signature', $object->context) ? $object->getLibSignedStatus() : '';
 								$dir_output = $conf->ficheinter->dir_output;
-								$object_type = 'ficheinter';
+								$object_type = 'fichinter';
 								$mesg = $outputlangs->transnoentitiesnoconv("EMailTextInterventionModified", $link, $context_info);
 								break;
 							case 'FICHINTER_CLOSE':
 								$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 								$dir_output = $conf->ficheinter->dir_output;
-								$object_type = 'ficheinter';
+								$object_type = 'fichinter';
 								$mesg = $outputlangs->transnoentitiesnoconv("EMailTextInterventionClosed", $link);
 								break;
 							case 'ORDER_SUPPLIER_VALIDATE':
@@ -1039,6 +1043,12 @@ class Notify
 							'notification'
 						);
 
+						if (! empty($mailfile->error) || ! empty($mailfile->errors)) {
+							$this->error = $mailfile->error;
+							$this->errors = $mailfile->errors;
+							return -1;
+						}
+
 						if ($mailfile->sendfile()) {
 							if ($obj->type_target == 'touserid') {
 								$sql = "INSERT INTO ".$this->db->prefix()."notify (daten, fk_action, fk_soc, fk_user, type, objet_type, type_target, objet_id, email)";
@@ -1140,26 +1150,26 @@ class Notify
 					case 'FICHINTER_ADD_CONTACT':
 						$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 						$dir_output = $conf->ficheinter->dir_output;
-						$object_type = 'ficheinter';
+						$object_type = 'fichinter';
 						$mesg = $langs->transnoentitiesnoconv("EMailTextInterventionAddedContact", $link);
 						break;
 					case 'FICHINTER_VALIDATE':
 						$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 						$dir_output = $conf->facture->dir_output;
-						$object_type = 'ficheinter';
+						$object_type = 'fichinter';
 						$mesg = $langs->transnoentitiesnoconv("EMailTextInterventionValidated", $link);
 						break;
 					case 'FICHINTER_MODIFY':
 						$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 						$context_info = array_key_exists('signature', $object->context) ? $object->getLibSignedStatus() : '';
 						$dir_output = $conf->ficheinter->dir_output;
-						$object_type = 'ficheinter';
+						$object_type = 'fichinter';
 						$mesg = $langs->transnoentitiesnoconv("EMailTextInterventionModified", $link, $context_info);
 						break;
 					case 'FICHINTER_CLOSE':
 						$link = '<a href="'.$urlwithroot.'/fichinter/card.php?id='.$object->id.'&entity='.$object->entity.'">'.$newref.'</a>';
 						$dir_output = $conf->facture->dir_output;
-						$object_type = 'ficheinter';
+						$object_type = 'fichinter';
 						$mesg = $langs->transnoentitiesnoconv("EMailTextInterventionClosed", $link);
 						break;
 					case 'ORDER_SUPPLIER_CANCEL':
@@ -1359,6 +1369,12 @@ class Notify
 						'',
 						'notification'
 					);
+
+					if (! empty($mailfile->error) || ! empty($mailfile->errors)) {
+						$this->error = $mailfile->error;
+						$this->errors = $mailfile->errors;
+						return -1;
+					}
 
 					if ($mailfile->sendfile()) {
 						$sql = "INSERT INTO ".$this->db->prefix()."notify (daten, fk_action, fk_soc, fk_contact, type, type_target, objet_type, objet_id, email)";

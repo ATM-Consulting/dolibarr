@@ -2,10 +2,36 @@
 English Dolibarr ChangeLog
 --------------------------------------------------------------
 
+***** ChangeLog for 21.0.4 compared to 21.0.3 *****
+FIX: #35147 SQL Error on Beluga Export when ExpenseReport is enabled (#35149)
+FIX: error when using a code too large in dictionary
+FIX: Security when using Advanced Target page of emailing (feature hidden in v21, default in v22+). Possible
+     SQL injection by users with permission to make and send mass emailing.
+
 
 ***** ChangeLog for 21.0.3 compared to 21.0.2 *****
-SEC: Remove functions accepting callable params - Reported by phdwg1410
-TODO...
+FIX: #34843 (#34875)
+FIX: #34936
+FIX: #35005
+FIX: #35006 SQL error when using external user
+FIX: a Fatal error when a trigger files is not correctly named.
+FIX: array for arrayofkeyval is lost in module builder edit of property
+FIX: asset: could not select invoice in disposal pop-in (#34725)
+FIX: avoid php warning with "$forceFullTextIndexation" (#34881)
+FIX: bad consistency on test on permission to disable service
+FIX: Can edit status of tasks
+FIX: Create public ticket if email need exist. (#34965)
+FIX: DA026536: missing <br> in automatic e-mail (#34895)
+FIX: extrafields of type "int" not displayed on `projet/tasks.php` (#34896)
+FIX: Filter on the balance of leave
+FIX: Logo on company is no more visible.
+FIX: mailing destination list title (#34929)
+FIX: main checkbox left column was before global conf (#34858)
+FIX: Missing a column on group permissions
+FIX: several minor troubles with modulebuilder
+FIX: Test on mandatory product or thirdparty barcode
+FIX: trigger mailmanspip when un/linking categories
+SEC: Remove functions accepting callable params - Reported by phdwg1410 - CVE-2024-40137
 
 
 ***** ChangeLog for 21.0.2 compared to 21.0.1 *****
@@ -993,6 +1019,7 @@ FIX: when qty is not an integer, apply price() (#31138)
 FIX: Wrong default PDF model when creating the second situation invoice (#30843)
 FIX: wrong subprice if price base type is TTC (#30887)
 
+
 ***** ChangeLog for 19.0.3 compared to 19.0.2 *****
 FIX: #29403 HRM - Unable to delete a skill in a job Profile (#29779)
 FIX: #29439 incomplete API return (#29796)
@@ -1557,7 +1584,137 @@ The following changes may create regressions for some external modules, but were
 * The load of hook context productdao has been removed before calling loadvirtualstock. Modules must use the context of main parent page or 'all' for all cases.
 
 
+***** ChangeLog for 18.0.10 compared to 18.0.9 *****
+
+FIX: autofill price with multicurrency on supplier doc (backport commit 391aca5) (#38028)
+FIX: calculate the files count on ECM when add multiple files in one time (#31866)
+FIX: #GHSA-hq5j-39f9-qxcv (#37812)
+FIX: SQL Injection via Operator Injection in Contract Service List
+FIX: #GHSA-crgg-h74r-2m8r (#37636)
+FIX: do not print Extrafields in PDF if printable is 0
+FIX: a param must not come from end user entry.
+
+
+***** ChangeLog for 18.0.9 compared to 18.0.8 *****
+100 files changed, 2283 insertions(+), 591 deletions(-)
+
+FIX: product ref was not printed on supplier recurring invoice (#37535)
+FIX: show export full documents checkbox on change format in accountancy export (#37468)
+FIX: remove unused var
+FIX: API Warehouse : Error 401 when getting warehouse by id (backport from 22)
+FIX: - Fix doc preview in comm card
+FIX: Entity on group ticket insertion (#37370)
+FIX: display of DLC/DLUO in tooltip (#37164)
+FIX: Backport fix on v20 for result page of compta (/compta/resultat/index.php) (#37127)
+FIX: Backport fix on v20 for result page of compta (/compta/resultat/index.php). The expense report were not included when the module was activated
+FIX(API, thirdparties): get fixed amount discounts (#37068)
+FIX: #GHSA-w5j3-8fcr-h87w (#36868)
+FIX(ticket): check on TICKET_IMAGE_PUBLIC_INTERFACE (#36833)
+FIX: warning accountancy export from external module (#36832)
+FIX: php8.1 warning in syslog message
+FIX: TakePos sometimes thirdpartyid = undefined
+FIX: remove stock correctly when reception is deleted (like 82e092f)
+FIX: finished regex in product import (#36770)
+FIX: re-create API temp dir after purging temp files
+FIX: undefined variables on create invoice card from order (backport from v19)
+FIX: Missing Product ref in Bom stats
+FIX: fix #36401 (for v17.0) doesn't work in v18.0+ because of variable renaming
+FIX: propal shipping and availability update (v18+)
+FIX: PR#36401 fixed a missing GETPOSTISSET() but the check involves a variable ($taskid) that was renamed ($tmptaskid) in 18.0
+SEC: FIX: #36430 permissions not checked on other tabs of HRM evaluation card
+FIX: Remove <?=
+FIX: Implementation of multi-company compatibility with inventory/warehouse management
+FIX: remove useless condition to create credit on situation invoice …
+FIX: undefined variables on create invoice from shipment card (backport from v20)
+FIX: 18.0: `GETPOSTDATE()` and `buildParamDate()` assumed wrong HTTP param names
+SEC: permissions not checked on other tabs of HRM evaluation card
+FIX: 18.0: GETPOSTDATE and buildParamDate assumed HTTP param names 'minute' and 'second' instead of 'min' and 'sec'
+FIX: not remove value of others extra-fields on update extras action
+NEW: Automatically release docker image for each GitHub release
+FIX: getDolGlobalInt
+SEC: fix IDOR attack on employee evaluation. Missing permission test https://github.com/atm-florianm/dolibarr/commit/7ed0af2a138a34e7c7005b95c85ffc791976a6cf
+FIX: Implementation of multi-company compatibility with inventory/warehouse management
+FIX: 17.0: perweek.php resets task progress to 0% when: (#36401)
+FIX: DA027383: permissions not checked on HRM evaluation card (#36328) (#36399)
+FIX: undefined variables on create invoice from shipment card (backport from v20)
+FIX: php echo instead of <?
+FIX: Sometimes socid = undefined
+FIX: TakePOS Missing Thirdparty Id when getting more products (#36341)
+FIX: Multicompany compatibility with "project_task"
+FIX: remove situation invoice from cycle
+FIX: #36149 (#36150)
+FIX: keep user who validate proposal on update (#36257)
+FIX: create API temp directory in Dolibarr API constructor
+FIX: expense report card: do not show bank account if user cannot see them
+FIX: Email Collector Module
+FIX: dol_escape_htmltag in extrafields_view (#36136)
+FIX: re-create API temp dir after purging temp files
+FIX: use array_intersect instead in_array
+FIX: wrong check of hook return
+FIX: 16.0: extrafield of type link to category causes SQL error in selectForFormsList() (#36074)
+FIX: 16.0 (up to 19.0): extrafield of type link to category causes SQL error in selectForFormsList
+FIX: missing "printFieldListValue" hook (#35990)
+FIX: add action parameter
+FIX: remove duplicate object
+FIX: expense report card: use correct bank module designator for detection
+FIX: wrong check of hook return
+FIX: Email Collector Module: manage error when imap_fetchstructure return false. Previously it generated warning and fatal error because the returned value was not of type class
+FIX: notifications: correctly report email delivery errors (#35864)
+FIX: php8.1 warning in syslog message
+FIX: extra-field list depend on parent extra-filed list on direct edit (#35803)
+FIX: allow a situation with credit to be removed from cycle
+FIX: expense report card: do not show bank account if user cannot see them
+FIX: day of ticket on takePOS. Backport 6abdb6e. (#35745)
+FIX: Multicompany compatibility with "project_task"
+FIX: remove useless condition to create credit on situation invoice (#35786)
+FIX: create invoice from order using API and multi-entity (#35654)
+FIX: API not allow to access order in other entity on creating invoice from order
+FIX: sql syntax error (#35588)
+FIX: pgsql: error when calculating depreciations (#34213)
+FIX: asset deprectiation: optimize sql
+FIX: #35568 (#35569)
+FIX: clear "thirdparty" object before or during the fetch
+FIX: To have only the sender's entity when sending mail (#31053)
+FIX: php 8+ warnings when creating deposits (#35582)
+FIX: missing entity filter (#35517)
+FIX: api orders : forward database error on failure (backpot commit d9e81cb) (#35478)
+FIX: missing check constant PROJECT_CAN_ALWAYS_LINK_TO_ALL_SUPPLIERS (#33277)
+FIX: 17.0: ContratLigne::fetch() returns 1 even if the line doesn't exist (#35324)
+FIX: extra field list depend on parent list when editing a card (#35165)
+
+***** ChangeLog for 18.0.8 compared to 18.0.7 *****
+35 files changed, 647 insertions(+), 298 deletions(-)
+
+FIX: #34746 - More complete fix for CVE-2024-40137
+FIX: Correct the calculation of the amount of the current period between the period provided (#35083)
+FIX: Add security test for show terminal selection if no terminal selected when invoice.php is call (#34717)
+FIX: Add security test for show terminal selection if no terminal selected when invoice.php is call
+FIX: missing quick edit for extrafields (baclport commit 4fc66c6) (#35160)
+FIX: Missing sentence part (#35144)
+FIX: set global mysoc and load langs in API access (#35041)
+FIX: set global mysoc and load langs in API access
+FIX: reset mysoc and langs only if entity of API has changed
+FIX: accountancy general ledger: bad handling of hook return (#34029)
+FIX: accountancy general ledger: bad handling of hook return
+FIX: accountancy balance: bad handling of hook return
+FIX: - Fix missing token for disable custom group category for compta report (page /htdocs/accountancy/admin/categories_list.php) (#35084)
+FIX: The combo of custom groups has disappeared (backport v19) (#35016)
+FIX: #34893 (#34897)
+FIX: #34893
+FIX: change error code to USERNOTALLOWEDTOCHANGEPASS
+FIX: asset: could not select invoice in disposal pop-in (#34725)
+FIX: 17.0 SQL syntax error and/or constraint error when calling Facture::update() after a clone (e.g. in a trigger) (#34778)
+FIX: 17.0: when you clone an invoice that was created from a template invoice, the clone should not be linked to the template invoice (#34777)
+FIX: pre-send mail mass action: keep __EMAIL__ substitution (#34522)
+FIX: pre-send mail mass action: keep __EMAIL__ substitution
+FIX: comment
+FIX: massaction email tpl: keep preset
+FIX: loop interrupt if an error occurs in sendEmailsRemindersOnInvoiceDueDate (#34657)
+FIX: #34654
+
 ***** ChangeLog for 18.0.7 compared to 18.0.6 *****
+138 files changed, 1622 insertions(+), 530 deletions(-)
+
 FIX: 17.0 API endpoints "PUT": prevent overwriting all extrafields if only some are supplied in the request cf. PR #29237
 FIX: 17.0 - collisions in cache for dol_getIdFromCode
 FIX: 17.0 - missing error handling for FactureRec::fetch in card-rec.php

@@ -924,12 +924,15 @@ function confirmConstantAction(action, url, code, input, box, entity, yesButton,
 				})
 				.addClass( "ui-widget ui-widget-content ui-corner-left dolibarrcombobox" );
 
-			input.data("ui-autocomplete")._renderItem = function( ul, item ) {
-				return $("<li>")
-					.data( "ui-autocomplete-item", item ) // jQuery UI > 1.10.0
-					.append( "<a>" + item.label + "</a>" )
-					.appendTo( ul );
-			};
+			const widgetInstance = input.data("ui-autocomplete");
+			if (widgetInstance) {
+				widgetInstance._renderItem = function( ul, item ) {
+					return $("<li>")
+						.data( "ui-autocomplete-item", item ) // jQuery UI > 1.10.0
+						.append( "<a>" + item.label + "</a>" )
+						.appendTo( ul );
+				};
+			}
 
 			this.button = $( "<button type=\'button\'>&nbsp;</button>" )
 				.attr( "tabIndex", -1 )
@@ -1542,6 +1545,40 @@ jQuery(document).ready(function() {
 		}
 	});
 });
+
+
+// Code to manage the js for combo list with dependencies (called by extrafields_view.tpl.php)
+function showOptions(child_list, parent_list) {
+	var parentInput = $("select[name="+parent_list+"]");
+	if (parentInput.length === 0) { // when parent extra-field is in view mode and the child is edited directly on card (on line edit)
+		parentInput = $("input[name="+parent_list+"]");
+	}
+	if (parentInput.length > 0) {
+		var val = parentInput.val();
+		var parentVal = parent_list + ":" + val;
+		if (val > 0) {
+			$("select[name=\""+child_list+"\"] option[parent]").prop("disabled", true).hide(); // hide not work with select2 element so disabled it
+			$("select[name=\""+child_list+"\"] option[parent=\""+parentVal+"\"]").prop('disabled', false).show(); // show not work with select2 element so enabled it
+		} else {
+			$("select[name=\""+child_list+"\"] option").prop("disabled", false).show(); // show not work with select2 element so enabled it
+		}
+	}
+}
+function setListDependencies() {
+	console.log("setListDependencies");
+	jQuery("select option[parent]").parent().each(function() {
+		var child_list = $(this).attr("name");
+		var parent = $(this).find("option[parent]:first").attr("parent");
+		var infos = parent.split(":");
+		var parent_list = infos[0];
+		showOptions(child_list, parent_list);
+
+		/* Activate the handler to call showOptions on each future change */
+		$("select[name=\""+parent_list+"\"]").change(function() {
+			showOptions(child_list, parent_list);
+		});
+	});
+}
 
 
 <?php

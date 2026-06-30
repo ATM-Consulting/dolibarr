@@ -603,6 +603,8 @@ if (empty($reshook) && $action == 'add' && $usercancreate) {
 										$object->error .= '<br> - ' . $langs->trans('ErrorResourceUseInEvent', $obj->r_ref, $obj->ac_label . ' [' . $obj->ac_id . ']');
 									}
 									$object->errors[] = $object->error;
+
+									setEventMessages($object->error, null, 'errors');
 								}
 								$db->free($resql);
 							}
@@ -617,8 +619,10 @@ if (empty($reshook) && $action == 'add' && $usercancreate) {
 				unset($_SESSION['assignedtoresource']);
 
 				// Category association
-				$categories = GETPOST('categories', 'array');
-				$object->setCategories($categories);
+				if (!$error) {
+					$categories = GETPOST('categories', 'array');
+					$object->setCategories($categories);
+				}
 
 				unset($_SESSION['assignedtouser']);
 
@@ -627,7 +631,7 @@ if (empty($reshook) && $action == 'add' && $usercancreate) {
 				}
 
 				// Create reminders
-				if ($addreminder == 'on') {
+				if (!$error && $addreminder == 'on') {
 					$actionCommReminder = new ActionCommReminder($db);
 
 					$dateremind = dol_time_plus_duree($datep, -1 * $offsetvalue, $offsetunit);
@@ -698,7 +702,7 @@ if (empty($reshook) && $action == 'add' && $usercancreate) {
 			$donotclearsession = 1;
 		}
 
-		if ($eventisrecurring) {
+		if (!$error && $eventisrecurring) {
 			$dayoffset = 0;
 			$monthoffset = 0;
 			// We set first date of recurrence and offsets
@@ -871,6 +875,7 @@ if (empty($reshook) && $action == 'update' && $usercancreate) {
 			$datep = dol_mktime(GETPOSTINT("aphour"), GETPOSTINT("apmin"), GETPOSTINT("apsec"), GETPOSTINT("apmonth"), GETPOSTINT("apday"), GETPOSTINT("apyear"), 'tzuserrel');
 			$datef = dol_mktime(GETPOSTINT("p2hour"), GETPOSTINT("p2min"), GETPOSTINT("apsec"), GETPOSTINT("p2month"), GETPOSTINT("p2day"), GETPOSTINT("p2year"), 'tzuserrel');
 		}
+
 		//set end date to now if percentage is set to 100 and end date not set
 		$datef = (!$datef && $percentage == 100) ? dol_now() : $datef;
 

@@ -224,7 +224,11 @@ if ($user->socid > 0) {	// Protection if external user
 $extrafields->fetch_name_optionals_label('all');	// We load all extrafields definitions for all objects
 //$extrafields->fetch_name_optionals_label($object->table_element_line);
 
-$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
+if (!empty($object->table_element)) {
+	$search_array_options = $extrafields->getOptionalsFromPost($object->table_element, '', 'search_');
+} else {
+	$search_array_options = array();
+}
 
 $search_component_params = array('');
 $search_component_params_hidden = trim(GETPOST('search_component_params_hidden', 'alphanohtml'));
@@ -333,7 +337,11 @@ $arrayofgroupby = array();
 $arrayofyaxis = array();
 $arrayofvaluesforgroupby = array();
 
-$features = $object->element;
+if (!empty($object->element)) {
+	$features = $object->element;
+} else {
+	$features = '';
+}
 if (!empty($object->element_for_permission)) {
 	$features = $object->element_for_permission;
 } else {
@@ -424,19 +432,20 @@ if ($action == 'viewgraph') {
 if (is_array($search_groupby) && count($search_groupby)) {
 	$fieldtocount = '';
 	foreach ($search_groupby as $gkey => $gval) {
-		$gvalwithoutprefix = preg_replace('/^[a-z]+\./', '', $gval);
+		$gvalwithoutprefix = preg_replace('/^[a-z]+\./i', '', $gval);
+		$gvalsanitized = preg_replace('/[^a-z0-9\._\-]+/i', '', $gval);
 
-		if (preg_match('/\-year$/', $search_groupby[$gkey])) {
-			$tmpval = preg_replace('/\-year$/', '', $search_groupby[$gkey]);
+		if (preg_match('/\-year$/', $gvalsanitized)) {
+			$tmpval = preg_replace('/\-year$/', '', $gvalsanitized);
 			$fieldtocount .= 'DATE_FORMAT('.$tmpval.", '%Y')";
-		} elseif (preg_match('/\-month$/', $search_groupby[$gkey])) {
-			$tmpval = preg_replace('/\-month$/', '', $search_groupby[$gkey]);
+		} elseif (preg_match('/\-month$/', $gvalsanitized)) {
+			$tmpval = preg_replace('/\-month$/', '', $gvalsanitized);
 			$fieldtocount .= 'DATE_FORMAT('.$tmpval.", '%Y-%m')";
-		} elseif (preg_match('/\-day$/', $search_groupby[$gkey])) {
-			$tmpval = preg_replace('/\-day$/', '', $search_groupby[$gkey]);
+		} elseif (preg_match('/\-day$/', $gvalsanitized)) {
+			$tmpval = preg_replace('/\-day$/', '', $gvalsanitized);
 			$fieldtocount .= 'DATE_FORMAT('.$tmpval.", '%Y-%m-%d')";
 		} else {
-			$fieldtocount = $search_groupby[$gkey];
+			$fieldtocount = $gvalsanitized;
 		}
 
 		$sql = "SELECT DISTINCT ".$fieldtocount." as val";
@@ -493,28 +502,30 @@ if (is_array($search_groupby) && count($search_groupby)) {
 			}
 
 			$regs = array();
-			if (!empty($object->fields[$gvalwithoutprefix]['arrayofkeyval'])) {
-				$valuetranslated = $object->fields[$gvalwithoutprefix]['arrayofkeyval'][$obj->val];
-				if (is_null($valuetranslated)) {
-					$valuetranslated = $langs->transnoentitiesnoconv("UndefinedKey");
-				}
-				$valuetranslated = $langs->trans($valuetranslated);
-			} elseif (preg_match('/integer:([^:]+):([^:]+)$/', $object->fields[$gvalwithoutprefix]['type'], $regs)) {
-				$classname = $regs[1];
-				$classpath = $regs[2];
-				dol_include_once($classpath);
-				if (class_exists($classname)) {
-					$tmpobject = new $classname($db);
-					'@phan-var-force CommonObject $tmpobject';
-					$tmpobject->fetch($obj->val);
-					foreach ($tmpobject->fields as $fieldkey => $field) {
-						if ($field['showoncombobox']) {
-							$valuetranslated = $tmpobject->$fieldkey;
-							//if ($valuetranslated == '-') $valuetranslated = $langs->transnoentitiesnoconv("Unknown")
-							break;
-						}
+			if (isset($object->fields[$gvalwithoutprefix])) {
+				if (!empty($object->fields[$gvalwithoutprefix]['arrayofkeyval'])) {
+					$valuetranslated = $object->fields[$gvalwithoutprefix]['arrayofkeyval'][$obj->val];
+					if (is_null($valuetranslated)) {
+						$valuetranslated = $langs->transnoentitiesnoconv("UndefinedKey");
 					}
-					//$valuetranslated = $tmpobject->ref.'eee';
+					$valuetranslated = $langs->trans($valuetranslated);
+				} elseif (preg_match('/integer:([^:]+):([^:]+)$/', $object->fields[$gvalwithoutprefix]['type'], $regs)) {
+					$classname = $regs[1];
+					$classpath = $regs[2];
+					dol_include_once($classpath);
+					if (class_exists($classname)) {
+						$tmpobject = new $classname($db);
+						'@phan-var-force CommonObject $tmpobject';
+						$tmpobject->fetch($obj->val);
+						foreach ($tmpobject->fields as $fieldkey => $field) {
+							if ($field['showoncombobox']) {
+								$valuetranslated = $tmpobject->$fieldkey;
+								//if ($valuetranslated == '-') $valuetranslated = $langs->transnoentitiesnoconv("Unknown")
+								break;
+							}
+						}
+						//$valuetranslated = $tmpobject->ref.'eee';
+					}
 				}
 			}
 
@@ -522,7 +533,7 @@ if (is_array($search_groupby) && count($search_groupby)) {
 		}
 		// Add also the possible NULL value if field is a parent field that is not a strict join
 		$tmpfield = explode('.', $gval);
-		if ($tmpfield[0] != 't' || (is_array($object->fields[$tmpfield[1]]) && empty($object->fields[$tmpfield[1]]['notnull']))) {
+		if ($tmpfield[0] != 't' || (isset($object->fields[$tmpfield[1]]) && is_array($object->fields[$tmpfield[1]]) && empty($object->fields[$tmpfield[1]]['notnull']))) {
 			dol_syslog("The group by field ".$gval." may be null (because field is null or it is a left join), so we add __NULL__ entry in list of possible values");
 			//var_dump($gval); var_dump($object->fields);
 			$arrayofvaluesforgroupby['g_'.$gkey]['__NULL__'] = $langs->transnoentitiesnoconv("NotDefined");
@@ -1240,10 +1251,14 @@ if ($mode == 'graph') {
 		$dir = $conf->user->dir_temp;
 		dol_mkdir($dir);
 		// $customreportkey may be defined when using customreports.php as an include
-		$filenamekey = $dir.'/customreport_'.$object->element.(empty($customreportkey) ? '' : $customreportkey).'.png';
-		$fileurlkey = DOL_URL_ROOT.'/viewimage.php?modulepart=user&file=customreport_'.$object->element.(empty($customreportkey) ? '' : $customreportkey).'.png';
+		if (!empty($object->element)) {
+			$filenamekey = $dir.'/customreport_'.$object->element.(empty($customreportkey) ? '' : $customreportkey).'.png';
+			$fileurlkey = DOL_URL_ROOT.'/viewimage.php?modulepart=user&file=customreport_'.$object->element.(empty($customreportkey) ? '' : $customreportkey).'.png';
+		}
 
-		$px1->draw($filenamekey, $fileurlkey);
+		if (isset($filenamekey) && isset($fileurlkey)) {
+			$px1->draw($filenamekey, $fileurlkey);
+		}
 
 		$texttoshow = $langs->trans("NoRecordFound");
 		if (!GETPOSTISSET('search_measures') || !GETPOSTISSET('search_xaxis')) {

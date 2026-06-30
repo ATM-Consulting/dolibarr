@@ -671,7 +671,7 @@ if (!$error && $action == 'writebookkeeping' && $user->hasRight('accounting', 'b
 	$accountingaccountpayment->fetch(0, getDolGlobalString('SALARIES_ACCOUNTING_ACCOUNT_PAYMENT'), true);
 
 	$accountingaccountexpensereport = new AccountingAccount($db);
-	$accountingaccountexpensereport->fetch(0, $conf->global->ACCOUNTING_ACCOUNT_EXPENSEREPORT, true);
+	$accountingaccountexpensereport->fetch(0, getDolGlobalString('ACCOUNTING_ACCOUNT_EXPENSEREPORT'), true);
 
 	$accountingaccountsuspense = new AccountingAccount($db);
 	$accountingaccountsuspense->fetch(0, getDolGlobalString('ACCOUNTING_ACCOUNT_SUSPENSE'), true);
@@ -819,43 +819,85 @@ if (!$error && $action == 'writebookkeeping' && $user->hasRight('accounting', 'b
 						} elseif (in_array($tabtype[$key], array('sc', 'payment_sc'))) {   // If payment is payment of social contribution
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);	// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'payment_vat') {
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);		// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'payment_donation') {
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);		// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'member') {
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);		// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'payment_loan') {
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);		// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'payment_various') {
 							$bookkeeping->subledger_account = $k;
 							$bookkeeping->subledger_label = $tabcompany[$key]['name'];
-							$accountingaccount->fetch(0, $tabpay[$key]["account_various"], true);	// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$tabpay[$key]["account_various"]])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $tabpay[$key]["account_various"], true);
+								$conf->cache['accountingaccountincurrententity'][$tabpay[$key]["account_various"]] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$tabpay[$key]["account_various"]];
+							}
 							$bookkeeping->numero_compte = $tabpay[$key]["account_various"];
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} elseif ($tabtype[$key] == 'banktransfert') {
 							$bookkeeping->subledger_account = '';
 							$bookkeeping->subledger_label = '';
-							$accountingaccount->fetch(0, $k, true);		// TODO Use a cache
+							if (empty($conf->cache['accountingaccountincurrententity'][$k])) {
+								$accountingaccount = new AccountingAccount($db);
+								$accountingaccount->fetch(0, $k, true);
+								$conf->cache['accountingaccountincurrententity'][$k] = $accountingaccount;
+							} else {
+								$accountingaccount = $conf->cache['accountingaccountincurrententity'][$k];
+							}
 							$bookkeeping->numero_compte = $k;
 							$bookkeeping->label_compte = $accountingaccount->label;
 						} else {

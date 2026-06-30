@@ -6,7 +6,7 @@
  * Copyright (C) 2019      Nicolas ZABOURI      <info@inovea-conseil.com>
  * Copyright (C) 2020      Thibault FOUCART     <support@ptibogxiv.net>
  * Copyright (C) 2023      Christophe Battarel	<christophe@altairis.fr>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024-2026	MDW					<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024		Benjamin Falière	<benjamin.faliere@altairis.fr>
  * Copyright (C) 2024		Vincent Maury		<vmaury@timgroup.fr>
  * Copyright (C) 2024		William Mead		<william.mead@manchenumerique.fr>
@@ -317,7 +317,7 @@ if (empty($reshook)) {
 			}
 
 			if ($objecttmp->id > 0) {
-				$res = $objecttmp->add_object_linked($objecttmp->origin, $id_sending);
+				$res = $objecttmp->add_object_linked($objecttmp->origin_type, $id_sending);
 
 				if ($res == 0) {
 					$errors[] = $expd->ref.' : '.$langs->trans($objecttmp->errors[0]);
@@ -447,7 +447,7 @@ if (empty($reshook)) {
 								$product_type,
 								$rang,
 								$lines[$i]->special_code,
-								$objecttmp->origin,
+								$objecttmp->origin_type,
 								$lines[$i]->rowid,
 								$fk_parent_line,
 								$lines[$i]->fk_fournprice,
@@ -557,8 +557,10 @@ if (empty($reshook)) {
 			if ($search_company) {
 				$param .= "&search_company=".urlencode($search_company);
 			}
-			if ($search_shipping_method_id) {
-				$param .= "&amp;search_shipping_method_id=".urlencode($search_shipping_method_id);
+			if ($search_shipping_method_ids) {
+				foreach ($search_shipping_method_ids as $value) {
+					$param .= "&amp;search_shipping_method_ids[]=".urlencode($value);
+				}
 			}
 			if ($search_tracking) {
 				$param .= "&search_tracking=".urlencode($search_tracking);
@@ -741,13 +743,13 @@ if ($search_status != '' && $search_status >= 0) {
 	$sql .= " AND e.fk_statut = ".((int) $search_status);
 }
 if ($search_signed_status != '' && $search_signed_status >= 0) {
-	$sql .= ' AND e.signed_status = '.urlencode($search_signed_status);
+	$sql .= " AND e.signed_status = ".((int) $search_signed_status);
 }
 if ($search_ref_customer != '') {
 	$sql .= natural_search('e.ref_customer', $search_ref_customer);
 }
 if ($search_billed != '' && $search_billed >= 0) {
-	$sql .= ' AND e.billed = '.((int) $search_billed);
+	$sql .= " AND e.billed = ".((int) $search_billed);
 }
 if ($search_town) {
 	$sql .= natural_search('s.town', $search_town);

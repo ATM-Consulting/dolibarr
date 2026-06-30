@@ -520,12 +520,18 @@ if (empty($reshook)) {
 					}
 				}
 
-				// option to notify the validator if the balance is less than the request
+				// option to notify the validator if the balance is less than the request.
+				// Skip the warning when the leave type has affect=0 in c_holiday_types,
+				// i.e. the type is configured not to deduct days from the balance, so a
+				// shortage is irrelevant (see issue #38212).
 				if (!getDolGlobalString('HOLIDAY_HIDE_APPROVER_ABOUT_NEGATIVE_BALANCE')) {
-					$nbopenedday = num_open_day($object->date_debut_gmt, $object->date_fin_gmt, 0, 1, $object->halfday);
+					$typeaffectsbalance = (int) getDictionaryValue('c_holiday_types', 'affect', $object->fk_type, true);
+					if ($typeaffectsbalance) {
+						$nbopenedday = num_open_day($object->date_debut_gmt, $object->date_fin_gmt, 0, 1, $object->halfday);
 
-					if ($nbopenedday > $object->getCPforUser($object->fk_user, $object->fk_type)) {
-						$message .= "<p>".$langs->transnoentities("HolidaysToValidateAlertSolde")."</p>\n";
+						if ($nbopenedday > $object->getCPforUser($object->fk_user, $object->fk_type)) {
+							$message .= "<p>".$langs->transnoentities("HolidaysToValidateAlertSolde")."</p>\n";
+						}
 					}
 				}
 
@@ -706,13 +712,13 @@ if (empty($reshook)) {
 
 			if (!$error) {
 				$db->commit();
-
-				header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
-				exit;
 			} else {
 				$db->rollback();
 				$action = '';
 			}
+
+			header('Location: '.$_SERVER["PHP_SELF"].'?id='.$object->id);
+			exit;
 		}
 	}
 
@@ -1197,9 +1203,15 @@ if ((empty($id) && empty($ref)) || $action == 'create' || $action == 'add') {
 		if (empty($include_users)) {
 			print img_warning().' '.$langs->trans("NobodyHasPermissionToValidateHolidays");
 		} else {
-			// Defined default approver (the forced approved of user or the supervisor if no forced value defined)
-			// Note: This use will be set only if the deinfed approvr has permission to approve so is inside include_users
+			// Defined default approver (the forced approver of edited user or the supervisor of user if no forced value defined)
+			// Note: This user will be set only if the defined approver has permission to approve so is inside include_users
 			$defaultselectuser = (empty($user->fk_user_holiday_validator) ? $user->fk_user : $user->fk_user_holiday_validator);
+			if ($fuserid != $user->id) {
+				$fuser = new User($db);
+				$fuser->fetch($fuserid);
+				$defaultselectuser = (empty($fuser->fk_user_holiday_validator) ? $fuser->fk_user : $fuser->fk_user_holiday_validator);
+			}
+
 			if (getDolGlobalString('HOLIDAY_DEFAULT_VALIDATOR')) {
 				$defaultselectuser = getDolGlobalString('HOLIDAY_DEFAULT_VALIDATOR'); // Can force default approver
 			}

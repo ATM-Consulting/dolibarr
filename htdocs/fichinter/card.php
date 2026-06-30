@@ -5,7 +5,7 @@
  * Copyright (C) 2011-2020	Juanjo Menent				<jmenent@2byte.es>
  * Copyright (C) 2013		Florian Henry				<florian.henry@open-concept.pro>
  * Copyright (C) 2014-2018	Ferran Marcet				<fmarcet@2byte.es>
- * Copyright (C) 2014-2022	Charlene Benke				<charlene@patas-monkey.com>
+ * Copyright (C) 2014-2025	Charlene Benke				<charlene@patas-monkey.com>
  * Copyright (C) 2015-2016	Abbes Bahfir				<bafbes@gmail.com>
  * Copyright (C) 2018-2022	Philippe Grand				<philippe.grand@atoo-net.com>
  * Copyright (C) 2020-2024	Frédéric France				<frederic.france@free.fr>
@@ -13,6 +13,7 @@
  * Copyright (C) 2023-2024	William Mead				<william.mead@manchenumerique.fr>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024		Alexandre Spangaro			<alexandre@inovea-conseil.com>
+ * Copyright (C) 2025		Pierre Ardoin				<developpeur@lesmetiersdubatiment.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -696,8 +697,10 @@ if (empty($reshook)) {
 
 		$result = $objectline->update($user);
 		if ($result < 0) {
-			dol_print_error($db);
-			exit;
+			// Surface validation errors (e.g. mandatory extrafield left empty) as an
+			// event message on the same page instead of breaking with a full Dolibarr
+			// error screen that loses the user's edit context.
+			setEventMessages($objectline->error, $objectline->errors, 'errors');
 		}
 
 		// Define output language
@@ -1150,8 +1153,10 @@ if ($action == 'create') {
 		}
 		print '<table class="border centpercent">';
 		print '<tr><td class="fieldrequired">'.$langs->trans("ThirdParty").'</td><td>';
-		print $form->select_company('', 'socid', '', 'SelectThirdParty', 1, 0, array(), 0, 'minwidth300');
-		print ' <a href="'.DOL_URL_ROOT.'/societe/card.php?action=create&customer=3&backtopage='.urlencode($_SERVER["PHP_SELF"].'?action=create').'"><span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddThirdParty").'"></span></a>';
+		$filter = '(s.status:=:1)';
+
+		print $form->select_company('', 'socid', $filter, 'SelectThirdParty', 1, 0, array(), 0, 'minwidth300');
+		print ' <a href="'.DOL_URL_ROOT.'/societe/card.php?action=create&backtopage='.urlencode($_SERVER["PHP_SELF"].'?action=create').'"><span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddThirdParty").'"></span></a>';
 		print '</td></tr>';
 		print '</table>';
 
@@ -1224,6 +1229,7 @@ if ($action == 'create') {
 		$formquestion[] = [
 			'type' 		=> 'select',
 			'name' 		=> 'signed_status',
+			'select_show_empty' => 0,
 			'label'		=> '<span class="fieldrequired">'.$langs->trans('SignStatus').'</span>',
 			'values'	=> $object->getSignedStatusLocalisedArray()
 		];
