@@ -923,7 +923,7 @@ abstract class CommonDocGenerator
 			'line_multicurrency_total_tva_locale' => price($line->multicurrency_total_tva, 0, $outputlangs),
 			'line_multicurrency_total_ttc_locale' => price($line->multicurrency_total_ttc, 0, $outputlangs),
 		);
-
+		// ----------------------------------SPé 21.0_qaleos ---------------------------
 		// Initialize all product keys to empty (so they are substituted even on free lines without product)
 		$product_keys = array(
 			'line_product_weight', 'line_product_weight_raw', 'line_product_weight_units', 'line_product_weight_total', 'line_product_weight_total_units',
@@ -1038,6 +1038,7 @@ abstract class CommonDocGenerator
 				}
 			}
 		}
+		// ----------------------------------SPé 21.0_qaleos ---------------------------
 
 		if (property_exists($line, 'ref_fourn')) {
 			$resarray['line_product_ref_fourn'] = $line->ref_fourn; // for supplier doc lines @phan-suppress-current-line PhanUndeclaredProperty
@@ -1127,6 +1128,27 @@ abstract class CommonDocGenerator
 			$resarray['line_length'] = empty($line->length) ? '' : $line->length * $line->qty_shipped.' '.measuringUnitString(0, 'size', $line->length_units);
 			$resarray['line_surface'] = empty($line->surface) ? '' : $line->surface * $line->qty_shipped.' '.measuringUnitString(0, 'surface', $line->surface_units);
 			$resarray['line_volume'] = empty($line->volume) ? '' : $line->volume * $line->qty_shipped.' '.measuringUnitString(0, 'volume', $line->volume_units);
+		}
+
+		// Load product data optional fields to the line -> enables to use "line_options_{extrafield}"
+		if (isset($line->fk_product) && $line->fk_product > 0) {
+			$tmpproduct = new Product($this->db);
+			$result = $tmpproduct->fetch($line->fk_product);
+			if (!empty($tmpproduct->array_options) && is_array($tmpproduct->array_options)) {
+				foreach ($tmpproduct->array_options as $key => $label) {
+					$resarray["line_product_".$key] = $label;
+				}
+			}
+		} else {
+			// Set unused placeholders as blank
+			$extrafields->fetch_name_optionals_label("product");
+			if ($extrafields->attributes["product"]['count'] > 0) {
+				$extralabels = $extrafields->attributes["product"]['label'];
+
+				foreach ($extralabels as $key => $label) {
+					$resarray['line_product_options_'.$key] = '';
+				}
+			}
 		}
 
 		return $resarray;
