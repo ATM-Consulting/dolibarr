@@ -396,10 +396,12 @@ class Tickets extends DolibarrApi
 
 		$this->db->begin();
 
-		if ($this->ticket->create(DolibarrApiAccess::$user) < 0) {
+		/* SPÉ KALI - create the ticket without firing TICKET_CREATE (notrigger=1) so the payload contacts are linked before the creation notification is sent */
+		if ($this->ticket->create(DolibarrApiAccess::$user, 1) < 0) {
 			$this->db->rollback();
 			throw new RestException(500, "Error creating ticket", array_merge(array($this->ticket->error), $this->ticket->errors));
 		}
+		/* SPÉ KALI - end */
 
 		if (!empty($contactsToLink)) {
 			foreach ($contactsToLink as $contact) {
@@ -408,6 +410,13 @@ class Tickets extends DolibarrApi
 				$this->_addContactResultOrThrow($result, $contact['id'], $contact['type'], $contact['source']);
 			}
 		}
+
+		/* SPÉ KALI - contacts are now linked: fire TICKET_CREATE so the creation notification reaches the ticket contacts */
+		if ($this->ticket->call_trigger('TICKET_CREATE', DolibarrApiAccess::$user) < 0) {
+			$this->db->rollback();
+			throw new RestException(500, "Error creating ticket", array_merge(array($this->ticket->error), $this->ticket->errors));
+		}
+		/* SPÉ KALI - end */
 
 		$this->db->commit();
 		/*
