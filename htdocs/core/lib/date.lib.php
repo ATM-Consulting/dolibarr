@@ -256,7 +256,7 @@ function convertSecondToTime($iSecond, $format = 'all', $lengthOfDay = 86400, $l
 	}
 	$nbHbyDay = $lengthOfDay / 3600;
 
-	// SPE SYAGE START (DEV-12) : conserve la duree d'origine pour le calcul 'alldaydecimal' plus bas
+	// SPE SYAGE START (DEV-12): keep the original duration for the 'alldaydecimal' computation below
 	$iSecondOrigForDayDecimal = $iSecond;
 	// SPE SYAGE END (DEV-12)
 
@@ -317,11 +317,11 @@ function convertSecondToTime($iSecond, $format = 'all', $lengthOfDay = 86400, $l
 		}
 		// SPE SYAGE START (DEV-12) : format 'alldaydecimal' = duree exprimee en jours decimaux (ex: "1,5 jours")
 		elseif ($format == 'alldaydecimal') {
-			// SPE SYAGE (DEV-12) : duree totale en jours ouvres decimaux, basee sur la longueur de
-			// journee de travail. Ainsi la valeur reste correcte meme quand convertSecondToTime est
-			// appele sans $lengthOfDay explicite (affichage de base = defaut 86400). Repli sur
-			// PROJECT_WORKING_HOURS_PER_DAY puis MAIN_DURATION_OF_WORKDAY, pour rester egale a l'appel
-			// "temps de travail" et permettre aux vues de ne plus afficher les heures en doublon.
+			// SPE SYAGE (DEV-12): total duration in decimal working-days, based on the working-day
+			// length, so the value stays correct even when convertSecondToTime is called without an
+			// explicit $lengthOfDay (base display uses the default 86400). Fall back to
+			// PROJECT_WORKING_HOURS_PER_DAY then MAIN_DURATION_OF_WORKDAY, to stay equal to the
+			// "working time" call and let views stop showing the redundant hours.
 			$effectiveLengthOfDay = ($lengthOfDay != 86400) ? $lengthOfDay : (getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 0) * 3600);
 			if (empty($effectiveLengthOfDay)) {
 				$effectiveLengthOfDay = getDolGlobalInt('MAIN_DURATION_OF_WORKDAY', 86400);
