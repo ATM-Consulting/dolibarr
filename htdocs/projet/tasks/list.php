@@ -1145,6 +1145,12 @@ if (getDolGlobalString('PROJECT_PLANNED_WORKLOAD_FORMAT')) {
 if (getDolGlobalString('PROJECT_TIMES_SPENT_FORMAT')) {
 	$timespentoutputformat = getDolGlobalString('PROJECT_TIME_SPENT_FORMAT');
 }
+// SPE SYAGE START (DEV-12): working-day formats to append planned/spent time in decimal days (like prod)
+$working_plannedworkloadoutputformat = getDolGlobalString('PROJECT_WORKING_PLANNED_WORKLOAD_FORMAT', 'all');
+$working_timespentoutputformat = getDolGlobalString('PROJECT_WORKING_TIMES_SPENT_FORMAT', 'all');
+$working_hours_per_day_in_seconds = 3600 * getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+$working_days_per_weeks = getDolGlobalInt('PROJECT_WORKING_DAYS_PER_WEEKS', 5);
+// SPE SYAGE END (DEV-12)
 
 // Loop on record
 // --------------------------------------------------------------------
@@ -1359,11 +1365,19 @@ while ($i < $imaxinloop) {
 			if (!empty($arrayfields['t.planned_workload']['checked'])) {
 				print '<td class="center">';
 				$fullhour = convertSecondToTime($obj->planned_workload, $plannedworkloadoutputformat);
-				$workingdelay = convertSecondToTime($obj->planned_workload, 'all', 86400, 7); // TODO Replace 86400 and 7 to take account working hours per day and working day per weeks
 				if ($obj->planned_workload != '') {
 					print $fullhour;
-					// TODO Add delay taking account of working hours per day and working day per week
-					//if ($workingdelay != $fullhour) print '<br>('.$workingdelay.')';
+					// SPE SYAGE START (DEV-12): append working-days delay in parentheses (like prod)
+					if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+						$workingdelay = convertSecondToTime($obj->planned_workload, $working_plannedworkloadoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+						if ($workingdelay != $fullhour && !empty($workingdelay)) {
+							if (!empty($fullhour)) {
+								print '<br>';
+							}
+							print '('.$workingdelay.')';
+						}
+					}
+					// SPE SYAGE END (DEV-12)
 				}
 				//else print '--:--';
 				print '</td>';
@@ -1396,7 +1410,19 @@ while ($i < $imaxinloop) {
 					print '<a href="'.DOL_URL_ROOT.'/projet/tasks/time.php?id='.$object->id.($showproject ? '' : '&withproject=1').'">';
 				}
 				if ($obj->duration_effective) {
-					print convertSecondToTime($obj->duration_effective, $timespentoutputformat);
+					$fullhour = convertSecondToTime($obj->duration_effective, $timespentoutputformat);
+					print $fullhour;
+					// SPE SYAGE START (DEV-12): append working-days delay in parentheses (like prod)
+					if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+						$workingdelay = convertSecondToTime($obj->duration_effective, $working_timespentoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+						if ($workingdelay != $fullhour && !empty($workingdelay)) {
+							if (!empty($fullhour)) {
+								print '<br>';
+							}
+							print '('.$workingdelay.')';
+						}
+					}
+					// SPE SYAGE END (DEV-12)
 				} else {
 					print '--:--';
 				}
@@ -1647,9 +1673,29 @@ if (isset($totalarray['totaldurationeffectivefield']) || isset($totalarray['tota
 				print '<td class="left">'.$langs->trans("Totalforthispage").'</td>';
 			}*/
 		} elseif (isset($totalarray['totalplannedworkloadfield']) && $totalarray['totalplannedworkloadfield'] == $i) {
-			print '<td class="center">'.convertSecondToTime($totalarray['totalplannedworkload'], $plannedworkloadoutputformat).'</td>';
+// SPE SYAGE START (DEV-12): append working-days delay to the total (like prod)
+			$fulltime = convertSecondToTime($totalarray['totalplannedworkload'], $plannedworkloadoutputformat);
+			$totaltoshow = $fulltime;
+			if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+				$workingdelay = convertSecondToTime($totalarray['totalplannedworkload'], $working_plannedworkloadoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+				if ($workingdelay != $fulltime && !empty($workingdelay)) {
+					$totaltoshow .= (!empty($fulltime) ? '<br>' : '').'('.$workingdelay.')';
+				}
+			}
+			print '<td class="center">'.$totaltoshow.'</td>';
+			// SPE SYAGE END (DEV-12)
 		} elseif (isset($totalarray['totaldurationeffectivefield']) && $totalarray['totaldurationeffectivefield'] == $i) {
-			print '<td class="center">'.convertSecondToTime($totalarray['totaldurationeffective'], $timespentoutputformat).'</td>';
+// SPE SYAGE START (DEV-12): append working-days delay to the total (like prod)
+			$fulltime = convertSecondToTime($totalarray['totaldurationeffective'], $timespentoutputformat);
+			$totaltoshow = $fulltime;
+			if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+				$workingdelay = convertSecondToTime($totalarray['totaldurationeffective'], $working_timespentoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+				if ($workingdelay != $fulltime && !empty($workingdelay)) {
+					$totaltoshow .= (!empty($fulltime) ? '<br>' : '').'('.$workingdelay.')';
+				}
+			}
+			print '<td class="center">'.$totaltoshow.'</td>';
+			// SPE SYAGE END (DEV-12)
 		} elseif (isset($totalarray['totalprogress_calculatedfield']) && $totalarray['totalprogress_calculatedfield'] == $i) {
 			print '<td class="center">'.($totalarray['totalplannedworkload'] > 0 ? round(100 * $totalarray['totaldurationeffective'] / $totalarray['totalplannedworkload'], 2).' %' : '').'</td>';
 		} elseif (isset($totalarray['totalprogress_declaredfield']) && $totalarray['totalprogress_declaredfield'] == $i) {

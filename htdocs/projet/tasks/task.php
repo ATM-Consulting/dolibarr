@@ -694,7 +694,23 @@ if ($id > 0 || !empty($ref)) {
 		// Planned workload
 		print '<tr><td>'.$langs->trans("PlannedWorkload").'</td><td colspan="3">';
 		if ($object->planned_workload != '') {
-			print convertSecondToTime($object->planned_workload, 'allhourmin');
+			// SPE SYAGE START (DEV-12): align display on prod (primary hours + working-days in parentheses)
+			$plannedworkloadoutputformat = getDolGlobalString('PROJECT_PLANNED_WORKLOAD_FORMAT', 'allhourmin');
+			$working_plannedworkloadoutputformat = getDolGlobalString('PROJECT_WORKING_PLANNED_WORKLOAD_FORMAT', 'all');
+			$working_hours_per_day_in_seconds = 3600 * getDolGlobalInt('PROJECT_WORKING_HOURS_PER_DAY', 7);
+			$working_days_per_weeks = getDolGlobalInt('PROJECT_WORKING_DAYS_PER_WEEKS', 5);
+			$fullhour = convertSecondToTime($object->planned_workload, $plannedworkloadoutputformat);
+			print $fullhour;
+			if (getDolGlobalInt('PROJECT_ENABLE_WORKING_TIME')) {
+				$workingdelay = convertSecondToTime($object->planned_workload, $working_plannedworkloadoutputformat, $working_hours_per_day_in_seconds, $working_days_per_weeks);
+				if ($workingdelay != $fullhour) {
+					if (!empty($fullhour)) {
+						print '<br>';
+					}
+					print '('.$workingdelay.')';
+				}
+			}
+			// SPE SYAGE END (DEV-12)
 		}
 		print '</td></tr>';
 
