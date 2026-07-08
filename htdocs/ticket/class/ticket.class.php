@@ -3023,9 +3023,79 @@ class Ticket extends CommonObject
 									}
 								}
 
+								// @ATM-PATCH BEGIN ticket-editable-recipients — when the standardised send form is used (PR #38391 backport), replace auto-computed recipients with the user selection and add the CC list
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$sendtocc_form = '';
+								if (GETPOSTISSET('receiver_multiselect')) {
+									$sendto = array();
+									$receiver_selected = GETPOST('receiver', 'array');
+									if (is_array($receiver_selected)) {
+										foreach ($receiver_selected as $email) {
+											$email = trim((string) $email);
+											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+												$sendto[$email] = $email;
+											}
+										}
+									}
+									// Free input: plain email or "Name <email>", comma-separated
+									$sendto_free = GETPOST('sendto', 'alphawithlgt');
+									if ($sendto_free !== '') {
+										foreach (explode(',', $sendto_free) as $entry) {
+											$entry = trim($entry);
+											if ($entry === '') {
+												continue;
+											}
+											if (preg_match('/.*<\s*([^>]+)\s*>/', $entry, $matches)) {
+												$email = trim($matches[1]);
+											} else {
+												$email = $entry;
+											}
+											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+												$sendto[$email] = $entry;
+											}
+										}
+									}
+
+									// CC list built from the form (multiselect + free input), case-insensitive dedup
+									$sendtocc_list = array();
+									$sendtocc_seen = array();
+									if (GETPOSTISSET('receivercc_multiselect')) {
+										$receivercc_selected = GETPOST('receivercc', 'array');
+										if (is_array($receivercc_selected)) {
+											foreach ($receivercc_selected as $email) {
+												$email = trim((string) $email);
+												if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($email), $sendtocc_seen)) {
+													$sendtocc_list[] = $email;
+													$sendtocc_seen[] = strtolower($email);
+												}
+											}
+										}
+									}
+									$sendtocc_free = GETPOST('sendtocc', 'alphawithlgt');
+									if ($sendtocc_free !== '') {
+										foreach (explode(',', $sendtocc_free) as $entry) {
+											$entry = trim($entry);
+											if ($entry === '') {
+												continue;
+											}
+											if (preg_match('/.*<\s*([^>]+)\s*>/', $entry, $matches)) {
+												$email = trim($matches[1]);
+											} else {
+												$email = $entry;
+											}
+											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($email), $sendtocc_seen)) {
+												$sendtocc_list[] = $entry;
+												$sendtocc_seen[] = strtolower($email);
+											}
+										}
+									}
+									$sendtocc_form = implode(',', $sendtocc_list);
+								}
+								// @ATM-PATCH END ticket-editable-recipients
+
 								// Don't try to send email when no recipient
 								if (!empty($sendto)) {
-									$result = $this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames);
+									$result = $this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames, $sendtocc_form);
 									if ($result) {
 										// update last_msg_sent date (for last message sent to external users)
 										$this->date_last_msg_sent = dol_now();
@@ -3092,7 +3162,7 @@ class Ticket extends CommonObject
 	 * @param string[]	$mimefilename_list   List of attached file name in message
 	 * @return boolean     					True if mail sent to at least one receiver, false otherwise
 	 */
-	public function sendTicketMessageByEmail($subject, $message, $send_internal_cc = 0, $array_receiver = array(), $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array())
+	public function sendTicketMessageByEmail($subject, $message, $send_internal_cc = 0, $array_receiver = array(), $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array(), $sendtocc_extra = '')
 	{
 		global $conf, $langs, $user;
 
@@ -3116,6 +3186,12 @@ class Ticket extends CommonObject
 		if ($send_internal_cc) {
 			$sendtocc = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_FROM');
 		}
+		// @ATM-PATCH BEGIN ticket-editable-recipients — allow an explicit CC list (from the standardised send form, PR #38391 backport) in addition to the internal CC
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		if (!empty($sendtocc_extra)) {
+			$sendtocc = ($sendtocc !== '' ? $sendtocc.',' : '').$sendtocc_extra;
+		}
+		// @ATM-PATCH END ticket-editable-recipients
 
 		$from = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_FROM');
 		$is_sent = false;
