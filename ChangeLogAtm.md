@@ -1,3 +1,4 @@
+- FIX : Doc preview (magnifier/loupe) on shipments (BL) in thirdparty card (client/prospect tab) - use 'expedition' modulepart instead of $sendingstatic->element ('shipping') in comm/card.php - PR #755 - *2026-07-09*
 - FIX : BACKPORT pour SENTRY : add null check before setting _renderItem on jQuery UI autocomplete widget #37597
 - NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
 - FIX : DA027856 - Edition des extrafields "always editable" sur les projets avec une tache ouverte en bas de page.

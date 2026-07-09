@@ -1099,6 +1099,8 @@ if ($object->id > 0) {
 	 *   Latest shipments
 	 */
 	if (isModEnabled("shipping") && $user->hasRight('expedition', 'lire')) {
+		$param = '';
+
 		$sql = 'SELECT e.rowid as id';
 		$sql .= ', e.ref, e.entity, e.fk_projet';
 		$sql .= ', e.date_creation';
@@ -1168,8 +1170,11 @@ if ($object->id > 0) {
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
 
-					// Use the 'expedition' modulepart (not $sendingstatic->element which is 'shipping', an alias not handled by dol_check_secure_access_document())
+					/**DEBUT SPECIFIQUE ATM **/
+					// Fix doc preview: use the 'expedition' modulepart instead of $sendingstatic->element ('shipping', a module-name alias not handled by dol_check_secure_access_document()), and pass the entity param like the other lists.
+					// Original core: print $formfile->showPreview($file_list, $sendingstatic->element, $relativepath, 0, $param);
 					print $formfile->showPreview($file_list, 'expedition', $relativepath, 0, 'entity=' . $objp->entity);
+					/**FIN SPECIFIQUE ATM **/
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($sendingstatic->fk_project > 0) {
