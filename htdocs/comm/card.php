@@ -1099,8 +1099,6 @@ if ($object->id > 0) {
 	 *   Latest shipments
 	 */
 	if (isModEnabled("shipping") && $user->hasRight('expedition', 'lire')) {
-		$param = '';
-
 		$sql = 'SELECT e.rowid as id';
 		$sql .= ', e.ref, e.entity, e.fk_projet';
 		$sql .= ', e.date_creation';
@@ -1170,7 +1168,8 @@ if ($object->id > 0) {
 					}
 					$relativepath = dol_sanitizeFileName($objp->ref).'/'.dol_sanitizeFileName($objp->ref).'.pdf';
 
-					print $formfile->showPreview($file_list, $sendingstatic->element, $relativepath, 0, $param);
+					// Use the 'expedition' modulepart (not $sendingstatic->element which is 'shipping', an alias not handled by dol_check_secure_access_document())
+					print $formfile->showPreview($file_list, 'expedition', $relativepath, 0, 'entity=' . $objp->entity);
 				}
 				print '</td><td class="tdoverflowmax125">';
 				if ($sendingstatic->fk_project > 0) {
