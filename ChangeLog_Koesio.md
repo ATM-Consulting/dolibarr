@@ -1,3 +1,4 @@
+- BACKPORT 24 - Adding contact on ticket creation from API + SPE noTrigger ticket creation from API - **2026-07-09**
 - BACKPORT 24 - T2605-4267 - (PR #38656) Backport Add hook getTicketMessageEmailFrom to override sender in Ticket::sendTicketMessageByEmail - **2026-06-09**
 - Backport 24 : https://github.com/Dolibarr/dolibarr/pull/37870 - **2026-04-15**
 - Backport 24 : https://github.com/Dolibarr/dolibarr/pull/37887 - **2026-04-15**
