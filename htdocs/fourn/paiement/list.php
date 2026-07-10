@@ -55,6 +55,9 @@ $langs->loadLangs(array('companies', 'bills', 'banks', 'compta'));
 
 $action = GETPOST('action', 'alpha');
 $massaction = GETPOST('massaction', 'alpha');
+// backport de V24
+$toselect = GETPOST('toselect', 'array:int'); // Array of ids of elements selected into a list
+// fin du backport
 $optioncss = GETPOST('optioncss', 'alpha');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'vendorpaymentlist';
 $mode = GETPOST('mode', 'aZ');
@@ -303,6 +306,10 @@ if (!$resql) {
 
 $num = $db->num_rows($resql);
 $i = 0;
+
+// backport de V24
+$arrayofselected = is_array($toselect) ? $toselect : array();
+// fin du backport
 
 $param = '';
 if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) {
