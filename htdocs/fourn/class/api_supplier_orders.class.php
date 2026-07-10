@@ -87,7 +87,7 @@ class SupplierOrders extends DolibarrApi
 	 *
 	 * @param string	$sortfield	      Sort field
 	 * @param string	$sortorder	      Sort order
-	 * @param int		$limit		      Limit for list
+	 * @param int		$limit		      Limit for list$sqlfilterlines
 	 * @param int		$page		      Page number
 	 * @param string   	$thirdparty_ids	  Thirdparty ids to filter orders of (example '1' or '1,2,3') {@pattern /^[0-9,]*$/i}
 	 * @param string   	$product_ids	  Product ids to filter orders of (example '1' or '1,2,3') {@pattern /^[0-9,]*$/i}
@@ -97,7 +97,8 @@ class SupplierOrders extends DolibarrApi
 	 *
 	 * @throws RestException
 	 */
-	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $product_ids = '', $status = '', $sqlfilters = '')
+	// BACKPORT v24 - PR #26613
+	public function index($sortfield = "t.rowid", $sortorder = 'ASC', $limit = 100, $page = 0, $thirdparty_ids = '', $product_ids = '', $status = '', $sqlfilters = '', $sqlfilterlines = '')
 	{
 		global $db, $conf;
 
@@ -181,6 +182,18 @@ class SupplierOrders extends DolibarrApi
 				throw new RestException(400, 'Error when validating parameter sqlfilters -> '.$errormessage);
 			}
 		}
+		// BACKPORT V24 START - PR #26613
+		// Add sql filters for lines
+		if ($sqlfilterlines) {
+			$errormessage = '';
+			$sql .= " AND EXISTS (SELECT tl.rowid FROM ".MAIN_DB_PREFIX."commande_fournisseurdet AS tl WHERE tl.fk_commande = t.rowid";
+			$sql .= forgeSQLFromUniversalSearchCriteria($sqlfilterlines, $errormessage);
+			$sql .=	")";
+			if ($errormessage) {
+				throw new RestException(400, 'Error when validating parameter sqlfilterlines -> '.$errormessage);
+			}
+		}
+		// BACKPORT V24 END - PR #26613
 
 		$sql .= $this->db->order($sortfield, $sortorder);
 		if ($limit) {
