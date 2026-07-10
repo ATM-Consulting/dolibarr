@@ -847,7 +847,8 @@ if (!empty($actioncode)) {
 }
 
 /** SPE CERIBOIS */
-if (getDolGlobalInt("DONT_SHOW_AUTO_EVENT") && !strpos($actioncode, 'AC_OTH_AUTO')) {
+// $actioncode may be an array (multiselect event type filter) or a scalar; cast before strpos to avoid a PHP 8 TypeError.
+if (getDolGlobalInt("DONT_SHOW_AUTO_EVENT") && strpos(implode(',', (array) $actioncode), 'AC_OTH_AUTO') === false) {
 	$sql.=" AND ca.code != 'AC_OTH_AUTO'";
 }
 /** FIN SPE */
