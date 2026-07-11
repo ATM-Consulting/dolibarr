@@ -1137,6 +1137,10 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 				}
 			} else {
 				$sharedelement = 'project'; // for multicompany compatibility
+				// The 'task' feature is remapped to 'project_task', but the physical table is 'projet_task'.
+				// Without this override $dbtablename stays 'project_task' -> query targets a non-existent table
+				// llx_project_task -> the entity check always fails -> spurious 403 on task read/update/delete.
+				$dbtablename = 'projet_task';
 				$sql = "SELECT COUNT(dbt.".$dbt_select.") as nb";
 				$sql .= " FROM ".MAIN_DB_PREFIX.$dbtablename." as dbt";
 				$sql .= " WHERE dbt.".$dbt_select." IN (".$db->sanitize($objectid, 1).")";
