@@ -7001,6 +7001,11 @@ abstract class CommonObject
 		// if the extrafields row already exists for the object, we update it
 		if ($this->db->getRow("SELECT 1 FROM {$extrafieldsTable} WHERE fk_object = ".((int) $this->id))) {
 			array_shift($sqlColumnValues); // drop the 'fk_object' column because its value won't change
+			// ------------ SP2 isco DA028427 ---------------
+			if (empty($sqlColumnValues)) {
+             			 $this->db->commit();
+			         return 1;
+		        }
 			$sqlColumnValueString = implode(
 				',',
 				/**
