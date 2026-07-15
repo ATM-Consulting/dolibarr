@@ -994,7 +994,7 @@ if (isModEnabled('category') && $user->hasRight('categorie', 'read')) {
 // Show/hide child variant products
 if (isModEnabled('variants')) {
 	$moreforfilter .= '<div class="divsearchfield">';
-	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts"'.($show_childproducts ? 'checked="checked"' : '').'>';
+	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts" value="1"'.($show_childproducts ? ' checked="checked"' : '').'>';
 	$moreforfilter .= ' <label for="search_show_childproducts">'.$langs->trans('ShowChildProducts').'</label>';
 	$moreforfilter .= '</div>';
 }
