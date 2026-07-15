@@ -1,0 +1,1 @@
+- FIX : Ticket DA026545 - Suppression de l'affichage de la mention "Timbre fiscal" sur les factures (modèle Crabe) quand revenuestamp est vide

@@ -1849,7 +1849,7 @@ class pdf_crabe extends ModelePDFFactures
 				}
 
 				// Revenue stamp
-				if (price2num($object->revenuestamp, 'MT') != 0) {
+				if (price2num($object->revenuestamp, 'MT') != 0 && !empty($object->revenuestamp)) {
 					$index++;
 					$pdf->SetXY($col1x, $tab2_top + $tab2_hl * $index);
 					$pdf->MultiCell($col2x - $col1x, $tab2_hl, $outputlangs->transnoentities("RevenueStamp"), $useborder, 'L', true);
