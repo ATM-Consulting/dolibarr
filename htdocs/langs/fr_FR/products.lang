@@ -373,6 +373,7 @@ ProductCombinationAlreadyUsed=Une erreur s'est produite lors de la suppression d
 ProductCombinations=Variantes
 PropagateVariant=Propager les variantes
 HideProductCombinations=Cacher les variantes dans les listes de sélection des produits
+# BACKPORT ATM #757 - keys natives dès Dolibarr 24.0, à retirer après upgrade vers 24+
 ShowProductCombinationsInList=Afficher les variantes par défaut dans la liste des produits
 ShowProductCombinationsInListHelp=Lorsque cette option est activée, la case « Afficher les produits enfants » de la liste des produits est cochée par défaut, afin que les variantes soient visibles sans avoir à la cocher manuellement. Les utilisateurs peuvent toujours la décocher pour les masquer.
 ProductCombination=Variante
