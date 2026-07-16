@@ -156,6 +156,13 @@ function getAllOauth2Array()
 			'OAUTH_MICROSOFT2_ID',
 			'OAUTH_MICROSOFT2_SECRET',
 		),
+		// BACKPORT PR #37329 (Dolibarr 23.0 -> 22.0_iseta): Microsoft Exchange Online OAuth
+		array(
+			'OAUTH_MICROSOFT3_NAME',
+			'OAUTH_MICROSOFT3_ID',
+			'OAUTH_MICROSOFT3_SECRET',
+			'OAUTH_MICROSOFT3_DESC',
+		),
 		array(
 			'OAUTH_NEST_NAME',
 			'OAUTH_NEST_ID',
@@ -340,6 +347,20 @@ function getSupportedOauth2Array()
 		// User.Read is a microsoftgraph scope, if it's not working, do not select it
 		'availablescopes' => 'openid,offline_access,profile,email,User.Read,https://outlook.office.com/.default',
 		'returnurl' => '/core/modules/oauth/microsoft2_oauthcallback.php'
+	);
+	// BACKPORT PR #37329 (Dolibarr 23.0 -> 22.0_iseta): Microsoft Exchange Online OAuth
+	$supportedoauth2array['OAUTH_MICROSOFT3_NAME'] = array(
+		'callbackfile' => 'microsoft3',
+		'picto' => 'microsoft',
+		'urlforapp' => 'OAUTH_MICROSOFT3_DESC',
+		'name' => 'Microsoft Exchange Online [SMTP/IMAP]',
+		'urlforcredentials' => 'https://portal.azure.com/',
+		// CRITICAL: Use ONLY outlook.office.com scopes here, do NOT mix with Graph scopes (openid/profile/email).
+		// Mixing two resource namespaces in one token request causes AADSTS28000 error.
+		// offline_access is a neutral scope (no resource prefix) and is allowed alongside any resource.
+		// Azure permissions required: Microsoft Graph > Delegated > SMTP.Send and IMAP.AccessAsUser.All
+		'availablescopes' => 'offline_access,https://outlook.office.com/SMTP.Send,https://outlook.office.com/IMAP.AccessAsUser.All',
+		'returnurl' => '/core/modules/oauth/microsoft3_oauthcallback.php'
 	);
 
 	// Add a generic Oauth token handler. Tested with Mastodon.
