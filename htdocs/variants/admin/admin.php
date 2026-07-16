@@ -55,6 +55,13 @@ if ($action) {
 		$error++;
 	}
 
+	// >>> BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+	if (!dolibarr_set_const($db, 'PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST', GETPOST('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST', 'int'), 'chaine', 0, '', $conf->entity)) {
+		setEventMessages($langs->trans('CoreErrorMessage'), null, 'errors');
+		$error++;
+	}
+	// <<< BACKPORT ATM #757
+
 	if (!dolibarr_set_const($db, 'PRODUIT_ATTRIBUTES_SEPARATOR', GETPOST('PRODUIT_ATTRIBUTES_SEPARATOR'), 'chaine', 0, '', $conf->entity)) {
 		setEventMessages($langs->trans('CoreErrorMessage'), null, 'errors');
 		$error++;
@@ -93,6 +100,11 @@ print '</tr>'."\n";
 
 print '<tr class="oddeven"><td>'.$langs->trans('HideProductCombinations').'</td><td>';
 print $form->selectyesno("PRODUIT_ATTRIBUTES_HIDECHILD", getDolGlobalString('PRODUIT_ATTRIBUTES_HIDECHILD'), 1).'</td></tr>';
+
+// >>> BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+print '<tr class="oddeven"><td>'.$form->textwithpicto($langs->trans('ShowProductCombinationsInList'), $langs->trans('ShowProductCombinationsInListHelp')).'</td><td>';
+print $form->selectyesno("PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST", getDolGlobalString('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'), 1).'</td></tr>';
+// <<< BACKPORT ATM #757
 
 print '<tr class="oddeven"><td>'.$langs->trans('CombinationsSeparator').'</td>';
 

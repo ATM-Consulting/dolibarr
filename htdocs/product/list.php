@@ -123,11 +123,22 @@ $search_finished = GETPOST("search_finished");
 $search_units = GETPOST('search_units', 'int');
 $type = GETPOST("type", 'alpha');
 
+// >>> BACKPORT ATM #757 (PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST) - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
 // Show/hide child product variants
+// The default state is driven by the option PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST (0 = hidden, 1 = shown).
+// An unchecked checkbox is not posted, so we rely on GETPOSTISSET and the search button to tell apart a
+// fresh page load (apply default) from a form voluntarily submitted with the box unchecked (respect off).
 $show_childproducts = 0;
 if (isModEnabled('variants')) {
-	$show_childproducts = GETPOST('search_show_childproducts');
+	if (GETPOSTISSET('search_show_childproducts')) {
+		$show_childproducts = GETPOSTINT('search_show_childproducts');
+	} elseif (GETPOST('button_search', 'alpha') || GETPOST('button_search_x', 'alpha') || GETPOST('button_search.x', 'alpha')) {
+		$show_childproducts = 0; // form submitted with the box unchecked -> respect off
+	} else {
+		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'); // fresh page load -> default
+	}
 }
+// <<< BACKPORT ATM #757
 
 $diroutputmassaction = $conf->product->dir_output.'/temp/massgeneration/'.$user->id;
 
@@ -400,7 +411,7 @@ if (empty($reshook)) {
 		$search_finished = '';
 		//$search_type='';						// There is 2 types of list: a list of product and a list of services. No list with both. So when we clear search criteria, we must keep the filter on type.
 
-		$show_childproducts = '';
+		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'); // BACKPORT ATM #757 - natif dès Dolibarr 24.0 (défaut au lieu de '')
 		$search_import_key = '';
 		$search_stockable_product = '';
 		$search_accountancy_code_sell = '';
@@ -826,9 +837,12 @@ if ($search_vatrate) {
 if ($fourn_id > 0) {
 	$param .= "&fourn_id=".urlencode((string) ($fourn_id));
 }
-if ($show_childproducts) {
-	$param .= ($show_childproducts ? "&search_show_childproducts=".urlencode($show_childproducts) : "");
+// >>> BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+if (isModEnabled('variants')) {
+	// Always carry the state (0 or 1) so pagination and sorting preserve an explicit "off" even when the default is "on"
+	$param .= "&search_show_childproducts=".urlencode((string) ($show_childproducts ? 1 : 0));
 }
+// <<< BACKPORT ATM #757
 if ($type != '') {
 	$param .= '&type='.urlencode((string) ($type));
 }
@@ -984,7 +998,7 @@ if (isModEnabled('category') && $user->hasRight('categorie', 'read')) {
 // Show/hide child variant products
 if (isModEnabled('variants')) {
 	$moreforfilter .= '<div class="divsearchfield">';
-	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts"'.($show_childproducts ? 'checked="checked"' : '').'>';
+	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts" value="1"'.($show_childproducts ? ' checked="checked"' : '').'>'; // BACKPORT ATM #757 - value="1" natif dès Dolibarr 24.0 (sinon case cochée soumet "on" -> GETPOSTINT=0)
 	$moreforfilter .= ' <label for="search_show_childproducts">'.$langs->trans('ShowChildProducts').'</label>';
 	$moreforfilter .= '</div>';
 }
