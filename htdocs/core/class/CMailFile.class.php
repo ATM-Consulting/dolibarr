@@ -1300,6 +1300,8 @@ class CMailFile
 					$this->transport->setPassword(getDolGlobalString($keyforsmtppw));
 				}
 				if (getDolGlobalString($keyforsmtpauthtype) === "XOAUTH2") {
+					// BACKPORT PR #37329 (Dolibarr 23.0 -> 22.0_iseta): Microsoft Exchange Online OAuth
+					$this->transport->setAuthMode('XOAUTH2');
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php';
 
 					$supportedoauth2array = getSupportedOauth2Array();
@@ -1364,6 +1366,8 @@ class CMailFile
 							$this->transport->setPassword($tokenobj->getAccessToken());
 						} else {
 							$this->errors[] = "Token not found";
+							// BACKPORT PR #37329 (Dolibarr 23.0 -> 22.0_iseta): Microsoft Exchange Online OAuth
+							dol_syslog("CMailFile::sendfile: OAuth2 token object is not valid", LOG_ERR);
 						}
 					} catch (Exception $e) {
 						// Return an error if token not found
