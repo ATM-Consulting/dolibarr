@@ -672,7 +672,7 @@ NEW: Add conf PDF_HIDE_LINKED_OBJECT_IN_PUBLIC_NOTE to hide linked object in pub
 NEW: Add MULTICURRENCY_SHOW_ALSO_MAIN_CURRENCY_ON_PDF for legal requirement that need both currencies on PDF
 NEW: Add note public and private on order export
 NEW: Finish dev for API_ENABLE_COUNT_CALLS (count of API use is visible on user API key field)
-NEW: Add option PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST to show product variants by default in the products list
+NEW: Add option PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST to show product variants by default in the products list (backport ATM #757, native in Dolibarr 24.0)
 
 For developers:
 ---------------

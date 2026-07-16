@@ -55,11 +55,12 @@ if ($action) {
 		$error++;
 	}
 
-	// BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
-	if (!dolibarr_set_const($db, 'PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST', GETPOST('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'), 'chaine', 0, '', $conf->entity)) {
+	// >>> BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+	if (!dolibarr_set_const($db, 'PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST', GETPOST('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST', 'int'), 'chaine', 0, '', $conf->entity)) {
 		setEventMessages($langs->trans('CoreErrorMessage'), null, 'errors');
 		$error++;
 	}
+	// <<< BACKPORT ATM #757
 
 	if (!dolibarr_set_const($db, 'PRODUIT_ATTRIBUTES_SEPARATOR', GETPOST('PRODUIT_ATTRIBUTES_SEPARATOR'), 'chaine', 0, '', $conf->entity)) {
 		setEventMessages($langs->trans('CoreErrorMessage'), null, 'errors');
