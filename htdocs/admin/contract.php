@@ -161,7 +161,10 @@ if ($action == 'updateMask') {
 	$value = GETPOST('activate_hideClosedServiceByDefault', 'alpha');
 	$res3 = dolibarr_set_const($db, "CONTRACT_HIDE_CLOSED_SERVICES_BY_DEFAULT", $value, 'chaine', 0, '', $conf->entity);
 
-	if (!($res1 > 0) || !($res2 > 0) || !($res3 > 0)) {
+	$aliasurl = GETPOST('CONTRACT_SIGNATURE_ALIAS_URL', 'alphanohtml');
+	$res4 = dolibarr_set_const($db, "CONTRACT_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
+
+	if (!($res1 > 0) || !($res2 > 0) || !($res3 > 0) || !($res4 > 0)) {
 		$error++;
 	}
 
@@ -555,7 +558,16 @@ if ($conf->use_javascript_ajax) {
 }
 print '</td>';
 print '</tr>';
-
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("ContractSignatureAliasUrl"), $langs->trans("ContractSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip').'</td>';
+print '<td class="right">';
+print '<input class="flat minwidth300" type="text" name="CONTRACT_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('CONTRACT_SIGNATURE_ALIAS_URL')).'">';
+print '</td></tr>';
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("ContractSignatureUseProxyMode"), $langs->trans("ContractSignatureUseProxyModeHelp"), 1, 'help', '', 0, 2, 'proxymodetooltip').'</td>';
+print '<td class="right">';
+print ajax_constantonoff('CONTRACT_SIGNATURE_USE_PROXY_MODE', array(), null, 0, 0, 1, 2);
+print '</td></tr>';
 // Allow external download
 print '<tr class="oddeven">';
 print '<td>'.$langs->trans("AllowExternalDownload").'</td>';

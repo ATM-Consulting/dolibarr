@@ -1595,7 +1595,6 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 		print $hookmanager->resPrint;
 		print_liste_field_titre('', $_SERVER["PHP_SELF"], "", '', '', '', '', '', 'maxwidthsearch ');
 		print "</tr>\n";
-
 		// List of local BAN
 		foreach ($rib_list as $rib) {
 			$arrayofremoteban[$rib->stripe_card_ref] = $rib->stripe_card_ref;
@@ -1749,7 +1748,6 @@ if ($socid && $action != 'edit' && $action != 'create' && $action != 'editcard' 
 			$parameters = array('arrayfields' => array(), 'stripe_card_ref' => $rib->stripe_card_ref, 'stripe_account' => $rib->stripe_account, 'linetype' => 'stripeban');
 			$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $object); // Note that $action and $object may have been modified by hook
 			print $hookmanager->resPrint;
-
 			// Show online signature link
 			if (!getDolGlobalInt('SOCIETE_DISABLE_BANKACCOUNT') && getDolGlobalInt("SOCIETE_RIB_ALLOW_ONLINESIGN")) {
 				print '<td class="minwidth200 width200">';

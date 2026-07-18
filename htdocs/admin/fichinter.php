@@ -255,6 +255,15 @@ if ($action == 'updateMask') {
 	} else {
 		setEventMessages($langs->trans("Error"), null, 'errors');
 	}
+} elseif ($action == "set_FICHINTER_SIGNATURE_ALIAS_URL") {
+	$aliasurl = GETPOST('FICHINTER_SIGNATURE_ALIAS_URL', 'alphanohtml');
+	$res = dolibarr_set_const($db, "FICHINTER_SIGNATURE_ALIAS_URL", trim($aliasurl), 'chaine', 0, '', $conf->entity);
+	if (!($res > 0)) $error++;
+	if (!$error) {
+		setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
+	} else {
+		setEventMessages($langs->trans("Error"), null, 'errors');
+	}
 }
 
 
@@ -659,6 +668,30 @@ print '<input type="submit" class="button button-edit" value="'.$langs->trans("M
 print '</td>';
 print '</tr>';
 print '</form>';
+
+print '<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="action" value="set_FICHINTER_SIGNATURE_ALIAS_URL">';
+print '<tr class="oddeven">';
+print '<td>';
+print $form->textwithpicto($langs->trans("FichinterSignatureAliasUrl"), $langs->trans("FichinterSignatureAliasUrlHelp"), 1, 'help', '', 0, 2, 'aliasurltooltip');
+print '</td>';
+print '<td class="noborderbox">'; // Utilise 'noborderbox' pour aligner le champ de texte
+print '<input class="flat minwidth300" type="text" name="FICHINTER_SIGNATURE_ALIAS_URL" value="'.dol_escape_htmltag(getDolGlobalString('FICHINTER_SIGNATURE_ALIAS_URL')).'">';
+print '</td>';
+print '<td class="right">';
+print '<input type="submit" class="button button-edit" value="'.$langs->trans("Modify").'">';
+print '</td>';
+print '</tr>';
+print '<tr class="oddeven">';
+print '<td>'.$form->textwithpicto($langs->trans("FichinterSignatureUseProxyMode"), $langs->trans("FichinterSignatureUseProxyModeHelp"), 1, 'help', '', 0, 2, 'proxymodetooltip').'</td>';
+print '<td class="center">';
+print ajax_constantonoff('FICHINTER_SIGNATURE_USE_PROXY_MODE', array(), null, 0, 0, 1, 2);
+print '</td>';
+print '</tr>';
+print '</form>';
+
+
 // Allow external download
 print '<form action="'.$_SERVER["PHP_SELF"].'" method="post">';
 print '<input type="hidden" name="token" value="'.newToken().'">';

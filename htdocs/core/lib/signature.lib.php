@@ -42,7 +42,25 @@ function showOnlineSignatureUrl($type, $ref, $obj = null, $mode = '')
 		$out .= img_picto('', 'globe', 'class="pictofixedwidth"');
 	}
 	$out .= '<span class="opacitymedium">'.$langs->trans("ToOfferALinkForOnlineSignature", $servicename).'</span><br>';
-	$url = getOnlineSignatureUrl(0, $type, $ref, 1, $obj);
+	// 1. Construire le nom de la constante
+	$specific_alias_constant_name = getDolGlobalString(dol_strtoupper($type) . '_SIGNATURE_ALIAS_URL');
+
+	// 2. Récupérer la valeur BRUTE (ex: signature-propal.domaine.fr)
+	$alias_base_url_raw = !empty($specific_alias_constant_name) ? $specific_alias_constant_name : '';
+	$url_to_show = '';
+
+	// 3. Si la constante est définie...
+	if (!empty($alias_base_url_raw)) {
+		// 3a. Nettoyer l'entrée : supprimer les / à la fin et http(s):// au début
+		$cleaned_url = rtrim($alias_base_url_raw, '/');
+		$cleaned_url = preg_replace('#^https?://#', '', $cleaned_url); // Supprime http:// ou https://
+		// 3b. Forcer le https:// et ajouter la référence
+		$url_to_show = 'https://' . $cleaned_url . '/' . urlencode($ref);
+	} else {
+		// 4. Comportement par défaut : si pas d'alias, on prend l'URL complète
+		$url_to_show = getOnlineSignatureUrl(0, $type, $ref, 1, $obj);
+	}
+	$url = $url_to_show;
 	$out .= '<div class="urllink">';
 	if ($url == $langs->trans("FeatureOnlineSignDisabled")) {
 		$out .= $url;
@@ -115,7 +133,7 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		} else {
 			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : $obj->entity) : ''), '0');
 		}
-		/*
+				/*
 		if ($mode == 1) {
 			$out .= '&hashp=<span style="color: #666666">hash_of_file</span>';
 		} else {
@@ -125,12 +143,9 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 			if ($res <= 0) {
 				return 'FailedToGetProposal';
 			}
-
 			include_once DOL_DOCUMENT_ROOT.'/ecm/class/ecmfiles.class.php';
 			$ecmfile = new EcmFiles($db);
-
 			$ecmfile->fetch(0, '', $propaltmp->last_main_doc);
-
 			$hashp = $ecmfile->share;
 			if (empty($hashp)) {
 				$out = $langs->trans("FeatureOnlineSignDisabled");
@@ -145,7 +160,6 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
 			return 'Invalid parameter CONTRACT_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
 		}
-
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source=contract&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'contract_ref';
