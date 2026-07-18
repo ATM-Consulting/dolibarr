@@ -14971,7 +14971,11 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 				$out .= img_warning($langs->trans("Late")).' ';
 			}
 			$out .= "</span></span>\n";
-
+			// Début backport commit 8695d449abf27b31f5e7fc4e711d03bccb4e13a4
+			$out .= '<span class="time">';
+			$out .= $actionstatic->getLibStatut(2);
+			$out .= '</span>';
+			// Fin backport
 			// Ref
 			$out .= '<h3 class="timeline-header">';
 
