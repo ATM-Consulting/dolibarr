@@ -1,0 +1,11 @@
+
+ PORT 23.0 : migration du spécifique Carflex depuis 18.0_carflex - **20/07/2026**
+  - Audit 18.0 vs 18.0_carflex : 38 commits propres à Carflex (vs upstream Dolibarr).
+  - 37/38 = backports upstream / LTS communautaire / migration 18.x déjà présents en 23.0
+    (dont le patch wysiwyg 'Format' PR #26787, désormais natif en 23.0).
+  - Seul vrai spécifique reporté : includes/tcpdi/tcpdi_parser.php (voir ci-dessous).
+
+ FIX : includes/tcpdi/tcpdi_parser.php (marqués spé carflex) - **15/04/2026**
+  - Gestion des références PDF array/sans séparateur/objet 0_0
+  - Reconstruction référence xref pour PDF LibreOffice
+  - Protection $sarr contre les non-array

@@ -458,7 +458,16 @@ class tcpdi_parser {
     protected function decodeXrefStream($startxref, $xref=array()) {
         // try to read Cross-Reference Stream
         list($xrefobj, $unused) = $this->getRawObject($startxref);
-        $xrefcrs = $this->getIndirectObject($xrefobj[1], $startxref, true);
+        // spé carflex - Reconstruire la référence : pour OBJREF, les composants sont dans [1] et [2]
+        if ($xrefobj[0] == PDF_TYPE_OBJREF && isset($xrefobj[2])) {
+            $obj_ref_str = intval($xrefobj[1]).'_'.intval($xrefobj[2]);
+        } elseif ($xrefobj[0] == PDF_TYPE_OBJECT) {
+            $obj_ref_str = $xrefobj[1];
+        } else {
+            $obj_ref_str = (string) $xrefobj[1];
+        }
+        $xrefcrs = $this->getIndirectObject($obj_ref_str, $startxref, true);
+        // fin spé carflex
         if (!isset($xref['xref_location'])) {
             $xref['xref_location'] = $startxref;
             $xref['max_object'] = 0;
@@ -476,7 +485,7 @@ class tcpdi_parser {
             $filltrailer = false;
         }
         $valid_crs = false;
-        $sarr = $xrefcrs[0][1];
+        $sarr = isset($xrefcrs[0][1]) && is_array($xrefcrs[0][1]) ? $xrefcrs[0][1] : array(); // spé carflex
         $keys = array_keys($sarr);
         $columns = 1; // Default as per PDF 32000-1:2008.
         $predictor = 1; // Default as per PDF 32000-1:2008.
@@ -934,11 +943,31 @@ class tcpdi_parser {
      * @since 1.0.000 (2011-05-24)
      */
     protected function getIndirectObject($obj_ref, $offset=0, $decoding=true) {
-        $obj = explode('_', $obj_ref);
+        // spé carflex - Gestion des références d'objets PDF LibreOffice (array, sans séparateur, objet 0_0)
+        if (is_array($obj_ref)) {
+            if (count($obj_ref) >= 2) {
+                $obj = array((string) $obj_ref[0], (string) $obj_ref[1]);
+            } else {
+                return array('null', 'null', $offset);
+            }
+        } else {
+            $obj_ref = (string) $obj_ref;
+            if (strpos($obj_ref, '_') !== false) {
+                $obj = explode('_', $obj_ref);
+            } elseif (strpos($obj_ref, ' ') !== false) {
+                $obj = explode(' ', $obj_ref);
+            } else {
+                return array('null', 'null', $offset);
+            }
+        }
         if (($obj === false) OR (count($obj) != 2)) {
-            $this->Error('Invalid object reference: '.$obj);
+            $this->Error('Invalid object reference: '.(is_array($obj) ? implode('_', $obj) : $obj));
             return;
         }
+        if ((int) $obj[0] === 0 && (int) $obj[1] === 0) {
+            return array('null', 'null', $offset);
+        }
+        // fin spé carflex
         $objref = $obj[0].' '.$obj[1].' obj';
 
         if (strpos($this->pdfdata, $objref, $offset) != $offset) {
