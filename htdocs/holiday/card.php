@@ -405,7 +405,9 @@ if (empty($reshook)) {
 				if (!$error) {
 					$object->description = $description;
 					$object->date_debut = $date_debut;
+					$object->date_debut_gmt = $date_debut_gmt;
 					$object->date_fin = $date_fin;
+					$object->date_fin_gmt = $date_fin_gmt;
 					$object->fk_validator = $approverid;
 					$object->halfday = $halfday;
 
