@@ -390,7 +390,13 @@ if (isModEnabled('category')) {
 // User
 print '<tr><td>'.$langs->trans("CreatedBy").'</td><td>';
 print img_picto('', 'user', 'class="pictofixedwidth"');
-print $form->select_dolusers($userid, 'userid', 1, null, 0, '', '', '0', 0, 0, '', 0, '', 'widthcentpercentminusx maxwidth300');
+// >>> BACKPORT Dolibarr #39256 - keep the "Created by" filter empty instead of defaulting to the current user.
+// The stats query is not filtered on the current user on first load, so preselecting them here wrongly suggests
+// the displayed figures are limited to that user while they are actually global. Pass -1 (not 0) so the combo
+// keeps its empty entry; -1 posts back and the query turns it into "no user filter", keeping the round-trip consistent.
+// Native once the upstream 23.0 fix (PR Dolibarr #39256) is merged back: remove this block at the next 23.0 merge.
+print $form->select_dolusers(($userid > 0 ? $userid : -1), 'userid', 1, null, 0, '', '', '0', 0, 0, '', 0, '', 'widthcentpercentminusx maxwidth300');
+// <<< BACKPORT Dolibarr #39256
 // Status
 print '<tr><td>'.$langs->trans("Status").'</td><td>';
 if ($mode == 'customer') {
