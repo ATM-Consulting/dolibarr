@@ -1938,12 +1938,14 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 		$format = 'day';
 		foreach ($dbatch as $detail) {
 			$dte = array();
-			if ($detail->eatby) {
-				$dte[] = $outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs));
-			}
-			if ($detail->sellby) {
-				$dte[] = $outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs));
-			}
+			// SPE AMA (ticket DA021660) : ne jamais afficher DLC/DLUO (eatby/sellby) sur les BL / documents PDF.
+			// if ($detail->eatby) {
+			// 	$dte[] = $outputlangs->transnoentitiesnoconv('printEatby', dol_print_date($detail->eatby, $format, false, $outputlangs));
+			// }
+			// if ($detail->sellby) {
+			// 	$dte[] = $outputlangs->transnoentitiesnoconv('printSellby', dol_print_date($detail->sellby, $format, false, $outputlangs));
+			// }
+			// FIN SPE AMA
 			if ($detail->batch) {
 				$dte[] = $outputlangs->transnoentitiesnoconv('printBatch', $detail->batch);
 			}
@@ -1961,6 +1963,22 @@ function pdf_getlinedesc($object, $i, $outputlangs, $hideref = 0, $hidedesc = 0,
 					}
 				}
 			}
+
+			// SPE AMA : ajoute le n° d'inventaire AMA à la suite du n° de série sur le PDF (via cliama).
+			if (!function_exists('getInventoryCodeForBatch')) {
+				$cliamaLib = dol_buildpath('cliama/lib/cliama.lib.php', 0);
+				if (is_file($cliamaLib)) {
+					include_once $cliamaLib;
+				}
+			}
+			if (function_exists('getInventoryCodeForBatch')) {
+				$outputlangs->load("cliama@cliama");
+				$inventoryCode = getInventoryCodeForBatch($object->lines[$i]->fk_product, $detail->batch);
+				if (!empty($inventoryCode)) {
+					$dte[] = $outputlangs->transnoentitiesnoconv('InventoryNumber', $inventoryCode);
+				}
+			}
+			// FIN SPE AMA
 
 			$libelleproduitservice .= "__N__  ".implode(" - ", $dte);
 		}

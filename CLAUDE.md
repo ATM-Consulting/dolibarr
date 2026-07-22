@@ -25,6 +25,7 @@ l'irréductible sans point d'extension. Voir `htdocs/ChangeLog-ATM.md`.
 Chaque montée de version Dolibarr doit les **ré-appliquer**. Liste tenue à jour dans `htdocs/ChangeLog-ATM.md`.
 - `htdocs/expedition/class/expedition.class.php` — `setClosed($notrigger = 0)` : permet de clôturer sans relancer le trigger `SHIPPING_CLOSED` (le workflow prépa/transit de `cliama` pilote ses propres mouvements de stock).
 - `htdocs/core/class/conf.class.php` — le forçage v23 `STOCK_CALCULATE_ON_SHIPMENT_CLOSE=1` (déclenché par `productbatch`) est **gardé par la const `CLIAMA_MANAGE_SHIPMENT_STOCK`**. Sans ce garde, le core décrémente le stock depuis l'entrepôt d'origine à la clôture, en conflit avec `cliama` (régression v23 absente en v13). La const est posée par le descripteur `cliama` (`$this->const[]`).
+- `htdocs/core/lib/pdf.lib.php` — `pdf_getlinedesc()` : (1) masque DLC/DLUO (`eatby`/`sellby`) sur tous les PDF de lignes (ticket DA021660) ; (2) ajoute le n° d'inventaire AMA à la suite du n° de lot/série, via `getInventoryCodeForBatch()` du module `cliama` (chargé dynamiquement par `dol_buildpath`, sans dépendance dure — patch inerte si `cliama` absent).
 
 ## Build / Test
 - Tests unitaires : `test/phpunit/` (PHPUnit) — `phpunit -c test/phpunit/phpunittest.xml`

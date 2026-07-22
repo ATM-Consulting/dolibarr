@@ -152,16 +152,16 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
   seule fois à l'activation du module (donc modifiables ensuite)
 - ⚠️ bloc dupliqué à l'identique dans `modProductBatch::init()` → à dédoublonner au portage.
 
-### PDF : retrait des dates eatby/sellby (DLC/DLUO) — Cible v23 : 23.0_ama
+### PDF : retrait des dates eatby/sellby (DLC/DLUO) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - FIX ticket DA021660 — 23/03/2022
 - fichier : `htdocs/core/lib/pdf.lib.php`, fonction `pdf_getlinedesc`
 - retrait des informations eatby et sellby des PDF (BL / Shipping Invoice)
-- alternative v23 : constante `PRODUCT_DISABLE_*` ou modèle PDF dédié cliama.
+- v23 : **patch appliqué** — les blocs `eatby`/`sellby` sont commentés (`SPE AMA` / `FIN SPE AMA`).
 
-### PDF : n° d'inventaire (code-barre) sur la description de ligne — Cible v23 : 23.0_ama
+### PDF : n° d'inventaire (code-barre) sur la description de ligne — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - fichier : `htdocs/core/lib/pdf.lib.php`, fonction `pdf_getlinedesc`
 - ajoute le n° d'inventaire à la suite du n° de série (`getInventoryCodeForBatch` via `cliama.lib`)
-- clé `InventoryNumber`. Idéalement déplacer le point d'injection dans un modèle PDF cliama.
+- clé `InventoryNumber`. v23 : **patch appliqué** — `cliama.lib` chargé dynamiquement par `dol_buildpath` + garde `function_exists`, donc inerte si `cliama` absent (pas de dépendance dure du core vers le module).
 
 ## Non conservés / bruit (à ne pas porter)
 
