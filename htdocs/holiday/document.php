@@ -139,6 +139,13 @@ if ($object->id) {
 
 	// Build file list
 	$filearray = dol_dir_list($upload_dir, "files", 0, '', '(\.meta|_preview.*\.png)$', $sortfield, (strtolower($sortorder) == 'desc' ? SORT_DESC : SORT_ASC), 1);
+	/*
+	    [ATM-MDV] Début divergence ATM à retirer lors de la MDV v23+ :
+	    dossier de stockage partagé entre demandes (get_exdir niveau 2). En v23 le
+	    stockage devient propre par référence : supprimer la ligne de filtrage ci-dessous.
+	*/
+	$filearray = holidayFilterOwnedFiles($filearray, $object);
+	/* [ATM-MDV] Fin divergence ATM */
 	$totalsize = 0;
 	foreach ($filearray as $key => $file) {
 		$totalsize += $file['size'];
