@@ -112,8 +112,8 @@ if (empty($reshook)) {
 		for ($i = 0; $i < $maxprod; $i++) {
 			$qty = price2num(GETPOST("prod_qty_" . $i, 'alpha'), 'MS');
 			if ($qty > 0) {
-				if ($object->add_sousproduit($id, GETPOSTINT("prod_id_" . $i), (float) $qty, GETPOSTINT("prod_incdec_" . $i)) > 0) {
-					//var_dump($i.' '.GETPOST("prod_id_".$i, 'int'), $qty, GETPOST("prod_incdec_".$i, 'int'));
+				// SPE AMA : 6e param $optional (composant optionnel/de base dans le kit)
+				if ($object->add_sousproduit($id, GETPOSTINT("prod_id_" . $i), (float) $qty, GETPOSTINT("prod_incdec_" . $i), 0, GETPOSTINT("prod_optional_" . $i)) > 0) {
 					$action = 'edit';
 				} else {
 					$error++;
@@ -144,7 +144,8 @@ if (empty($reshook)) {
 		if (!empty($TProduct)) {
 			foreach ($TProduct as $id_product => $row) {
 				if ($row['qty'] > 0) {
-					$object->update_sousproduit($id, $id_product, $row['qty'], isset($row['incdec']) ? 1 : 0);
+					// SPE AMA : 6e param $optional
+					$object->update_sousproduit($id, $id_product, $row['qty'], isset($row['incdec']) ? 1 : 0, 0, isset($row['optional']) ? 1 : 0);
 				} else {
 					$object->del_sousproduit($id, $id_product);
 				}
@@ -457,6 +458,7 @@ if ($id > 0 || !empty($ref)) {
 			//print '<th class="liste_titre center">'.$langs->trans("IsInPackage").'</td>';
 			print '<th class="liste_titre right">'.$langs->trans("Qty").'</td>';
 			print '<th class="center">'.$langs->trans('ComposedProductIncDecStock').'</th>';
+			print '<th class="center">'.$langs->trans('ComposedProductOptional').'</th>'; // SPE AMA
 			print '</tr>';
 			$i = 0;
 			$num = 0;
@@ -464,7 +466,7 @@ if ($id > 0 || !empty($ref)) {
 				$num = $db->num_rows($resql);
 
 				if ($num == 0) {
-					print '<tr><td colspan="4"><span class="opacitymedium">'.$langs->trans("NoMatchFound").'</span></td></tr>';
+					print '<tr><td colspan="5"><span class="opacitymedium">'.$langs->trans("NoMatchFound").'</span></td></tr>'; // SPE AMA : +1 colonne optional
 				}
 
 				$MAX = 100;
@@ -522,10 +524,12 @@ if ($id > 0 || !empty($ref)) {
 							//$addchecked = ' checked';
 							$qty = $object->is_sousproduit_qty;
 							$incdec = $object->is_sousproduit_incdec;
+							$optional = $object->is_sousproduit_optional; // SPE AMA
 						} else {
 							//$addchecked = '';
 							$qty = 0;
 							$incdec = 0;
+							$optional = 0; // SPE AMA
 						}
 						// Contained into package
 						/*print '<td class="center"><input type="hidden" name="prod_id_'.$i.'" value="'.$objp->rowid.'">';
@@ -544,6 +548,15 @@ if ($id > 0 || !empty($ref)) {
 						}
 						print '</td>';
 
+						// SPE AMA : composant optionnel/de base
+						print '<td class="center">';
+						if ($qty) {
+							print '<input type="checkbox" name="prod_optional_'.$i.'" value="1" '.($optional ? 'checked' : '').'>';
+						} else {
+							print '<input type="checkbox" name="prod_optional_'.$i.'" value="1">';
+						}
+						print '</td>';
+
 						print '</tr>';
 					}
 					$i++;
@@ -554,6 +567,7 @@ if ($id > 0 || !empty($ref)) {
 					print '<td></td>';
 					print '<td></td>';
 					print '<td></td>';
+					print '<td></td>'; // SPE AMA : colonne optional
 					print '</tr>';
 				}
 			} else {
@@ -605,6 +619,8 @@ if ($id > 0 || !empty($ref)) {
 		print '<th class="right">'.$langs->trans('Qty').'</th>';
 		// Stoc inc/dev
 		print '<th class="center">'.$langs->trans('ComposedProductIncDecStock').'</th>';
+		// SPE AMA : composant optionnel/de base
+		print '<th class="center">'.$langs->trans('ComposedProductOptional').'</th>';
 		// Move
 		print '<th class="linecolmove" style="width: 10px"></th>';
 		print '</tr>'."\n";
@@ -689,9 +705,12 @@ if ($id > 0 || !empty($ref)) {
 					if ($user->hasRight('produit', 'creer') || $user->hasRight('service', 'creer')) {
 						print '<td class="center"><input type="text" value="'.$nb_of_subproduct.'" name="TProduct['.$productstatic->id.'][qty]" class="right width40" /></td>';
 						print '<td class="center"><input type="checkbox" name="TProduct['.$productstatic->id.'][incdec]" value="1" '.($value['incdec'] == 1 ? 'checked' : '').' /></td>';
+						// SPE AMA : composant optionnel/de base
+						print '<td class="center"><input type="checkbox" name="TProduct['.$productstatic->id.'][optional]" value="1" '.(!empty($value['optional']) ? 'checked' : '').' /></td>';
 					} else {
 						print '<td>'.$nb_of_subproduct.'</td>';
 						print '<td>'.($value['incdec'] == 1 ? 'x' : '').'</td>';
+						print '<td>'.(!empty($value['optional']) ? 'x' : '').'</td>'; // SPE AMA
 					}
 
 					// Move action
@@ -744,6 +763,9 @@ if ($id > 0 || !empty($ref)) {
 					print '<td class="right">'.dol_escape_htmltag((string) $value['nb']).'</td>';
 
 					// Inc/dec
+					print '<td>&nbsp;</td>';
+
+					// SPE AMA : colonne optionnel/de base (sous-produit d'un sous-kit)
 					print '<td>&nbsp;</td>';
 
 					// Action move
@@ -808,7 +830,7 @@ if ($id > 0 || !empty($ref)) {
 
 			print '</tr>'."\n";
 		} else {
-			$colspan = 10;
+			$colspan = 11; // SPE AMA : +1 colonne optional (composant optionnel/de base)
 			if (isModEnabled('stock')) {
 				$colspan++;
 			}

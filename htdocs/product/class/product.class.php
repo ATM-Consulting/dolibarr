@@ -822,6 +822,15 @@ class Product extends CommonObject
 	 */
 	public $is_sousproduit_incdec;
 
+	// SPE AMA : dans un kit, composant marqué "optionnel / de base" (colonne product_association.optional)
+	/**
+	 * If this Product is within a kit: 1 = optional component, 0 = base/mandatory component
+	 *
+	 * @var int<0,1>
+	 * @see Product::is_sousproduit()		To set this property
+	 */
+	public $is_sousproduit_optional;
+
 	/**
 	 * @var int
 	 */
@@ -4920,9 +4929,10 @@ class Product extends CommonObject
 	 * @param  float $qty     Quantity
 	 * @param  int $incdec  1=Increase/decrease stock of child when parent stock increase/decrease
 	 * @param  int $notrigger	Disable triggers
+	 * @param  int $optional	SPE AMA : 1=composant optionnel, 0=composant de base/obligatoire
 	 * @return int                Return integer < 0 if KO, > 0 if OK
 	 */
-	public function add_sousproduit($id_pere, $id_fils, $qty, $incdec = 1, $notrigger = 0)
+	public function add_sousproduit($id_pere, $id_fils, $qty, $incdec = 1, $notrigger = 0, $optional = 0)
 	{
 		// phpcs:enable
 		global $user;
@@ -4936,6 +4946,10 @@ class Product extends CommonObject
 		}
 		if (!is_numeric($incdec)) {
 			$incdec = 0;
+		}
+		// SPE AMA
+		if (!is_numeric($optional)) {
+			$optional = 0;
 		}
 
 		$result = $this->del_sousproduit($id_pere, $id_fils);
@@ -4958,8 +4972,9 @@ class Product extends CommonObject
 				$obj = $this->db->fetch_object($resql);
 				$rank = $obj->max_rank + 1;
 				//Addition of a product with the highest rank +1
-				$sql = "INSERT INTO ".$this->db->prefix()."product_association(fk_product_pere,fk_product_fils,qty,incdec,rang)";
-				$sql .= " VALUES (".((int) $id_pere).", ".((int) $id_fils).", ".price2num($qty, 'MS').", ".((int) $incdec).", ".((int) $rank).")";
+				// SPE AMA : colonne optional (composant optionnel/de base)
+				$sql = "INSERT INTO ".$this->db->prefix()."product_association(fk_product_pere,fk_product_fils,qty,incdec,rang,optional)";
+				$sql .= " VALUES (".((int) $id_pere).", ".((int) $id_fils).", ".price2num($qty, 'MS').", ".((int) $incdec).", ".((int) $rank).", ".((int) $optional).")";
 				if (! $this->db->query($sql)) {
 					dol_print_error($this->db);
 					return -1;
@@ -4993,9 +5008,10 @@ class Product extends CommonObject
 	 * @param  float $qty     Quantity
 	 * @param  int $incdec  1=Increase/decrease stock of child when parent stock increase/decrease
 	 * @param  int $notrigger	Disable triggers
+	 * @param  int $optional	SPE AMA : 1=composant optionnel, 0=composant de base/obligatoire
 	 * @return int                Return integer < 0 if KO, > 0 if OK
 	 */
-	public function update_sousproduit($id_pere, $id_fils, $qty, $incdec = 1, $notrigger = 0)
+	public function update_sousproduit($id_pere, $id_fils, $qty, $incdec = 1, $notrigger = 0, $optional = 0)
 	{
 		// phpcs:enable
 		global $user;
@@ -5013,10 +5029,15 @@ class Product extends CommonObject
 		if (!is_numeric($qty)) {
 			$qty = 1;
 		}
+		// SPE AMA
+		if (!is_numeric($optional)) {
+			$optional = 0;
+		}
 
 		$sql = 'UPDATE '.$this->db->prefix().'product_association SET ';
 		$sql .= 'qty = '.price2num($qty, 'MS');
 		$sql .= ',incdec = '.((int) $incdec);
+		$sql .= ',optional = '.((int) $optional); // SPE AMA
 		$sql .= ' WHERE fk_product_pere = '.((int) $id_pere).' AND fk_product_fils = '.((int) $id_fils);
 
 		if (!$this->db->query($sql)) {
@@ -5113,7 +5134,7 @@ class Product extends CommonObject
 	public function is_sousproduit($fk_parent, $fk_child)
 	{
 		// phpcs:enable
-		$sql = "SELECT fk_product_pere, qty, incdec";
+		$sql = "SELECT fk_product_pere, qty, incdec, optional"; // SPE AMA : + optional
 		$sql .= " FROM ".$this->db->prefix()."product_association";
 		$sql .= " WHERE fk_product_pere  = ".((int) $fk_parent);
 		$sql .= " AND fk_product_fils = ".((int) $fk_child);
@@ -5127,6 +5148,7 @@ class Product extends CommonObject
 
 				$this->is_sousproduit_qty = $obj->qty;
 				$this->is_sousproduit_incdec = $obj->incdec;
+				$this->is_sousproduit_optional = $obj->optional; // SPE AMA
 
 				return 1;
 			} else {
@@ -5374,8 +5396,9 @@ class Product extends CommonObject
 		// phpcs:enable
 		$this->db->begin();
 
-		$sql = 'INSERT INTO '.$this->db->prefix().'product_association (fk_product_pere, fk_product_fils, qty, incdec)';
-		$sql .= " SELECT ".((int) $toId).", fk_product_fils, qty, incdec FROM ".$this->db->prefix()."product_association";
+		// SPE AMA : recopier aussi la colonne optional (composant optionnel/de base) au clonage du kit
+		$sql = 'INSERT INTO '.$this->db->prefix().'product_association (fk_product_pere, fk_product_fils, qty, incdec, optional)';
+		$sql .= " SELECT ".((int) $toId).", fk_product_fils, qty, incdec, optional FROM ".$this->db->prefix()."product_association";
 		$sql .= " WHERE fk_product_pere = ".((int) $fromId);
 
 		dol_syslog(get_class($this).'::clone_association', LOG_DEBUG);
@@ -5465,6 +5488,7 @@ class Product extends CommonObject
 				$type = (!empty($desc_pere[2]) ? $desc_pere[2] : '');
 				$label = (!empty($desc_pere[3]) ? $desc_pere[3] : '');
 				$incdec = (!empty($desc_pere[4]) ? $desc_pere[4] : 0);
+				$optional = (!empty($desc_pere[8]) ? $desc_pere[8] : 0); // SPE AMA : composant optionnel/de base
 
 				//print "XXX We add id=".$id." - label=".$label." - nb=".$nb." - multiply=".$multiply." fullpath=".$compl_path.$label."\n";
 				if (is_null($tmpproduct)) {
@@ -5490,6 +5514,7 @@ class Product extends CommonObject
 					'desiredstock' => $tmpproduct->desiredstock,
 					'level' => $level,
 					'incdec' => $incdec,
+					'optional' => $optional, // SPE AMA : composant optionnel/de base
 					'entity' => $tmpproduct->entity
 				);
 
@@ -5669,7 +5694,8 @@ class Product extends CommonObject
 
 		$sql = "SELECT p.rowid, p.ref, p.label as label, p.fk_product_type,";
 		$sql .= " pa.qty as qty, pa.fk_product_fils as id, pa.incdec,";
-		$sql .= " pa.rowid as fk_association, pa.rang";
+		$sql .= " pa.rowid as fk_association, pa.rang,";
+		$sql .= " pa.optional"; // SPE AMA : composant optionnel/de base
 		$sql .= " FROM ".$this->db->prefix()."product as p,";
 		$sql .= " ".$this->db->prefix()."product_association as pa";
 		$sql .= " WHERE p.rowid = pa.fk_product_fils";
@@ -5705,7 +5731,8 @@ class Product extends CommonObject
 					4 => $rec['incdec'],
 					5 => $rec['ref'],
 					6 => $rec['fk_association'],
-					7 => $rec['rang']
+					7 => $rec['rang'],
+					8 => $rec['optional'] // SPE AMA : composant optionnel/de base
 				);
 				//$prods[$this->db->escape($rec['label'])]= array(0=>$rec['id'],1=>$rec['qty'],2=>$rec['fk_product_type']);
 				//$prods[$this->db->escape($rec['label'])]= array(0=>$rec['id'],1=>$rec['qty']);

@@ -298,6 +298,7 @@ PriceNumeric=Nombre
 DefaultPrice=Prix par défaut
 DefaultPriceLog=Historique des prix par défaut
 ComposedProductIncDecStock=Augmenter/Réduire le stock sur changement du stock du père
+ComposedProductOptional=Optionnel
 ComposedProduct=Produits fils
 MinSupplierPrice=Prix d'achat minimum
 MinCustomerPrice=Prix de vente minimum

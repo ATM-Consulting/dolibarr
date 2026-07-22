@@ -294,6 +294,7 @@ PriceNumeric=Number
 DefaultPrice=Default price
 DefaultPriceLog=Log of previous default prices
 ComposedProductIncDecStock=Increase/Decrease stock on parent change
+ComposedProductOptional=Optional
 ComposedProduct=Child products
 MinSupplierPrice=Minimum buying price
 MinCustomerPrice=Minimum selling price

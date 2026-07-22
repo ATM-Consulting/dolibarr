@@ -25,5 +25,6 @@ create table llx_product_association
   qty                   double NULL,
   incdec                integer DEFAULT 1, -- when set to 1 changing stock of product will change stock of linked product too
   rang                  integer DEFAULT 0,
+  optional              integer DEFAULT 0, -- SPE AMA : 1=composant optionnel, 0=composant de base dans un kit (produit compose)
   import_key            varchar(14) DEFAULT NULL
 )ENGINE=innodb;

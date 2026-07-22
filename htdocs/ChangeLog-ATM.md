@@ -105,21 +105,23 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
 
 ## Produit / Composition
 
-### Composant optionnel / de base dans un kit (produit composé) — Cible v23 : 23.0_ama
+### Composant optionnel / de base dans un kit (produit composé) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - fichiers : `htdocs/product/class/product.class.php` (`add_sousproduit`, `update_sousproduit`,
-  `is_sousproduit`, `getChildsArbo`), `htdocs/product/composition/card.php`
-- colonne `optional` sur `product_association` + flag « optionnel / de base » exposé jusqu'à `getChildsArbo`
-- clé `ComposedProductOptional`. ⚠️ `var_dump($qty)` en production (`composition/card.php:617`) à retirer.
-  Le consommateur du flag (explosion du kit à la commande) est dans `cliama` (trigger LINEORDER_INSERT).
+  `is_sousproduit`, `getChildsArbo`, `fetch_prod_arbo`), `htdocs/product/composition/card.php`,
+  `htdocs/install/mysql/tables/llx_product_association.sql`
+- colonne `optional` sur `product_association` + flag « optionnel / de base » exposé jusqu'à `getChildsArbo`/`fetch_prod_arbo`
+- clé `ComposedProductOptional` (fr_FR + en_US). Le consommateur du flag (explosion du kit à la commande) est dans `cliama` (trigger `LINEORDER_INSERT`, déjà présent).
+- v23 : **patch appliqué**. Différence v13→v23 : `$optional` ajouté en **6e** param (après `$notrigger` ajouté en v23) ; dans `getChildsArbo`/`fetch_prod_arbo`, `optional` porté à l'**index 8** (6/7 pris par `fk_association`/`rang` en v23, ≠ v13 où c'était l'index 6). `var_dump($qty)` de la v13 non repris. Colonne déjà présente dans la DB migrée (copie prod v13).
 
 ### Filtre « unité » sur la liste des produits — Cible v23 : 23.0_ama
 - fichier : `htdocs/product/list.php`
 - filtre par unité de mesure (`selectUnits`). Non marqué SPÉ AMA, utilité à confirmer.
 
-### Autocomplete produit : pas d'auto-sélection du candidat unique — Cible v23 : 23.0_ama
-- fichier : `htdocs/core/class/html.form.class.php` (`selectProducts()`, `$autoselect=0`)
-- ne pré-sélectionne plus le premier produit proposé dans l'autocomplétion. Transverse (tous les
-  sélecteurs produit) → contribuable upstream comme option.
+### Autocomplete produit : pas d'auto-sélection du candidat unique — Cible v23 : 23.0_ama ✅ RÉSOLU (const, sans patch core)
+- fichier v13 : `htdocs/core/class/html.form.class.php` (`selectProducts()`, `$autoselect=0` en dur)
+- v23 : le comportement est devenu **configurable** via la constante core `PRODUCT_SEARCH_AUTO_SELECT_IF_ONLY_ONE`
+  (défaut 1). **Aucun patch core** : la const est posée à `0` par le descripteur `cliama`
+  (`modcliama.class.php` `$this->const[]`), restaurant la parité v13 pour tous les sélecteurs produit.
 
 ## Réception / Dispatch fournisseur
 
@@ -146,11 +148,15 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
 
 ## Configuration / Cœur transverse
 
-### Modes de calcul de stock posés à l'activation (non forcés à chaque page) — Cible v23 : 23.0_ama
-- fichiers : `htdocs/core/class/conf.class.php`, `htdocs/core/modules/modProductBatch.class.php`
-- retire le forçage des constantes `STOCK_CALCULATE_ON_*` à chaque chargement de page ; posées une
-  seule fois à l'activation du module (donc modifiables ensuite)
-- ⚠️ bloc dupliqué à l'identique dans `modProductBatch::init()` → à dédoublonner au portage.
+### Modes de calcul de stock posés à l'activation (non forcés à chaque page) — Cible v23 : 23.0_ama ⚪ NON PORTÉ (parité déjà atteinte)
+- fichiers v13 : `htdocs/core/class/conf.class.php`, `htdocs/core/modules/modProductBatch.class.php`
+- v13 : `conf.class.php` ne force RIEN ; `modProductBatch::init()` posait les const une fois
+  (BILL=0, VALIDATE_ORDER=0, SHIPMENT=1, SHIPMENT_CLOSE=0, SUPPLIER_*=0, RECEPTION=1/CLOSE=0).
+- **Analyse v23** : le forçage v23 de `conf.class.php` produit **exactement les mêmes valeurs** qu'AMA
+  avait en v13 pour BILL/VALIDATE_ORDER/SUPPLIER_* (=0 identiques), et la logique expédition/réception
+  est **gardée** (respecte les valeurs migrées). La seule divergence réelle (SHIPMENT_CLOSE) est déjà
+  couverte par le patch `CLIAMA_MANAGE_SHIPMENT_STOCK`. → **parité fonctionnelle déjà atteinte** ; un port
+  (rendre les const modifiables) serait un changement core sans gain, à risque de régression. CDP : non listé.
 
 ### PDF : retrait des dates eatby/sellby (DLC/DLUO) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - FIX ticket DA021660 — 23/03/2022
