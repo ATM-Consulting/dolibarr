@@ -902,6 +902,22 @@ if ($conf->use_javascript_ajax) {
 print "</td>\n";
 print "</tr>\n";
 
+// SPE AMA : bascule UI du réglage STOCK_SHOW_ALL_BATCH_BY_DEFAULT (déplier/replier les lots sur l'onglet stock produit).
+// Patch v13 conservé : la constante existe et est forcée à 1 par défaut, mais aucun écran v23 ne permet de la repasser à 0.
+if (isModEnabled('productbatch')) {
+	print '<tr class="oddeven">';
+	print '<td>'.$langs->trans("ShowAllBatchByDefault").'</td>';
+	print '<td class="right">';
+	if ($conf->use_javascript_ajax) {
+		print ajax_constantonoff('STOCK_SHOW_ALL_BATCH_BY_DEFAULT');
+	} else {
+		$arrval = array('0' => $langs->trans("No"), '1' => $langs->trans("Yes"));
+		print $form->selectarray("STOCK_SHOW_ALL_BATCH_BY_DEFAULT", $arrval, getDolGlobalString('STOCK_SHOW_ALL_BATCH_BY_DEFAULT'));
+	}
+	print "</td>\n";
+	print "</tr>\n";
+}
+
 print '</table>';
 print '</div>';
 

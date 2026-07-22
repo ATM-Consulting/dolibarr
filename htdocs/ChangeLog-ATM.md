@@ -98,10 +98,11 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
 - filtre par projet, colonnes extensibles, hook `printFieldListValue`
 - **natif en v23** → drop (reporting détaillé = Métabase côté CDP).
 
-### Onglet stock produit : détail des lots repliable — Cible v23 : drop
+### Onglet stock produit : détail des lots repliable — Cible v23 : partiel (drop affichage + 23.0_ama toggle) ✅ APPLIQUÉ
 - fichiers : `htdocs/product/stock/product.php`, `htdocs/admin/stock.php`
 - collapse/expand du détail des lots par entrepôt + constante `STOCK_SHOW_ALL_BATCH_BY_DEFAULT`
-- **natif en v23** (contribué upstream par ATM) → drop.
+- **affichage natif en v23** (contribué upstream par ATM) → drop.
+- ⚠️ mais la **bascule UI admin** de la constante n'a **pas** été reprise upstream : la constante est forcée à 1 par défaut (`conf.class.php`) et pilote bien l'affichage (`product/stock/product.php`), sans aucun écran pour la repasser à 0. → toggle `ajax_constantonoff('STOCK_SHOW_ALL_BATCH_BY_DEFAULT')` restauré dans `htdocs/admin/stock.php` (guardé `isModEnabled('productbatch')`), sur `23.0_ama`. Trouvé par la vérif finale de complétude (V4).
 
 ## Produit / Composition
 
