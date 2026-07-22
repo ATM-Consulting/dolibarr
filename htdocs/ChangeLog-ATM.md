@@ -30,11 +30,23 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
   jamais suggérer plus que le stock réel quand un produit est présent sur plusieurs lignes
 - aucun point d'extension v23 → patch core. Nouvelle clé `StockQuantitiesAlreadyAllocatedOnPreviousLines`.
 
-### Clôture d'expédition sans déclenchement de trigger (`setClosed($notrigger)`) — Cible v23 : 23.0_ama
+### Clôture d'expédition sans déclenchement de trigger (`setClosed($notrigger)`) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - fichier : `htdocs/expedition/class/expedition.class.php` (`setClosed()`)
 - ajoute un paramètre `$notrigger` pour clôturer sans relancer `SHIPPING_CLOSED` (pilotage du
   workflow transit / stock locatif)
-- v23 : `setClosed()` **n'a pas** de paramètre `$notrigger` → patch / rework à prévoir.
+- v23 : `setClosed()` n'avait pas de `$notrigger` → **patch appliqué** sur `23.0_ama`
+  (`setClosed($notrigger = 0)` + garde `if (!$error && !$notrigger)` sur `call_trigger('SHIPPING_CLOSED')`).
+
+### Neutralisation du décrément stock standard à l'expédition (`conf.class.php`) — Cible v23 : 23.0_ama ✅ APPLIQUÉ *(nouveau patch v23)*
+- fichier : `htdocs/core/class/conf.class.php`
+- **Régression v23** (absente en 13.0_ama) : quand `productbatch` est activé, le core v23 **force**
+  `STOCK_CALCULATE_ON_SHIPMENT_CLOSE=1` → décrément stock standard depuis l'entrepôt d'origine de
+  l'expédition à la clôture, en **conflit** avec le workflow cliama (qui a déjà déplacé le stock
+  vers l'entrepôt de transit). Vérité terrain : la prod v13 n'a **aucun** mouvement « classified closed ».
+- **patch appliqué** : le forçage SHIPMENT/CLOSE est gardé par `if (empty(CLIAMA_MANAGE_SHIPMENT_STOCK))`,
+  restaurant le comportement v13 (cliama gère 100 % des mouvements d'expédition).
+- const `CLIAMA_MANAGE_SHIPMENT_STOCK=1` enregistrée au descripteur `cliama` (posée à l'install/upgrade).
+- découvert par l'e2e d'intégration (invisible à l'audit statique). Détail : `~/Claude/dolibarr/audit/audit-flux-expedition-cliama-v23.md`.
 
 ### Trigger `LINESHIPPINGBATCH_INSERT` — Cible v23 : cliama
 - fichier : `htdocs/expedition/class/expeditionbatch.class.php` (`create()`)

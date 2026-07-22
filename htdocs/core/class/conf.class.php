@@ -948,11 +948,17 @@ class Conf extends stdClass
 				// If module lot/serial enabled, we force the inc/dec mode to STOCK_CALCULATE_ON_SHIPMENT_CLOSE and STOCK_CALCULATE_ON_RECEPTION_CLOSE
 				$this->global->STOCK_CALCULATE_ON_BILL = 0;
 				$this->global->STOCK_CALCULATE_ON_VALIDATE_ORDER = 0;
-				if (empty($this->global->STOCK_CALCULATE_ON_SHIPMENT)) {
-					$this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE = 1;
-				}
-				if (empty($this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE)) {
-					$this->global->STOCK_CALCULATE_ON_SHIPMENT = 1;
+				// SPE AMA : le module cliama gère lui-même les mouvements de stock d'expédition
+				// (workflow préparation/transit/clôture). On ne force donc PAS le décrément standard
+				// sur validation/clôture d'expédition. Comportement v13 : STOCK_CALCULATE_ON_SHIPMENT_CLOSE
+				// restait à 0 (jamais forcé), aucun mouvement standard ; cliama fait tous les mouvements.
+				if (empty($this->global->CLIAMA_MANAGE_SHIPMENT_STOCK)) {
+					if (empty($this->global->STOCK_CALCULATE_ON_SHIPMENT)) {
+						$this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE = 1;
+					}
+					if (empty($this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE)) {
+						$this->global->STOCK_CALCULATE_ON_SHIPMENT = 1;
+					}
 				}
 				$this->global->STOCK_CALCULATE_ON_SUPPLIER_BILL = 0;
 				$this->global->STOCK_CALCULATE_ON_SUPPLIER_VALIDATE_ORDER = 0;

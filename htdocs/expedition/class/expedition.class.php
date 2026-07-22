@@ -2868,9 +2868,10 @@ class Expedition extends CommonObject
 	/**
 	 *	Classify the shipping as closed (this records also the stock movement)
 	 *
+	 *	@param	int		$notrigger	1 = ne pas déclencher le trigger SHIPPING_CLOSED (SPE AMA : le workflow préparation/transit cliama pilote ses propres mouvements de stock)
 	 *	@return     int     Return integer <0 if KO, >0 if OK
 	 */
-	public function setClosed()
+	public function setClosed($notrigger = 0)
 	{
 		global $user;
 
@@ -2929,7 +2930,8 @@ class Expedition extends CommonObject
 			}
 
 			// Call trigger
-			if (!$error) {
+			// SPE AMA : ne pas déclencher SHIPPING_CLOSED si $notrigger (workflow préparation/transit cliama pilote ses propres mouvements)
+			if (!$error && !$notrigger) {
 				$result = $this->call_trigger('SHIPPING_CLOSED', $user);
 				if ($result < 0) {
 					$error++;

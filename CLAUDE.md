@@ -21,6 +21,11 @@ Repartir de 23.0.3 officiel, ne PAS recopier les patchs core v13 à l'identique 
 comportement sur un hook/trigger v23 (→ `cliama`) et ne garder en patch core (`23.0_ama`) que
 l'irréductible sans point d'extension. Voir `htdocs/ChangeLog-ATM.md`.
 
+## Patches core AMA appliqués sur cette branche (`SPE AMA`)
+Chaque montée de version Dolibarr doit les **ré-appliquer**. Liste tenue à jour dans `htdocs/ChangeLog-ATM.md`.
+- `htdocs/expedition/class/expedition.class.php` — `setClosed($notrigger = 0)` : permet de clôturer sans relancer le trigger `SHIPPING_CLOSED` (le workflow prépa/transit de `cliama` pilote ses propres mouvements de stock).
+- `htdocs/core/class/conf.class.php` — le forçage v23 `STOCK_CALCULATE_ON_SHIPMENT_CLOSE=1` (déclenché par `productbatch`) est **gardé par la const `CLIAMA_MANAGE_SHIPMENT_STOCK`**. Sans ce garde, le core décrémente le stock depuis l'entrepôt d'origine à la clôture, en conflit avec `cliama` (régression v23 absente en v13). La const est posée par le descripteur `cliama` (`$this->const[]`).
+
 ## Build / Test
 - Tests unitaires : `test/phpunit/` (PHPUnit) — `phpunit -c test/phpunit/phpunittest.xml`
 - e2e : Playwright (instance de test locale)
