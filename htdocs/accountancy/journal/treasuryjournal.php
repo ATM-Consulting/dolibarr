@@ -221,9 +221,9 @@ if ($resql) {
 				$sql .= " LEFT JOIN ".$db->prefix()."accounting_account as aa ON aa.rowid = fd.fk_code_ventilation";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=f.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=f.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE f.entity IN (".getEntity('facture', 0).')'; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -338,9 +338,9 @@ if ($resql) {
 				$sql .= " LEFT JOIN ".$db->prefix()."accounting_account as aa ON aa.rowid = ffd.fk_code_ventilation";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=ff.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=ff.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE ff.entity IN (".getEntity('facture_fourn', 0).')'; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -452,9 +452,9 @@ if ($resql) {
 				$sql .= " LEFT JOIN ".$db->prefix()."accounting_account as aa ON aa.account_number = ctf.accountancy_code";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=er.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=er.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE er.entity IN (".getEntity('expensereport', 0).')'; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -555,9 +555,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.url_id = ps.rowid AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=ps.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=ps.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE ps.entity IN (".getEntity('user', 0).')'; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -623,9 +623,9 @@ if ($resql) {
 				$sql .= " LEFT JOIN ".$db->prefix()."c_chargesociales as ccs ON ccs.id = cs.fk_type";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=cs.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=cs.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE cs.entity = ".$conf->entity; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -690,9 +690,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.url_id = t.rowid AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=t.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=t.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE bu.fk_bank IN (".$db->sanitize(implode(',', $ids)).")";
 				// $sql .= " AND t.entity = " . $conf->entity; // TODO when entity is managed in tva
@@ -757,9 +757,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.url_id = pd.rowid AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=d.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=d.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE d.entity IN (".getEntity('donation', 0).')'; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -824,9 +824,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.url_id = pl.rowid AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=l.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=l.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE l.entity = ".$conf->entity; // We don't share object for accountancy, we use source object sharing
 				// Not already in bookkeeping
@@ -913,9 +913,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.url_id = pv.rowid AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=pv.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=pv.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE pv.entity IN (".getEntity('payment_various', 0).')';    // We don't share object for accountancy, we use source object sharing
 				$sql .= " AND bu.fk_bank IN (".$db->sanitize(implode(',', $ids)).")";
@@ -981,9 +981,9 @@ if ($resql) {
 				$sql .= " INNER JOIN ".$db->prefix()."bank_url as bu ON bu.fk_bank = su.fk_bank AND bu.type = '".$db->escape($type)."'";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=su.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=su.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE bu.fk_bank IN (".$db->sanitize(implode(',', $ids)).")";
 				// Not already in bookkeeping
@@ -1046,9 +1046,9 @@ if ($resql) {
 				$sql .= " LEFT JOIN ".$db->prefix()."bank_account as ba ON ba.rowid = b.fk_account";
 				// Already in bookkeeping or not
 				if ($in_bookkeeping == 'already') {
-					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=b.rowid";
+					$sql .= " INNER JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				} else {
-					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.fk_docdet=b.rowid";
+					$sql .= " LEFT JOIN ".$db->prefix()."accounting_bookkeeping as ab ON ab.fk_doc=bu.fk_bank AND ab.doc_type='bank'";
 				}
 				$sql .= " WHERE ba.entity IN (".getEntity('bank_account', 0).')'; // We don't share object for accountancy, we use source object sharing
 				$sql .= " AND bu.fk_bank IN (".$db->sanitize(implode(',', $ids)).")";
