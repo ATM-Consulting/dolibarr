@@ -109,10 +109,11 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
 ### Composant optionnel / de base dans un kit (produit composé) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
 - fichiers : `htdocs/product/class/product.class.php` (`add_sousproduit`, `update_sousproduit`,
   `is_sousproduit`, `getChildsArbo`, `fetch_prod_arbo`), `htdocs/product/composition/card.php`,
-  `htdocs/install/mysql/tables/llx_product_association.sql`
+  `htdocs/install/mysql/tables/llx_product_association.sql`,
+  `htdocs/install/mysql/migration/22.0.0-23.0.0.sql` (ALTER idempotent pour les instances déjà migrées)
 - colonne `optional` sur `product_association` + flag « optionnel / de base » exposé jusqu'à `getChildsArbo`/`fetch_prod_arbo`
 - clé `ComposedProductOptional` (fr_FR + en_US). Le consommateur du flag (explosion du kit à la commande) est dans `cliama` (trigger `LINEORDER_INSERT`, déjà présent).
-- v23 : **patch appliqué**. Différence v13→v23 : `$optional` ajouté en **6e** param (après `$notrigger` ajouté en v23) ; dans `getChildsArbo`/`fetch_prod_arbo`, `optional` porté à l'**index 8** (6/7 pris par `fk_association`/`rang` en v23, ≠ v13 où c'était l'index 6). `var_dump($qty)` de la v13 non repris. Colonne déjà présente dans la DB migrée (copie prod v13).
+- v23 : **patch appliqué**. Différence v13→v23 : `$optional` ajouté en **6e** param (après `$notrigger` ajouté en v23) ; dans `getChildsArbo`/`fetch_prod_arbo`, `optional` porté à l'**index 8** (6/7 pris par `fk_association`/`rang` en v23, ≠ v13 où c'était l'index 6). `var_dump($qty)` de la v13 non repris. Colonne déjà présente dans la DB migrée (copie prod v13) ; l'ALTER ajouté dans `22.0.0-23.0.0.sql` sécurise les migrations futures (idempotent, tolère « duplicate column »). PHPDoc `fetch_prod_arbo`/`getChildsArbo` mise à jour (shape du tableau étendue à l'index 8).
 
 ### Filtre « unité » sur la liste des produits — Cible v23 : 23.0_ama
 - fichier : `htdocs/product/list.php`

@@ -5462,7 +5462,7 @@ class Product extends CommonObject
 	 *  Function recursive, used only by get_arbo_each_prod(), to build tree of subproducts into ->res
 	 *  Define value of this->res
 	 *
-	 * @param  array<int,array{0:int,1:float,2:int,3:string,4:int,5:string}>	$prod					Products array
+	 * @param  array<int,array{0:int,1:float,2:int,3:string,4:int,5:string,6:int,7:int,8:int}>	$prod					Products array (index 8 = SPE AMA "optional" flag)
 	 * @param  string 															$compl_path 			Directory path of parents to add before
 	 * @param  int|float    													$multiply   			Because each sublevel must be multiplicated by parent nb
 	 * @param  int    															$level      			Init level
@@ -5684,7 +5684,7 @@ class Product extends CommonObject
 	 * @param	int		$firstlevelonly	Return only direct child
 	 * @param	int		$level			Level of recursing call (start to 1)
 	 * @param	int[]	$parents   	    Array of all parents of $id
-	 * @return	array<int,array{0:int,1:float,2:int,3:string,4:int,5:string}>|array{}|int<-1,-1>	Return array(prodid=>array(0=prodid, 1=>qty, 2=>product type, 3=>label, 4=>incdec, 5=>product ref,6:int,7:int)
+	 * @return	array<int,array{0:int,1:float,2:int,3:string,4:int,5:string,6:int,7:int,8:int}>|array{}|int<-1,-1>	Return array(prodid=>array(0=prodid, 1=>qty, 2=>product type, 3=>label, 4=>incdec, 5=>product ref, 6=fk_association, 7=rang, 8=optional [SPE AMA])
 	 */
 	public function getChildsArbo($id, $firstlevelonly = 0, $level = 1, $parents = array())
 	{

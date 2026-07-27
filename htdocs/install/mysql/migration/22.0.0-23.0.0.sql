@@ -437,4 +437,9 @@ INSERT INTO llx_accounting_system (fk_country, pcg_version, label, active) VALUE
 
 INSERT INTO llx_accounting_system (fk_country, pcg_version, label, active) VALUES (  4, 'PCG08-PYME-CAT', 'The PYME accountancy spanish plan in catalan language', 1);
 
+-- SPE AMA : composant de kit optionnel / de base -- colonne 'optional' sur product_association
+-- (patch product.class.php + composition/card.php). Idempotent : le moteur de migration Dolibarr
+-- tolère l'erreur "duplicate column" si la colonne existe déjà (instances AMA déjà migrées depuis v13).
+ALTER TABLE llx_product_association ADD COLUMN optional integer DEFAULT 0;
+
 -- end of migration
