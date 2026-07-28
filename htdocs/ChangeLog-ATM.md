@@ -30,12 +30,14 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
   jamais suggérer plus que le stock réel quand un produit est présent sur plusieurs lignes
 - aucun point d'extension v23 → patch core. Nouvelle clé `StockQuantitiesAlreadyAllocatedOnPreviousLines`.
 
-### Clôture d'expédition sans déclenchement de trigger (`setClosed($notrigger)`) — Cible v23 : 23.0_ama ✅ APPLIQUÉ
+### Clôture d'expédition sans déclenchement de trigger (`setClosed($notrigger)`) — Cible v23 : 23.0_ama ❌ RETIRÉ (redondant)
 - fichier : `htdocs/expedition/class/expedition.class.php` (`setClosed()`)
-- ajoute un paramètre `$notrigger` pour clôturer sans relancer `SHIPPING_CLOSED` (pilotage du
-  workflow transit / stock locatif)
-- v23 : `setClosed()` n'avait pas de `$notrigger` → **patch appliqué** sur `23.0_ama`
-  (`setClosed($notrigger = 0)` + garde `if (!$error && !$notrigger)` sur `call_trigger('SHIPPING_CLOSED')`).
+- en 13.0_ama : un paramètre `$notrigger` permettait de clôturer sans relancer `SHIPPING_CLOSED`.
+- v23 : patch d'abord porté (`setClosed($notrigger = 0)`), **puis RETIRÉ après double revue** :
+  aucun caller ne passait `1`, et surtout la neutralisation des mouvements standard est déjà
+  assurée par le gate `CLIAMA_MANAGE_SHIPMENT_STOCK` (section suivante). Passer `$notrigger=1`
+  aurait de plus coupé le trigger `SHIPPING_CLOSED` qui **pilote** le workflow cliama → contre-productif.
+  → retour à la signature upstream `setClosed()` pour minimiser la surface de patch core.
 
 ### Neutralisation du décrément stock standard à l'expédition (`conf.class.php`) — Cible v23 : 23.0_ama ✅ APPLIQUÉ *(nouveau patch v23)*
 - fichier : `htdocs/core/class/conf.class.php`
