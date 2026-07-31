@@ -71,17 +71,22 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
   `Non conservé` **mais le code est actif et récemment maintenu** → à confirmer avec le client.
   La date saisie n'affecte que l'enregistrement asset, pas le mouvement Dolibarr réel.
 
-### Blocage transfert entrepôt « neuf » → « occasion » — Cible v23 : cliama
+### Blocage transfert entrepôt « neuf » → « occasion » — Cible v23 : cliama ✅ APPLIQUÉ *(cliama 3.1.0)*
 - fichier : `htdocs/product/stock/massstockmove.php`
 - interdit le transfert d'un produit non sérialisé d'un entrepôt catégorie « neuf » vers « occasion »
   (constantes `CLIAMA_NEW_WAREHOUSE_CATEGORY` / `CLIAMA_USED_WAREHOUSE_CATEGORY`)
-- clé `NewCategoryCantGoToUsed` (présente en `fr_FR` uniquement).
+- porté via hook `addMassStockMoveLine` (contexte `massstockmove`) : `containsObject(Categorie::TYPE_WAREHOUSE, …)`
+  (le type `'stock'` de v13 n'existe plus en v23). Réglages restaurés sur la page de setup cliama.
+- clé `NewCategoryCantGoToUsed` complétée en `fr_FR` + `en_US`.
 
-### Contrôle de stock + sélecteur de lot à l'ajout (transfert masse) — Cible v23 : 23.0_ama + cliama
+### Contrôle de stock + sélecteur de lot à l'ajout (transfert masse) — Cible v23 : 23.0_ama + cliama ✅ APPLIQUÉ *(C06 — thin-fork, cliama 3.1.0)*
 - fichier : `htdocs/product/stock/massstockmove.php`
 - liste déroulante de lot alimentée en AJAX (entrepôt/produit), quantité en `input number` bornée
   au stock disponible, contrôle de disponibilité dès l'ajout de ligne
-- contrôle qty/stock = 23.0_ama (générique) ; sélecteur AJAX = cliama.
+- thin-fork : 3 points d'extension ajoutés au cœur (`23.0_ama`) — hook `printMassStockMoveBatchField`
+  (rendu du champ lot), `input number` pour la quantité, hook `addMassStockMoveLine` (véto serveur) ;
+  logique portée côté `cliama` (sélecteur AJAX + contrôle stock C06). Le refus des produits composés
+  (C20) n'est **pas** repris (décision CDP « pas garder »).
 
 ### Refonte du traitement `createmovements` (anti-stock négatif) — Cible v23 : 23.0_ama
 - fichier : `htdocs/product/stock/massstockmove.php` (`action=createmovements`)

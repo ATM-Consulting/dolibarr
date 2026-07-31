@@ -158,6 +158,16 @@ if ($action == 'addline' && $user->hasRight('stock', 'mouvement', 'creer')) {
 		}
 	}
 
+	// SPE AMA (cliama) : point d'extension pour validations custom à l'ajout de ligne (blocage neuf->occasion, contrôle du stock disponible)
+	if (!$error) {
+		$parameters = array('id_sw' => $id_sw, 'id_tw' => $id_tw, 'id_product' => $id_product, 'qty' => $qty, 'batch' => $batch, 'listofdata' => $listofdata);
+		$reshook = $hookmanager->executeHooks('addMassStockMoveLine', $parameters);
+		if ($reshook < 0) {
+			$error++;
+			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
+		}
+	}
+
 	//var_dump($_SESSION['massstockmove']);exit;
 	if (!$error) {
 		if (count(array_keys($listofdata)) > 0) {
@@ -709,11 +719,19 @@ print '</td>';
 if (isModEnabled('productbatch')) {
 	print '<td class="nowraponall">';
 	print img_picto($langs->trans("LotSerial"), 'lot', 'class="paddingright"');
-	print '<input type="text" name="batch" class="flat maxwidth75" value="'.dol_escape_htmltag((isset($batch) ? $batch : '')).'">';
+	// SPE AMA (cliama) : point d'extension pour remplacer la saisie libre du lot par un sélecteur AJAX borné au stock disponible
+	$parameters = array('id_sw' => $id_sw, 'id_product' => (isset($id_product) ? $id_product : 0), 'batch' => (isset($batch) ? $batch : ''));
+	$reshook = $hookmanager->executeHooks('printMassStockMoveBatchField', $parameters);
+	if ($reshook > 0) {
+		print $hookmanager->resPrint;
+	} else {
+		print '<input type="text" name="batch" class="flat maxwidth75" value="'.dol_escape_htmltag((isset($batch) ? $batch : '')).'">';
+	}
 	print '</td>';
 }
 // Qty
-print '<td class="right"><input type="text" class="flat maxwidth50 right" name="qty" value="'.price2num((float) (isset($qty) ? $qty : 0), 'MS').'"></td>';
+// SPE AMA (cliama) : type=number pour que le bornage JS (attribut max = stock disponible) s'applique
+print '<td class="right"><input type="number" step="any" min="0" class="flat maxwidth50 right" name="qty" value="'.price2num((float) (isset($qty) ? $qty : 0), 'MS').'"></td>';
 // Button to add line
 print '<td class="right"><input type="submit" class="button" name="addline" value="'.dol_escape_htmltag($titletoadd).'"></td>';
 
