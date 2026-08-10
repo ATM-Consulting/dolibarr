@@ -1,3 +1,4 @@
+- Backport FIX DA028585: (from 22.0) extrafields_view.tpl.php: date/datetime extrafields displayed empty after an inline (pencil) edit of another extrafield - **10/08/2026**
 - Backport FIX DA027258: (from PR#36401) missing GETPOSTISSET in perweek.php - **24/11/2025**
 - Backport FIX DA027383: security: check read permissions on evaluation cards - **19/11/2025**
 - NEW : Add merge project
