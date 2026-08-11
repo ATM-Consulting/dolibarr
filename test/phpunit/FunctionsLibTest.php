@@ -33,6 +33,7 @@ global $conf,$user,$langs,$db,$mysoc;
 require_once dirname(__FILE__).'/../../htdocs/master.inc.php';
 require_once dirname(__FILE__).'/../../htdocs/core/lib/date.lib.php';
 require_once dirname(__FILE__).'/../../htdocs/product/class/product.class.php';
+require_once dirname(__FILE__).'/../../htdocs/societe/class/societe.class.php';
 require_once dirname(__FILE__).'/CommonClassTest.class.php';
 
 if (! defined('NOREQUIREUSER')) {
@@ -108,6 +109,97 @@ class FunctionsLibTest extends CommonClassTest
 		print __METHOD__."\n";
 	}
 
+
+	/**
+	 * testGetExdirForObject
+	 *
+	 * get_exdir() with $level = 0 and $withoutslash = 1 is the reference implementation used to forge the
+	 * directory where the documents of an object are stored. FileUpload (the drag and drop of a file on a
+	 * card) relies on it to store the file into the directory read by the "Attached files" tab.
+	 *
+	 * @return void
+	 */
+	public function testGetExdirForObject()
+	{
+		global $db;
+
+		// The ref is used when it is defined
+		$object = new Product($db);
+		$object->id = 42;
+		$object->ref = 'MYREF';
+		$this->assertSame('MYREF', get_exdir(0, 0, 0, 1, $object, 'product'), 'The ref must be used when it is defined');
+
+		// The id is used as a fallback when the ref is empty
+		$object->ref = '';
+		$this->assertSame('42', get_exdir(0, 0, 0, 1, $object, 'product'), 'The id must be used when the ref is empty');
+
+		// The id is always used for a thirdparty, because its ref is a company name, so it is not unique
+		$thirdparty = new Societe($db);
+		$thirdparty->id = 7;
+		$thirdparty->ref = 'My company';
+		$this->assertSame('7', get_exdir(0, 0, 0, 1, $thirdparty, 'societe'), 'The id must be used for a thirdparty');
+		$this->assertSame('7', get_exdir(0, 0, 0, 1, $thirdparty, 'thirdparty'), 'The id must be used for a thirdparty');
+
+		// A module storing its documents on several levels returns the level directories only, not the object
+		$this->assertSame('2/4', get_exdir(0, 0, 0, 1, $object, 'invoice_supplier'), 'Two levels of directories are expected');
+	}
+
+	/**
+	 * testGetElementPropertiesDirOutput
+	 *
+	 * The 'dir_output' returned for an element must be the directory read by the "Attached files" tab of
+	 * this element, otherwise a file uploaded by drag and drop is stored but never shown to the user.
+	 *
+	 * @return void
+	 */
+	public function testGetElementPropertiesDirOutput()
+	{
+		global $conf;
+
+		// A contact is stored into a sub directory of the thirdparty module, see contact/document.php
+		if (isModEnabled('societe')) {
+			$prop = getElementProperties('contact');
+			$this->assertSame('societe', $prop['module']);
+			$this->assertStringEndsWith('/contact', $prop['dir_output'], 'A contact is stored into a /contact sub directory');
+		}
+
+		// A supplier payment must not be seen as the 'supplier' sub element of a 'payment' module
+		$prop = getElementProperties('payment_supplier');
+		$this->assertSame('payment_supplier', $prop['element'], 'The element must not be truncated by the myobject_mysubobject rule');
+		$this->assertSame('PaiementFourn', $prop['classname']);
+		$this->assertSame('fourn/class', $prop['classpath']);
+
+		$prop = getElementProperties('payment');
+		$this->assertSame('Paiement', $prop['classname']);
+		$this->assertSame('payment', $prop['element']);
+
+		$prop = getElementProperties('payment_various');
+		$this->assertSame('PaymentVarious', $prop['classname']);
+		$this->assertSame('payment_various', $prop['element']);
+
+		// The elements of the hrm module are all stored into a sub directory named after the element
+		$tables = array('job' => 'hrm_job', 'position' => 'hrm_job_user', 'skill' => 'hrm_skill', 'evaluation' => 'hrm_evaluation');
+		foreach ($tables as $element => $table) {
+			$prop = getElementProperties($element);
+			$this->assertSame('hrm', $prop['module'], 'The module of the element '.$element.' must be hrm');
+			$this->assertSame(ucfirst($element), $prop['classname']);
+			$this->assertSame($table, $prop['table_element'], 'Wrong table for the element '.$element);
+			if (isModEnabled('hrm')) {
+				$this->assertStringEndsWith('/'.$element, $prop['dir_output'], 'The element '.$element.' is stored into a /'.$element.' sub directory');
+			}
+		}
+
+		// The sub directory must not be appended when the module is disabled, otherwise we would return a path
+		// at the root of the file system (for example '/contact') instead of an empty string. So the directory
+		// of an element is either empty, or a directory of the data directory of Dolibarr.
+		foreach (array('contact', 'job', 'position', 'skill', 'evaluation', 'conferenceorbooth', 'partnership', 'stocktransfer') as $element) {
+			$prop = getElementProperties($element);
+			$this->assertTrue(
+				$prop['dir_output'] === '' || strpos($prop['dir_output'], DOL_DATA_ROOT) === 0,
+				'The dir_output of the element '.$element.' must be empty or inside DOL_DATA_ROOT, got "'.$prop['dir_output'].'"'
+			);
+		}
+	}
 
 	/**
 	 * testDolCheckFilters
