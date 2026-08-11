@@ -1346,7 +1346,7 @@ if ((empty($id) && empty($ref)) || $action == 'create' || $action == 'add') {
 					print '<input type="hidden" name="id" value="'.$object->id.'" />'."\n";
 				}
 
-				print dol_get_fiche_head($head, 'card', $langs->trans("CPTitreMenu"), -1, 'holiday');
+				print dol_get_fiche_head($head, 'card', $langs->trans("CPTitreMenu"), -1, 'holiday', 0, '', '', 0, '', 1);
 
 				$linkback = '<a href="'.DOL_URL_ROOT.'/holiday/list.php?restore_lastsearch_values=1">'.$langs->trans("BackToList").'</a>';
 
