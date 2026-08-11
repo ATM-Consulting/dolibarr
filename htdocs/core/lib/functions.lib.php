@@ -192,7 +192,13 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 			// Fetch the project to build the correct path
 			$object->fetchProject();
 
-			$subdirectory = '/'.$object->project->ref;
+			// The ref must be sanitized with dol_sanitizeFileName() and not only with dol_sanitizePathName()
+			// done at the end of this function, because a project ref is a user input that may contain a '/',
+			// a ':' or an accented char. dol_sanitizePathName() keeps them, so we would not return the
+			// directory used by projet/tasks/document.php, that sanitizes the ref with dol_sanitizeFileName().
+			if (!empty($object->project->ref)) {
+				$subdirectory = '/'.dol_sanitizeFileName($object->project->ref);
+			}
 			break;
 		case 'action':
 		case 'actioncomm':
@@ -208,7 +214,17 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 		if (isset($conf->$module) && property_exists($conf->$module, 'multidir_output')) {
 			$s = '';
 			if ($mode != 'outputrel') {
-				$s = $conf->$module->multidir_output[(empty($object->entity) ? $conf->entity : $object->entity)] . $subdirectory;
+				// The entity of the object may have no directory declared, for example when the object is shared
+				// by another entity, so we fall back on the directory of the current entity. Without this, we
+				// returned an undefined index, so a relative path that made the caller read or write into the
+				// directory of the web server. The fallback is logged, because the directory is then not the
+				// one of the entity of the object, which matters for a caller that deletes files.
+				$entity = (empty($object->entity) ? $conf->entity : $object->entity);
+				if (!isset($conf->$module->multidir_output[$entity])) {
+					dol_syslog("getMultidirOutput module=".$module." has no directory for entity ".$entity.", using the directory of the current entity ".$conf->entity." instead", LOG_WARNING);
+					$entity = $conf->entity;
+				}
+				$s = $conf->$module->multidir_output[$entity] . $subdirectory;
 			}
 			if ($forobject && $object->id > 0) {
 				$s .= ($mode != 'outputrel' ? '/' : '') . get_exdir(0, 0, 0, 0, $object);
