@@ -56,10 +56,11 @@ class FileUpload
 	 * @param ?array{script_url?:string,upload_dir?:string,upload_url?:string,param_name?:string,delete_type?:string,max_file_size?:?int,min_file_size?:int,accept_file_types?:string,max_number_of_files?:?int,max_width?:?int,max_height?:?int,min_width?:int,min_height?:int,discard_aborted_uploads?:bool,image_versions?:array<string,array{upload_dir?:string,upload_url?:string,max_width?:int,max_height?:int,jpeg_quality?:int}>}	$options		Options array
 	 * @param int		$fk_element		ID of element
 	 * @param string	$element		Code of element
+	 * @throws Exception				If the object was not found, if the element does not support file
+	 *									uploading, or if the upload directory is missing or not writable
 	 */
 	public function __construct($options = null, $fk_element = null, $element = null)
 	{
-		global $db;
 		global $hookmanager;
 
 		$hookmanager->initHooks(array('fileupload'));
@@ -76,40 +77,62 @@ class FileUpload
 
 		//print 'fileupload.class.php: element='.$element.' pathname='.$pathname.' filename='.$filename.' dir_output='.$dir_output."\n";
 
-		if (empty($dir_output)) {
-			setEventMessage('The element '.$element.' is not supported for uploading file. dir_output is unknown.', 'errors');
-			throw new Exception('The element '.$element.' is not supported for uploading file. dir_output is unknown.');
-		}
-
 		$object_ref = 'UndefinedReference';
 		// If pathname and filename are null then we can still upload files if we have specified upload_dir on $options
 		if ($pathname !== null && $filename !== null) {
 			// Get object from its id and type
 			$object = fetchObjectByElement($fk_element, $element);
 
-			$object_ref = dol_sanitizeFileName($object->ref);
+			// fetchObjectByElement() also returns an object when the record was not found (fetch() returning 0),
+			// so we must check the object was really loaded. Without this, files would be stored at the root of
+			// the module directory, out of any object and out of any permission check on the object.
+			if (!is_object($object) || empty($object->id)) {
+				dol_syslog(get_class($this)."::__construct object ".$element." with id ".((int) $fk_element)." was not found", LOG_WARNING);
+				throw new Exception('objectnotfound');
+			}
 
-			// Special cases to forge $object_ref used to forge $upload_dir
-			if ($element == 'invoice_supplier') {
-				$object_ref = get_exdir($object->id, 2, 0, 0, $object, 'invoice_supplier').$object_ref;
-			} elseif ($element == 'project_task') {
-				$parentForeignKey = 'fk_project';
-				$parentClass = 'Project';
-				$parentElement = 'projet';
-				$parentObject = 'project';
+			// Directory of the module, including the sub directory used by some elements (/sending for a shipment,
+			// /commande for a supplier order, /<project ref> for a task, ...). We must use the same directory than
+			// the one used by the "Attached files" tab of the object, otherwise the uploaded file is stored but
+			// never shown to the user.
+			// Note: getMultidirOutput() does not return an empty string but the string
+			// 'error-diroutput-not-defined-for-this-object=x' when it can't resolve the directory. Such a value
+			// is a relative path, so writing into it would create files under the web root: we must keep the
+			// directory of getElementProperties() instead.
+			$tmpdir = getMultidirOutput($object, $element);
+			if (!empty($tmpdir) && preg_match('/^([a-z]:)?[\\\\\/]/i', $tmpdir)) {
+				$dir_output = dol_sanitizePathName($tmpdir);
+			}
 
-				dol_include_once('/'.$parentElement.'/class/'.$parentObject.'.class.php');
-				$parent = new $parentClass($db);
-				$parent->fetch($object->$parentForeignKey);
-				if (!empty($parent->socid)) {
-					$parent->fetch_thirdparty();
-				}
-				$object->$parentObject = clone $parent;
+			// get_exdir() forges the directory of an object the way the "Attached files" tabs do: it always
+			// uses the id for a thirdparty (a thirdparty ref is a company name, so it is not unique), and it
+			// falls back on the id when the ref is empty. Using anything else here would store the file into
+			// a directory the tab never reads.
+			// Note that a few tabs sanitize the ref themselves instead of calling this function, so they have
+			// no fallback: on an object whose ref is empty in database, which the interface does not produce
+			// but old records may hold, they read the root of the directory of the module while we store
+			// under the id. Storing at the root would mix the files of every object of the module, so the
+			// fallback is kept and those tabs are the ones that should be fixed.
+			$object_ref = get_exdir(0, 0, 0, 1, $object, $element);
 
-				$object_ref = dol_sanitizeFileName($object->project->ref).'/'.$object_ref;
+			// For the modules storing their documents on several levels, get_exdir() returned the level
+			// directories only, so we must append the directory of the object itself.
+			if (in_array($element, array('invoice_supplier', 'supplier_invoice'))) {
+				$object_ref .= '/'.dol_sanitizeFileName($object->ref);
 			}
 		}
 
+		// Tested after the call to getMultidirOutput(), because some elements have no 'dir_output' returned by
+		// getElementProperties() while getMultidirOutput() is still able to resolve their output directory.
+		if (empty($dir_output)) {
+			dol_syslog(get_class($this)."::__construct element ".$element." is not supported for uploading file, dir_output is unknown", LOG_WARNING);
+			throw new Exception('elementnotsupported');
+		}
+
+		// Note: 'upload_url' is not always the url of the file stored into 'upload_dir', because document.php
+		// forges the path of the file with its own rules for each value of modulepart. It is currently not a
+		// problem because the only caller of this class (the drag and drop of a file on a card) does not use
+		// the url returned into the json.
 		$this->options = array(
 			'script_url' => $_SERVER['PHP_SELF'],
 			'upload_dir' => $dir_output.'/'.$object_ref.'/',

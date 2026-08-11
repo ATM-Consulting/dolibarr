@@ -56,6 +56,14 @@ $elementupload = $element;
 // Load object according to $id and $element
 $object = fetchObjectByElement($id, $element);
 
+// fetchObjectByElement() returns an object even when the record was not found, and it returns a
+// GenericObject with no module when the element is unknown. In both cases restrictedArea() is then called
+// with an empty feature, and it grants the access without checking any permission, so we must stop here.
+// Note: fetchObjectByElement() may also return an int instead of an object when the module is disabled.
+if (!is_object($object) || empty($object->id) || empty($object->module)) {
+	httponly_accessforbidden('Object not found, or element not supported for file uploading', 404);
+}
+
 $module = $object->module;
 $element = $object->element;
 
@@ -103,7 +111,24 @@ switch ($_SERVER['REQUEST_METHOD']) {
 		break;
 	*/
 	case 'POST':
-		$upload_handler = new FileUpload(null, $id, $elementupload);
+		// The constructor throws an exception when the element does not support file uploading, or when the
+		// object was not found. Answer with the same json contract than post() so the caller can show the
+		// error, instead of letting a fatal error return an http code 500 with no usable content.
+		try {
+			$upload_handler = new FileUpload(null, $id, $elementupload);
+		} catch (Exception $e) {
+			// Same http code 200 and same content type negotiation than post(), the error is reported into the
+			// json content as the caller expects. Forcing 'application/json' would make jQuery parse the content
+			// by itself, and the JSON.parse() of the caller would then fail on an already parsed array.
+			if (isset($_SERVER['HTTP_ACCEPT']) && (strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)) {
+				header('Content-type: application/json');
+			} else {
+				header('Content-type: text/plain');
+			}
+			echo json_encode(array(array('name' => '', 'error' => $e->getMessage())));
+			$db->close();
+			exit;
+		}
 
 		/*if (isset($_REQUEST['_method']) && $_REQUEST['_method'] === 'DELETE') {
 			$file = GETPOST('file');
