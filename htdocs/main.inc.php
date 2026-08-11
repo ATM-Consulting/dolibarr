@@ -1378,14 +1378,9 @@ if (!defined('NOREQUIREMENU')) {
 if (!empty(GETPOST('seteventmessages', 'alpha'))) {
 	$message = GETPOST('seteventmessages', 'alpha');
 	$messages  = explode(',', $message);
-	// Needed by the error keys sent by dragAndDropFileUpload(). The keys of its success message are into
-	// main.lang, already loaded above, so do not remove this load thinking it is useless.
-	$langs->load("errors");
 	foreach ($messages as $key => $msg) {
 		$tmp = explode(':', $msg);
-		// The parameter contains a translation key, so we must translate it. $langs->trans() returns the key
-		// itself when it is not a known key, so a caller sending an already readable text still works.
-		setEventMessages($langs->trans($tmp[0]), null, !empty($tmp[1]) ? $tmp[1] : 'mesgs');
+		setEventMessages($tmp[0], null, !empty($tmp[1]) ? $tmp[1] : 'mesgs');
 	}
 }
 

@@ -60,8 +60,11 @@ $object = fetchObjectByElement($id, $element);
 // GenericObject with no module when the element is unknown. In both cases restrictedArea() is then called
 // with an empty feature, and it grants the access without checking any permission, so we must stop here.
 // Note: fetchObjectByElement() may also return an int instead of an object when the module is disabled.
+// We answer the same http code and the same message than a refusal by restrictedArea() below, so that a
+// user can't tell an object that exists but is not allowed from an object that does not exist.
 if (!is_object($object) || empty($object->id) || empty($object->module)) {
-	httponly_accessforbidden('Object not found, or element not supported for file uploading', 404);
+	dol_syslog("fileupload.php object ".$element." with id ".$id." was not found or its element is not supported", LOG_WARNING);
+	httponly_accessforbidden('Not allowed');
 }
 
 $module = $object->module;
@@ -84,7 +87,9 @@ if (!empty($user->socid)) {
 
 $result = restrictedArea($user, $object->module, $object, $object->table_element, $usesublevelpermission, 'fk_soc', 'rowid', 0, 1);	// Call with mode return
 if (!$result) {
-	httponly_accessforbidden('Not allowed by restrictArea (module='.$object->module.' table_element='.$object->table_element.')');
+	// The module and the table are reported into the log only, they must not be disclosed to the caller
+	dol_syslog("fileupload.php not allowed by restrictedArea (module=".$object->module." table_element=".$object->table_element.")", LOG_WARNING);
+	httponly_accessforbidden('Not allowed');
 }
 
 
