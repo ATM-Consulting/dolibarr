@@ -474,6 +474,14 @@ class FileUpload
 					} else {
 						// TODO Replace this with a call of dol_add_file_process(... $mode=1)
 						$result = dol_move_uploaded_file($uploaded_file, $file_path, 1, 0, 0, 0, 'userfile');
+
+						// A return of 2 means the file was stored with a .noexe suffix appended on its name.
+						// We must follow that renaming, otherwise the size check below is done on a file that
+						// does not exist, and we report an error on a file that was correctly stored.
+						if ($result == 2) {
+							$file->name .= '.noexe';
+							$file_path .= '.noexe';
+						}
 					}
 				} else {
 					// Non-multipart uploads (PUT method support)

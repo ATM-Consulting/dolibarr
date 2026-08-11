@@ -4017,7 +4017,17 @@ function dragAndDropFileUpload($htmlname)
 						console.log("Uploaded.", arguments);
 						/* arguments[0] is the json string of files */
 						/* arguments[1] is the value for variable "success", can be 0 or 1 */
-						let listoffiles = JSON.parse(arguments[0]);
+						let listoffiles = [];
+						/* The answer is not the expected json when php stopped before answering, for example when
+						   post_max_size was reached. Without this, the exception of JSON.parse() would leave the
+						   user on a page with no message at all, thinking the file was added. */
+						try {
+							listoffiles = JSON.parse(arguments[0]);
+						} catch (e) {
+							console.log("Answer is not a json.", e);
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
+							return;
+						}
 						console.log(listoffiles);
 						let nboferror = 0;
 						for (let i = 0; i < listoffiles.length; i++) {
@@ -4027,7 +4037,11 @@ function dragAndDropFileUpload($htmlname)
 							}
 						}
 						console.log(nboferror);
-						if (nboferror > 0) {
+						/* An empty list means no file was stored at all, so it is an error and not a success:
+						   php empties $_FILES when post_max_size is reached. */
+						if (listoffiles.length == 0) {
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
+						} else if (nboferror > 0) {
 							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorOnAtLeastOneFileUpload:warnings";
 						} else {
 							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=UploadFileDragDropSuccess:mesgs";
