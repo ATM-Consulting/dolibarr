@@ -4295,9 +4295,20 @@ class Commande extends CommonOrder
 	 */
 	public function getShippableInfos(array $options = array()) : array
 	{
-		global $conf, $langs;
+		global $conf, $langs, $hookmanager;
 
 		$langs->loadLangs(array('orders', 'sendings', 'stocks', 'products'));
+
+		// T260145: allow a module to fully replace this computation (per-warehouse shippability).
+		// When no module answers, the historical computation below applies unchanged.
+		if (is_object($hookmanager)) {
+			$parameters = array('options' => $options);
+			$hookmanager->executeHooks('getShippableInfos', $parameters, $this);
+			if (!empty($hookmanager->resArray['shippableinfos'])
+				&& is_array($hookmanager->resArray['shippableinfos'])) {
+				return $hookmanager->resArray['shippableinfos'];
+			}
+		}
 
 		$result = array(
 			'has_product' => false,
