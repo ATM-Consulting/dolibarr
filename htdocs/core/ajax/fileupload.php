@@ -75,6 +75,16 @@ if ($usesublevelpermission && !$user->hasRight($module, $element)) {	// There is
 	$usesublevelpermission = '';
 }
 
+// Some modules declare no permission at the first level, only on a sub level that is not named after the
+// element. Without this, restrictedArea() below tests a permission that does not exist, so it refuses the
+// access to every user but an administrator. The mapping is the same one as into User::hasRight() for
+// 'job@hrm', 'position@hrm' and 'skill@hrm'.
+if ($module == 'hrm' && in_array($element, array('job', 'position', 'skill'))) {
+	$usesublevelpermission = 'all';
+} elseif ($module == 'stocktransfer' && $element == 'stocktransfer') {
+	$usesublevelpermission = 'stocktransfer';
+}
+
 //print 'fileupload.php: '.$object->id.' - '.$object->module.' - '.$object->element.' - '.$object->table_element.' - '.$usesublevelpermission."\n";
 
 // Security check

@@ -15344,11 +15344,13 @@ function getElementProperties($elementType)
 	} elseif ($element == 'invoice_supplier' && isModEnabled('fournisseur')) {
 		$dir_output = $conf->fournisseur->facture->dir_output;
 		$dir_temp = $conf->fournisseur->facture->dir_temp;
-	} elseif ($element == 'payment' && isset($conf->compta->payment)) {
-		// A customer payment is stored into a sub object of $conf, not handled by the generic case
+	} elseif ($elementType == 'payment' && isset($conf->compta->payment)) {
+		// A customer payment is stored into a sub object of $conf, not handled by the generic case.
+		// Note: we must test $elementType and not $element, because the 'myobject_mysubobject' rule above
+		// rewrites $element to 'payment' for the element 'payment_salary' too, which is stored elsewhere.
 		$dir_output = $conf->compta->payment->dir_output;
 		$dir_temp = $conf->compta->payment->dir_temp;
-	} elseif ($element == 'payment_supplier' && isModEnabled('fournisseur') && isset($conf->fournisseur->payment)) {
+	} elseif ($elementType == 'payment_supplier' && isModEnabled('fournisseur') && isset($conf->fournisseur->payment)) {
 		$dir_output = $conf->fournisseur->payment->dir_output;
 		$dir_temp = $conf->fournisseur->payment->dir_temp;
 	}
