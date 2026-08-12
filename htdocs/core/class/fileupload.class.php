@@ -95,10 +95,11 @@ class FileUpload
 			// /commande for a supplier order, /<project ref> for a task, ...). We must use the same directory than
 			// the one used by the "Attached files" tab of the object, otherwise the uploaded file is stored but
 			// never shown to the user.
-			// Note: getMultidirOutput() does not return an empty string but the string
-			// 'error-diroutput-not-defined-for-this-object=x' when it can't resolve the directory. Such a value
-			// is a relative path, so writing into it would create files under the web root: we must keep the
-			// directory of getElementProperties() instead.
+			// Note: getMultidirOutput() only knows the elements of its own switch, that is a minority of them. For
+			// all the others it does not return an empty string but the string
+			// 'error-diroutput-not-defined-for-this-object=x', and keeping the directory of getElementProperties()
+			// is then the nominal case, not a degraded one. So we only accept an absolute path: that string is a
+			// relative path, and writing into it would create the files under the web root.
 			$tmpdir = getMultidirOutput($object, $element);
 			if (!empty($tmpdir) && preg_match('/^([a-z]:)?[\\\\\/]/i', $tmpdir)) {
 				$dir_output = dol_sanitizePathName($tmpdir);
