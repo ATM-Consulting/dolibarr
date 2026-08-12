@@ -195,8 +195,12 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 		case 'project_task':
 			$module = 'projet';
 
-			// Fetch the project to build the correct path
-			$object->fetchProject();
+			// Fetch the project to build the correct path. The signature of this function accepts an object
+			// that is not a CommonObject, and even a null when a module is given, so we must not call a method
+			// that only a CommonObject owns without testing it exists.
+			if (is_object($object) && method_exists($object, 'fetchProject')) {
+				$object->fetchProject();
+			}
 
 			// The ref must be sanitized with dol_sanitizeFileName() and not only with dol_sanitizePathName()
 			// done at the end of this function, because a project ref is a user input that may contain a '/',

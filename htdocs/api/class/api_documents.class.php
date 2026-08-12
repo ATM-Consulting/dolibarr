@@ -575,7 +575,7 @@ class Documents extends DolibarrApi
 				throw new RestException(404, 'Shipment not found');
 			}
 
-			$upload_dir = getMultidirOutput($object) . "/sending/".get_exdir(0, 0, 0, 1, $object, 'shipment');
+			$upload_dir = getMultidirOutput($object) . "/".get_exdir(0, 0, 0, 1, $object, 'shipment');	// getMultidirOutput() already appends the /sending sub directory
 		} elseif ($modulepart == 'facture' || $modulepart == 'invoice') {
 			require_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
 

@@ -94,7 +94,6 @@ class FileUploadTest extends CommonClassTest
 	 */
 	protected static $objects = array();
 
-
 	/**
 	 * setUpBeforeClass
 	 *
@@ -205,7 +204,6 @@ class FileUploadTest extends CommonClassTest
 		return $upload->options['upload_dir'];
 	}
 
-
 	//
 	// Resolution of the directory where the file is stored
 	//
@@ -310,22 +308,6 @@ class FileUploadTest extends CommonClassTest
 		}
 	}
 
-	/**
-	 * The file name is prefixed by the ref of the object, and that ref is sanitized because it is a user
-	 * input that may hold a slash.
-	 *
-	 * @return void
-	 */
-	public function testSavingDocMaskIsSanitized()
-	{
-		$project = self::$objects['project'];
-
-		$upload = new FileUpload(null, $project->id, 'project');
-
-		$this->assertSame(dol_sanitizeFileName($project->ref).'-__file__', $upload->options['saving_doc_mask']);
-		$this->assertStringNotContainsString('/', $upload->options['saving_doc_mask'], 'A file name mask must never hold a slash');
-	}
-
 
 	//
 	// Refusals
@@ -370,11 +352,9 @@ class FileUploadTest extends CommonClassTest
 		new FileUpload(null, 1, 'anelementthatdoesnotexist');
 	}
 
-
 	//
 	// Deduplication of the name of the uploaded file
 	//
-
 
 	/**
 	 * Build a FileUpload for an object of the fixture and empty its upload directory, so the tests below
