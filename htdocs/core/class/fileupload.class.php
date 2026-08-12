@@ -425,8 +425,12 @@ class FileUpload
 		if (strpos($file_name, '.') === false && preg_match('/^image\/(gif|jpe?g|png)/', $type, $matches)) {
 			$file_name .= '.'.$matches[1];
 		}
+		// The .noexe suffix is appended by dol_move_uploaded_file() on an executable file, so we must also
+		// look for the suffixed name, otherwise such a file is never seen as already existing and it is
+		// overwritten at each upload, because dol_move_uploaded_file() is called with $allowoverwrite = 1.
 		if ($this->options['discard_aborted_uploads']) {
-			while (dol_is_file($this->options['upload_dir'].$file_name)) {
+			$tmppath = $this->options['upload_dir'];
+			while (dol_is_file($tmppath.$file_name) || dol_is_file($tmppath.$file_name.'.noexe')) {
 				$file_name = $this->upcountName($file_name);
 			}
 		}
