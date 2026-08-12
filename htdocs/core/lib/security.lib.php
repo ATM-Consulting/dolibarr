@@ -1060,25 +1060,26 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 
 		//$checkdefault = 'all other not already defined'; // Test on entity + link to third party on field $dbt_keyfield. Not allowed if link is empty (Ex: invoice, orders...).
 
-		// The default rule reads the columns entity and $dbt_keyfield of the table of the object, but the table
-		// of some objects owns neither of them. The sql was then built on columns that do not exist, so it always
-		// failed and the access was refused to everyone, an administrator included.
-		// These objects are selected on their element, because $feature is the name of their module and it is
-		// shared with other objects of the same module that do have a link to a third party.
-		if (is_object($object)) {
-			if (in_array($object->element, array('asset', 'payment', 'payment_supplier', 'workstation'))) {
-				$check[] = $feature;	// Test on the entity only, the table of these objects has no fk_soc column
-			} elseif (in_array($object->element, array('job', 'position', 'skill'))) {
-				$nocheck[] = $feature;	// No test at all, the table of these 3 objects has no entity column either
-			}
-		}
-
 		// If dbtablename not defined, we use same name for table than module name
 		if (empty($dbtablename)) {
 			$dbtablename = $feature;
 			$sharedelement = (!empty($params[1]) ? $params[1] : $dbtablename); // We change dbtablename, so we set sharedelement too.
 		}
 
+		// The default rule reads the columns entity and $dbt_keyfield of the table, but some tables own neither of
+		// them. The sql was then built on columns that do not exist, so it always failed and the access was refused
+		// to everyone, an administrator included.
+		// The rule is selected on the table and not on the element of the object, because $object is an id and not
+		// an object for most of the callers, the card of an asset and the card of a workstation included.
+		if (in_array($dbtablename, array('asset', 'paiement', 'paiementfourn', 'workstation_workstation'))) {
+			$check[] = $feature;	// These tables have no fk_soc column, so there is no third party to restrict on
+		} elseif (in_array($dbtablename, array('hrm_job', 'hrm_job_user', 'hrm_skill'))) {
+			// These 3 tables have no entity column either, so no rule that reads the table can be run on them. The
+			// permission itself is still checked by restrictedArea(), and the $checkhierarchy rule below still runs.
+			$nocheck[] = $feature;
+		}
+
+		// $objectid was already sanitized at begin of this method (can be an int or a list of int separated by comma).
 		// To avoid an access forbidden with a numeric ref
 		if ($dbt_select != 'rowid' && $dbt_select != 'id') {
 			$objectid = "'".$objectid."'";	// Note: $objectid was already cast into int at begin of this method.
