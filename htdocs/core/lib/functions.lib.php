@@ -15344,7 +15344,7 @@ function getElementProperties($elementType)
 	} elseif ($element == 'invoice_supplier' && isModEnabled('fournisseur')) {
 		$dir_output = $conf->fournisseur->facture->dir_output;
 		$dir_temp = $conf->fournisseur->facture->dir_temp;
-	} elseif ($elementType == 'payment' && isset($conf->compta->payment)) {
+	} elseif ($elementType == 'payment' && isModEnabled('invoice') && isset($conf->compta->payment)) {
 		// A customer payment is stored into a sub object of $conf, not handled by the generic case.
 		// Note: we must test $elementType and not $element, because the 'myobject_mysubobject' rule above
 		// rewrites $element to 'payment' for the element 'payment_salary' too, which is stored elsewhere.
@@ -15356,10 +15356,10 @@ function getElementProperties($elementType)
 	}
 	// The sub directory must not be appended when the module is disabled, because $dir_output is then empty
 	// and we would return a path at the root of the file system instead of an empty string.
-	if ($dir_output !== '') {
+	if (!empty($dir_output)) {
 		$dir_output .= $subdir;
 	}
-	if ($dir_temp !== '') {
+	if (!empty($dir_temp)) {
 		$dir_temp .= $subdir;
 	}
 
