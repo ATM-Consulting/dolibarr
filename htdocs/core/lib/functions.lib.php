@@ -169,9 +169,30 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 			$module = 'knowledgemanagement';
 			$subdirectory = '/knowledgerecord';
 			break;
+		case 'commande_fournisseur':
+			$module = 'fournisseur';
+			$subdirectory = '/commande';
+			break;
+		case 'expedition':
+		case 'shipment':
+		case 'shipping':
+			$module = 'expedition';
+			$subdirectory = '/sending';
+			break;
+		case 'company':
+			$module = 'societe';
+			break;
 		case 'service':
 		case 'produit':
 			$module = 'product';
+			break;
+		case 'project_task':
+			$module = 'projet';
+
+			// Fetch the project to build the correct path
+			$object->fetchProject();
+
+			$subdirectory = '/'.$object->project->ref;
 			break;
 		case 'action':
 		case 'actioncomm':
@@ -192,7 +213,7 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 			if ($forobject && $object->id > 0) {
 				$s .= ($mode != 'outputrel' ? '/' : '') . get_exdir(0, 0, 0, 0, $object);
 			}
-			return $s;
+			return dol_sanitizePathName($s);
 		} elseif (isset($conf->$module) && property_exists($conf->$module, 'dir_output')) {
 			$s = '';
 			if ($mode != 'outputrel') {
@@ -201,15 +222,15 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 			if ($forobject && $object->id > 0) {
 				$s .= ($mode != 'outputrel' ? '/' : '') . get_exdir(0, 0, 0, 0, $object);
 			}
-			return $s;
+			return dol_sanitizePathName($s);
 		} else {
 			return 'error-diroutput-not-defined-for-this-object=' . $module;
 		}
 	} elseif ($mode == 'temp') {
 		if (isset($conf->$module) && property_exists($conf->$module, 'multidir_temp')) {
-			return $conf->$module->multidir_temp[(empty($object->entity) ? $conf->entity : $object->entity)];
+			return dol_sanitizePathName($conf->$module->multidir_temp[(empty($object->entity) ? $conf->entity : $object->entity)]);
 		} elseif (isset($conf->$module) && property_exists($conf->$module, 'dir_temp')) {
-			return $conf->$module->dir_temp;
+			return dol_sanitizePathName($conf->$module->dir_temp);
 		} else {
 			return 'error-dirtemp-not-defined-for-this-object=' . $module;
 		}
@@ -14923,6 +14944,12 @@ function getElementProperties($elementType)
 		$module = 'projet';
 		$subelement = 'task';
 		$table_element = 'projet_task';
+	} elseif ($elementType == 'mo') {
+		$classpath = 'mrp/class';
+		$module = 'mrp';
+		$classfile = 'mo';
+		$classname = 'Mo';
+		$table_element = 'mrp_mo';
 	} elseif ($elementType == 'facture' || $elementType == 'invoice') {
 		$classpath = 'compta/facture/class';
 		$module = 'facture';
@@ -14935,7 +14962,7 @@ function getElementProperties($elementType)
 		$module = 'facture';
 		$table_element = 'facturedet';
 		$parent_element = 'facture';
-	} elseif ($elementType == 'facturerec'|| $elementType == 'facture_rec') {
+	} elseif ($elementType == 'facturerec' || $elementType == 'facture_rec') {
 		$classpath = 'compta/facture/class';
 		$classfile = 'facture-rec';
 		$module = 'facture';
@@ -14962,7 +14989,7 @@ function getElementProperties($elementType)
 		$module = 'propal';
 		$table_element = 'propaldet';
 		$parent_element = 'propal';
-	} elseif ($elementType == 'shipping') {
+	} elseif ($elementType == 'shipping' || $elementType == 'shipment') {
 		$classpath = 'expedition/class';
 		$classfile = 'expedition';
 		$classname = 'Expedition';
@@ -15284,7 +15311,7 @@ function getElementProperties($elementType)
 
 	if ($reshook) {
 		$elementProperties = $hookmanager->resArray;
-	} elseif (!empty($hookmanager->resArray) && is_array($hookmanager->resArray)) { // resArray is always an array but for sécurity against misconfigured external modules
+	} elseif (!empty($hookmanager->resArray) && is_array($hookmanager->resArray)) { // resArray is always an array but for security against misconfigured external modules
 		$elementProperties = array_replace($elementProperties, $hookmanager->resArray);
 	}
 
