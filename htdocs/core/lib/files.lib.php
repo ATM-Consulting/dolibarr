@@ -4025,7 +4025,7 @@ function dragAndDropFileUpload($htmlname)
 							listoffiles = JSON.parse(arguments[0]);
 						} catch (e) {
 							console.log("Answer is not a json.", e);
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
 							return;
 						}
 						console.log(listoffiles);
@@ -4040,19 +4040,19 @@ function dragAndDropFileUpload($htmlname)
 						/* An empty list means no file was stored at all, so it is an error and not a success:
 						   php empties $_FILES when post_max_size is reached. */
 						if (listoffiles.length == 0) {
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
 						} else if (nboferror > 0) {
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorOnAtLeastOneFileUpload:warnings";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorOnAtLeastOneFileUpload:warnings";
 						} else {
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=UploadFileDragDropSuccess:mesgs";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=UploadFileDragDropSuccess:mesgs";
 						}
 					},
 					error:function(jqXHR) {
 						console.log("Error Uploading.", arguments)
 						if (jqXHR.status == 403) {
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDropPermissionDenied:errors";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDropPermissionDenied:errors";
 						} else {
-							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"]).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
+							window.location.href = "'.dol_escape_js($_SERVER["PHP_SELF"], 2).'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
 						}
 					},
 				})
