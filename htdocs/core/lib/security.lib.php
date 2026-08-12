@@ -516,6 +516,12 @@ function restrictedArea(User $user, $features, $object = 0, $tableandshare = '',
 	if ($features == 'workstation') {
 		$feature2 = 'workstation';
 	}
+	if ($features == 'hrm' && is_object($object) && in_array($object->element, array('job', 'position', 'skill'))) {
+		$feature2 = 'all';	// These 3 objects have no permission of their own, they share the level "all"
+	}
+	if ($features == 'stocktransfer') {
+		$feature2 = 'stocktransfer';
+	}
 	if ($features == 'fournisseur') {	// When vendor invoice and purchase order are into module 'fournisseur'
 		$features = 'fournisseur';
 		if (is_object($object) && $object->element == 'invoice_supplier') {
