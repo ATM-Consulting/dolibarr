@@ -1091,6 +1091,9 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 			if (in_array($dbtablename, array('hrm_job', 'hrm_job_user', 'hrm_skill'))) {
 				// These 3 tables have no entity column either, so no rule that reads the table can be run on them.
 				// The permission is still checked by restrictedArea(), and the $checkhierarchy rule below still runs.
+				// Note that these 3 objects are therefore not partitioned between entities at all, in the database
+				// itself: their cards already answer to a user of another entity, and their lists already show the
+				// records of all of them. This rule does not widen that, it aligns with it.
 				$nocheck[] = $feature;
 			} else {
 				$check[] = $feature;	// Test on the entity only, there is no third party to restrict on

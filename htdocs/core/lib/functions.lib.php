@@ -230,6 +230,12 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 					dol_syslog("getMultidirOutput module=".$module." has no directory for entity ".$entity.", using the directory of the current entity ".$conf->entity." instead", LOG_WARNING);
 					$entity = $conf->entity;
 				}
+				if (!isset($conf->$module->multidir_output[$entity])) {
+					// The current entity has no directory either, so we have nothing to return. Answer the same
+					// error than when the module declares no directory at all, otherwise we would return the
+					// sub directory alone, that is a relative path a caller could read or write into.
+					return 'error-diroutput-not-defined-for-this-object=' . $module;
+				}
 				$s = $conf->$module->multidir_output[$entity] . $subdirectory;
 			}
 			if ($forobject && $object->id > 0) {
@@ -255,6 +261,9 @@ function getMultidirOutput($object, $module = '', $forobject = 0, $mode = 'outpu
 			if (!isset($conf->$module->multidir_temp[$entity])) {
 				dol_syslog("getMultidirOutput module=".$module." has no temporary directory for entity ".$entity.", using the directory of the current entity ".$conf->entity." instead", LOG_WARNING);
 				$entity = $conf->entity;
+			}
+			if (!isset($conf->$module->multidir_temp[$entity])) {
+				return 'error-dirtemp-not-defined-for-this-object=' . $module;	// See the comment of the 'output' mode above
 			}
 			return dol_sanitizePathName($conf->$module->multidir_temp[$entity]);
 		} elseif (isset($conf->$module) && property_exists($conf->$module, 'dir_temp')) {
