@@ -504,6 +504,15 @@ function restrictedArea(User $user, $features, $object = 0, $tableandshare = '',
 	if ($features == 'project') {
 		$features = 'projet';
 	}
+	if ($features == 'eventorganization' && is_object($object) && $object->element == 'conferenceorbooth') {
+		// The module of an event organization declares no permission of its own, on purpose, so a check on
+		// 'eventorganization' is refused to everyone, an administrator included. Check the parent project
+		// instead, which is what the card of the object does itself.
+		$features = 'projet';
+		$tableandshare = 'projet&project';
+		$objectid = (int) $object->fk_project;
+		$object = $objectid;
+	}
 	if ($features == 'product') {
 		$features = 'produit';
 	}
