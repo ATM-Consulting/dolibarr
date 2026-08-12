@@ -413,24 +413,24 @@ class FileUploadTest extends CommonClassTest
 	}
 
 	/**
-	 * A name that is free must be kept as it is, only prefixed by the ref of the object.
+	 * A name that is free must be kept as it is.
 	 *
 	 * @return void
 	 */
 	public function testUploadOfAFreeNameIsKept()
 	{
 		$upload = $this->prepareUploadDir('product');
-		$prefix = dol_sanitizeFileName(self::$objects['product']->ref).'-';
+		$prefix = '';	// This version does not prefix the name with the ref of the object
 
 		$file = $this->callHandleFileUpload($upload, $this->makeTmpFile(), 'afreename.txt');
 
-		$this->assertSame($prefix.'afreename.txt', $file->name, 'A free name must be kept, only the prefix of the ref is added');
+		$this->assertSame($prefix.'afreename.txt', $file->name, 'A free name must be kept');
 	}
 
 	/**
 	 * Uploading twice the same file must not overwrite the first one: dol_move_uploaded_file() is called
 	 * with $allowoverwrite = 1, so the name must be made unique before.
-	 * trimFileName() already does that check, but on the name before the prefix of the ref is added, so
+	 * trimFileName() does that check, including on the name suffixed with .noexe, so
 	 * it compares a name that is not the one stored.
 	 *
 	 * @return void
@@ -439,9 +439,9 @@ class FileUploadTest extends CommonClassTest
 	{
 		$upload = $this->prepareUploadDir('product');
 		$dir = $upload->options['upload_dir'];
-		$prefix = dol_sanitizeFileName(self::$objects['product']->ref).'-';
+		$prefix = '';	// This version does not prefix the name with the ref of the object
 
-		// The name is already used, with the prefix that trimFileName() does not know about
+		// The name is already used
 		file_put_contents($dir.$prefix.'mydoc.txt', 'first');
 
 		$file = $this->callHandleFileUpload($upload, $this->makeTmpFile(), 'mydoc.txt');
@@ -460,7 +460,7 @@ class FileUploadTest extends CommonClassTest
 	{
 		$upload = $this->prepareUploadDir('product');
 		$dir = $upload->options['upload_dir'];
-		$prefix = dol_sanitizeFileName(self::$objects['product']->ref).'-';
+		$prefix = '';	// This version does not prefix the name with the ref of the object
 
 		file_put_contents($dir.$prefix.'mydoc.txt', 'first');
 		file_put_contents($dir.$prefix.'mydoc (1).txt', 'second');
@@ -483,7 +483,7 @@ class FileUploadTest extends CommonClassTest
 	{
 		$upload = $this->prepareUploadDir('product');
 		$dir = $upload->options['upload_dir'];
-		$prefix = dol_sanitizeFileName(self::$objects['product']->ref).'-';
+		$prefix = '';	// This version does not prefix the name with the ref of the object
 
 		// A previous upload of the same file was renamed with the .noexe suffix
 		file_put_contents($dir.$prefix.'myscript.php.noexe', 'first');
