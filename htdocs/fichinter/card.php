@@ -1237,7 +1237,7 @@ if ($action == 'create') {
 
 	$head = fichinter_prepare_head($object);
 
-	print dol_get_fiche_head($head, 'card', $langs->trans("InterventionCard"), -1, $object->picto);
+	print dol_get_fiche_head($head, 'card', $langs->trans("InterventionCard"), -1, $object->picto, 0, '', '', 0, '', 1);
 
 	$formconfirm = '';
 

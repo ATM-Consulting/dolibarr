@@ -1715,7 +1715,7 @@ if ($action == 'create') {
 		} else {
 			$taxlessUnitPriceDisabled = getDolGlobalString('EXPENSEREPORT_FORCE_LINE_AMOUNTS_INCLUDING_TAXES_ONLY') ? ' disabled' : '';
 
-			print dol_get_fiche_head($head, 'card', $langs->trans("ExpenseReport"), -1, 'trip');
+			print dol_get_fiche_head($head, 'card', $langs->trans("ExpenseReport"), -1, 'trip', 0, '', '', 0, '', 1);
 
 			$formconfirm = '';
 
