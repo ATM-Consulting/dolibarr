@@ -508,6 +508,16 @@ function restrictedArea(User $user, $features, $object = 0, $tableandshare = '',
 		// The module of an event organization declares no permission of its own, on purpose, so a check on
 		// 'eventorganization' is refused to everyone, an administrator included. Check the parent project
 		// instead, which is what the card of the object does itself.
+		// The card refuses an external user before that check, and fk_project is nullable, so we must refuse
+		// both cases here too: with no parent project there is nothing left to check the access on, and
+		// granting it would be an access with no check at all.
+		if (!empty($user->socid) || empty($object->fk_project)) {
+			if ($mode) {
+				return 0;
+			} else {
+				accessforbidden();
+			}
+		}
 		$features = 'projet';
 		$tableandshare = 'projet&project';
 		$objectid = (int) $object->fk_project;
@@ -1068,15 +1078,23 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 
 		// The default rule reads the columns entity and $dbt_keyfield of the table, but some tables own neither of
 		// them. The sql was then built on columns that do not exist, so it always failed and the access was refused
-		// to everyone, an administrator included.
+		// to the users that this rule applies to.
 		// The rule is selected on the table and not on the element of the object, because $object is an id and not
 		// an object for most of the callers, the card of an asset and the card of a workstation included.
-		if (in_array($dbtablename, array('asset', 'paiement', 'paiementfourn', 'workstation_workstation'))) {
-			$check[] = $feature;	// These tables have no fk_soc column, so there is no third party to restrict on
-		} elseif (in_array($dbtablename, array('hrm_job', 'hrm_job_user', 'hrm_skill'))) {
-			// These 3 tables have no entity column either, so no rule that reads the table can be run on them. The
-			// permission itself is still checked by restrictedArea(), and the $checkhierarchy rule below still runs.
-			$nocheck[] = $feature;
+		if (in_array($dbtablename, array('asset', 'paiement', 'paiementfourn', 'workstation_workstation', 'hrm_job', 'hrm_job_user', 'hrm_skill'))) {
+			// None of these objects is linked to a third party, so an external user can own none of them. The
+			// default rule refused him through a link that does not exist, we must refuse him explicitly instead,
+			// otherwise the rules below, which do not look at the third party of the user at all, would grant it.
+			if (!empty($user->socid)) {
+				return false;
+			}
+			if (in_array($dbtablename, array('hrm_job', 'hrm_job_user', 'hrm_skill'))) {
+				// These 3 tables have no entity column either, so no rule that reads the table can be run on them.
+				// The permission is still checked by restrictedArea(), and the $checkhierarchy rule below still runs.
+				$nocheck[] = $feature;
+			} else {
+				$check[] = $feature;	// Test on the entity only, there is no third party to restrict on
+			}
 		}
 
 		// $objectid was already sanitized at begin of this method (can be an int or a list of int separated by comma).
