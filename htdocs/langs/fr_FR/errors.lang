@@ -333,6 +333,7 @@ ErrorFieldValue=La valeur pour <b>%s</b> est incorrecte
 ErrorCoherenceMenu= <b> %s </b> est requis lorsque <b> %s </b> est 'left'
 ErrorUploadFileDragDrop=Une erreur s'est produite lors du téléchargement du ou des fichiers
 ErrorUploadFileDragDropPermissionDenied=Une erreur s'est produite lors du téléchargement du ou des fichiers : autorisation refusée
+ErrorOnAtLeastOneFileUpload=Une erreur s'est produite lors du téléchargement d'au moins un fichier
 ErrorFixThisHere= <a href="%s"> Corrigez ceci ici </a>
 ErrorTheUrlOfYourDolInstanceDoesNotMatchURLIntoOAuthSetup=Erreur : L'URL de votre instance actuelle (%s) ne correspond pas à l'URL définie dans votre configuration de connexion OAuth2 (%s). La connexion OAuth2 dans une telle configuration n'est pas autorisée.
 ErrorMenuExistValue=Un menu existe déjà avec ce titre ou cette URL
