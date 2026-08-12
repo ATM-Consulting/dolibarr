@@ -4028,7 +4028,6 @@ function dragAndDropFileUpload($htmlname)
 						try {
 							listoffiles = JSON.parse(arguments[0]);
 						} catch (e) {
-							console.log("Answer is not a json.", e);
 							window.location.href = "'.$pageurl.'?id='.dol_escape_js((string) $object->id).'&seteventmessages=ErrorUploadFileDragDrop:errors";
 							return;
 						}
