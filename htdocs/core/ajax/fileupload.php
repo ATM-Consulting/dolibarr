@@ -81,7 +81,10 @@ if ($usesublevelpermission && !$user->hasRight($module, $element)) {	// There is
 if (!empty($user->socid)) {
 	$socid = $user->socid;
 	if (!empty($object->socid) && $socid != $object->socid) {
-		httponly_accessforbidden("Access on object not allowed for this external user.");	// This includes the exit.
+		// Same message than every other refusal of this page: a distinct one tells an external user that the
+		// object exists but belongs to another third party, which lets him enumerate the records of the others.
+		dol_syslog("fileupload.php object ".$element." with id ".$id." belongs to another third party than the external user", LOG_WARNING);
+		httponly_accessforbidden('Not allowed');	// This includes the exit.
 	}
 }
 
