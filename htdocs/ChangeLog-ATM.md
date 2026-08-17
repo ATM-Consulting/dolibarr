@@ -49,6 +49,12 @@ de version 23.0.3 (stratégie hybride) : `cliama` (re-implémentation via hook/t
   restaurant le comportement v13 (cliama gère 100 % des mouvements d'expédition).
 - const `CLIAMA_MANAGE_SHIPMENT_STOCK=1` enregistrée au descripteur `cliama` (posée à l'install/upgrade).
 - découvert par l'e2e d'intégration (invisible à l'audit statique). Détail : `~/Claude/dolibarr/audit/audit-flux-expedition-cliama-v23.md`.
+- **durcissement (17/08/2026, audit adversarial)** : le patch se contentait de **s'abstenir** de forcer
+  `STOCK_CALCULATE_ON_SHIPMENT_CLOSE=1` quand la const AMA est active, mais ne le forçait jamais à 0 — un
+  toggle admin « Décrémenter à la clôture » aurait provoqué un **double décrément** silencieux (non-batch)
+  ou une clôture bloquée -1 (batch, via `STOCK_DISALLOW_NEGATIVE_TRANSFER`). Correctif : `else` explicite
+  qui force `STOCK_CALCULATE_ON_SHIPMENT=0` et `STOCK_CALCULATE_ON_SHIPMENT_CLOSE=0` quand
+  `CLIAMA_MANAGE_SHIPMENT_STOCK=1` (patch défensif, plus seulement passif).
 
 ### Trigger `LINESHIPPINGBATCH_INSERT` — Cible v23 : cliama
 - fichier : `htdocs/expedition/class/expeditionbatch.class.php` (`create()`)

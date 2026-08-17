@@ -959,6 +959,13 @@ class Conf extends stdClass
 					if (empty($this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE)) {
 						$this->global->STOCK_CALCULATE_ON_SHIPMENT = 1;
 					}
+				} else {
+					// SPE AMA - patch défensif : cliama gère 100% des mouvements de stock d'expédition.
+					// On force explicitement les décréments standard à 0 (au lieu de seulement s'abstenir
+					// de les forcer à 1) pour neutraliser tout toggle admin qui provoquerait un DOUBLE
+					// décrément à la clôture (core + cliama) ou un blocage -1 sur produit sérialisé.
+					$this->global->STOCK_CALCULATE_ON_SHIPMENT = 0;
+					$this->global->STOCK_CALCULATE_ON_SHIPMENT_CLOSE = 0;
 				}
 				$this->global->STOCK_CALCULATE_ON_SUPPLIER_BILL = 0;
 				$this->global->STOCK_CALCULATE_ON_SUPPLIER_VALIDATE_ORDER = 0;
