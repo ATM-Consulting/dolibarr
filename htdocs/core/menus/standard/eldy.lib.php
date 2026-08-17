@@ -1869,19 +1869,11 @@ function get_left_menu_accountancy($mainmenu, &$newmenu, $usemenuhider = 1, $lef
 								$key = $langs->trans("AccountingJournalType".$objp->nature);	// $objp->nature is 1, 2, 3 ...
 								$transferlabel = (($objp->nature && $key != "AccountingJournalType".$objp->nature) ? $key.($journallabelwithoutspan != $key ? ' '.$journallabel : '') : $journallabel);
 
-								// >>> PATCH HELLIOS - treasury-journal - DEBUT
-								// treasuryjournal.php possede un encodage fk_doc/fk_docdet incoherent (ecriture fk_docdet=0 vs lecture fk_docdet=id du document) :
-								// l'historique transfere n'est plus affiche et le re-transfert echoue ("deja enregistre") en mode RECETTES-DEPENSES.
-								// On force les journaux classiques par nature (bankjournal.php, etc.) comme avant la montee de version,
-								// coherents avec les ecritures deja presentes en base. A retirer une fois le correctif integre en amont (branche FIX/treasury-journal-fkdocdet).
-								$journalNaturePrefixUrl = $nature;
-								// Code d'origine neutralise :
-								// if (getDolGlobalString('ACCOUNTING_MODE') == 'RECETTES-DEPENSES') {
-								// 	$journalNaturePrefixUrl = 'treasury';
-								// } else {
-								// 	$journalNaturePrefixUrl = $nature;
-								// }
-								// >>> PATCH HELLIOS - treasury-journal - FIN
+								if (getDolGlobalString('ACCOUNTING_MODE') == 'RECETTES-DEPENSES') {
+									$journalNaturePrefixUrl = 'treasury';
+								} else {
+									$journalNaturePrefixUrl = $nature;
+								}
 								$newmenu->add('/accountancy/journal/'.$journalNaturePrefixUrl.'journal.php?mainmenu=accountancy&leftmenu=accountancy_journal&id_journal='.$objp->rowid, $transferlabel, 2, $user->hasRight('accounting', 'comptarapport', 'lire'));
 							}
 							$i++;
