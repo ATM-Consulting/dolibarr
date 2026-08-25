@@ -1128,11 +1128,11 @@ function getParameterByName(name, valueifnotfound)
  * Submit the form of a confirm box. Jump to the target url with a GET, but submit a POST form
  * instead when this url is too long to be accepted by the web server ("Request-URI Too Long").
  *
- * @param	urljump				Target url with all its parameters, for the GET
- * @param	page				Target page, used as action of the POST form
- * @param	options				Parameters of the form, as a query string (token included)
- * @param	maxurllength		Max length of an url we accept to use with a GET
- * @return	void
+ * @param	{string}	urljump			Target url with all its parameters, for the GET
+ * @param	{string}	page			Target page, used as action of the POST form
+ * @param	{string}	options			Parameters of the form, as a query string (token included)
+ * @param	{number}	maxurllength	Max length of an url we accept to use with a GET
+ * @return	{void}
  */
 function dolSubmitConfirmForm(urljump, page, options, maxurllength)
 {
@@ -1143,15 +1143,15 @@ function dolSubmitConfirmForm(urljump, page, options, maxurllength)
 
 	console.log("dolSubmitConfirmForm: url is "+urljump.length+" chars long, we submit a POST form instead of a GET");
 
-	var form = document.createElement("form");
+	const form = document.createElement("form");
 	form.method = "POST";
 	form.action = page;
 	form.style.display = "none";
 
 	options.split("&").forEach(function(param) {
 		if (param === "") return;
-		var pos = param.indexOf("=");
-		var input = document.createElement("input");
+		const pos = param.indexOf("=");
+		const input = document.createElement("input");
 		input.type = "hidden";
 		input.name = (pos < 0 ? param : param.substring(0, pos));
 		input.value = (pos < 0 ? "" : decodeURIComponent(param.substring(pos + 1)));
