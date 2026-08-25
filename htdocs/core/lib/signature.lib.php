@@ -1,6 +1,8 @@
 <?php
 /**
  * Copyright (C) 2013	Marcos García	<marcosgdf@gmail.com>
+ * Copyright (C) 2024		Frédéric France			<frederic.france@free.fr>
+ * Copyright (C) 2024		MDW					<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +33,7 @@ function showOnlineSignatureUrl($type, $ref, $obj = null, $mode = '')
 	global $langs;
 
 	// Load translation files required by the page
-	$langs->loadLangs(array("payment", "paybox", "stripe"));
+	$langs->loadLangs(array("payment", "stripe"));
 
 	$servicename = 'Online';
 
@@ -49,7 +51,7 @@ function showOnlineSignatureUrl($type, $ref, $obj = null, $mode = '')
 	}
 	$out .= '<a class="" href="'.$url.'" target="_blank" rel="noopener noreferrer">'.img_picto('', 'globe', 'class="paddingleft"').'</a>';
 	$out .= '</div>';
-	$out .= ajax_autoselect("onlinesignatureurl", 0);
+	$out .= ajax_autoselect("onlinesignatureurl", '');
 	return $out;
 }
 
@@ -95,6 +97,10 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 
 	if ($type == 'proposal') {
 		$securekeyseed = getDolGlobalString('PROPOSAL_ONLINE_SIGNATURE_SECURITY_TOKEN');
+		if (strpos($securekeyseed, "\0") !== false) {
+			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
+			return 'Invalid parameter PROPOSAL_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
+		}
 
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source=proposal&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
@@ -107,7 +113,7 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + proposal_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : $obj->entity) : ''), '0');
+			$out .= '&securekey='.urlencode(dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : $obj->entity) : ''), '0'));
 		}
 		/*
 		if ($mode == 1) {
@@ -135,6 +141,11 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		}*/
 	} elseif ($type == 'contract') {
 		$securekeyseed = getDolGlobalString('CONTRACT_ONLINE_SIGNATURE_SECURITY_TOKEN');
+		if (strpos($securekeyseed, "\0") !== false) {
+			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
+			return 'Invalid parameter CONTRACT_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
+		}
+
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source=contract&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'contract_ref';
@@ -146,10 +157,15 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + contract_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0');
+			$out .= '&securekey='.urlencode(dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0'));
 		}
 	} elseif ($type == 'fichinter') {
 		$securekeyseed = getDolGlobalString('FICHINTER_ONLINE_SIGNATURE_SECURITY_TOKEN');
+		if (strpos($securekeyseed, "\0") !== false) {
+			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
+			return 'Invalid parameter FICHINTER_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
+		}
+
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source=fichinter&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= 'fichinter_ref';
@@ -161,10 +177,15 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + fichinter_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0');
+			$out .= '&securekey='.urlencode(dol_hash($securekeyseed.$type.$ref.(isModEnabled('multicompany') ? (empty($obj->entity) ? '' : (int) $obj->entity) : ''), '0'));
 		}
 	} else {	// For example $type = 'societe_rib'
 		$securekeyseed = getDolGlobalString(dol_strtoupper($type).'_ONLINE_SIGNATURE_SECURITY_TOKEN');
+		if (strpos($securekeyseed, "\0") !== false) {
+			// String contains a null character that can't be encoded. Return an error to avoid fatal error later.
+			return 'Invalid parameter '.dol_strtoupper($type).'_ONLINE_SIGNATURE_SECURITY_TOKEN. Contains a null character.';
+		}
+
 		$out = $urltouse.'/public/onlinesign/newonlinesign.php?source='.$type.'&ref='.($mode ? '<span style="color: #666666">' : '');
 		if ($mode == 1) {
 			$out .= $type.'_ref';
@@ -176,13 +197,18 @@ function getOnlineSignatureUrl($mode, $type, $ref = '', $localorexternal = 1, $o
 		if ($mode == 1) {
 			$out .= "hash('".$securekeyseed."' + '".$type."' + $type + '_ref)";
 		} else {
-			$out .= '&securekey='.dol_hash($securekeyseed.$type.$ref.(!isModEnabled('multicompany') ? '' : $obj->entity), '0');
+			$out .= '&securekey='.urlencode(dol_hash($securekeyseed.$type.$ref.(!isModEnabled('multicompany') ? '' : $obj->entity), '0'));
 		}
 	}
 
 	// For multicompany
 	if (!empty($out) && isModEnabled('multicompany')) {
 		$out .= "&entity=".(empty($obj->entity) ? '' : (int) $obj->entity); // Check the entity because we may have the same reference in several entities
+	} elseif ($mode == 0) {
+		// Bcrypt output (dol_hash type '0') can legitimately end with '.' or '/', which Gmail and several mobile mail
+		// clients strip from autolinked URLs and break the signature link. Append a stable trailing parameter that
+		// the receiver ignores so the URL never ends with the hash. Only for the real URL (mode 0), not the preview.
+		$out .= "&_=1";
 	}
 
 	return $out;

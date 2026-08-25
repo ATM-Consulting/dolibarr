@@ -76,11 +76,6 @@ class Comment extends CommonObject
 
 	public $comments = array();
 
-	/**
-	 * @var static 	Object oldcopy
-	 */
-	public $oldcopy;
-
 
 	/**
 	 *  Constructor
@@ -119,9 +114,9 @@ class Comment extends CommonObject
 		$sql .= ") VALUES (";
 		$sql .= "'".$this->db->escape($this->description)."'";
 		$sql .= ", ".($this->datec != '' ? "'".$this->db->idate($this->datec)."'" : 'null');
-		$sql .= ", '".(isset($this->fk_element) ? $this->fk_element : "null")."'";
+		$sql .= ", ".(isset($this->fk_element) ? ((int) $this->fk_element) : "null");
 		$sql .= ", '".$this->db->escape($this->element_type)."'";
-		$sql .= ", '".(isset($this->fk_user_author) ? $this->fk_user_author : "null")."'";
+		$sql .= ", ".(isset($this->fk_user_author) ? ((int) $this->fk_user_author) : "null");
 		$sql .= ", ".((int) $user->id);
 		$sql .= ", ".(!empty($this->entity) ? $this->entity : '1');
 		$sql .= ", ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null");
@@ -249,14 +244,14 @@ class Comment extends CommonObject
 
 		// Update request
 		$sql = "UPDATE ".$this->db->prefix().$this->table_element." SET";
-		$sql .= " description=".(isset($this->description) ? "'".$this->db->escape($this->description)."'" : "null").",";
-		$sql .= " datec=".($this->datec != '' ? "'".$this->db->idate($this->datec)."'" : 'null').",";
-		$sql .= " fk_element=".(isset($this->fk_element) ? $this->fk_element : "null").",";
-		$sql .= " element_type='".$this->db->escape($this->element_type)."',";
-		$sql .= " fk_user_modif=".$user->id.",";
-		$sql .= " entity=".(!empty($this->entity) ? $this->entity : '1').",";
-		$sql .= " import_key=".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null");
-		$sql .= " WHERE rowid=".((int) $this->id);
+		$sql .= " description = ".(isset($this->description) ? "'".$this->db->escape($this->description)."'" : "null").",";
+		$sql .= " datec = ".($this->datec != '' ? "'".$this->db->idate($this->datec)."'" : 'null').",";
+		$sql .= " fk_element = ".(isset($this->fk_element) ? $this->fk_element : "null").",";
+		$sql .= " element_type = '".$this->db->escape($this->element_type)."',";
+		$sql .= " fk_user_modif = ".((int) $user->id).",";
+		$sql .= " entity = ".(!empty($this->entity) ? $this->entity : '1').",";
+		$sql .= " import_key = ".(!empty($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null");
+		$sql .= " WHERE rowid = ".((int) $this->id);
 
 		$this->db->begin();
 

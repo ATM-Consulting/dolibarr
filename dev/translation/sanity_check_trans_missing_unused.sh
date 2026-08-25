@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Find unused translations pretty fast...
+# Go into the root of the git directory, then launch the shell.
 #
 # Principle:
 #
@@ -35,7 +36,7 @@ DYNAMIC_KEYS_FILE=${TMP}/dynamic_keys
 MISSING_AND_UNUSED_FILE=${TMP}/missing_and_unused
 MISSING_FILE=${TMP}/missing
 UNUSED_FILE=${TMP}/unused
-EXPECTED_REGEX='(Country..|ExportDataset_.*|Language_.._..|MonthVeryShort\d\d|PaperFormat.*||Permission.*|ProfId\d(..)?|unit.*)'
+EXPECTED_REGEX='(Country..|ExportDataset_.*|Language_.._..|MonthVeryShort\d\d|PaperFormat.*||Permission.*|ProfId\d(..)?|TypeContact_shipping_external_.*|unit.*)'
 DYNAMIC_KEYS_SRC_FILE=${MYDIR}/dynamic_translation_keys.lst
 EXCLUDE_KEYS_SRC_FILE=${MYDIR}/ignore_translation_keys.lst
 DUPLICATE_KEYS_SRC_FILE=${MYDIR}/duplicate_translation_keys.lst
@@ -62,9 +63,8 @@ exit_code=0
 grep --no-filename -r -oP -- '^([^#=]+?)(?=\s*=.*)' "${LANG_DIR}" \
 	| grep -x -v -F -f "${EXCLUDE_KEYS_SRC_FILE}" \
 	| sort > "${AVAILABLE_FILE_NODEDUP}"
-sort -u \
-	< "${AVAILABLE_FILE_NODEDUP}" \
-	> "${AVAILABLE_FILE}"
+# sort -u is buggued in ubutnu 26.04. The line StatusProspect-1 and StatusProspect1 are treated as similar lines Replaced with "uniq".
+uniq < "${AVAILABLE_FILE_NODEDUP}" > "${AVAILABLE_FILE}"
 
 
 # Combine strings found in sources with pre-determined dynamic string values.
@@ -131,9 +131,11 @@ diff "${AVAILABLE_FILE}" "${EXPECTED_FILE}" \
 	> "${MISSING_AND_UNUSED_FILE}"
 
 rm -f "${UNUSED_FILE}.grep" >/dev/null 2>&1
-sed -n 's@< \(.*\)@^\1\\s*=@p' \
-	< "${MISSING_AND_UNUSED_FILE}" \
-	> "${UNUSED_FILE}.grep"
+if [ "$1" == "--showunused" ]; then
+	sed -n 's@< \(.*\)@^\1\\s*=@p' \
+		< "${MISSING_AND_UNUSED_FILE}" \
+		> "${UNUSED_FILE}.grep"
+fi
 
 
 # Prepare file with exact matches for use with `git grep`, supposing " quotes

@@ -1,8 +1,9 @@
 <?php
-/* Copyright (C) 2011  Dimitri Mouillard    <dmouillard@teclib.com>
- * Copyright (C) 2015  Laurent Destailleur  <eldy@users.sourceforge.net>
- * Copyright (C) 2023  Alexandre Spangaro   <aspangaro@easya.solutions>
+/* Copyright (C) 2011  		Dimitri Mouillard    		<dmouillard@teclib.com>
+ * Copyright (C) 2015  		Laurent Destailleur  		<eldy@users.sourceforge.net>
+ * Copyright (C) 2023  		Alexandre Spangaro   		<aspangaro@easya.solutions>
  * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +41,7 @@ class modExpenseReport extends DolibarrModules
 	 */
 	public function __construct($db)
 	{
-		global $conf, $user; // Required by some include code
+		global $conf, $user; // Required by the extrafieldsinexport.inc.php
 
 		$this->db = $db;
 		$this->numero = 770;
@@ -72,36 +73,36 @@ class modExpenseReport extends DolibarrModules
 		$this->langfiles = array("companies", "trips");
 
 		// Constants
-		$this->const = array(); // List of particular constants to add when module is enabled (key, 'chaine', value, desc, visible, 0 or 'allentities')
-		$r = 0;
-
-		$this->const[$r][0] = "EXPENSEREPORT_ADDON_PDF";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "standard";
-		$this->const[$r][3] = 'Name of manager to build PDF expense reports documents';
-		$this->const[$r][4] = 0;
-		$r++;
-
-		$this->const[$r][0] = "EXPENSEREPORT_ADDON";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "mod_expensereport_jade";
-		$this->const[$r][3] = 'Name of manager to generate expense report ref number';
-		$this->const[$r][4] = 0;
-		$r++;
-
-		$this->const[$r][0] = "MAIN_DELAY_EXPENSEREPORTS";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "15";
-		$this->const[$r][3] = 'Tolerance delay (in days) before alert for expense reports to approve';
-		$this->const[$r][4] = 0;
-		$r++;
-
-		$this->const[$r][0] = "MAIN_DELAY_EXPENSEREPORTS_TO_PAY";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "15";
-		$this->const[$r][3] = 'Tolerance delay (in days) before alert for expense reports to pay';
-		$this->const[$r][4] = 0;
-		$r++;
+		$this->const = [ // List of particular constants to add when module is enabled (key, 'chaine', value, desc, visible, 0 or 'allentities')
+			[
+				"EXPENSEREPORT_ADDON_PDF",
+				"chaine",
+				"standard",
+				'Name of manager to build PDF expense reports documents',
+				0,
+			],
+			[
+				"EXPENSEREPORT_ADDON",
+				"chaine",
+				"mod_expensereport_jade",
+				'Name of manager to generate expense report ref number',
+				0,
+			],
+			[
+				"MAIN_DELAY_EXPENSEREPORTS",
+				"chaine",
+				"15",
+				'Tolerance delay (in days) before alert for expense reports to approve',
+				0,
+			],
+			[
+				"MAIN_DELAY_EXPENSEREPORTS_TO_PAY",
+				"chaine",
+				"15",
+				'Tolerance delay (in days) before alert for expense reports to pay',
+				0,
+			],
+		];
 
 		// Array to add new pages in new tabs
 		$this->tabs[] = array();
@@ -261,8 +262,8 @@ class modExpenseReport extends DolibarrModules
 		$this->remove($options);
 
 		$sql = array(
-			"DELETE FROM ".MAIN_DB_PREFIX."document_model WHERE nom = 'standard' AND type='expensereport' AND entity = ".((int) $conf->entity),
-			"INSERT INTO ".MAIN_DB_PREFIX."document_model (nom, type, entity) VALUES('standard','expensereport',".((int) $conf->entity).")"
+			"DELETE FROM ".MAIN_DB_PREFIX."document_model WHERE nom = 'standard_expensereport' AND type='expensereport' AND entity = ".((int) $conf->entity),
+			"INSERT INTO ".MAIN_DB_PREFIX."document_model (nom, type, entity) VALUES('standard_expensereport','expensereport',".((int) $conf->entity).")"
 		);
 
 		return $this->_init($sql, $options);

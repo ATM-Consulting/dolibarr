@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2011-2014	Juanjo Menent	<jmenent@2byte.es>
  * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024-2025	MDW							<mdeweerd@users.noreply.github.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,10 +45,22 @@ class Localtax extends CommonObject
 	 */
 	public $picto = 'payment';
 
+	/**
+	 * @var int
+	 */
 	public $ltt;
 
+	/**
+	 * @var int|string
+	 */
 	public $datep;
+	/**
+	 * @var int|string
+	 */
 	public $datev;
+	/**
+	 * @var string
+	 */
 	public $amount;
 
 	/**
@@ -61,6 +73,9 @@ class Localtax extends CommonObject
 	 */
 	public $fk_type;
 
+	/**
+	 * @var string
+	 */
 	public $paymenttype;
 
 	/**
@@ -90,6 +105,11 @@ class Localtax extends CommonObject
 	public $fk_user_modif;
 
 	/**
+	 * @var int<0,1>|string		0=No test on entity, 1=Test with field entity in local table
+	 */
+	public $ismultientitymanaged = 1;
+
+	/**
 	 *	Constructor
 	 *
 	 *  @param		DoliDB		$db      Database handler
@@ -117,6 +137,11 @@ class Localtax extends CommonObject
 		$this->label = trim($this->label);
 		$this->note = trim($this->note);
 
+		// Set entity if not already set
+		if (empty($this->entity)) {
+			$this->entity = $conf->entity;
+		}
+
 		// Insert request
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."localtax(";
 		$sql .= "localtaxtype,";
@@ -126,6 +151,7 @@ class Localtax extends CommonObject
 		$sql .= "amount,";
 		$sql .= "label,";
 		$sql .= "note,";
+		$sql .= "entity,";
 		$sql .= "fk_bank,";
 		$sql .= "fk_user_creat,";
 		$sql .= "fk_user_modif";
@@ -137,6 +163,7 @@ class Localtax extends CommonObject
 		$sql .= " '".$this->db->escape($this->amount)."',";
 		$sql .= " '".$this->db->escape($this->label)."',";
 		$sql .= " '".$this->db->escape($this->note)."',";
+		$sql .= " ".((int) $this->entity).",";
 		$sql .= " ".($this->fk_bank <= 0 ? "NULL" : (int) $this->fk_bank).",";
 		$sql .= " ".((int) $this->fk_user_creat).",";
 		$sql .= " ".((int) $this->fk_user_modif);
@@ -197,6 +224,7 @@ class Localtax extends CommonObject
 		$sql .= " amount=".price2num($this->amount).",";
 		$sql .= " label='".$this->db->escape($this->label)."',";
 		$sql .= " note='".$this->db->escape($this->note)."',";
+		$sql .= " entity=".((int) $this->entity).",";
 		$sql .= " fk_bank=".(int) $this->fk_bank.",";
 		$sql .= " fk_user_creat=".(int) $this->fk_user_creat.",";
 		$sql .= " fk_user_modif=".(int) $this->fk_user_modif;
@@ -245,6 +273,7 @@ class Localtax extends CommonObject
 		$sql .= " t.amount,";
 		$sql .= " t.label,";
 		$sql .= " t.note as note_private,";
+		$sql .= " t.entity,";
 		$sql .= " t.fk_bank,";
 		$sql .= " t.fk_user_creat,";
 		$sql .= " t.fk_user_modif,";
@@ -271,6 +300,7 @@ class Localtax extends CommonObject
 				$this->label = $obj->label;
 				$this->note  = $obj->note_private;
 				$this->note_private  = $obj->note_private;
+				$this->entity = $obj->entity;
 				$this->fk_bank = $obj->fk_bank;
 				$this->fk_user_creat = $obj->fk_user_creat;
 				$this->fk_user_modif = $obj->fk_user_modif;
@@ -326,7 +356,7 @@ class Localtax extends CommonObject
 	 */
 	public function initAsSpecimen()
 	{
-		global $user;
+		global $user, $conf;
 
 		$this->id = 0;
 
@@ -337,6 +367,7 @@ class Localtax extends CommonObject
 		$this->amount = '';
 		$this->label = '';
 		$this->note = '';
+		$this->entity = $conf->entity;
 		$this->fk_bank = 0;
 		$this->fk_user_creat = $user->id;
 		$this->fk_user_modif = $user->id;
@@ -498,6 +529,11 @@ class Localtax extends CommonObject
 			return -5;
 		}
 
+		// Set entity if not already set
+		if (empty($this->entity)) {
+			$this->entity = $conf->entity;
+		}
+
 		// Insertion dans table des paiement localtax
 		$sql = "INSERT INTO ".MAIN_DB_PREFIX."localtax (localtaxtype, datep, datev, amount";
 		if ($this->note) {
@@ -506,7 +542,7 @@ class Localtax extends CommonObject
 		if ($this->label) {
 			$sql .= ", label";
 		}
-		$sql .= ", fk_user_creat, fk_bank";
+		$sql .= ", entity, fk_user_creat, fk_bank";
 		$sql .= ") ";
 		$sql .= " VALUES (".$this->ltt.", '".$this->db->idate($this->datep)."',";
 		$sql .= "'".$this->db->idate($this->datev)."',".$this->amount;
@@ -516,7 +552,7 @@ class Localtax extends CommonObject
 		if ($this->label) {
 			$sql .= ", '".$this->db->escape($this->label)."'";
 		}
-		$sql .= ", ".((int) $user->id).", NULL";
+		$sql .= ", ".((int) $this->entity).", ".((int) $user->id).", NULL";
 		$sql .= ")";
 
 		dol_syslog(get_class($this)."::addPayment", LOG_DEBUG);
@@ -535,7 +571,7 @@ class Localtax extends CommonObject
 						dol_print_error($this->db);
 					}
 
-					$bank_line_id = $acc->addline($this->datep, $this->paymenttype, $this->label, -abs((float) $this->amount), '', '', $user);
+					$bank_line_id = $acc->addline($this->datep, $this->paymenttype, $this->label, -abs((float) $this->amount), '', 0, $user);
 
 					// Update fk_bank into llx_localtax so we know the line of localtax used to generate the bank entry.
 					if ($bank_line_id > 0) {
@@ -545,7 +581,7 @@ class Localtax extends CommonObject
 						$ok = 0;
 					}
 
-					// Mise a jour liens
+					// Update the links
 					$result = $acc->add_url_line($bank_line_id, $this->id, DOL_URL_ROOT.'/compta/localtax/card.php?id=', "(VATPayment)", "payment_vat");
 					if ($result < 0) {
 						$this->error = $acc->error;
@@ -598,7 +634,7 @@ class Localtax extends CommonObject
 	 *	Returns clickable name
 	 *
 	 *	@param		int		$withpicto		0=Link, 1=Picto into link, 2=Picto
-	 *	@param		string	$option			Sur quoi pointe le lien
+	 *	@param		string	$option			What the link points to
 	 *	@return		string					Chaine avec URL
 	 */
 	public function getNomUrl($withpicto = 0, $option = '')
@@ -653,11 +689,11 @@ class Localtax extends CommonObject
 	}
 
 	/**
-	 *	Return clicable link of object (with eventually picto)
+	 *	Return clickable link of object (with eventually picto)
 	 *
-	 *	@param      string	    $option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
-	 *  @param		array		$arraydata				Array of data
-	 *  @return		string								HTML Code for Kanban thumb.
+	 *	@param      string	    			$option                 Where point the link (0=> main card, 1,2 => shipment, 'nolink'=>No link)
+	 *  @param		?array<string,mixed>	$arraydata				Array of data
+	 *  @return		string											HTML Code for Kanban thumb.
 	 */
 	public function getKanbanView($option = '', $arraydata = null)
 	{

@@ -5,12 +5,13 @@
  * Copyright (C) 2005-2009 Regis Houssin          <regis.houssin@inodbox.com>
  * Copyright (C) 2010-2011 Juanjo Menent          <jmenent@2byte.es>
  * Copyright (C) 2014      Marcos García          <marcosgdf@gmail.com>
- * Copyright (C) 2018      Nicolas ZABOURI	  <info@inovea-conseil.com>
- * Copyright (C) 2018       Frédéric France         <frederic.francenetlogic.fr>
+ * Copyright (C) 2018      Nicolas ZABOURI	      <info@inovea-conseil.com>
+ * Copyright (C) 2018-2024 Frédéric France		  <frederic.france@free.fr>
  * Copyright (C) 2023      Joachim Kueter		  <git-jk@bloxera.com>
  * Copyright (C) 2023      Sylvain Legrand		  <technique@infras.fr>
- * Copyright (C) 2024       Frédéric France             <frederic.france@free.fr>
- * Copyright (C) 2024		MDW							<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2024      Frédéric France        <frederic.france@free.fr>
+ * Copyright (C) 2024      MDW					  <mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2026      Lionel Vessiller		  <lvessiller@open-dsi.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +56,10 @@ class PaiementFourn extends Paiement
 	 */
 	public $picto = 'payment';
 
-	public $statut; //Status of payment. 0 = unvalidated; 1 = validated
+	/**
+	 * @var int	Status of payment. 0 = unvalidated; 1 = validated
+	 */
+	public $statut;
 	// fk_paiement dans llx_paiement est l'id du type de paiement (7 pour CHQ, ...)
 	// fk_paiement dans llx_paiement_facture est le rowid du paiement
 
@@ -72,7 +76,7 @@ class PaiementFourn extends Paiement
 	public $type_code;
 
 	/**
-	 * @var string Id of prelevement
+	 * @var int Id of prelevement
 	 */
 	public $id_prelevement;
 
@@ -202,16 +206,31 @@ class PaiementFourn extends Paiement
 				$this->error = $langs->trans('FailedToFoundTheConversionRateForInvoice');
 				return -1;
 			}
-			if (empty($currencyofpayment)) {
-				$currencyofpayment = $this->multicurrency_code[$key];
+			// Fallback: read invoice multicurrency code/tx if caller did not fill the arrays
+			$invoice_multicurrency_code = $this->multicurrency_code[$key] ?? '';
+			$invoice_multicurrency_tx = $this->multicurrency_tx[$key] ?? '';
+			if (empty($invoice_multicurrency_code) || empty($invoice_multicurrency_tx)) {
+				$tmparray = MultiCurrency::getInvoiceRate($key, 'facture_fourn');
+				if ($tmparray !== false) {
+					if (empty($invoice_multicurrency_code)) {
+						$invoice_multicurrency_code = $tmparray['invoice_multicurrency_code'];
+					}
+					if (empty($invoice_multicurrency_tx)) {
+						$invoice_multicurrency_tx = $tmparray['invoice_multicurrency_tx'];
+					}
+				}
 			}
-			if ($currencyofpayment != $this->multicurrency_code[$key]) {
+
+			if (empty($currencyofpayment)) {
+				$currencyofpayment = $invoice_multicurrency_code;
+			}
+			if ($currencyofpayment != $invoice_multicurrency_code) {
 				// If we have invoices with different currencies in the payment, we stop here
 				$this->error = 'ErrorYouTryToPayInvoicesWithDifferentCurrenciesInSamePayment';
 				return -1;
 			}
 			if (empty($currencytxofpayment)) {
-				$currencytxofpayment = $this->multicurrency_tx[$key];
+				$currencytxofpayment = $invoice_multicurrency_tx;
 			}
 
 			$totalamount_converted += $value_converted;
@@ -240,6 +259,8 @@ class PaiementFourn extends Paiement
 
 		$totalamount = (float) price2num($totalamount);
 		$totalamount_converted = (float) price2num($totalamount_converted);
+		$mtotal = 0;
+		$total = 0;
 
 		dol_syslog(get_class($this)."::create", LOG_DEBUG);
 
@@ -291,22 +312,40 @@ class PaiementFourn extends Paiement
 									if ($invoice->type == FactureFournisseur::TYPE_DEPOSIT) {
 										$amount_ht = $amount_tva = $amount_ttc = array();
 										$multicurrency_amount_ht = $multicurrency_amount_tva = $multicurrency_amount_ttc = array();
+										'
+										@phan-var-force array<string,float> $amount_ht
+										@phan-var-force array<string,float> $amount_tva
+										@phan-var-force array<string,float> $amount_ttc
+										@phan-var-force array<string,float> $multicurrency_amount_ht
+										@phan-var-force array<string,float> $multicurrency_amount_tva
+										@phan-var-force array<string,float> $multicurrency_amount_ttc
+										';
 
 										// Insert one discount by VAT rate category
 										require_once DOL_DOCUMENT_ROOT . '/core/class/discount.class.php';
 										$discount = new DiscountAbsolute($this->db);
-										$discount->fetch('', 0, $invoice->id);
+										$discount->fetch(0, 0, $invoice->id);
 										if (empty($discount->id)) {    // If the invoice was not yet converted into a discount (this may have been done manually before we come here)
 											$discount->discount_type = 1; // Supplier discount
 											$discount->description = '(DEPOSIT)';
 											$discount->fk_soc = $invoice->socid;
 											$discount->socid = $invoice->socid;
 											$discount->fk_invoice_supplier_source = $invoice->id;
+											$discount->multicurrency_code = $invoice->multicurrency_code;
+											$discount->multicurrency_tx = $invoice->multicurrency_tx;
 
 											// Loop on each vat rate
 											$i = 0;
 											foreach ($invoice->lines as $line) {
 												if ($line->total_ht != 0) {    // no need to create discount if amount is null
+													if (!array_key_exists($line->tva_tx, $amount_ht)) {
+														$amount_ht[$line->tva_tx] = 0.0;
+														$amount_tva[$line->tva_tx] = 0.0;
+														$amount_ttc[$line->tva_tx] = 0.0;
+														$multicurrency_amount_ht[$line->tva_tx] = 0.0;
+														$multicurrency_amount_tva[$line->tva_tx] = 0.0;
+														$multicurrency_amount_ttc[$line->tva_tx] = 0.0;
+													}
 													$amount_ht[$line->tva_tx] += $line->total_ht;
 													$amount_tva[$line->tva_tx] += $line->total_tva;
 													$amount_ttc[$line->tva_tx] += $line->total_ttc;
@@ -318,13 +357,26 @@ class PaiementFourn extends Paiement
 											}
 
 											foreach ($amount_ht as $tva_tx => $xxx) {
-												$discount->amount_ht = abs($amount_ht[$tva_tx]);
-												$discount->amount_tva = abs($amount_tva[$tva_tx]);
-												$discount->amount_ttc = abs($amount_ttc[$tva_tx]);
-												$discount->multicurrency_amount_ht = abs($multicurrency_amount_ht[$tva_tx]);
-												$discount->multicurrency_amount_tva = abs($multicurrency_amount_tva[$tva_tx]);
-												$discount->multicurrency_amount_ttc = abs($multicurrency_amount_ttc[$tva_tx]);
-												$discount->tva_tx = abs($tva_tx);
+												$discount->total_ht = abs($amount_ht[$tva_tx]);
+												$discount->total_tva = abs($amount_tva[$tva_tx]);
+												$discount->total_ttc = abs($amount_ttc[$tva_tx]);
+
+												// keep compatibility
+												$discount->amount_ht = $discount->total_ht;
+												$discount->amount_tva = $discount->total_tva;
+												$discount->amount_ttc = $discount->total_ttc;
+
+												// multi-currency
+												$discount->multicurrency_total_ht = abs($multicurrency_amount_ht[$tva_tx]);
+												$discount->multicurrency_total_tva = abs($multicurrency_amount_tva[$tva_tx]);
+												$discount->multicurrency_total_ttc = abs($multicurrency_amount_ttc[$tva_tx]);
+
+												// keep compatibility
+												$discount->multicurrency_amount_ht = $discount->multicurrency_total_ht;
+												$discount->multicurrency_amount_tva = $discount->multicurrency_total_tva;
+												$discount->multicurrency_amount_ttc = $discount->multicurrency_total_ttc;
+
+												$discount->tva_tx = abs((float) $tva_tx);
 
 												$result = $discount->create($user);
 												if ($result < 0) {
@@ -550,7 +602,7 @@ class PaiementFourn extends Paiement
 	 *	Return list of supplier invoices the payment point to
 	 *
 	 *	@param      string	$filter         SQL filter. Warning: This value must not come from a user input.
-	 *	@return     array|int           		Array of supplier invoice id | <0 si ko
+	 *	@return     array<int,int>|int<-1,-1>	Array of supplier invoice id | <0 si ko
 	 */
 	public function getBillsArray($filter = '')
 	{
@@ -647,10 +699,10 @@ class PaiementFourn extends Paiement
 
 
 	/**
-	 *	Return clicable name (with picto eventually)
+	 *	Return clickable name (with picto eventually)
 	 *
 	 *	@param		int		$withpicto		0=No picto, 1=Include picto into link, 2=Only picto
-	 *	@param		string	$option			Sur quoi pointe le lien
+	 *	@param		string	$option			What is the link pointing to
 	 *  @param		string  $mode           'withlistofinvoices'=Include list of invoices into tooltip
 	 *  @param		int  	$notooltip		1=Disable tooltip
 	 *  @param		string	$morecss		Add more CSS
@@ -690,9 +742,9 @@ class PaiementFourn extends Paiement
 		if (empty($notooltip)) {
 			if (getDolGlobalString('MAIN_OPTIMIZEFORTEXTBROWSER')) {
 				$label = $langs->trans("Payment");
-				$linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
+				$linkclose .= ' alt="'.dolPrintHTMLForAttribute($label).'"';
 			}
-			$linkclose .= ' title="'.dol_escape_htmltag($label, 1).'"';
+			$linkclose .= ' title="'.dolPrintHTMLForAttribute($label).'"';
 			$linkclose .= ' class="classfortooltip'.($morecss ? ' '.$morecss : '').'"';
 		} else {
 			$linkclose = ($morecss ? ' class="'.$morecss.'"' : '');
@@ -784,12 +836,12 @@ class PaiementFourn extends Paiement
 
 				// Load file with numbering class (if found)
 				if (is_file($dir.$file) && is_readable($dir.$file)) {
-					$mybool = (include_once $dir.$file) || $mybool;
+					$mybool = ((bool) @include_once $dir.$file) || $mybool;
 				}
 			}
 
 			// For compatibility
-			if ($mybool === false) {
+			if (!$mybool) {
 				$file = getDolGlobalString('SUPPLIER_PAYMENT_ADDON') . ".php";
 				$classname = "mod_supplier_payment_" . getDolGlobalString('SUPPLIER_PAYMENT_ADDON');
 				$classname = preg_replace('/\-.*$/', '', $classname);
@@ -799,18 +851,18 @@ class PaiementFourn extends Paiement
 
 					// Load file with numbering class (if found)
 					if (is_file($dir.$file) && is_readable($dir.$file)) {
-						$mybool = (include_once $dir.$file) || $mybool;
+						$mybool = ((bool) @include_once $dir.$file) || $mybool;
 					}
 				}
 			}
 
-			if ($mybool === false) {
+			if (!$mybool) {
 				dol_print_error(null, "Failed to include file ".$file);
 				return '';
 			}
 
 			$obj = new $classname();
-			$numref = "";
+			'@phan-var-force ModeleNumRefSupplierPayments $obj';
 			$numref = $obj->getNextValue($soc, $this);
 
 			/**
@@ -833,13 +885,13 @@ class PaiementFourn extends Paiement
 	/**
 	 *	Create a document onto disk according to template model.
 	 *
-	 *	@param	    string		$modele			Force template to use ('' to not force)
-	 *	@param		Translate	$outputlangs	Object lang a utiliser pour traduction
-	 *  @param      int			$hidedetails    Hide details of lines
-	 *  @param      int			$hidedesc       Hide description
-	 *  @param      int			$hideref        Hide ref
-	 *  @param   null|array  $moreparams     Array to provide more information
-	 *  @return     int         				Return integer <0 if KO, 0 if nothing done, >0 if OK
+	 *	@param	string		$modele			Force template to use ('' to not force)
+	 *	@param	Translate	$outputlangs	Object lang a utiliser pour traduction
+	 *  @param	int<0,1>	$hidedetails    Hide details of lines
+	 *  @param	int<0,1>	$hidedesc       Hide description
+	 *  @param	int<0,1>	$hideref        Hide ref
+	 *  @param	?array<string,mixed>  $moreparams     Array to provide more information
+	 *  @return	int			       			Return integer <0 if KO, 0 if nothing done, >0 if OK
 	 */
 	public function generateDocument($modele, $outputlangs, $hidedetails = 0, $hidedesc = 0, $hideref = 0, $moreparams = null)
 	{

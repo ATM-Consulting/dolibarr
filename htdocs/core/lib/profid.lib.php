@@ -189,6 +189,7 @@ function isValidTinForES($str)
 	for ($i = 0; $i < 9; $i++) {
 		$num[$i] = substr($str, $i, 1);
 	}
+	'@phan-var-force array<int<0,8>,string> $num';
 
 	//Check NIF
 	if (preg_match('/(^[0-9]{8}[A-Z]{1}$)/', $str)) {
@@ -226,7 +227,8 @@ function isValidTinForES($str)
 
 	//Check NIE T
 	if (preg_match('/^[T]{1}/', $str)) {
-		if ($num[8] == preg_match('/^[T]{1}[A-Z0-9]{8}$/', $str)) {
+		// A NIE starting with T has no control key to check, so the syntax check is enough.
+		if (preg_match('/^[T]{1}[A-Z0-9]{8}$/', $str)) {
 			return 3;
 		} else {
 			return -3;
