@@ -625,9 +625,6 @@ class pdf_cyan extends ModelePDFPropales
 							$nexY = $curY = $tab_top_newpage;
 						}
 
-<<<<<<< HEAD
-							$showpricebeforepagebreak = 1;
-=======
 						$this->resetAfterColsLinePositionsData($nexY, $pdf->getPage());
 
 						$pdf->SetFont('', '', $default_font_size - 1); // Into loop to work with multipage
@@ -645,7 +642,8 @@ class pdf_cyan extends ModelePDFPropales
 						$curYBefore = $curY;
 
 						// Allows data in the first page if description is long enough to break in multiples pages
-						$showpricebeforepagebreak = getDolGlobalInt('MAIN_PDF_DATA_ON_FIRST_PAGE');
+						/** DYVA : always keep prices on the starting page, whatever MAIN_PDF_DATA_ON_FIRST_PAGE */
+						$showpricebeforepagebreak = 1;
 
 						$posYAfterImage = 0;
 
@@ -660,7 +658,8 @@ class pdf_cyan extends ModelePDFPropales
 								$pdf->setPage($pageposbefore + 1);
 								$pdf->setPageOrientation('', true, $heightforfooter); // The only function to edit the bottom margin of current page to set it.
 								$curY = $tab_top_newpage;
-								$showpricebeforepagebreak = 0;
+								/** DYVA : keep prices on the starting page even when the photo moved to the next page */
+								$showpricebeforepagebreak = 1;
 							}
 
 							$pdf->setPageOrientation('', false, $heightforfooter + $heightforfreetext); // The only function to edit the bottom margin of current page to set it.
@@ -672,7 +671,6 @@ class pdf_cyan extends ModelePDFPropales
 
 								$this->setAfterColsLinePositionsData('photo', $posYAfterImage, $pdf->getPage());
 							}
->>>>>>> 0c404b5f733a388701912e5efa7f2fa06afb4a4f
 						}
 
 						// restore Page orientation for text
@@ -683,11 +681,6 @@ class pdf_cyan extends ModelePDFPropales
 								$this->printColDescContent($pdf, $curY, 'desc', $object, $i, $outputlangs, $hideref, $hidedesc);
 								$this->setAfterColsLinePositionsData('desc', $pdf->GetY(), $pdf->getPage());
 							} else {
-<<<<<<< HEAD
-								// We found a page break that was done automatically and there is ow enough space for total+free text+footer.
-								// Keep prices on starting page unless curY is too close to the physical footer boundary
-								$showpricebeforepagebreak = ($curY < ($this->page_hauteur - $heightforfooter - 5)) ? 1 : 0;
-=======
 								$bg_color = colorStringToArray(getDolGlobalString("SUBTOTAL_BACK_COLOR_LEVEL_".abs($object->lines[$i]->qty), 'ffffff'));
 								pdf_render_subtotals($pdf, $this, $curY, $object, $i, $outputlangs, $hideref, $hidedesc, $bg_color, true, true);
 							}
@@ -776,105 +769,11 @@ class pdf_cyan extends ModelePDFPropales
 
 									$this->setAfterColsLinePositionsData('options_'.$extrafieldColKey, $pdf->GetY(), $pdf->getPage());
 								}
->>>>>>> 0c404b5f733a388701912e5efa7f2fa06afb4a4f
 							}
 						}
 
-<<<<<<< HEAD
-					$nexY = $pdf->GetY();
-					$nexYAfterDesc = $nexY;
-					$pageposafter = $pdf->getPage();
-
-					$pdf->setPage($pageposbefore);
-					$pdf->setTopMargin($this->marge_haute);
-					$pdf->setPageOrientation('', 1, 0); // The only function to edit the bottom margin of current page to set it.
-
-					// We suppose that a too long description or photo were moved completely on next page, so we set the value for $curY and current page that will be used by the following output.
-					if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
-						$pdf->setPage($pageposafter);
-						$curY = $tab_top_newpage;
-					}
-
-					$pdf->SetFont('', '', $default_font_size - 1); // We reposition the default font
-
-					// # of line
-					if ($this->getColumnStatus('position')) {
-						$this->printStdColumnContent($pdf, $curY, 'position', $i + 1);
-					}
-
-					// VAT Rate
-					if ($this->getColumnStatus('vat')) {
-						$vat_rate = pdf_getlinevatrate($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'vat', $vat_rate);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Unit price before discount
-					if ($this->getColumnStatus('subprice')) {
-						$up_excl_tax = pdf_getlineupexcltax($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'subprice', $up_excl_tax);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Quantity
-					// Enough for 6 chars
-					if ($this->getColumnStatus('qty')) {
-						$qty = pdf_getlineqty($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'qty', $qty);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-
-					// Unit
-					if ($this->getColumnStatus('unit')) {
-						$unit = pdf_getlineunit($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'unit', $unit);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Discount on line
-					if ($this->getColumnStatus('discount') && $object->lines[$i]->remise_percent) {
-						$remise_percent = pdf_getlineremisepercent($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'discount', $remise_percent);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Total excl tax line (HT)
-					if ($this->getColumnStatus('totalexcltax')) {
-						$total_excl_tax = pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'totalexcltax', $total_excl_tax);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Total with tax line (TTC)
-					if ($this->getColumnStatus('totalincltax')) {
-						$total_incl_tax = pdf_getlinetotalwithtax($object, $i, $outputlangs, $hidedetails);
-						$this->printStdColumnContent($pdf, $curY, 'totalincltax', $total_incl_tax);
-						$nexY = max($pdf->GetY(), $nexY);
-					}
-
-					// Extrafields
-					if (!empty($object->lines[$i]->array_options)) {
-						foreach ($object->lines[$i]->array_options as $extrafieldColKey => $extrafieldValue) {
-							if ($this->getColumnStatus($extrafieldColKey)) {
-								$extrafieldValue = $this->getExtrafieldContent($object->lines[$i], $extrafieldColKey, $outputlangs);
-								$this->printStdColumnContent($pdf, $curY, $extrafieldColKey, $extrafieldValue);
-								$nexY = max($pdf->GetY(), $nexY);
-							}
-						}
-					}
-
-					// Restore nexY from the correct page when prices were printed on a previous page
-					if ($pageposafter > $pageposbefore && !empty($showpricebeforepagebreak)) {
-						$nexY = $nexYAfterDesc;
-						$pdf->setPage($pageposafter);
-					}
-
-					$parameters = array(
-=======
 						$afterPosData = $this->getMaxAfterColsLinePositionsData();
 						$parameters = array(
->>>>>>> 0c404b5f733a388701912e5efa7f2fa06afb4a4f
 						'object' => $object,
 						'i' => $i,
 						'pdf' => & $pdf,
