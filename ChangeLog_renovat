@@ -1,0 +1,5 @@
+--------------------------------------------------------------
+RENOVAT Dolibarr ChangeLog
+--------------------------------------------------------------
+
+- BACKPORT PR #36141 (fix Dolibarr issue #35428, integrated upstream in 23.0): on a draft customer invoice, the retained warranty date limit was never saved and always fell back to 01/01/1970 - htdocs/compta/facture/card.php - **26/08/2026**
