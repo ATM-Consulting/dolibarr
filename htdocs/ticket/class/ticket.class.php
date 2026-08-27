@@ -1366,6 +1366,8 @@ class Ticket extends CommonObject
 		$labelStatus = $this->statuts[$status];
 		$labelStatusShort = $this->statuts_short[$status];
 
+		// BACKPORT v24 - PR #38620
+		$isUnknown = false;
 		if ($status == self::STATUS_NOT_READ) {
 			$statusType = 'status0';
 		} elseif ($status == self::STATUS_READ) {
@@ -1383,10 +1385,8 @@ class Ticket extends CommonObject
 		} elseif ($status == self::STATUS_CLOSED) {
 			$statusType = 'status6';
 		} else {
-			$labelStatus = 'Unknown';
-			$labelStatusShort = 'Unknown';
-			$statusType = 'status0';
-			$mode = 0;
+			// BACKPORT v24 - PR #38620
+			$isUnknown = true;
 		}
 
 		$parameters = array(
@@ -1400,6 +1400,15 @@ class Ticket extends CommonObject
 		if ($reshook > 0) {
 			return $hookmanager->resPrint;
 		}
+
+		// BACKPORT v24 START - PR #38620
+		if ($isUnknown) {
+			$labelStatus = 'Unknown';
+			$labelStatusShort = 'Unknown';
+			$statusType = 'status0';
+			$mode = 0;
+		}
+		// BACKPORT v24 END - PR #38620
 
 		$params = array();
 		if ($notooltip) {
@@ -1619,11 +1628,14 @@ class Ticket extends CommonObject
 	 * @param array	 $mimetype_list       List of MIME type of attached files
 	 * @param array	 $mimefilename_list   List of attached file name in message
 	 * @param boolean	 $send_email      Whether the message is sent by email
+	 * @param array<int,array{id:int,mandatory:int<0,1>,answer_status:int,transparency:int<0,1>}|int> $external_contacts List of external contacts associated with the ticket
 	 * @return int						  <0 if KO, >0 if OK
 	 */
-	public function createTicketMessage($user, $notrigger = 0, $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array(), $send_email = false)
+	// Backport V24 - https://github.com/Dolibarr/dolibarr/pull/37870
+	public function createTicketMessage($user, $notrigger = 0, $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array(), $send_email = false, $external_contacts = [])
 	{
-		global $conf, $langs;
+		// Backport V24 - https://github.com/Dolibarr/dolibarr/pull/37870
+		global $conf, $langs, $hookmanager;
 		$error = 0;
 
 		$now = dol_now();
@@ -1654,6 +1666,17 @@ class Ticket extends CommonObject
 		$actioncomm->label = $this->subject;
 		$actioncomm->note_private = $this->message;
 		$actioncomm->userassigned = array($user->id);
+
+		// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870
+		$parameters = array();
+		$reshook = $hookmanager->executeHooks('createTicketMessageExternalContacts', $parameters, $actioncomm);
+		if ($reshook < 0) {
+			$actioncomm->socpeopleassigned = $external_contacts;
+		} elseif ($reshook == 0) {
+			$actioncomm->socpeopleassigned += $external_contacts;
+		}
+		// Backport V24 END - https://github.com/Dolibarr/dolibarr/pull/37870
+
 		$actioncomm->userownerid = $user->id;
 		$actioncomm->datep = $now;
 		$actioncomm->percentage = -1; // percentage is not relevant for punctual events
@@ -2408,7 +2431,7 @@ class Ticket extends CommonObject
 	 */
 	public function newMessage($user, &$action, $private = 1, $public_area = 0)
 	{
-		global $mysoc, $conf, $langs;
+		global $mysoc, $conf, $langs, $hookmanager;
 
 		$error = 0;
 
@@ -2450,7 +2473,18 @@ class Ticket extends CommonObject
 			$listofnames = $resarray['listofnames'];
 			$listofmimes = $resarray['listofmimes'];
 
-			$id = $object->createTicketMessage($user, 0, $listofpaths, $listofmimes, $listofnames, $send_email);
+			// Backport V24 START - https://github.com/Dolibarr/dolibarr/pull/37870
+			// Retrieve email of all contacts (external)
+			$external_contacts = $object->getInfosTicketExternalContact(1);
+			$external_resources = [];
+			if (!empty($external_contacts)) {
+				foreach ($external_contacts as $eContact) {
+					$external_resources[$eContact['id']] = $eContact;
+				}
+			}
+
+			$id = $object->createTicketMessage($user, 0, $listofpaths, $listofmimes, $listofnames, $send_email, $external_resources);
+			// Backport V24 END - https://github.com/Dolibarr/dolibarr/pull/37870
 			if ($id <= 0) {
 				$error++;
 				$this->error = $object->error;
@@ -2526,6 +2560,20 @@ class Ticket extends CommonObject
 								$message .= '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$val;
 							}
 
+							/*
+							 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+							 */
+							$parameters = array('sendto' => $sendto);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							/*
+							 * END BACKPORT
+							 */
+
 							// URL ticket
 							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
 							$message .= '<br><br>';
@@ -2599,6 +2647,20 @@ class Ticket extends CommonObject
 									$sendto[$conf->global->TICKET_NOTIFICATION_EMAIL_TO] = $conf->global->TICKET_NOTIFICATION_EMAIL_TO;
 								}
 							}
+
+							/*
+							 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+							 */
+							$parameters = array('sendto' => $sendto, 'internal' => 1);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							/*
+							 * END BACKPORT
+							 */
 
 							// dont try to send email if no recipient
 							if (!empty($sendto)) {
@@ -2698,6 +2760,20 @@ class Ticket extends CommonObject
 									}
 								}
 
+								/*
+								 * START BACKPORT :https://github.com/Dolibarr/dolibarr/pull/37885
+								 */
+								$parameters = array('sendto' => $sendto, 'internal' => 0);
+								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendto = array_merge($sendto, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendto = $hookmanager->resArray;
+								}
+								/*
+								 * END BACKPORT
+								 */
+
 								// Dont try to send email when no recipient
 								if (!empty($sendto)) {
 									$result = $this->sendTicketMessageByEmail($subject, $message, '', $sendto, $listofpaths, $listofmimes, $listofnames);
@@ -2745,7 +2821,8 @@ class Ticket extends CommonObject
 	 */
 	public function sendTicketMessageByEmail($subject, $message, $send_internal_cc = 0, $array_receiver = array(), $filename_list = array(), $mimetype_list = array(), $mimefilename_list = array())
 	{
-		global $conf, $langs;
+		// BACKPORT v24 - PR #38656
+		global $conf, $langs, $hookmanager;
 
 		if ($conf->global->TICKET_DISABLE_ALL_MAILS) {
 			dol_syslog(get_class($this).'::sendTicketMessageByEmail: Emails are disable into ticket setup by option TICKET_DISABLE_ALL_MAILS', LOG_WARNING);
@@ -2768,6 +2845,18 @@ class Ticket extends CommonObject
 		}
 
 		$from = $conf->global->TICKET_NOTIFICATION_EMAIL_FROM;
+
+		// BACKPORT v24 START - PR #38656
+		// Hook to let modules override the sender (From) of ticket message emails
+		$hookmanager->initHooks(array('ticketsendticketmessage'));
+		$parameters = array('from' => $from);
+		$action = '';
+		$reshook = $hookmanager->executeHooks('getTicketMessageEmailFrom', $parameters, $this, $action);
+		if ($reshook && !empty($hookmanager->resArray['from'])) {
+			$from = $hookmanager->resArray['from'];
+		}
+		// BACKPORT v24 END - PR #38656
+
 		$is_sent = false;
 		if (is_array($array_receiver) && count($array_receiver) > 0) {
 			foreach ($array_receiver as $key => $receiver) {
