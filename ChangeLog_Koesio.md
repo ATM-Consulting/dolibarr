@@ -1,3 +1,4 @@
+- SPECIFIC - T260145 - Add hook getShippableInfos (context '<element>dao') so a module can replace the order shippability computation, and make the order line stock column consume the per line verdict it exposes - **2026-08-12**
 - BACKPORT 24 - T260188 - (PR #26612, #26613) Backport Add sqlfilterlines filter to the /orders and /supplierorders endpoints - **2026-07-08**
 - BACKPORT 24 - T2605-4267 - (PR #38656) Backport Add hook getTicketMessageEmailFrom to override sender in Ticket::sendTicketMessageByEmail - **2026-06-09**
 - Backport 24 : https://github.com/Dolibarr/dolibarr/pull/37870 - **2026-04-15**

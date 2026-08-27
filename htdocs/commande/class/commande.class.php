@@ -4289,26 +4289,22 @@ class Commande extends CommonOrder
 	/**
 	 * Compute shippable status and tooltip/icon for the order.
 	 *
-	 * @param array<mixed> $options Extra options (reserved for future use)
-	 * @return  array<string,mixed>        Array with keys: has_product, shippable, texticon, textinfo, warning
-	 * /
+	 * BEGIN SPE KOESIO: T260145 document the getShippableInfos hook
+	 * Can be overridden by a module through the 'getShippableInfos' hook (context
+	 * '<element>dao'). The hook result is merged over the default skeleton below, so every
+	 * key of the contract stays defined whatever the module returns. A module may also
+	 * expose extra keys - a per line verdict under 'lines', for instance, which the order
+	 * line template consumes when present.
+	 *
+	 * @param  array<mixed>        $options Extra options, forwarded as-is to the hook
+	 * @return array<string,mixed>          Keys: has_product, shippable, texticon, textinfo, warning
+	 * END SPE KOESIO: T260145 document the getShippableInfos hook
 	 */
 	public function getShippableInfos(array $options = array()) : array
 	{
-		global $conf, $langs, $hookmanager;
+		global $conf, $langs;
 
 		$langs->loadLangs(array('orders', 'sendings', 'stocks', 'products'));
-
-		// T260145: allow a module to fully replace this computation (per-warehouse shippability).
-		// When no module answers, the historical computation below applies unchanged.
-		if (is_object($hookmanager)) {
-			$parameters = array('options' => $options);
-			$hookmanager->executeHooks('getShippableInfos', $parameters, $this);
-			if (!empty($hookmanager->resArray['shippableinfos'])
-				&& is_array($hookmanager->resArray['shippableinfos'])) {
-				return $hookmanager->resArray['shippableinfos'];
-			}
-		}
 
 		$result = array(
 			'has_product' => false,
@@ -4317,6 +4313,23 @@ class Commande extends CommonOrder
 			'textinfo'    => '',
 			'warning'     => false,
 		);
+
+		// BEGIN SPE KOESIO: T260145 allow a module to replace the shippability computation
+		// When no module answers, the historical computation below applies unchanged.
+		global $hookmanager;
+		if (is_object($hookmanager)) {
+			$hookmanager->initHooks(array($this->element.'dao'));
+			$parameters = array('options' => $options);
+			$reshook = $hookmanager->executeHooks('getShippableInfos', $parameters, $this);
+			if ($reshook < 0) {
+				dol_syslog(__METHOD__.' hook getShippableInfos failed: '.$hookmanager->error, LOG_ERR);
+			}
+			if (!empty($hookmanager->resArray['shippableinfos'])
+				&& is_array($hookmanager->resArray['shippableinfos'])) {
+				return array_merge($result, $hookmanager->resArray['shippableinfos']);
+			}
+		}
+		// END SPE KOESIO: T260145 allow a module to replace the shippability computation
 
 		// Requested naming for statuses
 		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_CLOSED) {
