@@ -1,4 +1,5 @@
 - FIX : Doc preview (magnifier/loupe) on shipments (BL) in thirdparty card (client/prospect tab) - use 'expedition' modulepart instead of $sendingstatic->element ('shipping') in comm/card.php - PR #755 - *2026-07-09*
+- NEW : Configuration UI (Accueil > Configuration > Sécurité, onglet Mots de passe) pour l'API de réinitialisation de mot de passe : activation de `USER_PASSWORD_RESET_PUBLIC_API` + champ `USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS` (plus besoin de passer par les constantes manuelles). - *2026-08-03*
 - NEW : API REST réinitialisation de mot de passe (`passwordpolicy` / `passwordresetrequest` / `passwordresetconfirm` dans api_users) pour un flux "mot de passe oublié" transparent côté portail ; opt-in `USER_PASSWORD_RESET_PUBLIC_API`, lien email vers `returnurl` whitelisté (`USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS`), anti-énumération, validation politique via setPassword. - *2026-06-24*
 - FIX : BACKPORT pour SENTRY : add null check before setting _renderItem on jQuery UI autocomplete widget #37597
 - NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
