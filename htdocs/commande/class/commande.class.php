@@ -4314,8 +4314,7 @@ class Commande extends CommonOrder
 			'warning'     => false,
 		);
 
-		// BEGIN SPE KOESIO: T260145 allow a module to replace the shippability computation
-		// When no module answers, the historical computation below applies unchanged.
+		// BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
 		global $hookmanager;
 		if (is_object($hookmanager)) {
 			$hookmanager->initHooks(array($this->element.'dao'));
@@ -4329,7 +4328,7 @@ class Commande extends CommonOrder
 				return array_merge($result, $hookmanager->resArray['shippableinfos']);
 			}
 		}
-		// END SPE KOESIO: T260145 allow a module to replace the shippability computation
+		// BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
 
 		// Requested naming for statuses
 		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_CLOSED) {
