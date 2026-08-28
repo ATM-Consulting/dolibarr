@@ -2630,3 +2630,7 @@ AvailableWithSomePDFTemplatesOnly=Fonctionnalité non prise en charge sur les an
 SelectAService=Select the kind of service to use
 SelectFeatureToTest=Select the feature to test
 AIModelForFeature=AI model for features (AI service %s)
+PasswordResetPublicAPI=API publique de réinitialisation de mot de passe
+EnablePasswordResetPublicAPI=Activer l'API REST publique de réinitialisation de mot de passe (utilisée par des portails externes)
+PasswordResetAllowedReturnHosts=Hôtes autorisés pour le lien de retour de réinitialisation
+PasswordResetAllowedReturnHostsHelp=Liste d'hôtes séparés par des virgules, autorisés comme URL de retour du lien de réinitialisation (ex : portail.example.com)

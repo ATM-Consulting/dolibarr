@@ -154,6 +154,13 @@ if ($action == 'activate_MAIN_SECURITY_DISABLEFORGETPASSLINK') {
 	dolibarr_del_const($db, "MAIN_SECURITY_DISABLEFORGETPASSLINK", $conf->entity);
 }
 
+if ($action == 'update_reset_hosts') {
+	dolibarr_set_const($db, "USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS", GETPOST('reset_hosts', 'alphanohtml'), 'chaine', 0, '', $conf->entity);
+	setEventMessages($langs->trans("SetupSaved"), null, 'mesgs');
+	header("Location: security.php");
+	exit;
+}
+
 if ($action == 'updatepattern') {
 	$pattern = GETPOST("pattern", "alpha");
 	$explodePattern = explode(';', $pattern);  // List of ints separated with ';' containing counts
@@ -493,6 +500,26 @@ print '</tr>';
 
 print '</table>';
 
+print '</form>';
+
+print '<br>';
+
+// Public password reset REST API (consumed by external portals, e.g. AskDoli). Off by default.
+print load_fiche_titre($langs->trans("PasswordResetPublicAPI"), '', '');
+print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
+print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="action" value="update_reset_hosts">';
+print '<table class="noborder centpercent">';
+print '<tr class="liste_titre"><td>'.$langs->trans("Parameter").'</td><td>'.$langs->trans("Value").'</td></tr>';
+print '<tr class="oddeven"><td>'.$langs->trans("EnablePasswordResetPublicAPI").'</td><td>';
+print ajax_constantonoff('USER_PASSWORD_RESET_PUBLIC_API');
+print '</td></tr>';
+print '<tr class="oddeven"><td>'.$langs->trans("PasswordResetAllowedReturnHosts").'</td><td>';
+print '<input type="text" class="minwidth300" name="reset_hosts" value="'.dol_escape_htmltag(getDolGlobalString('USER_PASSWORD_RESET_ALLOWED_RETURN_HOSTS')).'">';
+print '<br><span class="opacitymedium small">'.$langs->trans("PasswordResetAllowedReturnHostsHelp").'</span>';
+print '</td></tr>';
+print '</table>';
+print '<div class="center paddingtop"><input type="submit" class="button" value="'.$langs->trans("Save").'"></div>';
 print '</form>';
 
 print '<br>';
