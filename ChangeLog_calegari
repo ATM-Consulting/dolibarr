@@ -1,0 +1,33 @@
+# ChangeLog Calegari
+
+Core patches applied on top of Dolibarr 23.0 for this instance.
+
+Every entry below lives in a core file, so it is overwritten by each core
+upgrade and MUST be re-applied until the matching upstream pull request lands.
+Check this file after every upgrade.
+
+## 23.0 - 31/08/2026
+
+- FIX : situation invoice margin — prorate the buy price by `situation_percent`
+  in progress mode (`INVOICE_USE_SITUATION = 2`), and stop the sign flip on
+  situation credit notes.
+
+  File: `htdocs/core/class/html.formmargin.class.php`
+  (`FormMargin::getMarginInfosArray()`)
+
+  The sale price of a situation line comes from `facturedet.total_ht`, already
+  prorated by the progress of the situation. The buy price was prorated only
+  when `INVOICE_USE_SITUATION` was exactly `1`, so progress mode compared the
+  sale of one situation against the cost of the whole job: lines already settled
+  at 100 % in an earlier situation weighed 0 € in sale but brought their full
+  cost. The guard dates from v17 (`befdd967f79`); mode 2 arrived in v20 without
+  this call site being updated.
+
+  A single formula covers both modes, because `total_ht` and `situation_percent`
+  share the same semantics within a mode (cumulative in mode 1, delta in
+  mode 2). The ratio uses `abs()`: on a credit-note line the sign is carried by
+  both `subprice` and `situation_percent`, and `$pa_ht` is already sign-flipped
+  above, so a signed ratio flipped the cost back to positive.
+
+  Upstream: still present in `develop`, which kept the `== 1` guard. Pull
+  request to open; drop this patch once it is merged and backported to 23.0.
