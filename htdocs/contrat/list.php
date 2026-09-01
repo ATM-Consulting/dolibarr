@@ -133,7 +133,7 @@ $arrayfields = array(
 	'c.ref'=>array('label'=>$langs->trans("Ref"), 'checked'=>1, 'position'=>10),
 	'c.ref_customer'=>array('label'=>$langs->trans("RefCustomer"), 'checked'=>1, 'position'=>12),
 	'c.ref_supplier'=>array('label'=>$langs->trans("RefSupplier"), 'checked'=>1, 'position'=>14),
-	// Backport of develop PR "Add project ref/label columns to contract list"
+	// Backport of develop PR Dolibarr/dolibarr#39968
 	'p.ref'=>array('label'=>$langs->trans("ProjectRef"), 'checked'=>0, 'enabled'=>(empty($conf->projet->enabled) ? 0 : 1), 'position'=>16),
 	'p.title'=>array('label'=>$langs->trans("ProjectLabel"), 'checked'=>0, 'enabled'=>(empty($conf->projet->enabled) ? 0 : 1), 'position'=>17),
 	's.nom'=>array('label'=>$langs->trans("ThirdParty"), 'checked'=>1, 'position'=>30),
@@ -233,7 +233,7 @@ $sql .= " c.rowid, c.ref, c.datec as date_creation, c.tms as date_update, c.date
 $sql .= ' s.rowid as socid, s.nom as name, s.name_alias, s.email, s.town, s.zip, s.fk_pays as country_id, s.client, s.code_client, s.status as company_status, s.logo as company_logo,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
-// Backport of develop PR "Add project ref/label columns to contract list"
+// Backport of develop PR Dolibarr/dolibarr#39968
 $sql .= " p.rowid as project_id, p.ref as project_ref, p.title as project_label,";
 $sql .= " MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") as lower_planned_end_date,";
 $sql .= ' SUM('.$db->ifsql("cd.statut=0", 1, 0).') as nb_initial,';
@@ -808,7 +808,7 @@ while ($i < min($num, $limit)) {
 		print '<td>'.$obj->ref_supplier.'</td>';
 	}
 
-	// Backport of develop PR "Add project ref/label columns to contract list"
+	// Backport of develop PR Dolibarr/dolibarr#39968
 	$projectstatic->id = $obj->project_id;
 	$projectstatic->ref = $obj->project_ref;
 	$projectstatic->title = $obj->project_label;
