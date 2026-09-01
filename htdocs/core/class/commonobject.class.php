@@ -6395,9 +6395,20 @@ abstract class CommonObject
 
 								$obj = $this->db->getRow($sqlFetchObject);
 
-								if ($obj !== false) {
+								// BEGIN SPE KOESIO: T260197 - getRow() has THREE return values, as its own
+								// docblock states: "False on failure, 0 on empty, object on success". Testing
+								// only "!== false" lets the 0 (no row) fall into the success branch:
+								// "(0)->rowid" is NULL, $res is set to 1, and NULL is written to the column
+								// while a success is reported, with no error and no log entry.
+								// Upstream bug introduced by Dolibarr PR #33460, still present on develop.
+								// When the id cannot be resolved we now leave the column untouched: dropping
+								// the key from $new_array_options excludes it from both INSERT and UPDATE.
+								if (is_object($obj)) {
 									$objectId = $obj->rowid;
 									$res = 1;
+								}
+								elseif ($obj === 0) {
+									$res = 0;
 								}
 								else {
 									$res = -1;
@@ -6406,6 +6417,10 @@ abstract class CommonObject
 								if ($res > 0) {
 									$new_array_options[$key] = $objectId;
 								}
+								elseif ($res === 0) {
+									unset($new_array_options[$key]);
+								}
+								// END SPE KOESIO: T260197
 								else {
 									$this->error = "Id/Ref '".$value."' for object '".$object->element."' not found";
 									return -1;
@@ -6451,7 +6466,19 @@ abstract class CommonObject
 
 			$setFields = implode(', ', $updateFields);
 
-			if (getDolGlobalInt('MAIN_UPDATE_EXTRAFIELD_ROW_WHEN_POSSIBLE')
+			// BEGIN SPE KOESIO: T260197 - $updateFields can end up empty: either every key of
+			// array_options was filtered out because it is not a declared extrafield of the target
+			// (e.g. options_send_date_ededoc set on a FactureFournisseur), or the only key left was
+			// dropped by the case 'link' guard above. Emitting "SET  WHERE ..." is a syntax error
+			// that makes insertExtraFields() return -1 and rolls back the calling action, and
+			// falling through to DELETE+INSERT would wipe the whole extrafields row. There is
+			// simply nothing to write, so skip the statement and keep the trigger/commit path.
+			if (empty($updateFields)) {
+				dol_syslog(get_class($this).'::insertExtraFields nothing to write, statement skipped', LOG_DEBUG);
+				$resql = 1;
+			}
+			// END SPE KOESIO: T260197
+			elseif (getDolGlobalInt('MAIN_UPDATE_EXTRAFIELD_ROW_WHEN_POSSIBLE')
 				&& $this->db->getRow("SELECT 1 FROM {$extrafieldsTable} WHERE fk_object = {$this->id}")) {
 				dol_syslog(get_class($this).'::insertExtraFields update', LOG_DEBUG);
 				// the extrafield row exists already: we update the extrafields we know about in the current entity and we
