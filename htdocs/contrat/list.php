@@ -36,9 +36,10 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/company.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 
 // Load translation files required by the page
-$langs->loadLangs(array('contracts', 'products', 'companies', 'compta'));
+$langs->loadLangs(array('contracts', 'products', 'companies', 'compta', 'projects'));
 
 $action = GETPOST('action', 'aZ09');
 $massaction = GETPOST('massaction', 'alpha');
@@ -57,6 +58,8 @@ $search_type_thirdparty = GETPOST("search_type_thirdparty", 'int');
 $search_contract = GETPOST('search_contract', 'alpha');
 $search_ref_customer = GETPOST('search_ref_customer', 'alpha');
 $search_ref_supplier = GETPOST('search_ref_supplier', 'alpha');
+$search_project_ref = GETPOST('search_project_ref', 'alpha');
+$search_project = GETPOST('search_project', 'alpha');
 $sall = (GETPOST('search_all', 'alphanohtml') != '') ? GETPOST('search_all', 'alphanohtml') : GETPOST('sall', 'alphanohtml');
 $search_status = GETPOST('search_status', 'alpha');
 $socid = GETPOST('socid', 'int');
@@ -130,6 +133,8 @@ $arrayfields = array(
 	'c.ref'=>array('label'=>$langs->trans("Ref"), 'checked'=>1, 'position'=>10),
 	'c.ref_customer'=>array('label'=>$langs->trans("RefCustomer"), 'checked'=>1, 'position'=>12),
 	'c.ref_supplier'=>array('label'=>$langs->trans("RefSupplier"), 'checked'=>1, 'position'=>14),
+	'p.ref'=>array('label'=>$langs->trans("ProjectRef"), 'checked'=>0, 'enabled'=>(empty($conf->projet->enabled) ? 0 : 1), 'position'=>16),
+	'p.title'=>array('label'=>$langs->trans("ProjectLabel"), 'checked'=>0, 'enabled'=>(empty($conf->projet->enabled) ? 0 : 1), 'position'=>17),
 	's.nom'=>array('label'=>$langs->trans("ThirdParty"), 'checked'=>1, 'position'=>30),
 	's.email'=>array('label'=>$langs->trans("ThirdPartyEmail"), 'checked'=>0, 'position'=>30),
 	's.town'=>array('label'=>$langs->trans("Town"), 'checked'=>0, 'position'=>31),
@@ -187,6 +192,8 @@ if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x'
 	$search_contract = "";
 	$search_ref_customer = "";
 	$search_ref_supplier = "";
+	$search_project_ref = "";
+	$search_project = "";
 	$search_user = '';
 	$search_sale = '';
 	$search_product_category = '';
@@ -216,6 +223,7 @@ $form = new Form($db);
 $formfile = new FormFile($db);
 $formother = new FormOther($db);
 $socstatic = new Societe($db);
+$projectstatic = new Project($db);
 $formcompany = new FormCompany($db);
 $contracttmp = new Contrat($db);
 
@@ -224,6 +232,7 @@ $sql .= " c.rowid, c.ref, c.datec as date_creation, c.tms as date_update, c.date
 $sql .= ' s.rowid as socid, s.nom as name, s.name_alias, s.email, s.town, s.zip, s.fk_pays as country_id, s.client, s.code_client, s.status as company_status, s.logo as company_logo,';
 $sql .= " typent.code as typent_code,";
 $sql .= " state.code_departement as state_code, state.nom as state_name,";
+$sql .= " p.rowid as project_id, p.ref as project_ref, p.title as project_label,";
 $sql .= " MIN(".$db->ifsql("cd.statut=4", "cd.date_fin_validite", "null").") as lower_planned_end_date,";
 $sql .= ' SUM('.$db->ifsql("cd.statut=0", 1, 0).') as nb_initial,';
 $sql .= ' SUM('.$db->ifsql("cd.statut=4 AND (cd.date_fin_validite IS NULL OR cd.date_fin_validite >= '".$db->idate($now)."')", 1, 0).') as nb_running,';
@@ -248,6 +257,7 @@ if ($search_sale > 0 || (!$user->rights->societe->client->voir && !$socid)) {
 	$sql .= ", ".MAIN_DB_PREFIX."societe_commerciaux as sc";
 }
 $sql .= ", ".MAIN_DB_PREFIX."contrat as c";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."projet as p ON p.rowid = c.fk_projet";
 if (is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$object->table_element."_extrafields as ef on (c.rowid = ef.fk_object)";
 }
@@ -289,6 +299,12 @@ if (!empty($search_ref_customer)) {
 if (!empty($search_ref_supplier)) {
 	$sql .= natural_search(array('c.ref_supplier'), $search_ref_supplier);
 }
+if ($search_project_ref != '') {
+	$sql .= natural_search("p.ref", $search_project_ref);
+}
+if ($search_project != '') {
+	$sql .= natural_search("p.title", $search_project);
+}
 if ($search_zip) {
 	$sql .= natural_search(array('s.zip'), $search_zip);
 }
@@ -313,7 +329,8 @@ $sql .= $hookmanager->resPrint;
 $sql .= " GROUP BY c.rowid, c.ref, c.datec, c.tms, c.date_contrat, c.statut, c.ref_customer, c.ref_supplier, c.note_private, c.note_public, c.entity,";
 $sql .= ' s.rowid, s.nom, s.name_alias, s.email, s.town, s.zip, s.fk_pays, s.client, s.code_client, s.status, s.logo,';
 $sql .= " typent.code,";
-$sql .= " state.code_departement, state.nom";
+$sql .= " state.code_departement, state.nom,";
+$sql .= " p.rowid, p.ref, p.title";
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
 	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
@@ -411,6 +428,12 @@ if ($search_ref_customer != '') {
 }
 if ($search_ref_supplier != '') {
 	$param .= '&search_ref_supplier='.urlencode($search_ref_supplier);
+}
+if ($search_project_ref != '') {
+	$param .= '&search_project_ref='.urlencode($search_project_ref);
+}
+if ($search_project != '') {
+	$param .= '&search_project='.urlencode($search_project);
 }
 if ($search_op2df != '') {
 	$param .= '&search_op2df='.urlencode($search_op2df);
@@ -554,6 +577,12 @@ if (!empty($arrayfields['c.ref_supplier']['checked'])) {
 	print '<input type="text" class="flat" size="6" name="search_ref_supplier" value="'.dol_escape_htmltag($search_ref_supplier).'">';
 	print '</td>';
 }
+if (!empty($arrayfields['p.ref']['checked'])) {
+	print '<td class="liste_titre"><input type="text" class="flat" size="6" name="search_project_ref" value="'.dol_escape_htmltag($search_project_ref).'"></td>';
+}
+if (!empty($arrayfields['p.title']['checked'])) {
+	print '<td class="liste_titre"><input type="text" class="flat" size="6" name="search_project" value="'.dol_escape_htmltag($search_project).'"></td>';
+}
 if (!empty($arrayfields['s.nom']['checked'])) {
 	print '<td class="liste_titre">';
 	print '<input type="text" class="flat" size="8" name="search_name" value="'.dol_escape_htmltag($search_name).'">';
@@ -653,6 +682,12 @@ if (!empty($arrayfields['c.ref_customer']['checked'])) {
 }
 if (!empty($arrayfields['c.ref_supplier']['checked'])) {
 	print_liste_field_titre($arrayfields['c.ref_supplier']['label'], $_SERVER["PHP_SELF"], "c.ref_supplier", "", $param, '', $sortfield, $sortorder);
+}
+if (!empty($arrayfields['p.ref']['checked'])) {
+	print_liste_field_titre($arrayfields['p.ref']['label'], $_SERVER["PHP_SELF"], "p.ref", "", $param, '', $sortfield, $sortorder);
+}
+if (!empty($arrayfields['p.title']['checked'])) {
+	print_liste_field_titre($arrayfields['p.title']['label'], $_SERVER["PHP_SELF"], "p.title", "", $param, '', $sortfield, $sortorder);
 }
 if (!empty($arrayfields['s.nom']['checked'])) {
 	print_liste_field_titre($arrayfields['s.nom']['label'], $_SERVER["PHP_SELF"], "s.nom", "", $param, '', $sortfield, $sortorder);
@@ -769,6 +804,25 @@ while ($i < min($num, $limit)) {
 	}
 	if (!empty($arrayfields['c.ref_supplier']['checked'])) {
 		print '<td>'.$obj->ref_supplier.'</td>';
+	}
+
+	$projectstatic->id = $obj->project_id;
+	$projectstatic->ref = $obj->project_ref;
+	$projectstatic->title = $obj->project_label;
+
+	if (!empty($arrayfields['p.ref']['checked'])) {
+		print '<td class="nowrap">';
+		if ($obj->project_id > 0) {
+			print $projectstatic->getNomUrl(1);
+		}
+		print '</td>';
+	}
+	if (!empty($arrayfields['p.title']['checked'])) {
+		print '<td class="nowrap">';
+		if ($obj->project_id > 0) {
+			print $projectstatic->title;
+		}
+		print '</td>';
 	}
 	if (!empty($arrayfields['s.nom']['checked'])) {
 		print '<td class="tdoverflowmax150">';
