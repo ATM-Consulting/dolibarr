@@ -6395,21 +6395,28 @@ abstract class CommonObject
 
 								$obj = $this->db->getRow($sqlFetchObject);
 
-								// BEGIN SPE KOESIO: T260197 - getRow() has THREE return values, as its own
-								// docblock states: "False on failure, 0 on empty, object on success". Testing
-								// only "!== false" lets the 0 (no row) fall into the success branch:
-								// "(0)->rowid" is NULL, $res is set to 1, and NULL is written to the column
-								// while a success is reported, with no error and no log entry.
-								// Upstream bug introduced by Dolibarr PR #33460, still present on develop.
-								// When the id cannot be resolved we now leave the column untouched: dropping
-								// the key from $new_array_options excludes it from both INSERT and UPDATE.
+								/** BACKPORT PR #39963 */
+								// getRow() returns an object on success, int 0 when the query succeeded but
+								// returned no row, and false on SQL failure. Testing "!== false" let the 0
+								// through as a success: $obj->rowid on an int is null, $res was set to 1 and
+								// null was stored in the column while a success was reported.
 								if (is_object($obj)) {
 									$objectId = $obj->rowid;
 									$res = 1;
 								}
+								/** END BACKPORT PR #39963 */
+								// BEGIN SPE KOESIO: T260197 - upstream returns -1 when the id cannot be
+								// resolved. We cannot afford that failure here: the fk_last_invoice extrafield
+								// of a contract line points either to llx_facture or to llx_facture_fourn, and
+								// LightFactureDispatcher can only tell them apart when the $object global holds
+								// the contract, i.e. on the contract card. Anywhere else a supplier invoice id
+								// is looked up in llx_facture and not found, so returning -1 would break every
+								// ContratLigne::update() coming from the API or from a script. We leave the
+								// column untouched instead, which keeps the value that was already stored.
 								elseif ($obj === 0) {
 									$res = 0;
 								}
+								// END SPE KOESIO: T260197
 								else {
 									$res = -1;
 								}
@@ -6417,6 +6424,8 @@ abstract class CommonObject
 								if ($res > 0) {
 									$new_array_options[$key] = $objectId;
 								}
+								// BEGIN SPE KOESIO: T260197 - dropping the key excludes the column from the
+								// UPDATE built below, so its stored value survives.
 								elseif ($res === 0) {
 									unset($new_array_options[$key]);
 								}
