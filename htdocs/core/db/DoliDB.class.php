@@ -292,20 +292,21 @@ abstract class DoliDB implements Database
 			static $atmNaturalSortDelegate = null;
 			if ($atmNaturalSortDelegate === null) {
 				global $conf;
-				// Not cached while $conf is empty: an early call would disable it for the whole request.
-				if (!empty($conf)) {
+				// Keyed on $conf->modules, not $conf: caching before setValues() would disable it for the request.
+				if (!empty($conf->modules)) {
 					$atmNaturalSortDelegate = false;
-					if ($this->type === 'mysqli'
-						&& function_exists('isModEnabled') && isModEnabled('climaintlog')
-						&& !empty($conf->global->CLIMAINTLOG_NATURAL_SORT_ENABLED)) {
+					if ($this->type === 'mysqli' && isModEnabled('climaintlog')
+						&& getDolGlobalString('CLIMAINTLOG_NATURAL_SORT_ENABLED')) {
 						dol_include_once('/climaintlog/lib/climaintlog_sort.lib.php');
 						$atmNaturalSortDelegate = function_exists('atmNaturalSortOrderBy');
 					}
 				}
 			}
-			if ($atmNaturalSortDelegate === true
-				&& ($atmOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder)) !== null) {
-				return $atmOrderBy;
+			if ($atmNaturalSortDelegate === true) {
+				$atmOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder);
+				if ($atmOrderBy !== null) {
+					return $atmOrderBy;
+				}
 			}
 			// --- ATM NATURAL SORT - END ---
 			$oldsortorder = '';
