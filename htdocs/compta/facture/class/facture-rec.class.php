@@ -983,7 +983,9 @@ class FactureRec extends CommonInvoice
 	 *  @param		int				$fk_parent_line		Id of parent line
 	 *	@return    	int             					Return integer <0 if KO, Id of line if OK
 	 */
-	public function addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1 = 0, $txlocaltax2 = 0, $fk_product = 0, $remise_percent = 0, $price_base_type = 'HT', $info_bits = 0, $fk_remise_except = 0, $pu_ttc = 0, $type = 0, $rang = -1, $special_code = 0, $label = '', $fk_unit = null, $pu_ht_devise = 0, $date_start_fill = 0, $date_end_fill = 0, $fk_fournprice = null, $pa_ht = 0, $fk_parent_line = 0)
+	/** START SPÉ KN */
+	public function addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1 = 0, $txlocaltax2 = 0, $fk_product = 0, $remise_percent = 0, $price_base_type = 'HT', $info_bits = 0, $fk_remise_except = 0, $pu_ttc = 0, $type = 0, $rang = -1, $special_code = 0, $label = '', $fk_unit = null, $pu_ht_devise = 0, $date_start_fill = 0, $date_end_fill = 0, $fk_fournprice = null, $pa_ht = 0, $fk_parent_line = 0, $array_options = [])
+	/** END SPÉ KN */
 	{
 		global $mysoc;
 
@@ -1147,11 +1149,22 @@ class FactureRec extends CommonInvoice
 		$sql .= ", ".price2num($multicurrency_total_ttc, 'CT');
 		$sql .= ")";
 
-		dol_syslog(get_class($this)."::addline", LOG_DEBUG);
+		dol_syslog(get_class($this) . "::addline", LOG_DEBUG);
 		if ($this->db->query($sql)) {
-			$lineId = $this->db->last_insert_id(MAIN_DB_PREFIX."facturedet_rec");
+			$lineId = $this->db->last_insert_id(MAIN_DB_PREFIX . "facturedet_rec");
 			$this->id = $facid;
 			$this->update_price(1);
+
+			/** START SPÉ KN */
+			$factureRecLine = new FactureLigneRec($this->db);
+			$factureRecLine->array_options = $array_options;
+			$factureRecLine->id = $lineId;
+			$result = $factureRecLine->insertExtraFields();
+			if ($result < 0) {
+				$this->error[] = $factureRecLine->error;
+				return -1;
+			}
+			/** END SPÉ KN */
 			return $lineId;
 		} else {
 			$this->error = $this->db->lasterror();
