@@ -288,30 +288,24 @@ abstract class DoliDB implements Database
 	{
 		if (!empty($sortfield)) {
 			// --- ATM NATURAL SORT - START ---
-			// Delegates the ORDER BY of whitelisted reference columns to the climaintlog module
-			// so document lists sort on the numeric counter (9999 before 10000). Any failed
-			// condition falls through to the native code below, which must stay verbatim.
+			// Native code below must stay verbatim: every failed condition falls through to it.
 			static $atmNaturalSortDelegate = null;
 			if ($atmNaturalSortDelegate === null) {
 				global $conf;
-				// Do not cache the decision while $conf is not loaded yet, otherwise a very
-				// early call would disable the feature for the whole request.
+				// Not cached while $conf is empty: an early call would disable it for the whole request.
 				if (!empty($conf)) {
 					$atmNaturalSortDelegate = false;
 					if ($this->type === 'mysqli'
 						&& function_exists('isModEnabled') && isModEnabled('climaintlog')
-						&& !empty($conf->global->CLIMAINTLOG_NATURAL_SORT_ENABLED)
-						&& function_exists('dol_include_once')) {
+						&& !empty($conf->global->CLIMAINTLOG_NATURAL_SORT_ENABLED)) {
 						dol_include_once('/climaintlog/lib/climaintlog_sort.lib.php');
 						$atmNaturalSortDelegate = function_exists('atmNaturalSortOrderBy');
 					}
 				}
 			}
-			if ($atmNaturalSortDelegate === true) {
-				$atmNaturalSortOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder);
-				if ($atmNaturalSortOrderBy !== null) {
-					return $atmNaturalSortOrderBy;
-				}
+			if ($atmNaturalSortDelegate === true
+				&& ($atmOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder)) !== null) {
+				return $atmOrderBy;
 			}
 			// --- ATM NATURAL SORT - END ---
 			$oldsortorder = '';
