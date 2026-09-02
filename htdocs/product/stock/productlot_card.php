@@ -464,6 +464,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print $producttmp->getNomUrl(1, 'stock')." - ".$producttmp->label;
 	print '</td></tr>';
 
+       // SPE KN Creation date
+        print '<tr><td class="titlefield">'.$langs->trans("DateCreation").'</td><td>';
+        print dol_print_date($object->datec);
+        print '</td></tr>';
+
+
 	// Sell by
 	if (empty($conf->global->PRODUCT_DISABLE_SELLBY)) {
 		print '<tr><td>';
