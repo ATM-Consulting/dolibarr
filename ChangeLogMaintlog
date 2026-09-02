@@ -1,5 +1,8 @@
 # CHANGELOG 19.0 MAINTLOG FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
+* 02/09/26 *
+- NEW : patch `ATM NATURAL SORT` dans `DoliDB::order()` (`htdocs/core/db/DoliDB.class.php`) : délégation du `ORDER BY` au module climaintlog pour trier les références de documents sur la valeur numérique du compteur. Garde inactive par défaut, repli sur le code natif verbatim. **Dette de gamme : à reporter à chaque montée de version Dolibarr.**
+
 * 06/05/25 *
 - FIX : DA026383 - Error in BDD saving 
 

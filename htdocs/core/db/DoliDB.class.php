@@ -287,6 +287,33 @@ abstract class DoliDB implements Database
 	public function order($sortfield = '', $sortorder = '')
 	{
 		if (!empty($sortfield)) {
+			// --- ATM NATURAL SORT - START ---
+			// Delegates the ORDER BY of whitelisted reference columns to the climaintlog module
+			// so document lists sort on the numeric counter (9999 before 10000). Any failed
+			// condition falls through to the native code below, which must stay verbatim.
+			static $atmNaturalSortDelegate = null;
+			if ($atmNaturalSortDelegate === null) {
+				global $conf;
+				// Do not cache the decision while $conf is not loaded yet, otherwise a very
+				// early call would disable the feature for the whole request.
+				if (!empty($conf)) {
+					$atmNaturalSortDelegate = false;
+					if ($this->type === 'mysqli'
+						&& function_exists('isModEnabled') && isModEnabled('climaintlog')
+						&& !empty($conf->global->CLIMAINTLOG_NATURAL_SORT_ENABLED)
+						&& function_exists('dol_include_once')) {
+						dol_include_once('/climaintlog/lib/climaintlog_sort.lib.php');
+						$atmNaturalSortDelegate = function_exists('atmNaturalSortOrderBy');
+					}
+				}
+			}
+			if ($atmNaturalSortDelegate === true) {
+				$atmNaturalSortOrderBy = atmNaturalSortOrderBy($sortfield, $sortorder);
+				if ($atmNaturalSortOrderBy !== null) {
+					return $atmNaturalSortOrderBy;
+				}
+			}
+			// --- ATM NATURAL SORT - END ---
 			$oldsortorder = '';
 			$return = '';
 			$fields = explode(',', $sortfield);
