@@ -59,6 +59,9 @@ if (!$sortfield) {
 
 // Category
 $selected_cat = GETPOSTINT('search_categ');
+if ($selected_cat == -1) {
+	$selected_cat = 0;
+}
 $selected_soc = GETPOSTINT('search_soc');
 $subcat = false;
 if (GETPOST('subcat', 'alpha') === 'yes') {
