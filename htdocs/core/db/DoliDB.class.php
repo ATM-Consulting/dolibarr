@@ -287,7 +287,7 @@ abstract class DoliDB implements Database
 	public function order($sortfield = '', $sortorder = '')
 	{
 		if (!empty($sortfield)) {
-			// --- ATM NATURAL SORT - START ---
+			// MAINTLOG - Natural sort of document references - START
 			// Native code below must stay verbatim: every failed condition falls through to it.
 			static $atmNaturalSortDelegate = null;
 			if ($atmNaturalSortDelegate === null) {
@@ -308,7 +308,7 @@ abstract class DoliDB implements Database
 					return $atmOrderBy;
 				}
 			}
-			// --- ATM NATURAL SORT - END ---
+			// MAINTLOG - Natural sort of document references - END
 			$oldsortorder = '';
 			$return = '';
 			$fields = explode(',', $sortfield);
