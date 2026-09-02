@@ -308,7 +308,7 @@ abstract class DoliDB implements Database
 				}
 			}
 			if ($atmNaturalSortDelegate === true) {
-				$atmNaturalSortOrderBy = atmNaturalSortOrderBy($sortfield, $sortorder);
+				$atmNaturalSortOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder);
 				if ($atmNaturalSortOrderBy !== null) {
 					return $atmNaturalSortOrderBy;
 				}
