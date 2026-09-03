@@ -2195,14 +2195,38 @@ class Ticket extends CommonObject
 	public function setCustomer($id)
 	{
 		if ($this->id) {
+			/**DEBUT SPECIFIQUE ATM **/
+			$this->db->begin();
+			/**FIN SPECIFIQUE ATM **/
 			$sql = "UPDATE ".MAIN_DB_PREFIX."ticket";
 			$sql .= " SET fk_soc = ".($id > 0 ? (int) $id : "null");
 			$sql .= " WHERE rowid = ".((int) $this->id);
 			dol_syslog(get_class($this).'::setCustomer sql='.$sql);
 			$resql = $this->db->query($sql);
 			if ($resql) {
+				/**DEBUT SPECIFIQUE ATM **/
+				// The Agenda tab of a third party filters on actioncomm.fk_soc alone, so the events already recorded
+				// on the ticket keep listing the previous customer and never reach the new one.
+				// Original core: the ticket row was the only one updated, and no transaction wrapped the change.
+				$sqlevents = "UPDATE ".MAIN_DB_PREFIX."actioncomm";
+				$sqlevents .= " SET fk_soc = ".($id > 0 ? (int) $id : "null");
+				$sqlevents .= " WHERE elementtype = 'ticket' AND fk_element = ".((int) $this->id);
+				dol_syslog(get_class($this).'::setCustomer sql='.$sqlevents);
+				if (!$this->db->query($sqlevents)) {
+					$this->error = $this->db->lasterror();
+					dol_syslog(get_class($this).'::setCustomer '.$this->error, LOG_ERR);
+					$this->db->rollback();
+
+					return -1;
+				}
+
+				$this->db->commit();
+				/**FIN SPECIFIQUE ATM **/
 				return 1;
 			} else {
+				/**DEBUT SPECIFIQUE ATM **/
+				$this->db->rollback();
+				/**FIN SPECIFIQUE ATM **/
 				return -1;
 			}
 		} else {

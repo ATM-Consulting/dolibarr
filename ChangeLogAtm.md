@@ -1,3 +1,4 @@
+- FIX : DA028671 - Changing the third party of a ticket now moves its agenda events too - Ticket::setCustomer() updated only llx_ticket, so the events already recorded stayed on the previous customer and never appeared on the new one (the third party Agenda tab filters on actioncomm.fk_soc alone) - *2026-09-03*
 - FIX : Doc preview (magnifier/loupe) on shipments (BL) in thirdparty card (client/prospect tab) - use 'expedition' modulepart instead of $sendingstatic->element ('shipping') in comm/card.php - PR #755 - *2026-07-09*
 - FIX : BACKPORT pour SENTRY : add null check before setting _renderItem on jQuery UI autocomplete widget #37597
 - NEW : Add complete_substitutions_array in ticket.class.php - *2026-02-20*
