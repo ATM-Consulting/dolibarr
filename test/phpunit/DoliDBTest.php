@@ -128,6 +128,27 @@ class DoliDBTest extends PHPUnit\Framework\TestCase
 	}
 
 	/**
+	 * The MAINTLOG fork carries a natural sort block inside order(). It is plain PHP once
+	 * removed, so a rebase drops it without any error: this test is the only automatic notice.
+	 *
+	 * @return	void
+	 */
+	public function testMaintlogNaturalSortBlockIsStillInOrder()
+	{
+		$file = DOL_DOCUMENT_ROOT.'/core/db/DoliDB.class.php';
+		$this->assertFileExists($file);
+		$source = (string) file_get_contents($file);
+
+		foreach (array('START', 'END') as $marker) {
+			$this->assertStringContainsString(
+				'MAINTLOG - Natural sort of document references - '.$marker,
+				$source,
+				'The MAINTLOG natural sort block is gone from DoliDB::order(): a rebase dropped it and the document lists are silently back to alphabetical ordering.'
+			);
+		}
+	}
+
+	/**
 	 * testDDLUpdateField
 	 *
 	 * @return	int

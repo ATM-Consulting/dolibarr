@@ -289,20 +289,27 @@ abstract class DoliDB implements Database
 		if (!empty($sortfield)) {
 			// MAINTLOG - Natural sort of document references - START
 			// Native code below must stay verbatim: every failed condition falls through to it.
+			// On a port to 22+, note that upstream now strips "func(x) as alias" from $sortfield
+			// further down; this block runs before that cleanup.
 			static $atmNaturalSortDelegate = null;
 			if ($atmNaturalSortDelegate === null) {
 				global $conf;
 				// Keyed on $conf->modules, not $conf: caching before setValues() would disable it for the request.
 				if (!empty($conf->modules)) {
 					$atmNaturalSortDelegate = false;
-					if ($this->type === 'mysqli' && isModEnabled('climaintlog')
-						&& getDolGlobalString('CLIMAINTLOG_NATURAL_SORT_ENABLED')) {
+					if (isModEnabled('climaintlog') && getDolGlobalString('CLIMAINTLOG_NATURAL_SORT_ENABLED')) {
 						dol_include_once('/climaintlog/lib/climaintlog_sort.lib.php');
-						$atmNaturalSortDelegate = function_exists('atmNaturalSortOrderBy');
+						// REGEXP_SUBSTR needs MariaDB 10.0.5 / MySQL 8.0.4 while the driver declares 5.0.3,
+						// and a failed list query exits: never delegate below those versions.
+						$atmNaturalSortDelegate = function_exists('atmNaturalSortOrderBy')
+							&& function_exists('atmNaturalSortIsSupported')
+							&& atmNaturalSortIsSupported($this->getVersion());
 					}
 				}
 			}
-			if ($atmNaturalSortDelegate === true) {
+			// The driver type is checked here, not in the cache: a second DoliDB of another type
+			// would otherwise reuse a decision taken for this one.
+			if ($atmNaturalSortDelegate === true && $this->type === 'mysqli') {
 				$atmOrderBy = atmNaturalSortOrderBy((string) $sortfield, (string) $sortorder);
 				if ($atmOrderBy !== null) {
 					return $atmOrderBy;
