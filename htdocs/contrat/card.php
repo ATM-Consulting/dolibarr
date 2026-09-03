@@ -1996,9 +1996,13 @@ if ($action == 'create') {
 						print '</td>';
 
 						// VAT
+						/** START SPÉ KN */
+						$seller = $object->array_options['options_clinetwork_contractType'] == 1 ? $mysoc : $object->thirdparty;
+						$buyer = $object->array_options['options_clinetwork_contractType'] == 1 ? $object->thirdparty : $mysoc;
 						print '<td class="right">';
-						print $form->load_tva("eltva_tx", $objp->tva_tx.($objp->vat_src_code ? (' ('.$objp->vat_src_code.')') : ''), $mysoc, $object->thirdparty, $currentLineProductId, $objp->info_bits, $objp->product_type, false, 1);
+						print $form->load_tva("eltva_tx", $objp->tva_tx.($objp->vat_src_code ? (' ('.$objp->vat_src_code.')') : ''), $seller, $buyer, $currentLineProductId, $objp->info_bits, $objp->product_type, false, 1);
 						print '</td>';
+						/** END SPÉ KN */
 
 						// Price
 						print '<td class="right"><input class="width50" type="text" name="elprice" value="'.(GETPOSTISSET('elprice') ? GETPOST('elprice') : price($objp->subprice)).'"></td>';
