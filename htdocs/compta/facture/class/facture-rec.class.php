@@ -983,9 +983,9 @@ class FactureRec extends CommonInvoice
 	 *  @param		int				$fk_parent_line		Id of parent line
 	 *	@return    	int             					Return integer <0 if KO, Id of line if OK
 	 */
-	/** START SPÉ KN */
+	/** START BACKPORT PR#40082 */
 	public function addline($desc, $pu_ht, $qty, $txtva, $txlocaltax1 = 0, $txlocaltax2 = 0, $fk_product = 0, $remise_percent = 0, $price_base_type = 'HT', $info_bits = 0, $fk_remise_except = 0, $pu_ttc = 0, $type = 0, $rang = -1, $special_code = 0, $label = '', $fk_unit = null, $pu_ht_devise = 0, $date_start_fill = 0, $date_end_fill = 0, $fk_fournprice = null, $pa_ht = 0, $fk_parent_line = 0, $array_options = [])
-	/** END SPÉ KN */
+	/** END BACKPORT */
 	{
 		global $mysoc;
 
@@ -1155,7 +1155,7 @@ class FactureRec extends CommonInvoice
 			$this->id = $facid;
 			$this->update_price(1);
 
-			/** START SPÉ KN */
+			/** START BACKPORT PR#40082 */
 			$factureRecLine = new FactureLigneRec($this->db);
 			$factureRecLine->array_options = $array_options;
 			$factureRecLine->id = $lineId;
@@ -1164,7 +1164,7 @@ class FactureRec extends CommonInvoice
 				$this->error[] = $factureRecLine->error;
 				return -1;
 			}
-			/** END SPÉ KN */
+			/** END BACKPORT  */
 			return $lineId;
 		} else {
 			$this->error = $this->db->lasterror();
@@ -1480,6 +1480,11 @@ class FactureRec extends CommonInvoice
 			$sql .= ' AND rowid = '.((int) $restrictioninvoiceid);
 		}
 		$sql .= $this->db->order('entity', 'ASC');
+		/** START BACKPORT PR#40041 */
+		if (getDolGlobalInt('NB_REC_FACT_CUSTOMER_GEN_BY_CALL')) {
+			$sql .= $this->db->plimit(getDolGlobalInt('NB_REC_FACT_CUSTOMER_GEN_BY_CALL'));
+		}
+		/** END BACKPORT */
 		//print $sql;exit;
 		$parameters = array(
 			'restrictioninvoiceid' => $restrictioninvoiceid,
