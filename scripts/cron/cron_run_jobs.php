@@ -27,8 +27,9 @@
  * \brief Execute pendings jobs from command line
  */
 
-// Spé koesio
+/** START SPÉ KN */
 ini_set('memory_limit', '2048M');
+/** END SPÉ KN */
 
 
 if (!defined('NOTOKENRENEWAL')) {
