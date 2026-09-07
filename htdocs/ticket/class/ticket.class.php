@@ -3047,7 +3047,9 @@ class Ticket extends CommonObject
 								}
 							}
 
-							$parameters = array('sendto' => $sendto);
+							/** START SPÉ KN */
+							$parameters = array('sendto' => $sendto, 'internal' => 1);
+							/** END SPÉ KN */
 							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 							if (empty($reshook)) {
 								$sendto = array_merge($sendto, $hookmanager->resArray);
@@ -3150,6 +3152,8 @@ class Ticket extends CommonObject
 									$sendto[$object->origin_email] = $object->origin_email;
 								}
 
+								/** START SPÉ KN */
+								/*
 								if ($object->fk_soc > 0 && !array_key_exists($object->origin_replyto, $sendto) && !array_key_exists($object->origin_email, $sendto)) {
 									$object->socid = $object->fk_soc;
 									$object->fetch_thirdparty();
@@ -3157,6 +3161,8 @@ class Ticket extends CommonObject
 										$sendto[$object->thirdparty->email] = $object->thirdparty->email;
 									}
 								}
+								*/
+								/** END SPÉ KN */
 
 								// Add global email address recipient
 								if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
@@ -3165,7 +3171,9 @@ class Ticket extends CommonObject
 									}
 								}
 
-								$parameters = array('sendto' => $sendto);
+								/** START SPÉ KN */
+								$parameters = array('sendto' => $sendto, 'internal' => 0);
+								/** END SPÉ KN */
 								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
 								if (empty($reshook)) {
 									$sendto = array_merge($sendto, $hookmanager->resArray);

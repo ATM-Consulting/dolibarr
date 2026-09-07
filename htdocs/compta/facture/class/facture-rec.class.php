@@ -1454,7 +1454,9 @@ class FactureRec extends CommonInvoice
 	 */
 	public function createRecurringInvoices($restrictioninvoiceid = 0, $forcevalidation = 0, $notrigger = 0, $forcebuilddoc = 0)
 	{
-		global $conf, $langs, $user, $hookmanager, $action;
+		/** START SPÉ KN */
+		global $conf, $langs, $user, $db, $hookmanager, $action;
+		/** END SPÉ KN */
 
 		$error = 0;
 		$nb_create = 0;
@@ -1472,7 +1474,9 @@ class FactureRec extends CommonInvoice
 
 		$sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'facture_rec';
 		$sql .= ' WHERE frequency > 0'; // A recurring invoice is an invoice with a frequency
-		$sql .= " AND (date_when IS NULL OR date_when <= '".$this->db->idate($today)."')";
+		/** START SPÉ KN */
+		$sql.= " AND (date_when IS NULL OR date_when <= '".$db->idate(strtotime('+'.getDolGlobalInt('GENERATE_INVOICE_AHEAD_OF_TIME').' days', $today))."')";
+		/** END SPÉ KN */
 		$sql .= ' AND (nb_gen_done < nb_gen_max OR nb_gen_max = 0)';
 		$sql .= ' AND suspended = 0';
 		$sql .= ' AND entity = '.((int) $conf->entity); // MUST STAY = $conf->entity here
