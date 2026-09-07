@@ -206,3 +206,6 @@ StatusSupplierOrderReceivedPartially=Partially received
 StatusSupplierOrderReceivedAll=All products received
 NeedAtLeastOneInvoice = There has to be at least one Invoice
 LineAlreadyDispatched = The order line is already received.
+# UPSTREAM PR #40155
+ErrorRefCustomerAlreadyUsedOnOrder=Customer order reference <b>%s</b> is already used by order <b>%s</b> of this customer.
+# END UPSTREAM PR #40155
