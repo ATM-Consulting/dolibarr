@@ -17,3 +17,4 @@ cbdaaea84ab - Suppression de l'envoi automatique au tiers du ticket
 fbde090e43db98684e83d96bc8db51fcb0904949 - Limite mémoire relevée à 2048 Mo
 2897cb7ad87a63089b48ad5298031475ad48213d - TVA du vendeur et non du client sur un contrat fournisseur
 a1428b79cf0 - Génération anticipée des factures récurrentes
+369607840b9 - Hide edit button when date_compta is not empty
