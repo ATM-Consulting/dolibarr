@@ -916,9 +916,11 @@ class Commande extends CommonOrder
 			}
 		}
 
+		/** UPSTREAM PR #40155 */
 		if ($this->checkRefClientIsFree((string) $this->ref_client, (int) $this->socid) < 0) {
 			return -1;
 		}
+		/** END UPSTREAM PR #40155 */
 
 		$soc = new Societe($this->db);
 		$result = $soc->fetch($this->socid);
@@ -2897,6 +2899,19 @@ class Commande extends CommonOrder
 	}
 
 	/**
+	 * UPSTREAM PR #40155 - https://github.com/Dolibarr/dolibarr/pull/40155
+	 *
+	 * The three methods below and their three call sites in create(), set_ref_client() and update()
+	 * are the OREP variant of that PR: always enabled instead of driven by
+	 * ORDER_CHECK_DUPLICATE_REF_CLIENT, and extended with the exemption list
+	 * ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES which the PR does not carry.
+	 *
+	 * On a major upgrade: if the target version ships the PR, drop this block, drop the call sites,
+	 * enable ORDER_CHECK_DUPLICATE_REF_CLIENT and re-implement the exemption list only if the
+	 * placeholder references are still in use. Otherwise carry the whole block over.
+	 */
+
+	/**
 	 *	Get the ref of another customer order of the same third party already using a customer ref
 	 *
 	 *	@param		string		$ref_client		Customer ref to search for
@@ -2995,6 +3010,7 @@ class Commande extends CommonOrder
 
 		return -1;
 	}
+	/** END UPSTREAM PR #40155 */
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
@@ -3011,9 +3027,11 @@ class Commande extends CommonOrder
 		if ($user->hasRight('commande', 'creer')) {
 			$error = 0;
 
+			/** UPSTREAM PR #40155 */
 			if ($this->checkRefClientIsFree((string) $ref_client, (int) $this->socid, (int) $this->id) < 0) {
 				return -1;
 			}
+			/** END UPSTREAM PR #40155 */
 
 			$this->db->begin();
 
@@ -3439,9 +3457,11 @@ class Commande extends CommonOrder
 
 		// Check parameters
 		// Put here code to add control on parameters values
+		/** UPSTREAM PR #40155 */
 		if ($this->checkRefClientIsFree((string) $this->ref_client, (int) $this->socid, (int) $this->id) < 0) {
 			return -1;
 		}
+		/** END UPSTREAM PR #40155 */
 
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."commande SET";

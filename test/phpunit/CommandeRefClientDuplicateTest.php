@@ -20,6 +20,7 @@
  *      \ingroup    test
  *      \brief      PHPUnit test of the customer order duplicate ref_client control
  *      \remarks    To run this script as CLI:  phpunit --no-configuration CommandeRefClientDuplicateTest.php
+ *      \remarks    UPSTREAM PR #40155 - whole file, drop it if the target version ships the PR
  */
 
 global $conf, $user, $langs, $db;
