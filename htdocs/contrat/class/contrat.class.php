@@ -9,7 +9,7 @@
  * Copyright (C) 2013		Florian Henry			<florian.henry@open-concept.pro>
  * Copyright (C) 2014-2015	Marcos García			<marcosgdf@gmail.com>
  * Copyright (C) 2018   	Nicolas ZABOURI			<info@inovea-conseil.com>
- * Copyright (C) 2018-2025  Frédéric France         <frederic.france@free.fr>
+ * Copyright (C) 2018-2026  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2015-2018	Ferran Marcet			<fmarcet@2byte.es>
  * Copyright (C) 2024		William Mead			<william.mead@manchenumerique.fr>
  * Copyright (C) 2024-2025	MDW						<mdeweerd@users.noreply.github.com>
@@ -1187,7 +1187,11 @@ class Contrat extends CommonObject
 				$this->db->commit();
 				return $this->id;
 			} else {
-				$this->error = "Failed to add contract";
+				// Keep the error reported by the failing step, it is the only actionable one.
+				// Only fall back to a generic message when nothing was set, as propal.class.php does.
+				if (empty($this->error) && empty($this->errors)) {
+					$this->error = "Failed to add contract";
+				}
 				dol_syslog(get_class($this)."::create - 20 - ".$this->error, LOG_ERR);
 				$this->db->rollback();
 				return -2;
@@ -1306,7 +1310,7 @@ class Contrat extends CommonObject
 		if (!$error) {
 			// We remove directory
 			$ref = dol_sanitizeFileName($this->ref);
-			if ($conf->contrat->dir_output) {
+			if ($conf->contrat->dir_output && !empty($ref)) {
 				$dir = $conf->contrat->multidir_output[$this->entity]."/".$ref;
 				if (file_exists($dir)) {
 					$res = @dol_delete_dir_recursive($dir);
@@ -1409,6 +1413,7 @@ class Contrat extends CommonObject
 		$sql .= " note_private=".(isset($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "null").",";
 		$sql .= " note_public=".(isset($this->note_public) ? "'".$this->db->escape($this->note_public)."'" : "null").",";
 		$sql .= " import_key=".(isset($this->import_key) ? "'".$this->db->escape($this->import_key)."'" : "null").",";
+		$sql .= " fk_user_modif=".(isset($user->id) ? ((int) $user->id) : "null").",";
 		$sql .= " extraparams=".(isset($extraparams) ? "'".$this->db->escape($extraparams)."'" : "null");
 		$sql .= " WHERE rowid=".((int) $this->id);
 
@@ -1445,6 +1450,9 @@ class Contrat extends CommonObject
 			$this->db->rollback();
 			return -1 * $error;
 		} else {
+			if (isset($user->id)) {
+				$this->fk_user_modif = (int) $user->id;
+			}
 			$this->db->commit();
 			return 1;
 		}
@@ -2761,6 +2769,7 @@ class Contrat extends CommonObject
 			$num = $this->db->num_rows($resql);
 
 			include_once DOL_DOCUMENT_ROOT.'/core/class/html.formmail.class.php';
+			include_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
 
 			$i = 0;
 			while ($i < $num) {

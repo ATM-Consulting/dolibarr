@@ -9,6 +9,7 @@
  * Copyright (C) 2025		William Mead			<william@m34d.com>
  * Copyright (C) 2025		Charlene Benke			<charlene@patas-monkey.com>
  * Copyright (C) 2026		Benjamin Falière		<benjamin@faliere.com>
+ * Copyright (C) 2026		Noé Cendrier			<noe.cendrier@altairis.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -538,7 +539,7 @@ class Thirdparties extends DolibarrApi
 			throw new RestException(501, 'Module "Products" needed for this request');
 		}
 
-		if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+		if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 			throw new RestException(501, 'Multiprices features activation needed for this request');
 		}
 
@@ -1078,7 +1079,7 @@ class Thirdparties extends DolibarrApi
 		}
 
 		$result = $this->company->fetch($id);
-		if (!is_array($result)) {
+		if ($result < 1) {
 			throw new RestException(404, 'Thirdparty not found');
 		}
 

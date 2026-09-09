@@ -271,14 +271,16 @@ if (empty($reshook)) {
 			// usergroup  select
 			// better perf on single sql
 			/** GROUPS */
-			$sql = ' SELECT DISTINCT u.rowid,u.lastname,u.firstname from ' . MAIN_DB_PREFIX . 'user as  u';
-			$sql .= ' LEFT JOIN  ' . MAIN_DB_PREFIX . 'usergroup_user as ug on ug.fk_user = u.rowid  ';
-			$sql .= ' WHERE  fk_usergroup in (' .$db->sanitize(implode(',', $groups)) . ')';
-			$resql = $db->query($sql);
+			if (is_array($groups) && count($groups) > 0) {
+				$sql = ' SELECT DISTINCT u.rowid,u.lastname,u.firstname from ' . MAIN_DB_PREFIX . 'user as  u';
+				$sql .= ' LEFT JOIN  ' . MAIN_DB_PREFIX . 'usergroup_user as ug on ug.fk_user = u.rowid  ';
+				$sql .= ' WHERE  fk_usergroup in (' .$db->sanitize(implode(',', $groups)) . ')';
+				$resql = $db->query($sql);
 
-			if ($resql) {
-				while ($obj = $db->fetch_object($resql)) {
-					$TusersToProcess[$obj->rowid] = $obj->rowid;
+				if ($resql) {
+					while ($obj = $db->fetch_object($resql)) {
+						$TusersToProcess[$obj->rowid] = $obj->rowid;
+					}
 				}
 			}
 			/** USERS  */
@@ -760,11 +762,15 @@ function sendMail($id, $cancreate, $now, $autoValidation)
 				}
 
 				// option to notify the validator if the balance is less than the request
+				// (only for leave types that actually use the balance counter)
 				if (!getDolGlobalString('HOLIDAY_HIDE_APPROVER_ABOUT_NEGATIVE_BALANCE')) {
-					$nbopenedday = num_open_day($object->date_debut_gmt, $object->date_fin_gmt, 0, 1, $object->halfday, $expediteur->country_id);
+					$affectingtypes = $object->getTypes(1, 1);
+					if (!empty($affectingtypes[$object->fk_type])) {
+						$nbopenedday = num_open_day($object->date_debut_gmt, $object->date_fin_gmt, 0, 1, $object->halfday, $expediteur->country_id);
 
-					if ($nbopenedday > $object->getCPforUser($object->fk_user, $object->fk_type)) {
-						$message .= "<p>".$langs->transnoentities("HolidaysToValidateAlertSolde")."</p>\n";
+						if ($nbopenedday > $object->getCPforUser($object->fk_user, $object->fk_type)) {
+							$message .= "<p>".$langs->transnoentities("HolidaysToValidateAlertSolde")."</p>\n";
+						}
 					}
 				}
 
