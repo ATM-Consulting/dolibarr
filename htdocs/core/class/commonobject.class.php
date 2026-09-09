@@ -12,7 +12,7 @@
  * Copyright (C) 2017       ATM Consulting      <support@atm-consulting.fr>
  * Copyright (C) 2017-2019  Nicolas ZABOURI     <info@inovea-conseil.com>
  * Copyright (C) 2017       Rui Strecht         <rui.strecht@aliartalentos.com>
- * Copyright (C) 2018-2025  Frédéric France     <frederic.france@free.fr>
+ * Copyright (C) 2018-2026  Frédéric France     <frederic.france@free.fr>
  * Copyright (C) 2018       Josep Lluís Amador  <joseplluis@lliuretic.cat>
  * Copyright (C) 2023       Gauthier VERDOL     <gauthier.verdol@atm-consulting.fr>
  * Copyright (C) 2021       Grégory Blémand     <gregory.blemand@atm-consulting.fr>
@@ -5869,7 +5869,11 @@ abstract class CommonObject
 		$this->tpl['strike'] = 0;
 		if ($restrictlist == 'services' && $line->product_type != Product::TYPE_SERVICE) {
 			$this->tpl['strike'] = 1;
-		} elseif ($line->special_code == SUBTOTALS_SPECIAL_CODE) {
+		} elseif (defined('SUBTOTALS_SPECIAL_CODE') && $line->special_code == SUBTOTALS_SPECIAL_CODE) {
+			// SUBTOTALS_SPECIAL_CODE is only defined when the subtotals module
+			// is loaded (htdocs/subtotals/class/commonsubtotal.class.php:24).
+			// Without the guard, printing origin lines from a PO into a vendor
+			// invoice fatals (#37663). Other tpl files already follow this pattern.
 			$this->tpl['strike'] = 1;
 		}
 
@@ -7112,6 +7116,15 @@ abstract class CommonObject
 		// if the extrafields row already exists for the object, we update it
 		if ($linealreadyfound) {
 			array_shift($sqlColumnValues); // drop the 'fk_object' column because its value won't change
+			if (empty($sqlColumnValues)) {
+				// No column of the target element to update. This happens when the object was created from
+				// another element whose extrafields do not exist on this element (e.g. invoice created from a
+				// shipment: the source line extrafields are copied into array_options but none match facturedet).
+				// The existing row is already correct, so there is nothing to update: avoid an empty "SET" clause
+				// that would produce an invalid SQL statement.
+				$this->db->commit();
+				return 1;
+			}
 			$sqlColumnValueString = implode(
 				',',
 				/**
@@ -7151,7 +7164,7 @@ abstract class CommonObject
 		// Update also the user of last modification in parent table
 		if (!$error && !empty($this->fields['fk_user_modif'])) {
 			$sql = "UPDATE ".$this->db->prefix().$this->table_element;
-			$sql .= " SET fk_user_modif = ".(int) $user->id;
+			$sql .= " SET fk_user_modif = ".(int) $userused->id;
 			$sql .= " WHERE ".(empty($this->table_rowid) ? 'rowid' : $this->db->sanitize($this->table_rowid))." = ".((int) $this->id);
 			$this->db->query($sql);
 		}
@@ -7324,7 +7337,10 @@ abstract class CommonObject
 			require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 			$extrafields = new ExtraFields($this->db);
 			$extrafields->fetch_name_optionals_label($this->table_element);
-
+			if (!isset($extrafields->attributes[$this->table_element]['type'][$key])) {
+				// Extrafield not defined for this object type: nothing to update
+				return 0;
+			}
 			$value = $this->array_options["options_".$key];
 
 			$attributeKey      = $key;
@@ -7576,7 +7592,7 @@ abstract class CommonObject
 			// Update also the user of last modification in parent table
 			if (!$error && !empty($this->fields['fk_user_modif'])) {
 				$sql = "UPDATE ".$this->db->prefix().$this->table_element;
-				$sql .= " SET fk_user_modif = ".(int) $user->id;
+				$sql .= " SET fk_user_modif = ".(int) $userused->id;
 				$sql .= " WHERE ".(empty($this->table_rowid) ? 'rowid' : $this->db->sanitize($this->table_rowid))." = ".((int) $this->id);
 				$this->db->query($sql);
 			}
@@ -9469,10 +9485,12 @@ abstract class CommonObject
 					if (($mode == 'create') && !in_array(abs($visibility), array(1, 3))) {
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list
 					} elseif (($mode == 'edit') && !in_array(abs($visibility), array(1, 3, 4))) {
-						// We need to make sure, that the values of hidden extrafields are also part of $_POST. Otherwise, they would be empty after an update of the object. See also getOptionalsFromPost
+						// We need to make sure, that the values of hidden extrafields are also part of $_POST.
+						// Otherwise, they would be empty after an update of the object. See also getOptionalsFromPost
+						// TODO: We should not have this hidden field, and action='update' should be done only if field was POSTED by form.
 						$ef_name = 'options_' . $key;
-						$ef_value = $this->array_options[$ef_name];
-						$out .= '<input type="hidden" name="' . $ef_name . '" id="' . $ef_name . '" value="' . $ef_value . '" />' . "\n";
+						$ef_value = $this->array_options[$ef_name] ?? '';
+						$out .= '<input type="hidden" name="' . $ef_name . '" id="' . $ef_name . '" value="' . dolPrintHTMLForAttribute($ef_value) . '" />' . "\n";	 // If trouble to preserve content, we can try dol_htmlentities() instead, but real solution is to remove completely the hidden field (see previous TODO).
 						continue; // <> -1 and <> 1 and <> 3 = not visible on forms, only on list and <> 4 = not visible at the creation
 					} elseif ($mode == 'view' && empty($visibility)) {
 						continue;
@@ -9840,7 +9858,7 @@ abstract class CommonObject
 			return $user->hasRight($module, $element);
 		}
 
-		return $user->rights->$element;
+		return isset($user->rights->$element) ? $user->rights->$element : null;
 	}
 
 	/**
@@ -10302,7 +10320,7 @@ abstract class CommonObject
 	public function isInt($info)
 	{
 		if (is_array($info)) {
-			if (isset($info['type']) && (preg_match('/(^int|int$)/i', $info['type']))) {
+			if (isset($info['type']) && (preg_match('/^(?:tiny|small|medium|big)?int|int$/i', $info['type']))) {
 				return true;
 			} else {
 				return false;
@@ -11560,15 +11578,15 @@ abstract class CommonObject
 		// Get current categories
 		$c = new Categorie($this->db);
 		$existing = $c->containing($this->id, $type_categ, 'id');
+		// containing() returns an integer < 0 on error (e.g. when the categorie_xxx table does not exist).
+		// Normalize to an empty array to avoid array_diff()/foreach() warnings below.
+		if (!is_array($existing)) {
+			$existing = array();
+		}
 		if ($remove_existing) {
 			// Diff
-			if (is_array($existing)) {
-				$to_del = array_diff($existing, $categories);
-				$to_add = array_diff($categories, $existing);
-			} else {
-				$to_del = array(); // Nothing to delete
-				$to_add = $categories;
-			}
+			$to_del = array_diff($existing, $categories);
+			$to_add = array_diff($categories, $existing);
 		} else {
 			$to_del = array(); // Nothing to delete
 			$to_add = array_diff($categories, $existing);

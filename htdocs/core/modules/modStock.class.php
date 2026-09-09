@@ -75,38 +75,44 @@ class modStock extends DolibarrModules
 		$this->langfiles = array("stocks");
 
 		// Constants
-		$this->const = array();
-		$r = 0;
+		$this->const = [
+			[
+				'STOCK_DISALLOW_NEGATIVE_TRANSFER',
+				'chaine',
+				'1',
+				'',
+				0,
+			],
+			[
+				"STOCK_ADDON_PDF",
+				"chaine",
+				"standard_stock",
+				'Name of PDF model of stock',
+				0,
+			],
+			[
+				"MOUVEMENT_ADDON_PDF",
+				"chaine",
+				"standard_movement_stock",
+				'Name of PDF model of stock movement',
+				0,
+			],
+			[
+				"STOCK_ADDON_PDF_ODT_PATH",
+				"chaine",
+				"DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/stocks",
+				"",
+				0,
+			],
+			[
+				"MOUVEMENT_ADDON_PDF_ODT_PATH",
+				"chaine",
+				"DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/stocks/movements",
+				"",
+				0,
+			],
+		];
 
-		$this->const[$r] = array('STOCK_DISALLOW_NEGATIVE_TRANSFER', 'chaine', '1', '', 0);
-
-		$r++;
-		$this->const[$r][0] = "STOCK_ADDON_PDF";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "standard_stock";
-		$this->const[$r][3] = 'Name of PDF model of stock';
-		$this->const[$r][4] = 0;
-
-		$r++;
-		$this->const[$r][0] = "MOUVEMENT_ADDON_PDF";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "standard_movement_stock";
-		$this->const[$r][3] = 'Name of PDF model of stock movement';
-		$this->const[$r][4] = 0;
-
-		$r++;
-		$this->const[$r][0] = "STOCK_ADDON_PDF_ODT_PATH";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/stocks";
-		$this->const[$r][3] = "";
-		$this->const[$r][4] = 0;
-
-		$r++;
-		$this->const[$r][0] = "MOUVEMENT_ADDON_PDF_ODT_PATH";
-		$this->const[$r][1] = "chaine";
-		$this->const[$r][2] = "DOL_DATA_ROOT".($conf->entity > 1 ? '/'.$conf->entity : '')."/doctemplates/stocks/movements";
-		$this->const[$r][3] = "";
-		$this->const[$r][4] = 0;
 
 		// Boxes
 		$this->boxes = array();
@@ -348,7 +354,8 @@ class modStock extends DolibarrModules
 				$this->export_entities_array[$r] = array_merge($this->export_entities_array[$r], array('p.barcode' => 'product'));
 			}
 			$this->export_aggregate_array[$r] = array('ps.reel' => 'SUM'); // TODO Not used yet
-			$this->export_dependencies_array[$r] = array('stockbatch' => array('pb.rowid'), 'batch' => array('pb.rowid')); // We must keep this until the aggregate_array is used. To add unique key if we ask a field of a child to avoid the DISTINCT to discard them.
+			// We must keep this until the aggregate_array is used. To add unique key if we ask a field of a child to avoid the DISTINCT to discard them.
+			$this->export_dependencies_array[$r] = array('stockbatch' => array('pb.rowid'), 'batch' => array('pb.rowid'), 'movement' => array('e.rowid','p.rowid','pb.batch'));
 			$keyforselect = 'product_lot';
 			$keyforelement = 'batch';
 			$keyforaliasextra = 'extra';

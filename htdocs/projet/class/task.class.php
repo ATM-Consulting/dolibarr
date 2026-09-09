@@ -453,6 +453,7 @@ class Task extends CommonObjectLine
 		$sql .= ", priority";
 		$sql .= ", billable";
 		$sql .= ", fk_statut";
+		$sql .= ", rang";
 		$sql .= ") VALUES (";
 		$sql .= (!empty($this->entity) ? (int) $this->entity : (int) $conf->entity);
 		$sql .= ", ".((int) $this->fk_project);
@@ -472,6 +473,7 @@ class Task extends CommonObjectLine
 		$sql .= ", ".(($this->priority != '' && $this->priority >= 0) ? (int) $this->priority : 'null');
 		$sql .= ", ".((int) $this->billable);
 		$sql .= ", ".((int) $this->status);
+		$sql .= ", ".((!empty($this->rang)) ? ((int) $this->rang) : "0");
 		$sql .= ")";
 
 		$this->db->begin();
@@ -1266,6 +1268,7 @@ class Task extends CommonObjectLine
 		// Add where from extra fields
 		$extrafieldsobjectkey = 'projet_task';
 		$extrafieldsobjectprefix = 'efpt.';
+		$search_options_pattern = 'search_task_options_'; // Aligned with perweek.php/perday.php that build $search_array_options with this prefix (via extrafields->getOptionalsFromPost('projet_task', '', 'search_task_')). Without it, the SQL template falls back to 'search_options_' and the preg_replace fails to strip the actual prefix, generating phantom column names like efpt.search_task_options_<field>.
 		global $db, $conf; // needed for extrafields_list_search_sql.tpl
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 
@@ -1683,6 +1686,16 @@ class Task extends CommonObjectLine
 			$ret = -1;
 		}
 
+		// Propagate trigger handler messages from $this->errors (plural array)
+		// to $this->error (singular string) so callers like the REST API can
+		// surface a useful message instead of an empty error tail.
+		if ($ret <= 0 && empty($this->error) && !empty($this->errors)) {
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(__METHOD__.' Error: '.$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
+		}
+
 		if ($ret > 0) {
 			// Recalculate amount of time spent for task and update denormalized field
 			$sql = "UPDATE ".MAIN_DB_PREFIX."projet_task";
@@ -2091,9 +2104,9 @@ class Task extends CommonObjectLine
 			$this->timespent_note = trim($this->timespent_note);
 		}
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));
@@ -2143,6 +2156,16 @@ class Task extends CommonObjectLine
 			$this->error = $this->db->lasterror();
 			$this->db->rollback();
 			$ret = -1;
+		}
+
+		// Propagate trigger handler messages from $this->errors (plural array)
+		// to $this->error (singular string) so callers like the REST API can
+		// surface a useful message instead of an empty error tail.
+		if ($ret < 0 && empty($this->error) && !empty($this->errors)) {
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(__METHOD__.' Error: '.$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
 		}
 
 		if ($ret == 1 && (($this->timespent_old_duration != $this->timespent_duration) || getDolGlobalString('TIMESPENT_ALWAYS_UPDATE_THM'))) {
@@ -2226,9 +2249,9 @@ class Task extends CommonObjectLine
 
 		$error = 0;
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));
@@ -2327,6 +2350,8 @@ class Task extends CommonObjectLine
 
 		$origin_task->fetch($fromid);
 
+		$clone_task->date_c = $datec;	// Set the new creation date before computing the ref, else the numbering mask uses the source task year
+
 		$defaultref = '';
 		$obj = !getDolGlobalString('PROJECT_TASK_ADDON') ? 'mod_task_simple' : $conf->global->PROJECT_TASK_ADDON;
 		if (getDolGlobalString('PROJECT_TASK_ADDON') && is_readable(DOL_DOCUMENT_ROOT."/core/modules/project/task/" . getDolGlobalString('PROJECT_TASK_ADDON').".php")) {
@@ -2342,7 +2367,6 @@ class Task extends CommonObjectLine
 		$clone_task->ref				= $defaultref;
 		$clone_task->fk_project = $project_id;
 		$clone_task->fk_task_parent = $parent_task_id;
-		$clone_task->date_c = $datec;
 		$clone_task->planned_workload = $origin_task->planned_workload;
 		$clone_task->rang = $origin_task->rang;
 		$clone_task->priority = $origin_task->priority;

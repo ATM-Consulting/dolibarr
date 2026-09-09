@@ -1797,9 +1797,9 @@ class ExtraFields
 						$InfoFieldList = array_merge($InfoFieldList, explode(':', $tmpafter));
 					}
 
-					// Fix better compatibility with some old extrafield syntax filter "(field=123)"
+					// Fix better compatibility with some old extrafield syntax filter "(field_name=123)"
 					$reg = array();
-					if (preg_match('/^\(?([a-z0-9]+)([=<>]+)(\d+)\)?$/i', $InfoFieldList[4], $reg)) {
+					if (preg_match('/^\(?([a-z0-9_]+)([=<>]+)(\d+)\)?$/i', $InfoFieldList[4], $reg)) {
 						$InfoFieldList[4] = '('.$reg[1].':'.$reg[2].':'.$reg[3].')';
 					}
 
@@ -2519,6 +2519,11 @@ class ExtraFields
 				$classpath = $InfoFieldList[1];
 				if (!empty($classpath)) {
 					dol_include_once($InfoFieldList[1]);
+					if (!$classname || !class_exists($classname)) {
+						// Without this, the raw id is printed with nothing telling why, which is very
+						// hard to diagnose. Most often the class path stored in the definition is wrong.
+						dol_syslog('Extrafields::showOutputField the class '.$classname.' of the link field '.$key.' could not be loaded from '.$classpath.', check the extrafield definition', LOG_WARNING);
+					}
 					if ($classname && class_exists($classname)) {
 						$tmpobject = new $classname($this->db);
 						'@phan-var-force CommonObject $tmpobject';
@@ -2914,7 +2919,7 @@ class ExtraFields
 				} elseif (in_array($key_type, array('price', 'double'))) {
 					$value_arr = GETPOST("options_".$key, 'alpha');
 					$value_key = price2num($value_arr);
-				} elseif (in_array($key_type, array('pricecy', 'double'))) {
+				} elseif (in_array($key_type, array('pricecy'))) {
 					$value_key = price2num(GETPOST("options_".$key, 'alpha')).':'.GETPOST("options_".$key."currency_id", 'alpha');
 				} elseif (in_array($key_type, array('html'))) {
 					$value_key = GETPOST("options_".$key, 'restricthtml');
@@ -3069,6 +3074,16 @@ class ExtraFields
 					// Make sure we get an array even if there's only one checkbox
 					$value_arr = (array) $value_arr;
 					$value_key = implode(',', $value_arr);
+				} elseif (in_array($key_type, array('pricecy'))) {
+					if (!GETPOSTISSET($keyprefix."options_".$key.$keysuffix)) {
+						continue; // Value was not provided, we should not set it.
+					}
+					$value_arr = GETPOST($keyprefix."options_".$key.$keysuffix);
+					if ($keyprefix != 'search_') {    // If value is for a search, we must keep complex string like '>100 <=150'
+						$value_key = price2num($value_arr).':'.GETPOST($keyprefix."options_".$key.$keysuffix."currency_id", 'alpha');
+					} else {
+						$value_key = $value_arr;
+					}
 				} elseif (in_array($key_type, array('price', 'double', 'int'))) {
 					if (!GETPOSTISSET($keyprefix."options_".$key.$keysuffix)) {
 						continue; // Value was not provided, we should not set it.
