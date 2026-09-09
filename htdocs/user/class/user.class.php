@@ -2646,6 +2646,14 @@ class User extends CommonObject
 	public function send_password($user, $password = '', $changelater = 0)
 	{
 		// phpcs:enable
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// Backport of core PR #39370: the email always carries an expiring reset link, never a
+		// cleartext password. $password holds the pass_temp value armed by atmRequestPasswordReset().
+		// Native in v25: delete this block and the core body below takes over again.
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
+		return atmSendPasswordResetLink($this, (string) $password);
+		/**FIN SPECIFIQUE ATM**/
+
 		global $conf, $langs, $mysoc;
 		global $dolibarr_main_url_root;
 

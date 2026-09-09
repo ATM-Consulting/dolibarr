@@ -1697,53 +1697,102 @@ class FormTicket
 			print '</td></tr>';
 
 			// Recipients / adressed-to
-			print '<tr class="email_line"><td>'.$langs->trans('MailRecipients');
-			print ' '.$form->textwithpicto('', $langs->trans("TicketMessageRecipientsHelp"), 1, 'help');
+			// @ATM-PATCH BEGIN ticket-editable-recipients — editable TO/CC recipient fields, backport of Dolibarr core PR #38391 (adapted to 21.0)
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			print '<tr class="email_line"><td class="fieldrequired">'.$langs->trans('MailRecipients');
+			print ' '.$form->textwithpicto('', $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"), 1, 'help');
 			print '</td><td>';
+			$withto = array();
 			if ($res) {
-				// Retrieve email of all contacts (internal and external)
+				$sendto_free = GETPOSTISSET('sendto') ? GETPOST('sendto', 'alphawithlgt') : '';
+				print '<input class="minwidth200" id="sendto" name="sendto" spellcheck="false" placeholder="email@domain.com" value="'.dol_escape_htmltag($sendto_free).'" />';
+
+				// Build recipient list; keys are email addresses (used directly in newMessage())
 				$contacts = $ticketstat->getInfosTicketInternalContact(1);
 				$contacts = array_merge($contacts, $ticketstat->getInfosTicketExternalContact(1));
+				$seen_emails = array();
 
-				$sendto = array();
-
-				// Build array to display recipient list
 				if (is_array($contacts) && count($contacts) > 0) {
-					foreach ($contacts as $key => $info_sendto) {
+					foreach ($contacts as $info_sendto) {
 						if ($info_sendto['email'] != '') {
-							$sendto[] = dol_escape_htmltag(trim($info_sendto['firstname']." ".$info_sendto['lastname'])." <".$info_sendto['email'].">").' <small class="opacitymedium">('.dol_escape_htmltag($info_sendto['libelle']).")</small>";
+							$email_lc = strtolower($info_sendto['email']);
+							if (!in_array($email_lc, $seen_emails)) {
+								$label_text = trim($info_sendto['firstname'].' '.$info_sendto['lastname']).' <'.$info_sendto['email'].'>';
+								$label_html = dol_htmlentities(trim($info_sendto['firstname'].' '.$info_sendto['lastname']), ENT_QUOTES, 'UTF-8')
+									.' <span class="opacitymedium">('.dol_htmlentities($info_sendto['libelle'], ENT_QUOTES, 'UTF-8').')</span>';
+								$withto[$info_sendto['email']] = array(
+									'id'        => $info_sendto['email'],
+									'label'     => str_replace(array('<', '>'), array('(', ')'), $label_text),
+									'labelhtml' => $label_html,
+								);
+								$seen_emails[] = $email_lc;
+							}
 						}
 					}
 				}
 
-				if (!empty($ticketstat->origin_replyto) && !in_array($ticketstat->origin_replyto, $sendto)) {
-					$sendto[] = dol_escape_htmltag($ticketstat->origin_replyto).' <small class="opacitymedium">('.$langs->trans("TicketEmailOriginIssuer").")</small>";
-				} elseif ($ticketstat->origin_email && !in_array($ticketstat->origin_email, $sendto)) {
-					$sendto[] = dol_escape_htmltag($ticketstat->origin_email).' <small class="opacitymedium">('.$langs->trans("TicketEmailOriginIssuer").")</small>";
+				if (!empty($ticketstat->origin_replyto) && !in_array(strtolower($ticketstat->origin_replyto), $seen_emails)) {
+					$email = (string) $ticketstat->origin_replyto;
+					$withto[$email] = array('id' => $email, 'label' => $email, 'labelhtml' => dol_escape_htmltag($email).' <span class="opacitymedium">('.$langs->trans('TicketEmailOriginIssuer').')</span>');
+					$seen_emails[] = strtolower($email);
+				} elseif ($ticketstat->origin_email && !in_array(strtolower((string) $ticketstat->origin_email), $seen_emails)) {
+					$email = (string) $ticketstat->origin_email;
+					$withto[$email] = array('id' => $email, 'label' => $email, 'labelhtml' => dol_escape_htmltag($email).' <span class="opacitymedium">('.$langs->trans('TicketEmailOriginIssuer').')</span>');
+					$seen_emails[] = strtolower($email);
 				}
 
 				if ($ticketstat->fk_soc > 0) {
 					$ticketstat->socid = $ticketstat->fk_soc;
 					$ticketstat->fetch_thirdparty();
-
-					if (!empty($ticketstat->thirdparty->email) && !in_array($ticketstat->thirdparty->email, $sendto)) {
-						$sendto[] = $ticketstat->thirdparty->email.' <small class="opacitymedium">('.$langs->trans('Customer').')</small>';
+					if (!empty($ticketstat->thirdparty->email) && !in_array(strtolower((string) $ticketstat->thirdparty->email), $seen_emails)) {
+						$email = (string) $ticketstat->thirdparty->email;
+						$withto[$email] = array('id' => $email, 'label' => $email, 'labelhtml' => dol_escape_htmltag($email).' <span class="opacitymedium">('.$langs->trans('Customer').')</span>');
+						$seen_emails[] = strtolower($email);
 					}
 				}
 
-				if (getDolGlobalInt('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS')) {
-					$sendto[] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO').' <small class="opacitymedium">(generic email)</small>';
+				if (getDolGlobalInt('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
+					$generic_email = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
+					if (!in_array(strtolower($generic_email), $seen_emails)) {
+						$withto[$generic_email] = array('id' => $generic_email, 'label' => $generic_email, 'labelhtml' => dol_escape_htmltag($generic_email).' <span class="opacitymedium">(generic)</span>');
+					}
 				}
 
-				// Print recipient list
-				if (is_array($sendto) && count($sendto) > 0) {
-					print img_picto('', 'email', 'class="pictofixedwidth"');
-					print implode(', ', $sendto);
+				// Preselect all contacts on first load; restore POST selection on re-display
+				if (GETPOSTISSET('receiver_multiselect')) {
+					$withtoselected = GETPOST('receiver', 'array');
 				} else {
-					print '<div class="warning">'.$langs->trans('WarningNoEMailsAdded').' '.$langs->trans('TicketGoIntoContactTab').'</div>';
+					$withtoselected = array_keys($withto);
+				}
+
+				if (!empty($withto)) {
+					print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
+					print $form->multiselectarray('receiver', $withto, $withtoselected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
+				} else {
+					// No contact linked: emit the flag hidden so newMessage() still reads the free sendto input
+					print '<input type="hidden" name="receiver_multiselect" value="1">';
+					print ' &nbsp;<span class="opacitymedium"><small>'.$langs->trans('WarningNoEMailsAdded').'</small></span>';
 				}
 			}
 			print '</td></tr>';
+
+			// CC field: free input + multiselect of the same contact list, nothing preselected
+			print '<tr class="email_line"><td>';
+			print $form->textwithpicto($langs->trans("MailCC"), $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"), 1, 'help');
+			print '</td><td>';
+			if (GETPOSTISSET('receivercc_multiselect')) {
+				$sendtocc_free = GETPOST('sendtocc', 'alphawithlgt');
+			} else {
+				$sendtocc_free = getDolGlobalString('TICKET_SEND_INTERNAL_CC');
+			}
+			print '<input class="minwidth200" id="sendtocc" name="sendtocc" spellcheck="false" value="'.dol_escape_htmltag($sendtocc_free).'" />';
+			if (!empty($withto)) {
+				print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
+				$withtocc_selected = GETPOSTISSET('receivercc_multiselect') ? GETPOST('receivercc', 'array') : array();
+				print $form->multiselectarray('receivercc', $withto, $withtocc_selected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
+			}
+			print '</td></tr>';
+			// @ATM-PATCH END ticket-editable-recipients
 		}
 
 		$uselocalbrowser = false;
@@ -1833,6 +1882,12 @@ class FormTicket
 			// Clean first \n and br (to avoid empty line when CONTACTCIVNAME is empty)
 			$defaultmessage = preg_replace("/^(<br>)+/", "", $defaultmessage);
 			$defaultmessage = preg_replace("/^\n+/", "", $defaultmessage);
+			// @ATM-PATCH BEGIN ticket-private-empty-compose — a private ticket message opens with an empty compose field (was prefilled with the template/personal signature); an email message keeps the template, the outgoing signature is still appended at send time
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			if (empty($send_email)) {
+				$defaultmessage = '';
+			}
+			// @ATM-PATCH END ticket-private-empty-compose
 		}
 
 		print '<tr><td colspan="2"><label for="message"><span class="fieldrequired">'.$langs->trans("Message").'</span>';

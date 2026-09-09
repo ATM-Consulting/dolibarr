@@ -452,8 +452,8 @@ class Users extends DolibarrApi
 	 * Update a user password
 	 *
 	 * @param   int     $id        			User ID
-	 * @param	bool	$send_password		Only if set to true, the new password will send to the user
-	 * @return  int                			1 if password changed, 2 if password changed and sent
+	 * @param	bool	$send_password		Only if set to true, a password reset link is emailed to the user (SPECIFIQUE ATM password-reset-native: no password is set, the user chooses it)
+	 * @return  int                			1 if password changed, 2 if a reset link was sent
 	 *
 	 * @throws RestException 403 Not allowed
 	 * @throws RestException 404 User not found
@@ -485,6 +485,26 @@ class Users extends DolibarrApi
 		if (!DolibarrApi::_checkAccessToResource('user', $this->useraccount->id, 'user')) {
 			throw new RestException(403, 'Access on this object not allowed for login '.DolibarrApiAccess::$user->login);
 		}
+
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// Backport of core PR #39370: with send_password=true, set no password now. Arm an expiring
+		// reset link and email it, so the user chooses their own password and nothing travels in
+		// cleartext. Without send_password the core path below is unchanged.
+		// Native in v25: delete this block.
+		if ($send_password) {
+			require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
+
+			$armed = atmRequestPasswordReset($this->useraccount);
+			if (is_int($armed) && $armed < 0) {
+				throw new RestException(500, 'ErrorFailedToSetNewPassword'.$this->useraccount->error);
+			}
+			if ($this->useraccount->send_password($this->useraccount, $armed) > 0) {
+				return 2;
+			}
+
+			throw new RestException(500, 'ErrorFailedSendingNewPassword - '.$this->useraccount->error);
+		}
+		/**FIN SPECIFIQUE ATM**/
 
 		$newpassword = $this->useraccount->setPassword($this->useraccount, '');	// This will generate a new password
 		if (is_int($newpassword) && $newpassword < 0) {
