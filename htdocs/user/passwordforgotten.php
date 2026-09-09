@@ -60,7 +60,14 @@ if (!$mode) {
 }
 
 $username = GETPOST('username', 'alphanohtml');
-$passworduidhash = GETPOST('passworduidhash', 'alpha');
+/**DEBUT SPECIFIQUE ATM password-reset-native**/
+// Backport of core PR #39370. Native in v25: delete this block and restore the core line.
+// Coeur d'origine : $passworduidhash = GETPOST('passworduidhash', 'alpha');
+require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
+$passworduidhash = GETPOST('passworduidhash', 'aZ09');	// atmGetPasswordResetHash() returns an hexadecimal hash
+$newpass1 = GETPOST('newpass1', 'password');
+$newpass2 = GETPOST('newpass2', 'password');
+/**FIN SPECIFIQUE ATM**/
 $setnewpassword = GETPOST('setnewpassword', 'aZ09');
 
 $conf->entity = (GETPOSTINT('entity') ? GETPOSTINT('entity') : 1);
@@ -86,6 +93,13 @@ if (GETPOST('dol_use_jmobile', 'alpha') || !empty($_SESSION['dol_use_jmobile']))
 }
 
 
+/**DEBUT SPECIFIQUE ATM password-reset-native**/
+// Same rule as the "Send password button enabled ?" block of the View section below, needed
+// this early because the reset action validates the captcha. Native in v25: delete this block.
+$disabled = (preg_match('/dolibarr/i', $mode) || getDolGlobalString('MAIN_SECURITY_ENABLE_SENDPASSWORD')) ? '' : 'disabled';
+$captcha = $disabled ? '' : getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_HANDLER', 'standard');
+/**FIN SPECIFIQUE ATM**/
+
 /*
  * Actions
  */
@@ -99,6 +113,52 @@ if ($reshook < 0) {
 }
 
 if (empty($reshook)) {
+	/**DEBUT SPECIFIQUE ATM password-reset-native**/
+	// Backport of core PR #39370: the user chooses the password on the reset page. Security is
+	// managed by $passworduidhash (proof of possession of the emailed link), no captcha needed
+	// on this step. The core 'validatenewpassword' step below is left in place but no link
+	// points to it anymore. Native in v25: delete this block.
+	if ($action == 'setnewpassword' && $username && $passworduidhash) {
+		if ($newpass1 === '' || $newpass2 === '') {
+			$message = '<div class="error">'.$langs->trans("NewPasswordEmpty").'</div>';
+		} elseif ($newpass1 !== $newpass2) {
+			$message = '<div class="error">'.$langs->trans("NewPasswordMismatch").'</div>';
+		} else {
+			$edituser = new User($db);
+			$result = $edituser->fetch(0, $username, '', 0, $conf->entity);
+			if ($result < 0) {
+				$message = '<div class="error">'.dol_escape_htmltag($langs->trans("ErrorTechnicalError")).'</div>';
+			} else {
+				$resverify = atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $passworduidhash);
+				if ($resverify < 0) {
+					$langs->load("errors");
+					$message = '<div class="error">'.$langs->trans("PasswordResetLinkExpired").'</div>';
+				} elseif ($resverify == 0) {
+					$langs->load("errors");
+					$message = '<div class="error">'.$langs->trans("ErrorFailedToValidatePasswordReset").'</div>';
+				} else {
+					$res = $edituser->setPassword($user, $newpass1, 0);	// validates against the active password policy
+					if (is_int($res) && $res < 0) {
+						$message = '<div class="error">'.dol_escape_htmltag($edituser->error ? $edituser->error : $langs->trans("ErrorFailedToChangePassword")).'</div>';
+					} else {
+						unset($_SESSION['dol_login']);
+						$_SESSION['dol_loginmesg'] = '<!-- warning -->'.$langs->transnoentitiesnoconv("NewPasswordValidated");
+						dol_syslog("passwordforgotten.php new user-chosen password for user->id=".$edituser->id." set in database");
+
+						$urlafterchange = DOL_URL_ROOT.'/?username='.urlencode($edituser->login);
+						if (getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD')) {
+							$urlafterchange = dol_sanitizeUrl(getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD'), 0);
+						}
+
+						header("Location: ".$urlafterchange);
+						exit;
+					}
+				}
+			}
+		}
+	}
+	/**FIN SPECIFIQUE ATM**/
+
 	// Validate new password
 	if ($action == 'validatenewpassword' && $username && $passworduidhash) {	// Test on permission not required here. Security is managed by $passworduihash
 		$edituser = new User($db);
@@ -128,8 +188,15 @@ if (empty($reshook)) {
 
 	// Action to set a temporary password and send email for reset
 	if ($action == 'buildnewpassword' && $username) {	// Test on permission not required here. This action is done anonymously.
-		$sessionkey = 'dol_antispam_value';
-		$ok = (array_key_exists($sessionkey, $_SESSION) && (strtolower($_SESSION[$sessionkey]) == strtolower(GETPOST('code'))));
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// Backport of core PR #39370: validate with the active captcha handler instead of the raw
+		// session value, so a custom handler is honoured. Native in v25: delete this block and
+		// restore the two core lines.
+		// Coeur d'origine :
+		// $sessionkey = 'dol_antispam_value';
+		// $ok = (array_key_exists($sessionkey, $_SESSION) && (strtolower($_SESSION[$sessionkey]) == strtolower(GETPOST('code'))));
+		$ok = atmVerifyCaptchaCode($captcha);
+		/**FIN SPECIFIQUE ATM**/
 
 		// Verify code
 		if (!$ok) {
@@ -172,7 +239,12 @@ if (empty($reshook)) {
 					usleep(20000);	// add delay to simulate setPassword() and send_password() actions delay (0.02s)
 					$message .= $messagewarning;
 				} else {
-					$newpassword = $edituser->setPassword($user, '', 1);
+					/**DEBUT SPECIFIQUE ATM password-reset-native**/
+					// Backport of core PR #39370: arm an expiring token, set no password.
+					// Native in v25: delete this block and restore the core line.
+					// Coeur d'origine : $newpassword = $edituser->setPassword($user, '', 1);
+					$newpassword = atmRequestPasswordReset($edituser);
+					/**FIN SPECIFIQUE ATM**/
 					if (is_int($newpassword) && $newpassword < 0) {
 						// Technical failure
 						$message = '<div class="error">'.$langs->trans("ErrorFailedToChangePassword").'</div>';
@@ -280,5 +352,9 @@ $moreloginextracontent = $hookmanager->resPrint;
 if (empty($setnewpassword)) {
 	include $template_dir.'passwordforgotten.tpl.php'; // To use native PHP
 } else {
-	include $template_dir.'passwordreset.tpl.php'; // To use native PHP
+	/**DEBUT SPECIFIQUE ATM password-reset-native**/
+	// Backport of core PR #39370. Native in v25: delete this block and restore the core line.
+	// Coeur d'origine : include $template_dir.'passwordreset.tpl.php';
+	include DOL_DOCUMENT_ROOT.'/core/tpl/atm_passwordreset.tpl.php'; // To use native PHP
+	/**FIN SPECIFIQUE ATM**/
 }

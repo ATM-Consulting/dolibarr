@@ -144,3 +144,9 @@ CloneCategoriesUser=Clone the user's categories
 ConfirmUserClone=Are you sure you want to clone the user: <b>%s</b>?
 NewEmailUserClone=Email address of the new user
 SocialNetworksUser=Social networks for user
+# DEBUT SPECIFIQUE ATM password-reset-native (backport core PR #39370, native in v25)
+PasswordResetLinkSentTo=A password reset link has been sent to %s
+NewPasswordMismatch=The two passwords do not match
+NewPasswordEmpty=Please enter a new password
+PasswordResetLinkExpired=This password reset link has expired. Please request a new one.
+# FIN SPECIFIQUE ATM
