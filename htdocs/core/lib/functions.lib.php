@@ -13,7 +13,7 @@
  * Copyright (C) 2014		Cédric GROSS				<c.gross@kreiz-it.fr>
  * Copyright (C) 2014-2015	Marcos García				<marcosgdf@gmail.com>
  * Copyright (C) 2015		Jean-François Ferry			<jfefe@aternatik.fr>
- * Copyright (C) 2018-2025  Frédéric France             <frederic.france@free.fr>
+ * Copyright (C) 2018-2026  Frédéric France             <frederic.france@free.fr>
  * Copyright (C) 2019-2023  Thibault Foucart            <support@ptibogxiv.net>
  * Copyright (C) 2020       Open-Dsi         			<support@open-dsi.fr>
  * Copyright (C) 2021       Gauthier VERDOL         	<gauthier.verdol@atm-consulting.fr>
@@ -518,7 +518,7 @@ function getWarningDelay($module, $parmlevel1, $parmlevel2 = '')
 function isDolTms($timestamp)
 {
 	if ($timestamp === '') {
-		dol_syslog('Using empty string for a timestamp is deprecated, prefer use of null when calling page ' . $_SERVER["PHP_SELF"] . getCallerInfoString(), LOG_NOTICE);
+		dol_syslog('Using empty string for a timestamp is deprecated, prefer use of null when calling page ' . $_SERVER["PHP_SELF"] . getCallerInfoString(), LOG_DEBUG);
 		return false;
 	}
 	if (is_null($timestamp) || !is_numeric($timestamp)) {
@@ -1349,6 +1349,10 @@ function GETPOST($paramname, $check = 'alphanohtml', $method = 0, $filter = null
 				$user->lastsearch_values_tmp[$relativepathstring][$paramname] = $out;
 			}
 		}
+	}
+
+	if ($paramname == 'hashp' && $out == 'shared') {
+		$out = ''; // We refuse to have hashp=shared as a parameter
 	}
 
 	return $out;
@@ -9284,6 +9288,50 @@ function dol_string_neverthesehtmltags($stringtoclean, $disallowed_tags = array(
 
 
 /**
+ *  Close the HTML tags left open in a truncated HTML string.
+ *  Truncating HTML on a separator can cut inside a block, and an unclosed tag makes the browser nest
+ *  everything that follows inside it. Only tags really left open are closed, in reverse order.
+ *
+ *  @param	string	$text		HTML string, possibly with unclosed tags
+ *  @return	string				Same string with the missing closing tags appended
+ *  @see dolGetFirstLineOfText()
+ */
+function dolCloseUnclosedHtmlTags($text)
+{
+	if (!is_string($text) || $text === '') {
+		return $text;
+	}
+
+	// Tags that never carry a closing tag
+	$selfclosing = array('br', 'hr', 'img', 'input', 'meta', 'link', 'source', 'col', 'area', 'base', 'embed', 'param', 'track', 'wbr');
+
+	$opened = array();
+	if (preg_match_all('/<\s*(\/?)([a-zA-Z][a-zA-Z0-9]*)[^>]*?(\/?)\s*>/', $text, $matches, PREG_SET_ORDER)) {
+		foreach ($matches as $match) {
+			$tag = strtolower($match[2]);
+			if (in_array($tag, $selfclosing) || !empty($match[3])) {
+				continue;
+			}
+			if (empty($match[1])) {
+				$opened[] = $tag;
+			} else {
+				// Close the most recent matching opened tag, ignore a stray closing tag
+				$idx = array_search($tag, array_reverse($opened, true), true);
+				if ($idx !== false) {
+					unset($opened[$idx]);
+				}
+			}
+		}
+	}
+
+	foreach (array_reverse($opened) as $tag) {
+		$text .= '</'.$tag.'>';
+	}
+
+	return $text;
+}
+
+/**
  * Return first line of text. Cut will depends if content is HTML or not.
  *
  * @param 	string	$text		Input text
@@ -13354,7 +13402,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 						$tmps = '';
 
 						if ($isSellist) {
-							$newres .= $field . " IN (SELECT t." . $key . " FROM " . $db->prefix() . $table . " AS t WHERE t." . $label . " LIKE '%" . $db->escape($tmpcrit2) . "%')";
+							$newres .= $field . " IN (SELECT t." . $db->sanitize($key) . " FROM " . $db->prefix() . $db->sanitize($table) . " AS t WHERE t." . $db->sanitize($label) . " LIKE '%" . $db->escape($tmpcrit2) . "%')";
 						} else {
 							if (preg_match('/^!/', $tmpcrit)) {
 								$tmps .= $db->sanitize($field) . " NOT LIKE "; // ! as exclude character
@@ -13382,7 +13430,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 							$newres .= $tmpafter;
 							$newres .= "'";
 							if ($tmpcrit2 == '' || preg_match('/^!/', $tmpcrit)) {
-								$newres .= " OR " . $field . " IS NULL)";
+								$newres .= " OR " . $db->sanitize($field) . " IS NULL)";
 							}
 						}
 					}
@@ -13395,7 +13443,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 		}
 
 		if ($sqltoadd) {
-			$newres .= ($newres ? '' : ' OR ').str_replace('__KEYTOSEARCH__', $crit, $sqltoadd);
+			$newres .= ($newres ? '' : ' OR ').str_replace('__KEYTOSEARCH__', $db->escape($crit), $sqltoadd);
 		}
 
 		if ($newres) {
@@ -13594,6 +13642,10 @@ function dolIsAllowedForPreview($file)
 	if (getDolGlobalString('MAIN_ALLOW_SVG_FILES_AS_IMAGES')) {
 		$mime_preview[] = 'svg+xml';
 	}
+	if (getDolGlobalString('MAIN_ALLOW_XML_FILES_AS_PREVIEW')) {
+		$mime_preview[] = 'xml';
+	}
+
 	//$mime_preview[]='vnd.oasis.opendocument.presentation';
 	//$mime_preview[]='archive';
 	$num_mime = array_search(dol_mimetype($file, '', 1), $mime_preview);
@@ -14446,7 +14498,7 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 		if (!empty($params['use_unsecured_unescapedattr']) && is_array($params['use_unsecured_unescapedattr']) && in_array($key, $params['use_unsecured_unescapedattr'])) {
 			// Not recommended
 			$value = dol_htmlentities($value, ENT_QUOTES | ENT_SUBSTITUTE);
-		} elseif ($key == 'href') {
+		} elseif (in_array($key, ['href', 'data-confirm-url'])) {
 			$value = dolPrintHTMLForAttributeUrl($value);
 		} else {
 			$value = dolPrintHTMLForAttribute($value);
@@ -15071,6 +15123,23 @@ function getElementProperties($elementType)
 		$classpath = 'product/class';
 		$subelement = 'product';
 		$table_element = 'product';
+	} elseif ($elementType == 'product_attribute') {
+		$module = 'variants';
+		$element = 'product_attribute';
+		$subelement = 'product_attribute';
+		$classpath = 'variants/class';
+		$classfile = 'ProductAttribute';
+		$classname = 'ProductAttribute';
+		$table_element = 'product_attribute';
+	} elseif ($elementType == 'product_attribute_value') {
+		$module = 'variants';
+		$element = 'product_attribute_value';
+		$subelement = 'product_attribute_value';
+		$classpath = 'variants/class';
+		$classfile = 'ProductAttributeValue';
+		$classname = 'ProductAttributeValue';
+		$table_element = 'product_attribute_value';
+		$parent_element = 'product_attribute';
 	} elseif ($elementType == 'salary') {
 		$classpath = 'salaries/class';
 		$module = 'salaries';
@@ -15941,7 +16010,8 @@ function dolForgeSQLCriteriaCallback($matches)
 			$tmpelem = trim($tmpelem);
 			if (preg_match('/^\'(.*)\'$/', $tmpelem, $reg)) {
 				$tmpelemarray[$tmpkey] = "'" . $db->escape($db->sanitize($reg[1], 2, 1, 1, 1)) . "'";
-			} elseif (ctype_digit((string) $tmpelem)) {	// if only 0-9 chars, no .
+				$tmpelemarray[$tmpkey] = "'".$db->escape($db->sanitize($reg[1], 2, 1, 1, 1))."'";
+			} elseif (preg_match('/^[0-9]+$/', (string) $tmpelem)) {	// if only 0-9 chars, no .
 				$tmpelemarray[$tmpkey] = (int) $tmpelem;
 			} elseif (is_numeric((string) $tmpelem)) {	// it can be a float with a .
 				$tmpelemarray[$tmpkey] = (float) $tmpelem;
@@ -15968,7 +16038,7 @@ function dolForgeSQLCriteriaCallback($matches)
 	} else {
 		if (strtoupper($tmpescaped) == 'NULL') {
 			$tmpescaped = 'NULL';
-		} elseif (ctype_digit((string) $tmpescaped)) {	// if only 0-9 chars, no .
+		} elseif (preg_match('/^[0-9]+$/', (string) $tmpescaped)) {	// if only 0-9 chars, no .
 			$tmpescaped = (int) $tmpescaped;
 		} elseif (is_numeric((string) $tmpescaped)) {	// it can be a float with a .
 			$tmpescaped = (float) $tmpescaped;
@@ -16768,6 +16838,10 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 				$truncateLines = getDolGlobalInt('MAIN_TRUNCATE_TIMELINE_MESSAGE', 3);
 				$newmess = dol_htmlentitiesbr($histo[$key]['message']);
 				$truncatedText = dolGetFirstLineOfText($newmess, $truncateLines);
+				// dolGetFirstLineOfText() cuts on <br> without caring about tag balance, so a message wrapped in
+				// a block tag leaves the excerpt with an unclosed tag. The browser then nests the read more link
+				// and the full text inside the excerpt, and hiding the excerpt hides the whole message (#39035).
+				$truncatedText = dolCloseUnclosedHtmlTags($truncatedText);
 				if ($truncateLines > 0 && strlen($newmess) > strlen($truncatedText)) {
 					$out .= '<div class="readmore-block --closed" >';
 					$out .= '	<div class="readmore-block__excerpt">';
