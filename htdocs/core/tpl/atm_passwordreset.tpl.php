@@ -47,6 +47,7 @@ if (!defined('NOBROWSERNOTIF')) {
  * @var string $username
  *
  * @var int $setnewpassword
+ * @var int $passwordchanged
  */
 // Protection to avoid direct call of template
 if (empty($conf) || !is_object($conf)) {
@@ -123,30 +124,34 @@ $edituser = new User($db);
 
 
 // Validate parameters. The password fields are shown only if the link is still usable.
+// Skipped once the password has just been changed: the token is consumed by then, so
+// re-checking it would replace the success message by "invalid link".
 $resetlinkvalid = false;
-if ($setnewpassword && $username && $passworduidhash) {
-	$result = $edituser->fetch(0, $username);
-	if ($result < 0) {
-		$message = '<div class="error">'.dol_escape_htmltag($langs->trans("ErrorTechnicalError")).'</div>';
-	} else {
-		$resverifytpl = atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $passworduidhash);
-		if ($resverifytpl == 1) {
-			// Clear session
-			unset($_SESSION['dol_login']);
-
-			// Parameters to reset the user are validated
-			$resetlinkvalid = true;
-		} elseif ($resverifytpl == -1) {
-			$langs->load("errors");
-			$message = '<div class="error">'.$langs->trans("PasswordResetLinkExpired").'</div>';
+if (empty($passwordchanged)) {
+	if ($setnewpassword && $username && $passworduidhash) {
+		$result = $edituser->fetch(0, $username);
+		if ($result < 0) {
+			$message = '<div class="error">'.dol_escape_htmltag($langs->trans("ErrorTechnicalError")).'</div>';
 		} else {
-			$langs->load("errors");
-			$message = '<div class="error">'.$langs->trans("ErrorFailedToValidatePasswordReset").'</div>';
+			$resverifytpl = atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $passworduidhash);
+			if ($resverifytpl == 1) {
+				// Clear session
+				unset($_SESSION['dol_login']);
+
+				// Parameters to reset the user are validated
+				$resetlinkvalid = true;
+			} elseif ($resverifytpl == -1) {
+				$langs->load("errors");
+				$message = '<div class="error">'.$langs->trans("PasswordResetLinkExpired").'</div>';
+			} else {
+				$langs->load("errors");
+				$message = '<div class="error">'.$langs->trans("ErrorFailedToValidatePasswordReset").'</div>';
+			}
 		}
+	} else {
+		$langs->load("errors");
+		$message = '<div class="error">'.$langs->trans("ErrorFailedToValidatePasswordReset").'</div>';
 	}
-} else {
-	$langs->load("errors");
-	$message = '<div class="error">'.$langs->trans("ErrorFailedToValidatePasswordReset").'</div>';
 }
 
 
@@ -289,7 +294,7 @@ if (!empty($morelogincontent)) {
 
 <?php
 if ($mode == 'dolibarr' || !$disabled) {
-	if (empty($message)) {
+	if (empty($message) && empty($passwordchanged)) {
 		print '<div class="center login_main_home divpasswordmessagedesc paddingtopbottom'.(!getDolGlobalString('MAIN_LOGIN_BACKGROUND') ? '' : ' backgroundsemitransparent boxshadow').'" style="max-width: 70%">';
 		print '<span class="passwordmessagedesc opacitymedium">';
 		print $langs->trans('EnterNewPasswordHere');
