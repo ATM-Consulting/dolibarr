@@ -67,6 +67,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
 $passworduidhash = GETPOST('passworduidhash', 'aZ09');	// atmGetPasswordResetHash() returns an hexadecimal hash
 $newpass1 = GETPOST('newpass1', 'password');
 $newpass2 = GETPOST('newpass2', 'password');
+$passwordchanged = 0;
 /**FIN SPECIFIQUE ATM**/
 $setnewpassword = GETPOST('setnewpassword', 'aZ09');
 
@@ -142,16 +143,19 @@ if (empty($reshook)) {
 						$message = '<div class="error">'.dol_escape_htmltag($edituser->error ? $edituser->error : $langs->trans("ErrorFailedToChangePassword")).'</div>';
 					} else {
 						unset($_SESSION['dol_login']);
-						$_SESSION['dol_loginmesg'] = '<!-- warning -->'.$langs->transnoentitiesnoconv("NewPasswordValidated");
 						dol_syslog("passwordforgotten.php new user-chosen password for user->id=".$edituser->id." set in database");
 
-						$urlafterchange = DOL_URL_ROOT.'/?username='.urlencode($edituser->login);
-						if (getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD')) {
-							$urlafterchange = dol_sanitizeUrl(getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD'), 0);
-						}
+						// Stay on this page and invite the user to sign in. Redirecting to the app with
+						// ?username= makes main.inc.php treat it as a login submit with an empty password,
+						// so the success message was replaced by a "bad credentials" error.
+						$passwordchanged = 1;
+						$message = '<div class="ok">'.$langs->trans("NewPasswordValidated").'</div>';
 
-						header("Location: ".$urlafterchange);
-						exit;
+						if (getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD')) {
+							$_SESSION['dol_loginmesg'] = '<!-- warning -->'.$langs->transnoentitiesnoconv("NewPasswordValidated");
+							header("Location: ".dol_sanitizeUrl(getDolGlobalString('URL_REDIRECTION_AFTER_CHANGEPASSWORD'), 0));
+							exit;
+						}
 					}
 				}
 			}
