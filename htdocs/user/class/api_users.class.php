@@ -583,10 +583,13 @@ class Users extends DolibarrApi
 	 * Arms an expiring reset token for the matching user and emails a reset LINK
 	 * pointing to the provided portal returnurl (no password is set and none is
 	 * included in the email body). Validity is USER_PASSWORD_RESET_LINK_VALIDITY
-	 * seconds (3600 by default). The response is identical whether or not an
-	 * account matches (anti-enumeration). Gated by USER_PASSWORD_RESET_PUBLIC_API
-	 * and meant to be called server-to-server with a system API key holding the
-	 * user/password right.
+	 * seconds (3600 by default), and a new link is refused for
+	 * USER_PASSWORD_RESET_MIN_INTERVAL seconds (60 by default) after the previous
+	 * one. Nothing is sent for an account that is not allowed to change its own
+	 * password, nor for an email shared by several accounts. The response is
+	 * identical in every case (anti-enumeration). Gated by
+	 * USER_PASSWORD_RESET_PUBLIC_API and meant to be called server-to-server with
+	 * a system API key holding the user/password right.
 	 *
 	 * @param   array   $request_data   Request data {login_or_email, returnurl}
 	 * @return  array   Neutral acknowledgement {success}
@@ -620,13 +623,46 @@ class Users extends DolibarrApi
 		}
 
 		$edituser = new User($this->db);
-		if (strpos($loginoremail, '@') !== false) {
+		$isanemail = (strpos($loginoremail, '@') !== false);
+		if ($isanemail) {
 			$resfetch = $edituser->fetch(0, '', '', 0, -1, $loginoremail);
 		} else {
 			$resfetch = $edituser->fetch(0, $loginoremail);
 		}
 
-		if ($resfetch > 0 && !empty($edituser->email)) {
+		$eligible = ($resfetch > 0 && !empty($edituser->email));
+
+		// An email shared by several accounts cannot designate one of them: sending a link would
+		// let any of the holders reset another account. Refuse, and say nothing more than usual.
+		if ($eligible && $isanemail && $this->countUsersSharingEmail($edituser->email) > 1) {
+			dol_syslog("Users::passwordResetRequest refused: email shared by several accounts", LOG_WARNING);
+			$eligible = false;
+		}
+
+		// Same rule as the web page: an account not allowed to change its own password is treated
+		// as if it did not exist.
+		if ($eligible) {
+			$edituser->loadRights('user');
+			if (!$edituser->hasRight('user', 'self', 'password')) {
+				dol_syslog("Users::passwordResetRequest refused: user ".((int) $edituser->id)." has no user/self/password right", LOG_NOTICE);
+				$eligible = false;
+			}
+		}
+
+		if ($eligible) {
+			/**DEBUT SPECIFIQUE ATM password-reset-native**/
+			// Rate limit: the web page is protected by a captcha, this endpoint has nothing, so a
+			// caller could flood one mailbox. The armed token carries its own date, no extra
+			// storage needed. En v25 : atmIsPasswordResetTooRecent has no core equivalent, keep it
+			// or drop the throttle.
+			if (atmIsPasswordResetTooRecent($edituser->pass_temp, getDolGlobalInt('USER_PASSWORD_RESET_MIN_INTERVAL', 60))) {
+				dol_syslog("Users::passwordResetRequest throttled for user ".((int) $edituser->id).": a link was sent less than USER_PASSWORD_RESET_MIN_INTERVAL seconds ago", LOG_NOTICE);
+				$eligible = false;
+			}
+			/**FIN SPECIFIQUE ATM**/
+		}
+
+		if ($eligible) {
 			/**DEBUT SPECIFIQUE ATM password-reset-native**/
 			// Arm an expiring token instead of generating a password and storing it in clear in
 			// pass_temp. En v25 : atmRequestPasswordReset -> $edituser->requestPasswordReset(),
@@ -752,6 +788,30 @@ class Users extends DolibarrApi
 		}
 
 		return array('success' => true);
+	}
+
+	/**
+	 * Count the accounts sharing an email address, within the entities visible to this call
+	 *
+	 * @param   string  $email  Email address to look for
+	 * @return  int             Number of matching accounts
+	 */
+	private function countUsersSharingEmail($email)
+	{
+		global $conf;
+
+		$sql = "SELECT COUNT(*) as nb FROM ".$this->db->prefix()."user";
+		$sql .= " WHERE email = '".$this->db->escape($email)."'";
+		$sql .= " AND entity IN (0, ".((int) $conf->entity).")";
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			dol_syslog("Users::countUsersSharingEmail ".$this->db->lasterror(), LOG_ERR);
+			return 2;	// On a technical failure, behave as if ambiguous: never send a link we cannot attribute
+		}
+		$obj = $this->db->fetch_object($resql);
+
+		return (int) $obj->nb;
 	}
 
 	/**

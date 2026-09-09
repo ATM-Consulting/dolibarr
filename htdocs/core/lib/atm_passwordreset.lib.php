@@ -72,15 +72,55 @@ function atmVerifyPasswordResetHash(?string $secret, int $userid, string $hashto
 		return 0;
 	}
 
-	$reg = array();
-	if (preg_match('/^r:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2}):/', $secret, $reg)) {
-		$maxdate = dol_mktime((int) $reg[4], (int) $reg[5], (int) $reg[6], (int) $reg[2], (int) $reg[3], (int) $reg[1], 'gmt');
-		if ($maxdate && $maxdate < dol_now()) {
-			return -1;
-		}
+	$maxdate = atmGetPasswordResetExpiry($secret);
+	if ($maxdate && $maxdate < dol_now()) {
+		return -1;
 	}
 
 	return 1;
+}
+
+/**
+ * Read the expiry timestamp carried by an armed pass_temp value.
+ *
+ * @param	string|null	$secret		Full value read from pass_temp
+ * @return	int						Expiry timestamp, 0 when the value carries no date (legacy)
+ */
+function atmGetPasswordResetExpiry(?string $secret): int
+{
+	$reg = array();
+	if ($secret === null || !preg_match('/^r:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2}):/', $secret, $reg)) {
+		return 0;
+	}
+
+	return (int) dol_mktime((int) $reg[4], (int) $reg[5], (int) $reg[6], (int) $reg[2], (int) $reg[3], (int) $reg[1], 'gmt');
+}
+
+/**
+ * Tell whether the pending reset token was armed less than $minintervalseconds ago.
+ *
+ * Rate limits the "send me a link" action with no extra storage: the armed value already
+ * carries its expiry, and expiry minus the validity is the moment it was armed. A legacy
+ * value carries no date, so it never throttles.
+ *
+ * @param	string|null	$secret					Full value read from pass_temp
+ * @param	int			$minintervalseconds		Minimum delay between two links (0 disables the check)
+ * @return	bool								True when a new link must not be sent yet
+ */
+function atmIsPasswordResetTooRecent(?string $secret, int $minintervalseconds): bool
+{
+	if ($minintervalseconds <= 0) {
+		return false;
+	}
+
+	$expiry = atmGetPasswordResetExpiry($secret);
+	if (empty($expiry)) {
+		return false;
+	}
+
+	$armedat = $expiry - getDolGlobalInt('USER_PASSWORD_RESET_LINK_VALIDITY', 3600);
+
+	return ($armedat + $minintervalseconds) > dol_now();
 }
 
 /**
