@@ -22,6 +22,10 @@ use Luracast\Restler\RestException;
 
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once DOL_DOCUMENT_ROOT.'/user/class/usergroup.class.php';
+/**DEBUT SPECIFIQUE ATM password-reset-native**/
+// En v25 : supprimer ce require, le coeur fournit les fonctions dans core/lib/security2.lib.php.
+require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
+/**FIN SPECIFIQUE ATM**/
 
 
 /**
@@ -576,11 +580,12 @@ class Users extends DolibarrApi
 	/**
 	 * Request a password reset link
 	 *
-	 * Generates a temporary password for the matching user and emails a reset
-	 * LINK pointing to the provided portal returnurl (no password is included in
-	 * the email body). The response is identical whether or not an account
-	 * matches (anti-enumeration). Gated by USER_PASSWORD_RESET_PUBLIC_API and
-	 * meant to be called server-to-server with a system API key holding the
+	 * Arms an expiring reset token for the matching user and emails a reset LINK
+	 * pointing to the provided portal returnurl (no password is set and none is
+	 * included in the email body). Validity is USER_PASSWORD_RESET_LINK_VALIDITY
+	 * seconds (3600 by default). The response is identical whether or not an
+	 * account matches (anti-enumeration). Gated by USER_PASSWORD_RESET_PUBLIC_API
+	 * and meant to be called server-to-server with a system API key holding the
 	 * user/password right.
 	 *
 	 * @param   array   $request_data   Request data {login_or_email, returnurl}
@@ -594,8 +599,6 @@ class Users extends DolibarrApi
 	 */
 	public function passwordResetRequest($request_data = null)
 	{
-		global $conf;
-
 		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
 			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
 		}
@@ -624,19 +627,70 @@ class Users extends DolibarrApi
 		}
 
 		if ($resfetch > 0 && !empty($edituser->email)) {
-			$newpassword = $edituser->setPassword(DolibarrApiAccess::$user, '', 1);	// Generate + store a temporary password (clear) in pass_temp
-			if (is_int($newpassword) && $newpassword < 0) {
-				dol_syslog("Users::passwordResetRequest failed to set temporary password for user ".((int) $edituser->id)." : ".$edituser->error, LOG_ERR);
+			/**DEBUT SPECIFIQUE ATM password-reset-native**/
+			// Arm an expiring token instead of generating a password and storing it in clear in
+			// pass_temp. En v25 : atmRequestPasswordReset -> $edituser->requestPasswordReset(),
+			// atmGetPasswordResetHash -> dolGetPasswordResetHash().
+			$armed = atmRequestPasswordReset($edituser);
+			if (!is_string($armed)) {
+				dol_syslog("Users::passwordResetRequest failed to arm the reset token for user ".((int) $edituser->id)." : ".$edituser->error, LOG_ERR);
 			} else {
-				$hash = dol_hash($newpassword.'-'.$edituser->id.'-'.$conf->file->instance_unique_id);
-				$this->sendPasswordResetLinkEmail($edituser, $returnurl, $hash);
+				$this->sendPasswordResetLinkEmail($edituser, $returnurl, atmGetPasswordResetHash($armed, $edituser->id));
 			}
+			/**FIN SPECIFIQUE ATM**/
 		} else {
 			usleep(20000);	// Simulate processing delay so response time does not leak account existence
 		}
 
 		// Always neutral: never reveal whether the account exists
 		return array('success' => true);
+	}
+
+	/**
+	 * Check whether a password reset link is still usable
+	 *
+	 * Lets the portal display its "choose a new password" form only when the link
+	 * is still alive, instead of letting the user type a password and discover at
+	 * submit time that it is dead. Nothing is consumed: the token stays armed
+	 * until passwordresetconfirm succeeds, so this can be called on page load and
+	 * as many times as needed. The answer is identical for an unknown user and for
+	 * a bad hash (anti-enumeration). Gated by USER_PASSWORD_RESET_PUBLIC_API and
+	 * meant to be called server-to-server with a system API key holding the
+	 * user/password right.
+	 *
+	 * @param   array   $request_data   Request data {username, passworduidhash}
+	 * @return  array   Link state {valid, expired}
+	 * @phan-return array<string,bool>
+	 *
+	 * @throws RestException 400 Bad parameters
+	 * @throws RestException 403 Feature disabled or not allowed
+	 *
+	 * @url POST passwordresetvalidate
+	 */
+	public function passwordResetValidate($request_data = null)
+	{
+		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
+			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
+		}
+		if (!DolibarrApiAccess::$user->hasRight('user', 'user', 'password') && empty(DolibarrApiAccess::$user->admin)) {
+			throw new RestException(403, 'Not allowed');
+		}
+
+		$username = (is_array($request_data) && isset($request_data['username'])) ? trim((string) $request_data['username']) : '';
+		$hash = (is_array($request_data) && isset($request_data['passworduidhash'])) ? trim((string) $request_data['passworduidhash']) : '';
+		if ($username === '' || $hash === '') {
+			throw new RestException(400, 'Parameters username and passworduidhash are mandatory');
+		}
+
+		$edituser = new User($this->db);
+		$resfetch = $edituser->fetch(0, $username);
+
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// En v25 : atmVerifyPasswordResetHash -> dolVerifyPasswordResetHash().
+		$resverify = ($resfetch > 0) ? atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $hash) : 0;
+		/**FIN SPECIFIQUE ATM**/
+
+		return array('valid' => ($resverify == 1), 'expired' => ($resverify < 0));
 	}
 
 	/**
@@ -653,15 +707,14 @@ class Users extends DolibarrApi
 	 * @phan-return array<string,bool>
 	 *
 	 * @throws RestException 400 Bad parameters
-	 * @throws RestException 403 Feature disabled, not allowed, or invalid/expired link
+	 * @throws RestException 403 Feature disabled, not allowed, or invalid link
+	 * @throws RestException 410 Link was valid but has expired: ask for a new one
 	 * @throws RestException 422 New password does not meet the password policy
 	 *
 	 * @url POST passwordresetconfirm
 	 */
 	public function passwordResetConfirm($request_data = null)
 	{
-		global $conf;
-
 		if (!getDolGlobalString('USER_PASSWORD_RESET_PUBLIC_API')) {
 			throw new RestException(403, 'Public password reset API is disabled (constant USER_PASSWORD_RESET_PUBLIC_API).');
 		}
@@ -678,11 +731,20 @@ class Users extends DolibarrApi
 
 		$edituser = new User($this->db);
 		$resfetch = $edituser->fetch(0, $username);
-		if ($resfetch <= 0 || empty($edituser->pass_temp)
-			|| !dol_verifyHash($edituser->pass_temp.'-'.$edituser->id.'-'.$conf->file->instance_unique_id, $hash)) {
+
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// Expiry is now enforced, and told apart from a bad link: answering 410 leaks nothing since
+		// it requires a hash that already matches this user. En v25 : atmVerifyPasswordResetHash
+		// -> dolVerifyPasswordResetHash().
+		$resverify = ($resfetch > 0) ? atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $hash) : 0;
+		if ($resverify == 0) {
 			// Generic message: never reveal which part failed (anti-enumeration)
 			throw new RestException(403, 'Invalid or expired password reset link');
 		}
+		if ($resverify < 0) {
+			throw new RestException(410, 'Password reset link has expired');
+		}
+		/**FIN SPECIFIQUE ATM**/
 
 		$result = $edituser->setPassword(DolibarrApiAccess::$user, $newpassword, 0);
 		if (is_int($result) && $result < 0) {
@@ -720,10 +782,11 @@ class Users extends DolibarrApi
 
 		$subject = '['.$appli.'] '.$outputlangs->transnoentitiesnoconv('SubjectNewPassword', $appli);
 
-		$mesg = $outputlangs->transnoentitiesnoconv('RequestToResetPasswordReceived')."<br>\n<br>\n";
-		$mesg .= $outputlangs->transnoentitiesnoconv('YouMustClickToChange')." :<br>\n";
-		$mesg .= '<a href="'.dol_escape_htmltag($link).'" rel="noopener">'.$outputlangs->transnoentitiesnoconv('ConfirmPasswordChange').'</a>'."<br>\n<br>\n";
-		$mesg .= $outputlangs->transnoentitiesnoconv('ForgetIfNothing')."<br>\n";
+		/**DEBUT SPECIFIQUE ATM password-reset-native**/
+		// Single source of truth for the reset mail body, shared with the web page.
+		// En v25 : atmGetPasswordResetEmailContent -> $edituser->getPasswordResetEmailContent().
+		$mesg = atmGetPasswordResetEmailContent($outputlangs, $link);
+		/**FIN SPECIFIQUE ATM**/
 
 		$trackid = 'use'.$edituser->id;
 		$sendcontext = 'passwordreset';
