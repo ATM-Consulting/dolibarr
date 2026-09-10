@@ -4,6 +4,27 @@ Modifications spécifiques iseta appliquées au cœur Dolibarr sur la branche `2
 (hors modules `htdocs/custom/`). Chaque changement est marqué en code par `BACKPORT PR #37329`
 (ou une référence équivalente) pour être retrouvé lors des montées de version.
 
+## 2026-09-10 — Prompt OAuth Microsoft3 configurable (PR Dolibarr #40257)
+
+Correctif du provider `MICROSOFT3` backporté ci-dessous : le `prompt=consent` était figé dans
+le code, ce qui rejouait l'écran de consentement à chaque génération de token. Sur un tenant
+Entra où le consentement utilisateur est désactivé, un compte non privilégié ne peut jamais
+franchir cet écran, même après un consentement administrateur.
+
+- **Source** : https://github.com/Dolibarr/dolibarr/pull/40257 (backport 23.0 de la PR #40217,
+  correctif de l'issue #40004)
+- **Fichier modifié** : `htdocs/core/modules/oauth/microsoft3_oauthcallback.php` — le `prompt`
+  vaut désormais `select_account` par défaut et se pilote par la constante
+  `OAUTH_MICROSOFT3_FORCE_PROMPT` (`consent` pour forcer l'écran, chaîne vide pour ne pas
+  envoyer le paramètre du tout).
+- **Sans effet sur le refresh token** : le scope `offline_access` reste demandé, c'est lui qui
+  le fournit, pas le `prompt`.
+- Le hunk est marqué `BACKPORT PR #40257`. Aucune adaptation nécessaire : le contexte 22.0 est
+  identique à la 23.0 et `getDolGlobalString($key, $default)` existe déjà en 22.0.
+
+### Intégration
+- Branche : `FIX/oauth/PR40257/Microsoft3Prompt` → PR vers `22.0_iseta` (remote `atm`).
+
 ## 2026-07-16 — Backport OAuth Microsoft Exchange Online (PR Dolibarr #37329)
 
 Backport de la fonctionnalité « Microsoft Exchange Online [SMTP/IMAP] OAuth2 » depuis la
