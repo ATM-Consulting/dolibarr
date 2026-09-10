@@ -551,7 +551,9 @@ if ($action == "transfert_stock" && $permissiontoadd && !$cancel) {
 						$srcwarehouseid,
 						GETPOSTFLOAT("nbpiece"),
 						1,
-						GETPOST("label", 'aZ09comma'),
+						// >>> FIX ATM DA028740 - aZ09comma vide tout libellé contenant un espace ; non corrigé en amont à ce jour, à revérifier à la montée de version
+						GETPOST("label", 'alphanohtml'),
+						// <<< FIX ATM DA028740
 						(float) $pricesrc,
 						$eatby,
 						$sellby,
@@ -568,7 +570,9 @@ if ($action == "transfert_stock" && $permissiontoadd && !$cancel) {
 						GETPOSTINT("id_entrepot_destination"),
 						GETPOSTFLOAT("nbpiece"),
 						0,
-						GETPOST("label", 'aZ09comma'),
+						// >>> FIX ATM DA028740 - aZ09comma vide tout libellé contenant un espace ; non corrigé en amont à ce jour, à revérifier à la montée de version
+						GETPOST("label", 'alphanohtml'),
+						// <<< FIX ATM DA028740
 						(float) $pricedest,
 						$eatby,
 						$sellby,
