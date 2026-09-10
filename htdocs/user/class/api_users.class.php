@@ -23,7 +23,7 @@ use Luracast\Restler\RestException;
 require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 require_once DOL_DOCUMENT_ROOT.'/user/class/usergroup.class.php';
 /**DEBUT SPECIFIQUE ATM password-reset-native**/
-// En v25 : supprimer ce require, le coeur fournit les fonctions dans core/lib/security2.lib.php.
+// In v25: drop this require, the core ships the functions in core/lib/security2.lib.php.
 require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
 /**FIN SPECIFIQUE ATM**/
 
@@ -653,7 +653,7 @@ class Users extends DolibarrApi
 			/**DEBUT SPECIFIQUE ATM password-reset-native**/
 			// Rate limit: the web page is protected by a captcha, this endpoint has nothing, so a
 			// caller could flood one mailbox. The armed token carries its own date, no extra
-			// storage needed. En v25 : atmIsPasswordResetTooRecent has no core equivalent, keep it
+			// storage needed. In v25: atmIsPasswordResetTooRecent has no core equivalent, keep it
 			// or drop the throttle.
 			if (atmIsPasswordResetTooRecent($edituser->pass_temp, getDolGlobalInt('USER_PASSWORD_RESET_MIN_INTERVAL', 60))) {
 				dol_syslog("Users::passwordResetRequest throttled for user ".((int) $edituser->id).": a link was sent less than USER_PASSWORD_RESET_MIN_INTERVAL seconds ago", LOG_NOTICE);
@@ -665,7 +665,7 @@ class Users extends DolibarrApi
 		if ($eligible) {
 			/**DEBUT SPECIFIQUE ATM password-reset-native**/
 			// Arm an expiring token instead of generating a password and storing it in clear in
-			// pass_temp. En v25 : atmRequestPasswordReset -> $edituser->requestPasswordReset(),
+			// pass_temp. In v25: atmRequestPasswordReset -> $edituser->requestPasswordReset(),
 			// atmGetPasswordResetHash -> dolGetPasswordResetHash().
 			$armed = atmRequestPasswordReset($edituser);
 			if (!is_string($armed)) {
@@ -722,7 +722,7 @@ class Users extends DolibarrApi
 		$resfetch = $edituser->fetch(0, $username);
 
 		/**DEBUT SPECIFIQUE ATM password-reset-native**/
-		// En v25 : atmVerifyPasswordResetHash -> dolVerifyPasswordResetHash().
+		// In v25: atmVerifyPasswordResetHash -> dolVerifyPasswordResetHash().
 		$resverify = ($resfetch > 0) ? atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $hash) : 0;
 		/**FIN SPECIFIQUE ATM**/
 
@@ -770,7 +770,7 @@ class Users extends DolibarrApi
 
 		/**DEBUT SPECIFIQUE ATM password-reset-native**/
 		// Expiry is now enforced, and told apart from a bad link: answering 410 leaks nothing since
-		// it requires a hash that already matches this user. En v25 : atmVerifyPasswordResetHash
+		// it requires a hash that already matches this user. In v25: atmVerifyPasswordResetHash
 		// -> dolVerifyPasswordResetHash().
 		$resverify = ($resfetch > 0) ? atmVerifyPasswordResetHash($edituser->pass_temp, $edituser->id, $hash) : 0;
 		if ($resverify == 0) {
@@ -844,7 +844,7 @@ class Users extends DolibarrApi
 
 		/**DEBUT SPECIFIQUE ATM password-reset-native**/
 		// Single source of truth for the reset mail body, shared with the web page.
-		// En v25 : atmGetPasswordResetEmailContent -> $edituser->getPasswordResetEmailContent().
+		// In v25: atmGetPasswordResetEmailContent -> $edituser->getPasswordResetEmailContent().
 		$mesg = atmGetPasswordResetEmailContent($outputlangs, $link);
 		/**FIN SPECIFIQUE ATM**/
 
