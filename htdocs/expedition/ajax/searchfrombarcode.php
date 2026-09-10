@@ -48,14 +48,18 @@ include_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
  */
 
 $action = GETPOST("action", "alpha");
-$barcode = GETPOST("barcode", "aZ09");
+// >>> BACKPORT ATM DA028740 (Dolibarr#38646) - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+$barcode = GETPOST("barcode", "alphanohtml"); // Lot/serial number may contain chars like '/' so we must not use aZ09 sanitizing here. Value is escaped before SQL use.
+// <<< BACKPORT ATM DA028740
 $response = "";
 
 $fk_entrepot = GETPOSTINT("fk_entrepot");
 $fk_inventory = GETPOSTINT("fk_inventory");
 $fk_product = GETPOSTINT("fk_product");
 $reelqty = GETPOSTINT("reelqty");
-$batch = GETPOST("batch", "aZ09");
+// >>> BACKPORT ATM DA028740 (Dolibarr#38646) - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+$batch = GETPOST("batch", "alphanohtml"); // Lot/serial number may contain chars like '/' so we must not use aZ09 sanitizing here. Value is escaped before SQL use.
+// <<< BACKPORT ATM DA028740
 $mode = GETPOST("mode", "aZ");
 
 $warehousefound = 0;
