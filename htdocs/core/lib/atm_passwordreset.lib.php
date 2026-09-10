@@ -251,20 +251,34 @@ function atmSendPasswordResetLink(User $edituser, string $armed): int
 }
 
 /**
+ * Return the captcha handler to use on the password-forgotten page.
+ *
+ * @return	string		Handler name, never empty
+ */
+function atmGetPasswordResetCaptchaHandler(): string
+{
+	// getDolGlobalString() tests isset(): its default does not apply to a constant stored empty.
+	$handler = getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_HANDLER');
+
+	return ($handler === '' ? 'standard' : $handler);
+}
+
+/**
  * Validate the submitted security code against the active captcha handler.
  *
  * The handler that rendered the code on the form is the only one able to validate it,
  * so the caller must pass the very same handler name it used to build the page.
  *
- * @param	string	$captcha	Captcha handler name (empty = captcha disabled, nothing to validate)
- * @return	bool				True when the code is accepted, or when no captcha is active
+ * @param	string	$captcha	Captcha handler name
+ * @return	bool				True when the code is accepted
  */
 function atmVerifyCaptchaCode(string $captcha): bool
 {
 	global $conf, $db, $langs, $user;
 
-	if (empty($captcha)) {
-		return true;
+	if ($captcha === '') {
+		dol_syslog('No captcha handler available to validate the code, password reset refused', LOG_ERR);
+		return false;
 	}
 
 	$dirModCaptcha = array_merge(array('main' => '/core/modules/security/captcha/'), (isset($conf->modules_parts['captcha']) && is_array($conf->modules_parts['captcha'])) ? $conf->modules_parts['captcha'] : array());
