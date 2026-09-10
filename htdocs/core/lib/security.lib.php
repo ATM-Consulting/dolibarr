@@ -976,6 +976,7 @@ function checkUserAccessToObject($user, array $featuresarray, $object = 0, $tabl
 		}
 		if ($feature == 'task' || $feature == 'projet_task') {
 			$feature = 'project_task';
+			$dbtablename = 'projet_task';
 		}
 		if ($feature == 'eventorganization') {
 			$feature = 'agenda';

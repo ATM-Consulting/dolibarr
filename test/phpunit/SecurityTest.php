@@ -439,6 +439,44 @@ class SecurityTest extends CommonClassTest
 		$this->assertEquals(1, $result);
 	}
 
+	/**
+	 * testCheckUserAccessToObjectOnTask
+	 *
+	 * @return void
+	 */
+	public function testCheckUserAccessToObjectOnTask()
+	{
+		global $conf, $user, $langs, $db;
+		$conf = $this->savconf;
+		$user = $this->savuser;
+		$langs = $this->savlangs;
+		$db = $this->savdb;
+
+		require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
+		require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+
+		$project = new Project($db);
+		$project->ref = 'PJSECTEST';
+		$project->title = 'Project for checkUserAccessToObject test';
+		$projectid = $project->create($user);
+		$this->assertGreaterThan(0, $projectid, 'Failed to create the test project: '.$project->error);
+
+		$task = new Task($db);
+		$task->fk_project = $projectid;
+		$task->ref = 'TKSECTEST';
+		$task->label = 'Task for checkUserAccessToObject test';
+		$taskid = $task->create($user);
+		$this->assertGreaterThan(0, $taskid, 'Failed to create the test task: '.$task->error);
+
+		// The entity-check SQL branch guarded here is only reached for a user holding projet->all->lire (or with the project module off).
+		// 'project_task' is deliberately absent: no caller uses it and the upstream fix does not cover it either (see ChangeLogAtm).
+		foreach (array('task', 'projet_task') as $feature) {
+			$result = checkUserAccessToObject($user, array($feature), $taskid);
+			print __METHOD__.' feature='.$feature.' taskid='.$taskid.' result='.json_encode($result)."\n";
+			$this->assertTrue($result, 'checkUserAccessToObject denied access to task '.$taskid.' for feature '.$feature);
+		}
+	}
+
 
 	/**
 	 * testGetRandomPassword
