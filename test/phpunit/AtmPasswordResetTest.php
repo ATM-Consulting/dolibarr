@@ -195,4 +195,46 @@ class AtmPasswordResetTest extends CommonClassTest
 		$this->assertStringContainsString('passworduidhash=DEADBEEF', $body, 'link hash present');
 		$this->assertStringNotContainsString('Password = ', $body, 'no cleartext password label');
 	}
+
+	/**
+	 * A handler constant stored empty must not disable the captcha.
+	 *
+	 * @return void
+	 */
+	public function testCaptchaHandlerNeverEmpty()
+	{
+		global $conf;
+		$conf = $this->savconf;
+
+		$sav = isset($conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER) ? $conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER : null;
+
+		unset($conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER);
+		$this->assertSame('standard', atmGetPasswordResetCaptchaHandler(), 'absent constant falls back to standard');
+
+		$conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER = '';
+		$this->assertSame('standard', atmGetPasswordResetCaptchaHandler(), 'empty constant falls back to standard');
+
+		$conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER = 'mycustom';
+		$this->assertSame('mycustom', atmGetPasswordResetCaptchaHandler(), 'configured handler is honoured');
+
+		if (is_null($sav)) {
+			unset($conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER);
+		} else {
+			$conf->global->MAIN_SECURITY_ENABLECAPTCHA_HANDLER = $sav;
+		}
+	}
+
+	/**
+	 * Without a handler there is nothing to validate against, so the code is refused.
+	 *
+	 * @return void
+	 */
+	public function testCaptchaVerificationFailsClosed()
+	{
+		global $conf;
+		$conf = $this->savconf;
+
+		$this->assertFalse(atmVerifyCaptchaCode(''), 'no handler refuses the code');
+		$this->assertFalse(atmVerifyCaptchaCode('nosuchhandler'), 'unknown handler refuses the code');
+	}
 }

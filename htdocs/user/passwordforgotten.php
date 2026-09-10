@@ -98,7 +98,7 @@ if (GETPOST('dol_use_jmobile', 'alpha') || !empty($_SESSION['dol_use_jmobile']))
 // Same rule as the "Send password button enabled ?" block of the View section below, needed
 // this early because the reset action validates the captcha. Native in v25: delete this block.
 $disabled = (preg_match('/dolibarr/i', $mode) || getDolGlobalString('MAIN_SECURITY_ENABLE_SENDPASSWORD')) ? '' : 'disabled';
-$captcha = $disabled ? '' : getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_HANDLER', 'standard');
+$captcha = $disabled ? '' : atmGetPasswordResetCaptchaHandler();
 /**FIN SPECIFIQUE ATM**/
 
 /*
@@ -196,10 +196,11 @@ if (empty($reshook)) {
 		// Backport of core PR #39370: validate with the active captcha handler instead of the raw
 		// session value, so a custom handler is honoured. Native in v25: delete this block and
 		// restore the two core lines.
+		// $disabled belongs to the test: this action stays unreachable while the feature is off.
 		// Coeur d'origine :
 		// $sessionkey = 'dol_antispam_value';
 		// $ok = (array_key_exists($sessionkey, $_SESSION) && (strtolower($_SESSION[$sessionkey]) == strtolower(GETPOST('code'))));
-		$ok = atmVerifyCaptchaCode($captcha);
+		$ok = ($disabled === '' && atmVerifyCaptchaCode($captcha));
 		/**FIN SPECIFIQUE ATM**/
 
 		// Verify code
@@ -336,7 +337,11 @@ if (getDolGlobalString('MAIN_SECURITY_ENABLE_SENDPASSWORD')) {
 // Security graphical code
 $captcha = '';
 if (!$disabled) {
-	$captcha = getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_HANDLER', 'standard');
+	/**DEBUT SPECIFIQUE ATM password-reset-native**/
+	// The form and the action must resolve the same handler, or the code can never validate.
+	// Coeur d'origine : $captcha = getDolGlobalString('MAIN_SECURITY_ENABLECAPTCHA_HANDLER', 'standard');
+	$captcha = atmGetPasswordResetCaptchaHandler();
+	/**FIN SPECIFIQUE ATM**/
 }
 
 // Execute hook getPasswordForgottenPageOptions (for table)
