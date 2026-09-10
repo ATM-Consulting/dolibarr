@@ -13,7 +13,7 @@
  * Copyright (C) 2014		Cédric GROSS				<c.gross@kreiz-it.fr>
  * Copyright (C) 2014-2015	Marcos García				<marcosgdf@gmail.com>
  * Copyright (C) 2015		Jean-François Ferry			<jfefe@aternatik.fr>
- * Copyright (C) 2018-2025  Frédéric France             <frederic.france@free.fr>
+ * Copyright (C) 2018-2026  Frédéric France             <frederic.france@free.fr>
  * Copyright (C) 2019-2023  Thibault Foucart            <support@ptibogxiv.net>
  * Copyright (C) 2020       Open-Dsi         			<support@open-dsi.fr>
  * Copyright (C) 2021       Gauthier VERDOL         	<gauthier.verdol@atm-consulting.fr>
@@ -518,7 +518,7 @@ function getWarningDelay($module, $parmlevel1, $parmlevel2 = '')
 function isDolTms($timestamp)
 {
 	if ($timestamp === '') {
-		dol_syslog('Using empty string for a timestamp is deprecated, prefer use of null when calling page ' . $_SERVER["PHP_SELF"] . getCallerInfoString(), LOG_NOTICE);
+		dol_syslog('Using empty string for a timestamp is deprecated, prefer use of null when calling page ' . $_SERVER["PHP_SELF"] . getCallerInfoString(), LOG_DEBUG);
 		return false;
 	}
 	if (is_null($timestamp) || !is_numeric($timestamp)) {
@@ -13402,7 +13402,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 						$tmps = '';
 
 						if ($isSellist) {
-							$newres .= $field . " IN (SELECT t." . $key . " FROM " . $db->prefix() . $table . " AS t WHERE t." . $label . " LIKE '%" . $db->escape($tmpcrit2) . "%')";
+							$newres .= $field . " IN (SELECT t." . $db->sanitize($key) . " FROM " . $db->prefix() . $db->sanitize($table) . " AS t WHERE t." . $db->sanitize($label) . " LIKE '%" . $db->escape($tmpcrit2) . "%')";
 						} else {
 							if (preg_match('/^!/', $tmpcrit)) {
 								$tmps .= $db->sanitize($field) . " NOT LIKE "; // ! as exclude character
@@ -13430,7 +13430,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 							$newres .= $tmpafter;
 							$newres .= "'";
 							if ($tmpcrit2 == '' || preg_match('/^!/', $tmpcrit)) {
-								$newres .= " OR " . $field . " IS NULL)";
+								$newres .= " OR " . $db->sanitize($field) . " IS NULL)";
 							}
 						}
 					}
@@ -13443,7 +13443,7 @@ function natural_search($fields, $value, $mode = 0, $nofirstand = 0, $sqltoadd =
 		}
 
 		if ($sqltoadd) {
-			$newres .= ($newres ? '' : ' OR ').str_replace('__KEYTOSEARCH__', $crit, $sqltoadd);
+			$newres .= ($newres ? '' : ' OR ').str_replace('__KEYTOSEARCH__', $db->escape($crit), $sqltoadd);
 		}
 
 		if ($newres) {
@@ -14498,7 +14498,7 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 		if (!empty($params['use_unsecured_unescapedattr']) && is_array($params['use_unsecured_unescapedattr']) && in_array($key, $params['use_unsecured_unescapedattr'])) {
 			// Not recommended
 			$value = dol_htmlentities($value, ENT_QUOTES | ENT_SUBSTITUTE);
-		} elseif ($key == 'href') {
+		} elseif (in_array($key, ['href', 'data-confirm-url'])) {
 			$value = dolPrintHTMLForAttributeUrl($value);
 		} else {
 			$value = dolPrintHTMLForAttribute($value);
