@@ -83,7 +83,9 @@ $fieldid = GETPOSTISSET("ref") ? 'ref' : 'rowid';
 $d_eatby = dol_mktime(0, 0, 0, GETPOSTINT('eatbymonth'), GETPOSTINT('eatbyday'), GETPOSTINT('eatbyyear'));
 $d_sellby = dol_mktime(0, 0, 0, GETPOSTINT('sellbymonth'), GETPOSTINT('sellbyday'), GETPOSTINT('sellbyyear'));
 $pdluoid = GETPOSTINT('pdluoid');
-$batchnumber = GETPOST('batch_number', 'aZ09comma');
+// >>> BACKPORT ATM DA028740 (Dolibarr#38646) - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+$batchnumber = GETPOST('batch_number', 'alphanohtml'); // Lot/serial number may contain chars like '/' so we must not use aZ09 sanitizing here. Value is escaped before SQL use.
+// <<< BACKPORT ATM DA028740
 if (!empty($batchnumber)) {
 	$batchnumber = trim($batchnumber);
 }
