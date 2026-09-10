@@ -696,10 +696,34 @@ if (empty($reshook)) {
 		}
 	}
 
+	/**DEBUT SPECIFIQUE ATM password-reset-native**/
+	// Backport of core PR #39370: "send a new password" now emails an expiring reset link and
+	// leaves the current password untouched, so no cleartext password ever travels by email.
+	// The core block below has lost its 'confirm_passwordsend' branch for that reason.
+	// Native in v25: delete this block and restore the core condition.
+	if ($action == 'confirm_passwordsend' && $confirm == 'yes' && $permissiontoeditpasswordandsend) {
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/atm_passwordreset.lib.php';
+
+		$object->fetch($id);
+
+		$armed = atmRequestPasswordReset($object);
+		if (is_int($armed) && $armed < 0) {
+			setEventMessages($langs->trans("ErrorFailedToSetNewPassword"), null, 'errors');
+		} elseif ($object->send_password($user, $armed) > 0) {
+			setEventMessages($langs->trans("PasswordResetLinkSentTo", $object->email), null, 'mesgs');
+		} else {
+			setEventMessages($object->error, $object->errors, 'errors');
+		}
+	}
+	/**FIN SPECIFIQUE ATM**/
+
 	// Change password with a new generated one
-	if ((($action == 'confirm_password' && $confirm == 'yes' && $permissiontoeditpasswordandsee)
-			|| ($action == 'confirm_passwordsend' && $confirm == 'yes' && $permissiontoeditpasswordandsend))
-	) {
+	/**DEBUT SPECIFIQUE ATM password-reset-native**/
+	// Coeur d'origine :
+	// if ((($action == 'confirm_password' && $confirm == 'yes' && $permissiontoeditpasswordandsee)
+	//		|| ($action == 'confirm_passwordsend' && $confirm == 'yes' && $permissiontoeditpasswordandsend))
+	// ) {
+	if ($action == 'confirm_password' && $confirm == 'yes' && $permissiontoeditpasswordandsee) {	/**FIN SPECIFIQUE ATM**/
 		$object->fetch($id);
 
 		$newpassword = $object->setPassword($user, '');	// This will generate a new password
