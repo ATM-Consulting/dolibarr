@@ -917,7 +917,7 @@ class Commande extends CommonOrder
 		}
 
 		/** UPSTREAM PR #40155 */
-		if ($this->checkRefClientIsFree((string) $this->ref_client, (int) $this->socid) < 0) {
+		if ($this->isRefClientAlreadyUsed((string) $this->ref_client, (int) $this->socid) != 0) {
 			return -1;
 		}
 		/** END UPSTREAM PR #40155 */
@@ -2902,13 +2902,16 @@ class Commande extends CommonOrder
 	 * UPSTREAM PR #40155 - https://github.com/Dolibarr/dolibarr/pull/40155
 	 *
 	 * The three methods below and their three call sites in create(), set_ref_client() and update()
-	 * are the OREP variant of that PR: always enabled instead of driven by
-	 * ORDER_CHECK_DUPLICATE_REF_CLIENT, and extended with the exemption list
-	 * ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES which the PR does not carry.
+	 * are the OREP variant of that PR. isRefClientAlreadyUsed() carries the same name, signature,
+	 * return codes and ORDER_ALLOW_DUPLICATE_REF_CLIENT opt-out as the PR, so both versions behave
+	 * the same. Only two additions are OREP specific:
+	 *  - the exemption list ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES, which the PR does not carry
+	 *  - getOrderUsingSameRefClient(), kept split out, where the PR inlines the query
 	 *
-	 * On a major upgrade: if the target version ships the PR, drop this block, drop the call sites,
-	 * enable ORDER_CHECK_DUPLICATE_REF_CLIENT and re-implement the exemption list only if the
-	 * placeholder references are still in use. Otherwise carry the whole block over.
+	 * On a major upgrade: if the target version ships the PR, drop getOrderUsingSameRefClient(),
+	 * isRefClientExemptFromDuplicateControl() and the body of isRefClientAlreadyUsed(), keep the
+	 * call sites as they are, and re-implement the exemption list only if the placeholder
+	 * references are still in use. Otherwise carry the whole block over.
 	 */
 
 	/**
@@ -2974,16 +2977,24 @@ class Commande extends CommonOrder
 	}
 
 	/**
-	 *	Refuse a customer ref already used by another customer order of the same third party
+	 *	Check if a customer ref is already used by another customer order of the same third party
+	 *
+	 *	Same control supplier invoices get from their uk_facture_fourn_ref_supplier
+	 *	(ref_supplier, fk_soc, entity) unique index. Can be disabled with
+	 *	ORDER_ALLOW_DUPLICATE_REF_CLIENT, for installations already holding such duplicates.
 	 *
 	 *	@param		string		$ref_client		Customer ref to check
 	 *	@param		int			$socid			Third party id
 	 *	@param		int			$excludeid		Customer order id to exclude from the check (0 on creation)
-	 *	@return		int							0 if the customer ref is free, -1 if already used, -2 if the request failed
+	 *	@return		int							Return integer 1 if the customer ref is already used, 0 if free, -1 if the request failed
 	 */
-	protected function checkRefClientIsFree(string $ref_client, int $socid, int $excludeid = 0): int
+	public function isRefClientAlreadyUsed(string $ref_client, int $socid, int $excludeid = 0): int
 	{
 		global $langs;
+
+		if (getDolGlobalInt('ORDER_ALLOW_DUPLICATE_REF_CLIENT')) {
+			return 0;
+		}
 
 		$ref_client = trim($ref_client);
 		if ($ref_client === '' || $this->isRefClientExemptFromDuplicateControl($ref_client)) {
@@ -2996,7 +3007,7 @@ class Commande extends CommonOrder
 			$this->error = $e->getMessage();
 			$this->errors[] = $this->error;
 			dol_syslog($this->error, LOG_ERR);
-			return -2;
+			return -1;
 		}
 
 		if ($conflictingref === '') {
@@ -3006,9 +3017,9 @@ class Commande extends CommonOrder
 		$langs->load('orders');
 		$this->error = $langs->trans('ErrorRefCustomerAlreadyUsedOnOrder', $ref_client, $conflictingref);
 		$this->errors[] = $this->error;
-		dol_syslog(get_class($this)."::checkRefClientIsFree ref_client=".$ref_client." already used by ".$conflictingref, LOG_WARNING);
+		dol_syslog(get_class($this)."::isRefClientAlreadyUsed ref_client=".$ref_client." already used by ".$conflictingref, LOG_WARNING);
 
-		return -1;
+		return 1;
 	}
 	/** END UPSTREAM PR #40155 */
 
@@ -3028,7 +3039,7 @@ class Commande extends CommonOrder
 			$error = 0;
 
 			/** UPSTREAM PR #40155 */
-			if ($this->checkRefClientIsFree((string) $ref_client, (int) $this->socid, (int) $this->id) < 0) {
+			if ($this->isRefClientAlreadyUsed((string) $ref_client, (int) $this->socid, (int) $this->id) != 0) {
 				return -1;
 			}
 			/** END UPSTREAM PR #40155 */
@@ -3458,7 +3469,7 @@ class Commande extends CommonOrder
 		// Check parameters
 		// Put here code to add control on parameters values
 		/** UPSTREAM PR #40155 */
-		if ($this->checkRefClientIsFree((string) $this->ref_client, (int) $this->socid, (int) $this->id) < 0) {
+		if ($this->isRefClientAlreadyUsed((string) $this->ref_client, (int) $this->socid, (int) $this->id) != 0) {
 			return -1;
 		}
 		/** END UPSTREAM PR #40155 */

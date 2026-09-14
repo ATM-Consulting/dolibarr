@@ -331,6 +331,53 @@ class CommandeRefClientDuplicateTest extends PHPUnit\Framework\TestCase
 	}
 
 	/**
+	 * ORDER_ALLOW_DUPLICATE_REF_CLIENT turns the whole control off
+	 *
+	 * @return void
+	 */
+	public function testDuplicateRefClientIsAcceptedWhenOptionAllowsIt(): void
+	{
+		global $conf;
+
+		$savedvalue = getDolGlobalString('ORDER_ALLOW_DUPLICATE_REF_CLIENT');
+		$conf->global->ORDER_ALLOW_DUPLICATE_REF_CLIENT = 1;
+
+		try {
+			$first = $this->createOrder(self::$socid1, 'PHPUNIT-ALLOWED-001');
+			$this->assertGreaterThan(0, $first->id, 'create() KO: '.$first->error);
+
+			$second = $this->createOrder(self::$socid1, 'PHPUNIT-ALLOWED-001');
+
+			$this->assertGreaterThan(0, $second->id, 'create() KO: '.$second->error);
+		} finally {
+			$conf->global->ORDER_ALLOW_DUPLICATE_REF_CLIENT = $savedvalue;
+		}
+	}
+
+	/**
+	 * Return codes of the control: 1 when used, 0 when free, the negative range being reserved for errors
+	 *
+	 * @return void
+	 */
+	public function testIsRefClientAlreadyUsed(): void
+	{
+		global $db;
+
+		$first = $this->createOrder(self::$socid1, 'PHPUNIT-RETCODE-001');
+		$this->assertGreaterThan(0, $first->id, 'create() KO: '.$first->error);
+
+		$order = new Commande($db);
+
+		$this->assertEquals(1, $order->isRefClientAlreadyUsed('PHPUNIT-RETCODE-001', self::$socid1));
+		$this->assertStringContainsString($first->ref, $order->error);
+
+		$this->assertEquals(0, $order->isRefClientAlreadyUsed('PHPUNIT-RETCODE-001', self::$socid1, $first->id));
+		$this->assertEquals(0, $order->isRefClientAlreadyUsed('PHPUNIT-RETCODE-001', self::$socid2));
+		$this->assertEquals(0, $order->isRefClientAlreadyUsed('PHPUNIT-UNKNOWN-999', self::$socid1));
+		$this->assertEquals(0, $order->isRefClientAlreadyUsed('', self::$socid1));
+	}
+
+	/**
 	 * A refused creation must leave no row behind and must not shift the order numbering
 	 *
 	 * @return void
