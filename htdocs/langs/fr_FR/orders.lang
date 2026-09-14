@@ -207,3 +207,6 @@ StatusSupplierOrderReceivedAll=Tous les produits reçus
 NeedAtLeastOneInvoice = Au moins une facture doit être présente
 LineAlreadyDispatched = La ligne de commande a déjà été réceptionnée.
 OrderStatusMakeOperationForbidden = Statut de commande interdit pour cette opération.
+# UPSTREAM PR #40155
+ErrorRefCustomerAlreadyUsedOnOrder=La réf. commande client <b>%s</b> est déjà utilisée par la commande <b>%s</b> de ce client.
+# END UPSTREAM PR #40155

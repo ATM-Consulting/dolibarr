@@ -916,6 +916,12 @@ class Commande extends CommonOrder
 			}
 		}
 
+		/** UPSTREAM PR #40155 */
+		if ($this->isRefClientAlreadyUsed((string) $this->ref_client, (int) $this->socid) != 0) {
+			return -1;
+		}
+		/** END UPSTREAM PR #40155 */
+
 		$soc = new Societe($this->db);
 		$result = $soc->fetch($this->socid);
 		if ($result < 0) {
@@ -2892,6 +2898,131 @@ class Commande extends CommonOrder
 		}
 	}
 
+	/**
+	 * UPSTREAM PR #40155 - https://github.com/Dolibarr/dolibarr/pull/40155
+	 *
+	 * The three methods below and their three call sites in create(), set_ref_client() and update()
+	 * are the OREP variant of that PR. isRefClientAlreadyUsed() carries the same name, signature,
+	 * return codes and ORDER_ALLOW_DUPLICATE_REF_CLIENT opt-out as the PR, so both versions behave
+	 * the same. Only two additions are OREP specific:
+	 *  - the exemption list ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES, which the PR does not carry
+	 *  - getOrderUsingSameRefClient(), kept split out, where the PR inlines the query
+	 *
+	 * On a major upgrade: if the target version ships the PR, drop getOrderUsingSameRefClient(),
+	 * isRefClientExemptFromDuplicateControl() and the body of isRefClientAlreadyUsed(), keep the
+	 * call sites as they are, and re-implement the exemption list only if the placeholder
+	 * references are still in use. Otherwise carry the whole block over.
+	 */
+
+	/**
+	 *	Get the ref of another customer order of the same third party already using a customer ref
+	 *
+	 *	@param		string		$ref_client		Customer ref to search for
+	 *	@param		int			$socid			Third party id
+	 *	@param		int			$excludeid		Customer order id to exclude from the search (0 on creation)
+	 *	@return		string						Ref of the oldest conflicting order, empty string if none
+	 *	@throws		Exception					If the SQL request fails
+	 */
+	public function getOrderUsingSameRefClient(string $ref_client, int $socid, int $excludeid = 0): string
+	{
+		if ($ref_client === '' || $socid <= 0) {
+			return '';
+		}
+
+		$sql = "SELECT ref FROM ".$this->db->prefix()."commande";
+		$sql .= " WHERE ref_client = '".$this->db->escape($ref_client)."'";
+		$sql .= " AND fk_soc = ".((int) $socid);
+		$sql .= " AND entity IN (".getEntity('commande').")";
+		if ($excludeid > 0) {
+			$sql .= " AND rowid <> ".((int) $excludeid);
+		}
+		$sql .= " ORDER BY rowid ASC";
+		$sql .= $this->db->plimit(1);
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			throw new Exception(get_class($this)."::getOrderUsingSameRefClient ".$this->db->lasterror());
+		}
+
+		$obj = $this->db->fetch_object($resql);
+		$this->db->free($resql);
+
+		return is_object($obj) ? $obj->ref : '';
+	}
+
+	/**
+	 *	Tell if a customer ref is a placeholder value allowed to be repeated
+	 *
+	 *	Comma separated list held by ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES, case and spacing insensitive.
+	 *	Empty by default: every non empty customer ref is then submitted to the duplicate control.
+	 *
+	 *	@param		string		$ref_client		Customer ref to test
+	 *	@return		bool						True if the customer ref must escape the duplicate control
+	 */
+	public function isRefClientExemptFromDuplicateControl(string $ref_client): bool
+	{
+		$allowedvalues = getDolGlobalString('ORDER_REF_CLIENT_DUPLICATE_ALLOWED_VALUES');
+		if ($allowedvalues === '') {
+			return false;
+		}
+
+		$needle = dol_strtolower(trim($ref_client));
+		foreach (explode(',', $allowedvalues) as $allowedvalue) {
+			if (dol_strtolower(trim($allowedvalue)) === $needle) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 *	Check if a customer ref is already used by another customer order of the same third party
+	 *
+	 *	Same control supplier invoices get from their uk_facture_fourn_ref_supplier
+	 *	(ref_supplier, fk_soc, entity) unique index. Can be disabled with
+	 *	ORDER_ALLOW_DUPLICATE_REF_CLIENT, for installations already holding such duplicates.
+	 *
+	 *	@param		string		$ref_client		Customer ref to check
+	 *	@param		int			$socid			Third party id
+	 *	@param		int			$excludeid		Customer order id to exclude from the check (0 on creation)
+	 *	@return		int							Return integer 1 if the customer ref is already used, 0 if free, -1 if the request failed
+	 */
+	public function isRefClientAlreadyUsed(string $ref_client, int $socid, int $excludeid = 0): int
+	{
+		global $langs;
+
+		if (getDolGlobalInt('ORDER_ALLOW_DUPLICATE_REF_CLIENT')) {
+			return 0;
+		}
+
+		$ref_client = trim($ref_client);
+		if ($ref_client === '' || $this->isRefClientExemptFromDuplicateControl($ref_client)) {
+			return 0;
+		}
+
+		try {
+			$conflictingref = $this->getOrderUsingSameRefClient($ref_client, $socid, $excludeid);
+		} catch (Exception $e) {
+			$this->error = $e->getMessage();
+			$this->errors[] = $this->error;
+			dol_syslog($this->error, LOG_ERR);
+			return -1;
+		}
+
+		if ($conflictingref === '') {
+			return 0;
+		}
+
+		$langs->load('orders');
+		$this->error = $langs->trans('ErrorRefCustomerAlreadyUsedOnOrder', $ref_client, $conflictingref);
+		$this->errors[] = $this->error;
+		dol_syslog(get_class($this)."::isRefClientAlreadyUsed ref_client=".$ref_client." already used by ".$conflictingref, LOG_WARNING);
+
+		return 1;
+	}
+	/** END UPSTREAM PR #40155 */
+
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
 	 *	Set customer ref
@@ -2906,6 +3037,12 @@ class Commande extends CommonOrder
 		// phpcs:enable
 		if ($user->hasRight('commande', 'creer')) {
 			$error = 0;
+
+			/** UPSTREAM PR #40155 */
+			if ($this->isRefClientAlreadyUsed((string) $ref_client, (int) $this->socid, (int) $this->id) != 0) {
+				return -1;
+			}
+			/** END UPSTREAM PR #40155 */
 
 			$this->db->begin();
 
@@ -3331,6 +3468,11 @@ class Commande extends CommonOrder
 
 		// Check parameters
 		// Put here code to add control on parameters values
+		/** UPSTREAM PR #40155 */
+		if ($this->isRefClientAlreadyUsed((string) $this->ref_client, (int) $this->socid, (int) $this->id) != 0) {
+			return -1;
+		}
+		/** END UPSTREAM PR #40155 */
 
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."commande SET";
