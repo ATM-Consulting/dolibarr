@@ -154,6 +154,9 @@ if (empty($modulepart) && empty($hashp)) {
 if (empty($original_file) && empty($hashp)) {
 	httponly_accessforbidden('Bad link. Missing identification to find file (original_file or hashp)', 400);
 }
+if ($hashp == 'shared') {
+	httponly_accessforbidden('Bad link. Bad value for parameter hashp', 400);
+}
 if ($modulepart == 'fckeditor') {
 	$modulepart = 'medias'; // For backward compatibility
 }
@@ -185,8 +188,8 @@ if (in_array($modulepart, array('facture_paiement', 'unpaid'))) {
 
 // If we have a hash public (hashp), we guess the original_file.
 $ecmfile = '';
-if (!empty($hashp)) {
-	if (GETPOST('type', 'alpha')=='link') {
+if (!empty($hashp) && $hashp != 'shared') {
+	if (GETPOST('type', 'alpha') == 'link') {
 		require_once DOL_DOCUMENT_ROOT.'/core/class/link.class.php';
 		$link = new Link($db);
 		$result = $link->fetch(0, $hashp);
@@ -284,7 +287,7 @@ $sqlprotectagainstexternals = $check_access['sqlprotectagainstexternals'];
 $fullpath_original_file     = $check_access['original_file']; // $fullpath_original_file is now a full path name
 //var_dump($modulepart.' '.$entity.' '.$fullpath_original_file.' '.$original_file.' '.$accessallowed);exit;
 
-if (!empty($hashp)) {
+if (!empty($hashp) && $hashp != 'shared') {
 	$accessallowed = 1; // When using hashp, link is public so we force $accessallowed
 	$sqlprotectagainstexternals = '';
 } else {

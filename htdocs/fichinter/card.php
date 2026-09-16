@@ -444,6 +444,12 @@ if (empty($reshook)) {
 
 										if ($prod->duration_value && getDolGlobalString('FICHINTER_USE_SERVICE_DURATION')) {
 											switch ($prod->duration_unit) {
+												case 's':
+													$mult = 1;
+													break;
+												case 'mn':
+													$mult = 60;
+													break;
 												default:
 												case 'h':
 													$mult = 3600;
@@ -461,7 +467,7 @@ if (empty($reshook)) {
 													$mult = 3600 * 24 * 365;
 													break;
 											}
-											$duration = (int) $prod->duration_value * $mult * $lines[$i]->qty;
+											$duration = (int) round(((float) $prod->duration_value) * $mult * $lines[$i]->qty);
 										}
 
 										$desc = $lines[$i]->product_ref;
@@ -472,10 +478,16 @@ if (empty($reshook)) {
 									// Common part (predefined or free line)
 									$desc .= dol_htmlentitiesbr($lines[$i]->desc);
 									$desc .= '<br>';
-									$desc .= ' ('.$langs->trans('Quantity').': '.$lines[$i]->qty.')';
+									$unit_label = '';
+									if ($lines[$i]->fk_unit) {
+										$langs->load('measuring_units');
+										$unit_label = $langs->trans($lines[$i]->getLabelOfUnit('short'));
+									}
+									$desc .= ' ('.$langs->trans('Quantity').': '.$lines[$i]->qty.($unit_label ? ' '.$unit_label : '').')';
 
-									$timearray = dol_getdate(dol_now());
-									$date_intervention = dol_mktime(0, 0, 0, $timearray['mon'], $timearray['mday'], $timearray['year']);
+									$source_date = (!empty($srcobject->delivery_date) ? $srcobject->delivery_date : dol_now());
+									$timearray = dol_getdate($source_date);
+									$date_intervention = dol_mktime($timearray['hours'], $timearray['minutes'], 0, $timearray['mon'], $timearray['mday'], $timearray['year']);
 
 									if ($product_type == Product::TYPE_PRODUCT) {
 										$duration = 0;
@@ -754,8 +766,10 @@ if (empty($reshook)) {
 
 		$result = $objectline->update($user);
 		if ($result < 0) {
-			dol_print_error($db);
-			exit;
+			// Surface validation errors (e.g. mandatory extrafield left empty) as an
+			// event message on the same page instead of breaking with a full Dolibarr
+			// error screen that loses the user's edit context.
+			setEventMessages($objectline->error, $objectline->errors, 'errors');
 		}
 
 		// Define output language
@@ -864,7 +878,7 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
 
 	// Actions to build doc
-	$upload_dir = $conf->ficheinter->dir_output;
+	$upload_dir = getMultidirOutput($object);
 	$permissiontoadd = $user->hasRight('ficheinter', 'creer');
 	include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
 
@@ -1209,8 +1223,10 @@ if ($action == 'create') {
 		}
 		print '<table class="border centpercent">';
 		print '<tr><td class="fieldrequired">'.$langs->trans("ThirdParty").'</td><td>';
-		print $form->select_company('', 'socid', '', 'SelectThirdParty', 1, 0, array(), 0, 'minwidth300');
-		print ' <a href="'.DOL_URL_ROOT.'/societe/card.php?action=create&customer=3&backtopage='.urlencode($_SERVER["PHP_SELF"].'?action=create').'"><span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddThirdParty").'"></span></a>';
+		$filter = '(s.status:=:1)';
+
+		print $form->select_company('', 'socid', $filter, 'SelectThirdParty', 1, 0, array(), 0, 'minwidth300');
+		print ' <a href="'.DOL_URL_ROOT.'/societe/card.php?action=create&backtopage='.urlencode($_SERVER["PHP_SELF"].'?action=create').'"><span class="fa fa-plus-circle valignmiddle paddingleft" title="'.$langs->trans("AddThirdParty").'"></span></a>';
 		print '</td></tr>';
 		print '</table>';
 
@@ -1862,7 +1878,7 @@ if ($action == 'create') {
 						'label' => $langs->trans('AddSubtotalLine'),
 						'url' => '/fichinter/card.php?id='.$object->id.'&action=add_subtotal_line&token='.newToken()
 					);
-					print dolGetButtonAction('', $langs->trans('Subtotal'), 'default', $url_button, '', true);
+					print dolGetButtonAction('', $langs->trans('SubTotal'), 'default', $url_button, '', true);
 				}
 
 				// Validate
@@ -1989,11 +2005,11 @@ if ($action == 'create') {
 		 * Built documents
 		 */
 		$filename = dol_sanitizeFileName($object->ref);
-		$filedir = $conf->ficheinter->dir_output."/".$filename;
+		$filedir = getMultidirOutput($object)."/".$filename;
 		$urlsource = $_SERVER["PHP_SELF"]."?id=".$object->id;
 		$genallowed = $user->hasRight('ficheinter', 'lire');
 		$delallowed = $user->hasRight('ficheinter', 'creer');
-		print $formfile->showdocuments('ficheinter', $filename, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $soc->default_lang);
+		print $formfile->showdocuments('ficheinter', $filename, $filedir, $urlsource, $genallowed, $delallowed, $object->model_pdf, 1, 0, 0, 28, 0, '', '', '', $soc->default_lang, '', $object);
 
 		// Show links to link elements
 		$tmparray = $form->showLinkToObjectBlock($object, array(), array('fichinter'), 1);
@@ -2040,7 +2056,7 @@ if ($action == 'create') {
 	// Presend form
 	$modelmail = 'fichinter_send';
 	$defaulttopic = 'SendInterventionRef';
-	$diroutput = $conf->ficheinter->dir_output;
+	$diroutput = $conf->ficheinter->multidir_output[$object->entity];
 	$trackid = 'int'.$object->id;
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';

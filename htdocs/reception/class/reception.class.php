@@ -39,6 +39,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/commonobjectline.class.php";
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonincoterm.class.php';
+require_once DOL_DOCUMENT_ROOT.'/reception/class/receptionlinebatch.class.php';
 if (isModEnabled("propal")) {
 	require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 }
@@ -1143,7 +1144,7 @@ class Reception extends CommonObject
 			}
 
 			$qty = (float) $qty;
-			$description = trim($description);
+			$description = trim((string) $description);
 
 			// Fetch current line from the database and then clone the object and set it in $oldline property
 			$line = new ReceptionLineBatch($this->db);
@@ -2075,7 +2076,7 @@ class Reception extends CommonObject
 
 						$qty = $obj->qty;
 
-						if ($qty <= 0) {
+						if ($qty == 0 || ($qty < 0 && !getDolGlobalInt('RECEPTION_ALLOW_NEGATIVE_QTY'))) {
 							continue;
 						}
 
@@ -2235,7 +2236,7 @@ class Reception extends CommonObject
 
 						$qty = $obj->qty;
 
-						if ($qty <= 0) {
+						if ($qty == 0 || ($qty < 0 && !getDolGlobalInt('RECEPTION_ALLOW_NEGATIVE_QTY'))) {
 							continue;
 						}
 						dol_syslog(get_class($this)."::reopen reception movement index ".$i." ed.rowid=".$obj->rowid);
@@ -2372,7 +2373,7 @@ class Reception extends CommonObject
 
 						$qty = $obj->qty;
 
-						if ($qty <= 0) {
+						if ($qty == 0 || ($qty < 0 && !getDolGlobalInt('RECEPTION_ALLOW_NEGATIVE_QTY'))) {
 							continue;
 						}
 

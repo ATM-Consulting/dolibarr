@@ -14,6 +14,7 @@
  * Copyright (C) 2022       Gauthier VERDOL         <gauthier.verdol@atm-consulting.fr>
  * Copyright (C) 2023		Nick Fragoulis
  * Copyright (C) 2024-2025	MDW						<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2026		Lionel Vessiller		<lvessiller@open-dsi.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,6 +94,8 @@ $origin		= GETPOST('origin', 'alpha');
 $originid = GETPOSTINT('originid');
 $fac_recid = GETPOSTINT('fac_rec');
 $rank = (GETPOSTINT('rank') > 0) ? GETPOSTINT('rank') : -1;
+
+$date_pointoftax = dol_mktime(12, 0, 0, GETPOSTINT('date_pointoftaxmonth'), GETPOSTINT('date_pointoftaxday'), GETPOSTINT('date_pointoftaxyear'), 'tzserver');
 
 // PDF
 $hidedetails = (GETPOSTINT('hidedetails') ? GETPOSTINT('hidedetails') : (getDolGlobalString('MAIN_GENERATE_DOCUMENTS_HIDE_DETAILS') ? 1 : 0));
@@ -524,6 +527,17 @@ if (empty($reshook)) {
 		if ($result < 0) {
 			dol_print_error($db, $object->error);
 		}
+	} elseif ($action == 'setdate_pointoftax' && $usercancreate) {
+		$object->fetch($id);
+
+		$date_pointoftax = dol_mktime(0, 0, 0, GETPOSTINT('date_pointoftaxmonth'), GETPOSTINT('date_pointoftaxday'), GETPOSTINT('date_pointoftaxyear'), 'tzserver');
+		$object->date_pointoftax = $date_pointoftax;
+
+		$result = $object->update($user);
+		if ($result < 0) {
+			setEventMessages($object->error, $object->errors, 'errors');
+			$action = 'editdate_pointoftax';
+		}
 	} elseif ($action == 'setdate_lim_reglement' && $usercancreate) {
 		$object->fetch($id);
 		$object->date_echeance = dol_mktime(12, 0, 0, GETPOSTINT('date_lim_reglementmonth'), GETPOSTINT('date_lim_reglementday'), GETPOSTINT('date_lim_reglementyear'));
@@ -722,6 +736,15 @@ if (empty($reshook)) {
 				$discount->tva_tx = 0;
 				$discount->vat_src_code = '';
 
+				// multi-currency
+				$discount->multicurrency_code = $object->multicurrency_code;
+				$discount->multicurrency_tx = $object->multicurrency_tx;
+				$discount->multicurrency_total_ht = $discount->multicurrency_total_ttc = (float) price2num((float) $discount->amount_ttc * (float) $object->multicurrency_tx, 'MT');
+				$discount->multicurrency_total_tva = 0;
+				// keep compatibility
+				$discount->multicurrency_amount_ht = $discount->multicurrency_amount_ttc = $discount->multicurrency_total_ttc;
+				$discount->multicurrency_amount_tva = 0;
+
 				$result = $discount->create($user);
 				if ($result < 0) {
 					$error++;
@@ -732,9 +755,16 @@ if (empty($reshook)) {
 					$discount->amount_ht = abs((float) $amount_ht[$tva_tx]);
 					$discount->amount_tva = abs((float) $amount_tva[$tva_tx]);
 					$discount->amount_ttc = abs((float) $amount_ttc[$tva_tx]);
-					$discount->multicurrency_amount_ht = abs((float) $multicurrency_amount_ht[$tva_tx]);
-					$discount->multicurrency_amount_tva = abs((float) $multicurrency_amount_tva[$tva_tx]);
-					$discount->multicurrency_amount_ttc = abs((float) $multicurrency_amount_ttc[$tva_tx]);
+					// multi-currency
+					$discount->multicurrency_code = $object->multicurrency_code;
+					$discount->multicurrency_tx = $object->multicurrency_tx;
+					$discount->multicurrency_total_ht = abs((float) $multicurrency_amount_ht[$tva_tx]);
+					$discount->multicurrency_total_tva = abs((float) $multicurrency_amount_tva[$tva_tx]);
+					$discount->multicurrency_total_ttc = abs((float) $multicurrency_amount_ttc[$tva_tx]);
+					// keep compatibility
+					$discount->multicurrency_amount_ht = abs((float) $discount->multicurrency_total_ht);
+					$discount->multicurrency_amount_tva = abs((float) $discount->multicurrency_total_tva);
+					$discount->multicurrency_amount_ttc = abs((float) $discount->multicurrency_total_ttc);
 
 					// Clean vat code
 					$reg = array();
@@ -849,6 +879,7 @@ if (empty($reshook)) {
 				$object->label = GETPOST('label', 'alphanohtml');
 				$object->libelle = $object->label;	// deprecated
 				$object->date = $dateinvoice;
+				$object->date_pointoftax = $date_pointoftax;
 				$object->date_echeance = $datedue;
 				$object->note_public = GETPOST('note_public', 'restricthtml');
 				$object->note_private = GETPOST('note_private', 'restricthtml');
@@ -923,6 +954,7 @@ if (empty($reshook)) {
 				$object->label				= GETPOST('label', 'alphanohtml');
 				$object->libelle            = $object->label;  // Deprecated
 				$object->date               = $dateinvoice;
+				$object->date_pointoftax = $date_pointoftax;
 				$object->date_echeance      = $datedue;
 				$object->note_public        = GETPOST('note_public', 'restricthtml');
 				$object->note_private       = GETPOST('note_private', 'restricthtml');
@@ -1023,6 +1055,7 @@ if (empty($reshook)) {
 				$object->subtype            = GETPOSTINT('subtype');
 				$object->ref                = GETPOST('ref', 'alphanohtml');
 				$object->date               = $dateinvoice;
+				$object->date_pointoftax = $date_pointoftax;
 				$object->note_public        = trim(GETPOST('note_public', 'restricthtml'));
 				$object->note_private       = trim(GETPOST('note_private', 'restricthtml'));
 				$object->ref_supplier       = GETPOST('ref_supplier', 'alphanohtml');
@@ -1093,6 +1126,7 @@ if (empty($reshook)) {
 				$object->label				= GETPOST('label', 'alphanohtml');
 				$object->libelle			= $object->label;	// deprecated
 				$object->date				= $dateinvoice;
+				$object->date_pointoftax = $date_pointoftax;
 				$object->date_echeance		= $datedue;
 				$object->note_public		= GETPOST('note_public', 'restricthtml');
 				$object->note_private		= GETPOST('note_private', 'restricthtml');
@@ -2773,6 +2807,14 @@ if ($action == 'create') {
 		print $form->selectDate($dateinvoice ? (int) $dateinvoice : '', '', 0, 0, 0, "add", 1, 1);
 		print '</td></tr>';
 
+		// Date point of tax
+		if (getDolGlobalString('INVOICE_POINTOFTAX_DATE')) {
+			print '<tr><td class="fieldrequired">'.$langs->trans('DatePointOfTax').'</td><td>';
+			print img_picto('', 'action', 'class="pictofixedwidth"');
+			print $form->selectDate($date_pointoftax ? $date_pointoftax : -1, 'date_pointoftax', 0, 0, 0, "add", 1, 1);
+			print '</td></tr>';
+		}
+
 		// Payment term
 		print '<tr><td class="nowrap">'.$langs->trans('PaymentConditionsShort').'</td><td>';
 		print img_picto('', 'payment', 'class="pictofixedwidth"');
@@ -2966,9 +3008,9 @@ if ($action == 'create') {
 			print '<tr><td>'.$langs->trans('AmountTTC').'</td><td>'.price($objectsrc->total_ttc)."</td></tr>";
 
 			if (isModEnabled("multicurrency")) {
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht).'</td></tr>';
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva)."</td></tr>";
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc)."</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
 			}
 		}
 
@@ -3333,7 +3375,7 @@ if ($action == 'create') {
 		// Thirdparty
 		$morehtmlref .= '<br>'.$object->thirdparty->getNomUrl(1, 'supplier');
 		if (!getDolGlobalString('MAIN_DISABLE_OTHER_LINK') && $object->thirdparty->id > 0) {
-			$morehtmlref .= ' <div class="inline-block valignmiddle">(<a class="valignmiddle" href="'.DOL_URL_ROOT.'/fourn/facture/list.php?socid='.((int) $object->thirdparty->id).'&search_company='.urlencode($object->thirdparty->name).'">'.$langs->trans("OtherBills").'</a>)</div>';
+			$morehtmlref .= ' <div class="inline-block valignmiddle">(<a class="valignmiddle" href="'.DOL_URL_ROOT.'/fourn/facture/list.php?socid='.((int) $object->thirdparty->id).'">'.$langs->trans("OtherBills").'</a>)</div>';
 		}
 		// Project
 		if (isModEnabled('project')) {
@@ -3470,6 +3512,15 @@ if ($action == 'create') {
 			print '</td><td colspan="3">';
 			print $form->editfieldval("Date", 'datef', $object->date, $object, $form_permission, 'datepicker');
 			print '</td>';
+
+			if (getDolGlobalString('INVOICE_POINTOFTAX_DATE')) {
+				$pointoftax_form_permission = ($object->status == FactureFournisseur::STATUS_DRAFT) && $usercancreate;
+				print '<tr><td>';
+				print $form->editfieldkey("DatePointOfTax", 'date_pointoftax', (string) $object->date_pointoftax, $object, (int) $pointoftax_form_permission, 'datepicker');
+				print '</td><td colspan="3">';
+				print $form->editfieldval("DatePointOfTax", 'date_pointoftax', $object->date_pointoftax, $object, $pointoftax_form_permission, 'datepicker');
+				print '</td></tr>';
+			}
 
 			// Default terms of the settlement
 			$langs->load('bills');
@@ -4241,7 +4292,7 @@ if ($action == 'create') {
 				}
 
 				// Create payment
-				if ($object->type != FactureFournisseur::TYPE_CREDIT_NOTE && $object->status == FactureFournisseur::STATUS_VALIDATED && $object->paid == 0) {
+				if ($object->type != FactureFournisseur::TYPE_CREDIT_NOTE && $object->status == FactureFournisseur::STATUS_VALIDATED && $object->paid == 0 && $usercancreate) {
 					print '<a class="butAction" href="'.DOL_URL_ROOT.'/fourn/facture/paiement.php?facid='.$object->id.'&action=create'.($object->fk_account > 0 ? '&accountid='.$object->fk_account : '').'">'.$langs->trans('DoPayment').'</a>'; // must use facid because id is for payment id not invoice
 				}
 
@@ -4251,7 +4302,7 @@ if ($action == 'create') {
 					if ($object->type == FactureFournisseur::TYPE_CREDIT_NOTE && $object->status == 1 && $object->paid == 0) {
 						if ($resteapayer == 0) {
 							print '<span class="butActionRefused classfortooltip" title="'.$langs->trans("DisabledBecauseRemainderToPayIsZero").'">'.$langs->trans('DoPaymentBack').'</span>';
-						} else {
+						} elseif ($usercancreate) {
 							print '<a class="butAction" href="'.DOL_URL_ROOT.'/fourn/facture/paiement.php?facid='.$object->id.'&action=create&accountid='.$object->fk_account.'">'.$langs->trans('DoPaymentBack').'</a>';
 						}
 					}

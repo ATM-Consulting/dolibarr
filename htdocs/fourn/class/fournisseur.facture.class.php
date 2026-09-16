@@ -182,6 +182,11 @@ class FactureFournisseur extends CommonInvoice
 	public $date_echeance;
 
 	/**
+	 * @var ?int
+	 */
+	public $date_pointoftax;
+
+	/**
 	 * @var float
 	 * @deprecated See $total_ttc, $total_ht, $total_tva
 	 */
@@ -316,7 +321,7 @@ class FactureFournisseur extends CommonInvoice
 		'multicurrency_total_ht' => array('type' => 'double(24,8)', 'label' => 'MulticurrencyTotalHT', 'enabled' => 1, 'visible' => -1, 'position' => 220),
 		'multicurrency_total_tva' => array('type' => 'double(24,8)', 'label' => 'MulticurrencyTotalVAT', 'enabled' => 1, 'visible' => -1, 'position' => 225),
 		'multicurrency_total_ttc' => array('type' => 'double(24,8)', 'label' => 'MulticurrencyTotalTTC', 'enabled' => 1, 'visible' => -1, 'position' => 230),
-		'date_pointoftax' => array('type' => 'date', 'label' => 'Date pointoftax', 'enabled' => 1, 'visible' => -1, 'position' => 235),
+		'date_pointoftax' => array('type' => 'date', 'label' => 'DatePointOfTax', 'enabled' => 'getDolGlobalString("INVOICE_POINTOFTAX_DATE")', 'visible' => -1, 'position' => 235),
 		'date_valid' => array('type' => 'date', 'label' => 'DateValidation', 'enabled' => 1, 'visible' => -1, 'position' => 240),
 		'last_main_doc' => array('type' => 'varchar(255)', 'label' => 'Last main doc', 'enabled' => 1, 'visible' => -1, 'position' => 245),
 		'fk_statut' => array('type' => 'smallint(6)', 'label' => 'Status', 'enabled' => 1, 'visible' => -1, 'notnull' => 1, 'position' => 500),
@@ -477,8 +482,8 @@ class FactureFournisseur extends CommonInvoice
 			if (! $this->type) {
 				$this->type = self::TYPE_STANDARD;
 			}
-			$this->note_public = trim($this->note_public);
-			$this->note_private = trim($this->note_private);
+			$this->note_public = trim((string) $this->note_public);
+			$this->note_private = trim((string) $this->note_private);
 			$this->note_private = dol_concatdesc($this->note_private, $langs->trans("GeneratedFromRecurringInvoice", $_facrec->title));
 
 			$this->array_options = $_facrec->array_options;
@@ -560,6 +565,7 @@ class FactureFournisseur extends CommonInvoice
 		$sql .= ", fk_soc";
 		$sql .= ", datec";
 		$sql .= ", datef";
+		$sql .= ", date_pointoftax";
 		$sql .= ", vat_reverse_charge";
 		$sql .= ", fk_projet";
 		$sql .= ", fk_cond_reglement";
@@ -587,6 +593,7 @@ class FactureFournisseur extends CommonInvoice
 		$sql .= ", ".((int) $this->socid);
 		$sql .= ", '".$this->db->idate($now)."'";
 		$sql .= ", '".$this->db->idate($this->date)."'";
+		$sql .= ", ".(empty($this->date_pointoftax) ? "null" : "'".$this->db->idate($this->date_pointoftax)."'");
 		$sql .= ", ".($this->vat_reverse_charge != '' ? ((int) $this->vat_reverse_charge) : 0);
 		$sql .= ", ".($this->fk_project > 0 ? ((int) $this->fk_project) : "null");
 		$sql .= ", ".($this->cond_reglement_id > 0 ? ((int) $this->cond_reglement_id) : "null");
@@ -888,6 +895,7 @@ class FactureFournisseur extends CommonInvoice
 		$sql .= " t.fk_soc,";
 		$sql .= " t.datec,";
 		$sql .= " t.datef,";
+		$sql .= " t.date_pointoftax,";
 		$sql .= " t.tms as datem,";
 		$sql .= " t.libelle as label,";
 		$sql .= " t.paye as paid,";
@@ -956,6 +964,7 @@ class FactureFournisseur extends CommonInvoice
 				$this->subtype				= $obj->subtype;
 				$this->socid				= $obj->fk_soc;
 				$this->date					= $this->db->jdate($obj->datef);
+				$this->date_pointoftax		= $this->db->jdate($obj->date_pointoftax);
 				$this->date_creation		= $this->db->jdate($obj->datec);
 				$this->datec				= $this->db->jdate($obj->datec);
 				$this->date_modification    = $this->db->jdate($obj->datem);
@@ -1277,6 +1286,7 @@ class FactureFournisseur extends CommonInvoice
 		$sql .= " fk_soc=".(isset($this->socid) ? ((int) $this->socid) : "null").",";
 		$sql .= " datec=".(dol_strlen((string) $this->datec) != 0 ? "'".$this->db->idate($this->datec)."'" : 'null').",";
 		$sql .= " datef=".(dol_strlen((string) $this->date) != 0 ? "'".$this->db->idate($this->date)."'" : 'null').",";
+		$sql .= " date_pointoftax=".(dol_strlen((string) $this->date_pointoftax) != 0 ? "'".$this->db->idate($this->date_pointoftax)."'" : 'null').",";
 		if (dol_strlen((string) $this->date_modification) != 0) {
 			$sql .= " tms=".(dol_strlen((string) $this->date_modification) != 0 ? "'".$this->db->idate($this->date_modification)."'" : 'null').",";
 		} elseif (dol_strlen((string) $this->tms) != 0) {	// For backward compatibility
@@ -1483,28 +1493,41 @@ class FactureFournisseur extends CommonInvoice
 			// Fin appel triggers
 		}
 
-		// If invoice was converted into a discount not yet consumed, we remove discount
-		$sql = 'DELETE FROM '.MAIN_DB_PREFIX.'societe_remise_except';
-		$sql .= ' WHERE fk_invoice_supplier_source = '.((int) $rowid);
-		$sql .= ' AND fk_invoice_supplier_line IS NULL';
-		$resql = $this->db->query($sql);
+		// Remove linked categories.
+		$sql = "DELETE FROM ".MAIN_DB_PREFIX."categorie_supplier_invoice";
+		$sql .= " WHERE fk_supplier_invoice = ".((int) $this->id);
 
-		// If invoice has consumned discounts
-		$this->fetch_lines();
-		$list_rowid_det = array();
-		foreach ($this->lines as $key => $invoiceline) {
-			$list_rowid_det[] = $invoiceline->id;
+		$result = $this->db->query($sql);
+		if (!$result) {
+			$error++;
+			$this->error = $this->db->lasterror();
+			$this->errors[] = $this->error;
 		}
 
-		// Consumned discounts are freed
-		if (count($list_rowid_det)) {
-			$sql = 'UPDATE '.MAIN_DB_PREFIX.'societe_remise_except';
-			$sql .= ' SET fk_invoice_supplier = NULL, fk_invoice_supplier_line = NULL';
-			$sql .= ' WHERE fk_invoice_supplier_line IN ('.$this->db->sanitize(implode(',', $list_rowid_det)).')';
+		if (!$error) {
+			// If invoice was converted into a discount not yet consumed, we remove discount
+			$sql = 'DELETE FROM '.MAIN_DB_PREFIX.'societe_remise_except';
+			$sql .= ' WHERE fk_invoice_supplier_source = '.((int) $rowid);
+			$sql .= ' AND fk_invoice_supplier_line IS NULL';
+			$resql = $this->db->query($sql);
 
-			dol_syslog(get_class($this)."::delete", LOG_DEBUG);
-			if (!$this->db->query($sql)) {
-				$error++;
+			// If invoice has consumned discounts
+			$this->fetch_lines();
+			$list_rowid_det = array();
+			foreach ($this->lines as $key => $invoiceline) {
+				$list_rowid_det[] = $invoiceline->id;
+			}
+
+			// Consumned discounts are freed
+			if (count($list_rowid_det)) {
+				$sql = 'UPDATE '.MAIN_DB_PREFIX.'societe_remise_except';
+				$sql .= ' SET fk_invoice_supplier = NULL, fk_invoice_supplier_line = NULL';
+				$sql .= ' WHERE fk_invoice_supplier_line IN ('.$this->db->sanitize(implode(',', $list_rowid_det)).')';
+
+				dol_syslog(get_class($this)."::delete", LOG_DEBUG);
+				if (!$this->db->query($sql)) {
+					$error++;
+				}
 			}
 		}
 
@@ -1542,10 +1565,10 @@ class FactureFournisseur extends CommonInvoice
 			$this->deleteEcmFiles(1); // Deleting files physically is done later with the dol_delete_dir_recursive
 
 			// We remove directory
-			if ($conf->fournisseur->facture->dir_output) {
+			$ref = dol_sanitizeFileName($this->ref);
+			if ($conf->fournisseur->facture->dir_output && !empty($ref)) {
 				include_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
-				$ref = dol_sanitizeFileName($this->ref);
 				$dir = $conf->fournisseur->facture->dir_output.'/'.get_exdir($this->id, 2, 0, 0, $this, 'invoice_supplier').$ref;
 				$file = $dir."/".$ref.".pdf";
 				if (file_exists($file)) {
@@ -1562,18 +1585,6 @@ class FactureFournisseur extends CommonInvoice
 						$error++;
 					}
 				}
-			}
-		}
-
-		// Remove linked categories.
-		if (!$error) {
-			$sql = "DELETE FROM ".MAIN_DB_PREFIX."categorie_invoice";
-			$sql .= " WHERE fk_invoice = ".((int) $this->id);
-
-			$result = $this->db->query($sql);
-			if (!$result) {
-				$error++;
-				$this->errors[] = $this->db->lasterror();
 			}
 		}
 

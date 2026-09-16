@@ -526,8 +526,8 @@ class ContratLigne extends CommonObjectLine
 				$this->ref   = $obj->rowid;
 
 				$this->tms = $this->db->jdate($obj->tms);
-				$this->fk_contrat = $obj->fk_contrat;
-				$this->fk_product = $obj->fk_product;
+				$this->fk_contrat = (int) $obj->fk_contrat;
+				$this->fk_product = (int) $obj->fk_product;
 				$this->statut = $obj->statut;
 				$this->product_ref = $obj->product_ref;
 				$this->product_label = $obj->product_label;
@@ -601,12 +601,12 @@ class ContratLigne extends CommonObjectLine
 		$this->fk_contrat = (int) $this->fk_contrat;
 		$this->fk_product = (int) $this->fk_product;
 		$this->statut = (int) $this->statut;
-		$this->label = trim($this->label);
-		$this->description = trim($this->description);
-		$this->vat_src_code = trim($this->vat_src_code);
+		$this->label = trim((string) $this->label);
+		$this->description = trim((string) $this->description);
+		$this->vat_src_code = trim((string) $this->vat_src_code);
 		$this->tva_tx = trim((string) $this->tva_tx);
-		$this->localtax1_tx = trim($this->localtax1_tx);
-		$this->localtax2_tx = trim($this->localtax2_tx);
+		$this->localtax1_tx = trim((string) $this->localtax1_tx);
+		$this->localtax2_tx = trim((string) $this->localtax2_tx);
 		$this->qty = (float) $this->qty;
 		$this->remise_percent = trim((string) $this->remise_percent);
 		$this->fk_remise_except = (int) $this->fk_remise_except;
@@ -615,7 +615,7 @@ class ContratLigne extends CommonObjectLine
 		$this->fk_user_author = (int) $this->fk_user_author;
 		$this->fk_user_ouverture = (int) $this->fk_user_ouverture;
 		$this->fk_user_cloture = (int) $this->fk_user_cloture;
-		$this->commentaire = trim($this->commentaire);
+		$this->commentaire = trim((string) $this->commentaire);
 		$this->rang = (int) $this->rang;
 		if (empty($this->subprice)) {
 			$this->subprice = 0;
@@ -834,7 +834,7 @@ class ContratLigne extends CommonObjectLine
 		if ($this->date_end > 0) {
 			$sql .= ",date_fin_validite";
 		}
-		$sql .= ") VALUES ($this->fk_contrat, '', '".$this->db->escape($this->description)."',";
+		$sql .= ") VALUES (".((int) $this->fk_contrat).", '', '".$this->db->escape($this->description)."',";
 		$sql .= ($this->fk_product > 0 ? $this->fk_product : "null").",";
 		$sql .= " '".$this->db->escape((string) $this->qty)."',";
 		$sql .= " '".$this->db->escape($this->vat_src_code)."',";

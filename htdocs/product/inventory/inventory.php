@@ -261,7 +261,12 @@ if (empty($reshook)) {
 							setEventMessages($db->lasterror(), null, 'errors');
 							break;
 						}
-						if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
+						// Mirror Product::fetch (product.class.php:2995-2997) which reads pmp from
+						// llx_product_perentity only when MULTICOMPANY_PRODUCT_SHARING_ENABLED and
+						// MULTICOMPANY_PMP_PER_ENTITY_ENABLED are both set. MAIN_PRODUCT_PERENTITY_SHARED
+						// is the accountancy-codes flag; using it to gate the pmp write here means we
+						// silently write into a row that fetch never looks at (#37773).
+						if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED') && getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
 							$sqlpmp = 'UPDATE '.MAIN_DB_PREFIX.'product_perentity SET pmp = '.((float) $line->pmp_real).' WHERE fk_product = '.((int) $line->fk_product).' AND entity='.$conf->entity;
 							$resqlpmp = $db->query($sqlpmp);
 							if (! $resqlpmp) {
@@ -609,6 +614,9 @@ print '<input type="hidden" name="action" value="updateinventorylines">';
 print '<input type="hidden" name="id" value="'.$object->id.'">';
 print '<input type="hidden" name="sortfield" value="' . $sortfield . '">';
 print '<input type="hidden" name="sortorder" value="' . $sortorder . '">';
+// Keep the same limit as the displayed page, otherwise the save reads a different page slice
+// (plimit($limit, $offset)) than the one shown and quantities of the extra rows are lost (#35207).
+print '<input type="hidden" name="limit" value="' . ((int) $limit) . '">';
 if ($backtopage) {
 	print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
 }
@@ -800,7 +808,12 @@ if ($action == 'updatebyscaning') {
 									type: \'POST\',
 									async: false,
 									success: function(response) {
-										response = JSON.parse(response);
+										if (typeof response == "object") {
+											console.log("response is already type object, no need to parse it");
+										} else {
+											console.log("response is type "+(typeof response));
+											response = JSON.parse(response);
+										}
 										if(response.status == "success"){
 											console.log(response.message);
 											$("<input type=\'text\' value=\'"+product.Qty+"\' />")
@@ -871,7 +884,12 @@ if ($action == 'updatebyscaning') {
 					type: \'POST\',
 					async: false,
 					success: function(response) {
-						response = JSON.parse(response);
+						if (typeof response == "object") {
+							console.log("response is already type object, no need to parse it");
+						} else {
+							console.log("response is type "+(typeof response));
+							response = JSON.parse(response);
+						}
 						if (response.status == "success"){
 							console.log(response.message);
 							if(!newproductrow){
