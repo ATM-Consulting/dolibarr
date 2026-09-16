@@ -1,0 +1,60 @@
+{
+    "Comments":     "Splash configuration file for Dolibarr TropikElec",
+
+    "parameters": {
+        "MarketplaceMode": true
+    },
+
+    "ThirdParty": {
+        "enable_pull_created": false,
+        "enable_pull_updated": false,
+        "enable_pull_deleted": false,
+        "fields": {
+            "entity_id":    { "write": "0" },
+            "entity_code":  { "write": "0" },
+            "entity_label": { "write": "1" }
+        }
+    },
+
+    "Address": {
+        "enable_pull_created": false,
+        "enable_pull_updated": false,
+        "enable_pull_deleted": false,
+        "fields": {
+            "entity_id":    { "write": "0" },
+            "entity_code":  { "write": "0" },
+            "entity_label": { "write": "1" }
+        }
+    },
+
+    "Order": {
+        "enable_pull_created": false,
+        "enable_pull_updated": false,
+        "enable_pull_deleted": false,
+        "fields": {
+            "entity_id":    { "write": "0" },
+            "entity_code":  { "write": "0" },
+            "entity_label": { "write": "1" }
+        }
+    },
+
+    "Invoice": {
+        "enable_pull_created": false,
+        "enable_pull_updated": false,
+        "enable_pull_deleted": false,
+        "fields": {
+            "entity_id":    { "write": "0" },
+            "entity_code":  { "write": "0" },
+            "entity_label": { "write": "1" }
+        }
+    },
+
+    "Product": {
+        "fields": {
+            "description":          { "excluded":  1 },
+            "stock_reel":           { "write":  0 },
+            "price":                { "write":  0 },
+            "price_level_2":        { "write":  0 }
+        }
+    }
+}
