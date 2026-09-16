@@ -55,9 +55,7 @@ $langs->loadLangs(array('companies', 'bills', 'banks', 'compta'));
 
 $action = GETPOST('action', 'alpha');
 $massaction = GETPOST('massaction', 'alpha');
-// backport de V24
 $toselect = GETPOST('toselect', 'array:int'); // Array of ids of elements selected into a list
-// fin du backport
 $optioncss = GETPOST('optioncss', 'alpha');
 $contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'vendorpaymentlist';
 $mode = GETPOST('mode', 'aZ');
@@ -96,7 +94,9 @@ if (!$sortorder) {
 	$sortorder = "DESC";
 }
 if (!$sortfield) {
-	$sortfield = "p.datep";
+	// rowid is needed as a tiebreaker: many payments share the same date, and without it
+	// the order of those rows is undefined, so paging can repeat or skip records.
+	$sortfield = "p.datep,p.rowid";
 }
 
 $search_all = trim(GETPOST('search_all', 'alphanohtml'));
@@ -147,7 +147,6 @@ if ((!$user->hasRight("fournisseur", "facture", "lire") && !getDolGlobalString('
 	accessforbidden();
 }
 
-
 /*
  * Actions
  */
@@ -182,9 +181,11 @@ if (empty($reshook)) {
 	}
 }
 
+
 /*
  * View
  */
+
 $title = $langs->trans('ListPayment');
 $help_url = '';
 
@@ -307,9 +308,8 @@ if (!$resql) {
 $num = $db->num_rows($resql);
 $i = 0;
 
-// backport de V24
+// Must stay after the Actions block: removing the filters resets $toselect
 $arrayofselected = is_array($toselect) ? $toselect : array();
-// fin du backport
 
 $param = '';
 if (!empty($contextpage) && $contextpage != $_SERVER["PHP_SELF"]) {
