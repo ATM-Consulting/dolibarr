@@ -67,7 +67,7 @@ if (isModEnabled('category')) {
 }
 
 // Load translation files required by the page
-$langs->loadLangs(array('products', 'stocks', 'suppliers', 'companies', 'margins'));
+$langs->loadLangs(array('products', 'stocks', 'suppliers', 'companies', 'margins', 'other'));
 if (isModEnabled('productbatch')) {
 	$langs->load("productbatch");
 }
@@ -123,22 +123,21 @@ $search_finished = GETPOST("search_finished");
 $search_units = GETPOST('search_units', 'int');
 $type = GETPOST("type", 'alpha');
 
-// >>> BACKPORT ATM #757 (PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST) - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
 // Show/hide child product variants
-// The default state is driven by the option PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST (0 = hidden, 1 = shown).
-// An unchecked checkbox is not posted, so we rely on GETPOSTISSET and the search button to tell apart a
-// fresh page load (apply default) from a form voluntarily submitted with the box unchecked (respect off).
 $show_childproducts = 0;
 if (isModEnabled('variants')) {
+	// An HTML checkbox does not submit anything when unchecked, so a hidden
+	// "search_show_childproducts=0" companion field is emitted next to the
+	// checkbox (see below). GETPOSTISSET() then let's us distinguish a
+	// resubmission with the checkbox off from a request that does not carry
+	// the filter at all, and the value is read as a strict 0/1 flag.
 	if (GETPOSTISSET('search_show_childproducts')) {
 		$show_childproducts = GETPOSTINT('search_show_childproducts');
-	} elseif (GETPOST('button_search', 'alpha') || GETPOST('button_search_x', 'alpha') || GETPOST('button_search.x', 'alpha')) {
-		$show_childproducts = 0; // form submitted with the box unchecked -> respect off
 	} else {
-		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'); // fresh page load -> default
+		// BACKPORT ATM #757 : ATM-specific default, not in the core
+		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST');
 	}
 }
-// <<< BACKPORT ATM #757
 
 $diroutputmassaction = $conf->product->dir_output.'/temp/massgeneration/'.$user->id;
 
@@ -239,7 +238,7 @@ if (getDolGlobalString('PRODUCT_QUICKSEARCH_ON_FIELDS')) {
 
 if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
 	$titlesellprice = $langs->trans("SellingPrice");
-	if (getDolGlobalString('PRODUIT_CUSTOMER_PRICES')) {
+	if (getDolGlobalString('PRODUIT_CUSTOMER_PRICES') || !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 		$titlesellprice = $form->textwithpicto($langs->trans("SellingPrice"), $langs->trans("DefaultPriceRealPriceMayDependOnCustomer"));
 	}
 }
@@ -277,8 +276,8 @@ $arrayfields = array(
 	'p.volume_units' => array('label' => 'VolumeUnits', 'checked' => '0', 'enabled' => (string) (int) (isModEnabled("product") && !getDolGlobalString('PRODUCT_DISABLE_VOLUME') && $type != '1'), 'position' => 31),
 	'cu.label' => array('label' => "DefaultUnitToShow", 'checked' => '0', 'enabled' => (string) (int) (isModEnabled("product") && getDolGlobalString('PRODUCT_USE_UNITS')), 'position' => 32),
 	'p.fk_default_workstation' => array('label' => 'DefaultWorkstation', 'checked' => '0', 'enabled' => (string) (int) (isModEnabled('workstation') && $type == 1), 'position' => 33),
-	'p.sellprice' => array('label' => "SellingPrice", 'checked' => '1', 'enabled' => (string) (int) !getDolGlobalString('PRODUIT_MULTIPRICES'), 'position' => 40),
-	'p.tva_tx' => array('label' => "VATRate", 'checked' => '0', 'enabled' => (string) (int) !getDolGlobalString('PRODUIT_MULTIPRICES'), 'position' => 41),
+	'p.sellprice' => array('label' => "SellingPrice", 'checked' => '1', 'enabled' => (string) (int) (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')), 'position' => 40),
+	'p.tva_tx' => array('label' => "VATRate", 'checked' => '0', 'enabled' => (string) (int) (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')), 'position' => 41),
 	'p.minbuyprice' => array('label' => "BuyingPriceMinShort", 'checked' => '1', 'enabled' => (string) (int) ($user->hasRight('fournisseur', 'lire')), 'position' => 42),
 	'p.numbuyprice' => array('label' => "BuyingPriceNumShort", 'checked' => '0', 'enabled' => (string) (int) ($user->hasRight('fournisseur', 'lire')), 'position' => 43),
 	'p.pmp' => array('label' => "PMPValueShort", 'checked' => '0', 'enabled' => (string) (int) ($user->hasRight('fournisseur', 'lire')), 'position' => 44),
@@ -411,7 +410,7 @@ if (empty($reshook)) {
 		$search_finished = '';
 		//$search_type='';						// There is 2 types of list: a list of product and a list of services. No list with both. So when we clear search criteria, we must keep the filter on type.
 
-		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'); // BACKPORT ATM #757 - natif dès Dolibarr 24.0 (défaut au lieu de '')
+		$show_childproducts = getDolGlobalInt('PRODUIT_ATTRIBUTES_SHOWCHILD_IN_LIST'); // BACKPORT ATM #757 : core resets to 0
 		$search_import_key = '';
 		$search_stockable_product = '';
 		$search_accountancy_code_sell = '';
@@ -837,12 +836,10 @@ if ($search_vatrate) {
 if ($fourn_id > 0) {
 	$param .= "&fourn_id=".urlencode((string) ($fourn_id));
 }
-// >>> BACKPORT ATM #757 - natif dès Dolibarr 24.0, à retirer après upgrade vers 24+
+// BACKPORT ATM #757 : the state is always carried, so pagination keeps an explicit "off" when the default is "on"
 if (isModEnabled('variants')) {
-	// Always carry the state (0 or 1) so pagination and sorting preserve an explicit "off" even when the default is "on"
 	$param .= "&search_show_childproducts=".urlencode((string) ($show_childproducts ? 1 : 0));
 }
-// <<< BACKPORT ATM #757
 if ($type != '') {
 	$param .= '&type='.urlencode((string) ($type));
 }
@@ -998,7 +995,11 @@ if (isModEnabled('category') && $user->hasRight('categorie', 'read')) {
 // Show/hide child variant products
 if (isModEnabled('variants')) {
 	$moreforfilter .= '<div class="divsearchfield">';
-	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts" value="1"'.($show_childproducts ? ' checked="checked"' : '').'>'; // BACKPORT ATM #757 - value="1" natif dès Dolibarr 24.0 (sinon case cochée soumet "on" -> GETPOSTINT=0)
+	// Companion hidden field ensures search_show_childproducts is always
+	// posted, even when the checkbox below is unchecked, so the unchecked
+	// state survives the filter/pagination submit and is parsed as 0/1.
+	$moreforfilter .= '<input type="hidden" name="search_show_childproducts" value="0">';
+	$moreforfilter .= '<input type="checkbox" id="search_show_childproducts" name="search_show_childproducts" value="1"'.($show_childproducts ? ' checked="checked"' : '').'>';
 	$moreforfilter .= ' <label for="search_show_childproducts">'.$langs->trans('ShowChildProducts').'</label>';
 	$moreforfilter .= '</div>';
 }
