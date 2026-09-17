@@ -205,7 +205,7 @@ if ($object->id > 0) {
 	// Thirdparty
 	$morehtmlref .= '<br>'.$object->thirdparty->getNomUrl(1);
 	if (!getDolGlobalString('MAIN_DISABLE_OTHER_LINK') && $object->thirdparty->id > 0) {
-		$morehtmlref .= ' <span class="otherlink valignmiddle">(<a href="'.dolBuildUrl(DOL_URL_ROOT.'/contrat/list.php', ['socid' => $object->thirdparty->id, 'search_name' => $object->thirdparty->name]).'">'.$langs->trans("OtherContracts").'</a>)</span>';
+		$morehtmlref .= ' <span class="otherlink valignmiddle">(<a href="'.dolBuildUrl(DOL_URL_ROOT.'/contrat/list.php', ['socid' => ((int) $object->thirdparty->id)]).'">'.$langs->trans("OtherContracts").'</a>)</span>';
 	}
 	// Project
 	if (isModEnabled('project')) {
@@ -307,7 +307,7 @@ if ($object->id > 0) {
 			$param .= '&search_complete='.urlencode($search_complete);
 		}
 		if ($search_filtert != '') {
-			$param .= '&search_filtert='.urlencode($search_filtert);
+			$param .= '&search_filtert='.urlencode((string) $search_filtert);
 		}
 		if ($search_dateevent_start != '') {
 			$param .= '&dateevent_startyear='.GETPOSTINT('dateevent_startyear');
