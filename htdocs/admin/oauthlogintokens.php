@@ -176,7 +176,7 @@ if ($mode == 'setup' && $user->admin) {
 			$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
 
-			$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : $supportedoauth2array[$keyforsupportedoauth2array]['name'].($keyforprovider ? '-'.$keyforprovider : ''));
+			$OAUTH_SERVICENAME = getOauthServiceName($keybeforeprovider.($keyforprovider ? '-'.$keyforprovider : ''));
 
 			$shortscope = '';
 			if (getDolGlobalString($key[4])) {

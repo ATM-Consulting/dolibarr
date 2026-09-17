@@ -40,3 +40,6 @@ AOAuthEntryForThisProviderAndLabelAlreadyHasAKey=Une entrée OAuth pour ce fourn
 URLOfServiceForAuthorization=URL fournie par le service OAuth pour l'authentification
 Scopes=Permissions ("Scopes" OAuth)
 ScopeUndefined=Permissions (Cibles) non définies (voir onglet précédent)
+OAuthErrorStateDiffers=La valeur de state=%s diffère de la valeur en session. Le code est refusé.
+OAuthErrorNoScopeInState=Aucun périmètre (scope) reçu dans le paramètre 'state'. Dolibarr utilise 'state' pour transporter la liste des périmètres demandés : la constante %s est donc vide ou absente. Allez dans Accueil - Configuration - Modules - OAuth, cochez les périmètres de ce fournisseur puis enregistrez.
+OAuthErrorTokenRequestFailed=Le fournisseur OAuth a refusé d'échanger le code d'autorisation contre un jeton. Réponse du fournisseur : %s

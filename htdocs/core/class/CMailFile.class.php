@@ -951,28 +951,20 @@ class CMailFile
 				}
 
 				if (getDolGlobalString($keyforsmtpauthtype) === "XOAUTH2") {
-					require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php'; // define $supportedoauth2array
+					require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php';
 
-					$supportedoauth2array = getSupportedOauth2Array();
-
-					$keyforsupportedoauth2array = getDolGlobalString($keyforsmtpoauthservice);
-					if (preg_match('/^.*-/', $keyforsupportedoauth2array)) {
-						$keyforprovider = preg_replace('/^.*-/', '', $keyforsupportedoauth2array);
+					$oauthservicekey = getDolGlobalString($keyforsmtpoauthservice);
+					if (preg_match('/^.*-/', $oauthservicekey)) {
+						$keyforprovider = preg_replace('/^.*-/', '', $oauthservicekey);
 					} else {
 						$keyforprovider = '';
 					}
-					$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
-					$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
-
-					if (!empty($supportedoauth2array)) {
-						$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : $supportedoauth2array[$keyforsupportedoauth2array]['name'].($keyforprovider ? '-'.$keyforprovider : ''));
-					} else {
-						$OAUTH_SERVICENAME = 'Unknown';
-					}
+					$keyforparamtenant = 'OAUTH_'.$oauthservicekey.'_TENANT';
+					$OAUTH_SERVICENAME = getOauthServiceName($oauthservicekey);
 
 					require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 
-					$storage = new DoliStorage($db, $conf, $keyforprovider);
+					$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString($keyforparamtenant));
 					try {
 						$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
 						$expire = false;
@@ -983,26 +975,44 @@ class CMailFile
 						// Token expired so we refresh it
 						if (is_object($tokenobj) && $expire) {
 							$credentials = new Credentials(
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_ID'),
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_SECRET'),
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_URLAUTHORIZE')
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_ID'),
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_SECRET'),
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_URLAUTHORIZE')
 							);
 							$serviceFactory = new \OAuth\ServiceFactory();
+							// Force the curl client, the default stream one uses file_get_contents() which
+							// fails to reach the token endpoint on many setups, so the token is never refreshed.
+							$serviceFactory->setHttpClient(new \OAuth\Common\Http\Client\CurlClient());
+
+							// Recreate the service with its configured scopes.
+							// This matters for some providers (Microsoft v2 token endpoint) where scope may be required on refresh.
+							$oauthscopes = array();
+							$oauthscopesstring = getDolGlobalString('OAUTH_'.$oauthservicekey.'_SCOPE');
+							if (!empty($oauthscopesstring)) {
+								$oauthscopes = preg_split('/\s*,\s*/', $oauthscopesstring);
+							}
+
 							$oauthname = explode('-', $OAUTH_SERVICENAME);
 							// ex service is Google-Emails we need only the first part Google
-							$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, array());
-							// We have to save the token because Google give it only once
-							$refreshtoken = $tokenobj->getRefreshToken();
-							$tokenobj = $apiService->refreshAccessToken($tokenobj);
-							$tokenobj->setRefreshToken($refreshtoken);
-							$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
+							$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, $oauthscopes);
+
+							if ($apiService instanceof \OAuth\OAuth2\Service\AbstractService || $apiService instanceof \OAuth\OAuth1\Service\AbstractService) {
+								// Some providers return a refresh token only once, keep the previous one when none comes back
+								$refreshtoken = $tokenobj->getRefreshToken();
+								$tokenobj = $apiService->refreshAccessToken($tokenobj);
+								if (empty($tokenobj->getRefreshToken())) {
+									$tokenobj->setRefreshToken($refreshtoken);
+								}
+								$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
+							}
 						}
 
 						$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
 						if (is_object($tokenobj)) {
 							$this->smtps->setToken($tokenobj->getAccessToken());
 						} else {
-							$this->error = "Token not found";
+							$this->error = "OAuth2 token not found for service '".$OAUTH_SERVICENAME."' (setup constant ".$keyforsmtpoauthservice.", send context '".$this->sendcontext."'). Compare it with the service column of llx_oauth_token.";
+							dol_syslog("CMailFile::sendfile: ".$this->error, LOG_ERR);
 						}
 					} catch (Exception $e) {
 						// Return an error if token not found
@@ -1108,27 +1118,18 @@ class CMailFile
 				if (getDolGlobalString($keyforsmtpauthtype) === "XOAUTH2") {
 					require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php';
 
-					$supportedoauth2array = getSupportedOauth2Array();
-
-					$keyforsupportedoauth2array = getDolGlobalString($keyforsmtpoauthservice);
-					if (preg_match('/^.*-/', $keyforsupportedoauth2array)) {
-						$keyforprovider = preg_replace('/^.*-/', '', $keyforsupportedoauth2array);
+					$oauthservicekey = getDolGlobalString($keyforsmtpoauthservice);
+					if (preg_match('/^.*-/', $oauthservicekey)) {
+						$keyforprovider = preg_replace('/^.*-/', '', $oauthservicekey);
 					} else {
 						$keyforprovider = '';
 					}
-					$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
-					$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
-
-					$OAUTH_SERVICENAME = 'Unknown';
-					if (array_key_exists($keyforsupportedoauth2array, $supportedoauth2array)
-						&& array_key_exists('name', $supportedoauth2array[$keyforsupportedoauth2array])
-						&& !empty($supportedoauth2array[$keyforsupportedoauth2array]['name'])) {
-						$OAUTH_SERVICENAME = $supportedoauth2array[$keyforsupportedoauth2array]['name'].(!empty($keyforprovider) ? '-'.$keyforprovider : '');
-					}
+					$keyforparamtenant = 'OAUTH_'.$oauthservicekey.'_TENANT';
+					$OAUTH_SERVICENAME = getOauthServiceName($oauthservicekey);
 
 					require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 
-					$storage = new DoliStorage($db, $conf, $keyforprovider);
+					$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString($keyforparamtenant));
 
 					try {
 						$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
@@ -1140,25 +1141,43 @@ class CMailFile
 						// Token expired so we refresh it
 						if (is_object($tokenobj) && $expire) {
 							$credentials = new Credentials(
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_ID'),
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_SECRET'),
-								getDolGlobalString('OAUTH_'.getDolGlobalString('MAIN_MAIL_SMTPS_OAUTH_SERVICE').'_URLAUTHORIZE')
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_ID'),
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_SECRET'),
+								getDolGlobalString('OAUTH_'.$oauthservicekey.'_URLAUTHORIZE')
 							);
 							$serviceFactory = new \OAuth\ServiceFactory();
+							// Force the curl client, the default stream one uses file_get_contents() which
+							// fails to reach the token endpoint on many setups, so the token is never refreshed.
+							$serviceFactory->setHttpClient(new \OAuth\Common\Http\Client\CurlClient());
+
+							// Recreate the service with its configured scopes.
+							// This matters for some providers (Microsoft v2 token endpoint) where scope may be required on refresh.
+							$oauthscopes = array();
+							$oauthscopesstring = getDolGlobalString('OAUTH_'.$oauthservicekey.'_SCOPE');
+							if (!empty($oauthscopesstring)) {
+								$oauthscopes = preg_split('/\s*,\s*/', $oauthscopesstring);
+							}
+
 							$oauthname = explode('-', $OAUTH_SERVICENAME);
 							// ex service is Google-Emails we need only the first part Google
-							$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, array());
-							// We have to save the token because Google give it only once
-							$refreshtoken = $tokenobj->getRefreshToken();
-							$tokenobj = $apiService->refreshAccessToken($tokenobj);
-							$tokenobj->setRefreshToken($refreshtoken);
-							$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
+							$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, $oauthscopes);
+
+							if ($apiService instanceof \OAuth\OAuth2\Service\AbstractService || $apiService instanceof \OAuth\OAuth1\Service\AbstractService) {
+								// Some providers return a refresh token only once, keep the previous one when none comes back
+								$refreshtoken = $tokenobj->getRefreshToken();
+								$tokenobj = $apiService->refreshAccessToken($tokenobj);
+								if (empty($tokenobj->getRefreshToken())) {
+									$tokenobj->setRefreshToken($refreshtoken);
+								}
+								$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
+							}
 						}
 						if (is_object($tokenobj)) {
 							$this->transport->setAuthMode('XOAUTH2');
 							$this->transport->setPassword($tokenobj->getAccessToken());
 						} else {
-							$this->errors[] = "Token not found";
+							$this->errors[] = "OAuth2 token not found for service '".$OAUTH_SERVICENAME."' (setup constant ".$keyforsmtpoauthservice.", send context '".$this->sendcontext."'). Compare it with the service column of llx_oauth_token.";
+							dol_syslog("CMailFile::sendfile: ".end($this->errors), LOG_ERR);
 						}
 					} catch (Exception $e) {
 						// Return an error if token not found

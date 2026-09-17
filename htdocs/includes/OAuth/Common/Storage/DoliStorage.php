@@ -71,8 +71,9 @@ class DoliStorage implements TokenStorageInterface
 	 * @param 	DoliDB 	$db					Database handler
 	 * @param 	\Conf 	$conf				Conf object
 	 * @param	string	$keyforprovider		Key to manage several providers of the same type. For example 'abc' will be added to 'Google' to defined storage key.
+	 * @param	string	$tenant				Value of tenant if used
 	 */
-	public function __construct(DoliDB $db, \Conf $conf, $keyforprovider = '')
+	public function __construct(DoliDB $db, \Conf $conf, $keyforprovider = '', $tenant = '')
 	{
 		$this->db = $db;
 		$this->conf = $conf;
@@ -80,8 +81,25 @@ class DoliStorage implements TokenStorageInterface
 		$this->token = '';
 		$this->tokens = array();
 		$this->states = array();
+		$this->tenant = $tenant;
 		//$this->key = $key;
 		//$this->stateKey = $stateKey;
+	}
+
+	/**
+	 * Build the storage key of a service: the service name suffixed by the provider label when there is one.
+	 *
+	 * @param	string	$service	Service name, with or without the provider label already appended
+	 * @return	string				Value stored into the 'service' column of llx_oauth_token
+	 */
+	private function getServiceKey($service)
+	{
+		if (empty($this->keyforprovider)) {
+			return $service;
+		}
+
+		// Strip a label already present so the method stays idempotent, then append it
+		return preg_replace('/\-'.preg_quote($this->keyforprovider, '/').'$/', '', $service).'-'.$this->keyforprovider;
 	}
 
 	/**
@@ -95,7 +113,7 @@ class DoliStorage implements TokenStorageInterface
 			return $this->tokens[$service];
 		}
 
-		throw new TokenNotFoundException('Token not found in db, are you sure you stored it?');
+		throw new TokenNotFoundException('Token not found in db for service \''.$this->getServiceKey($service).'\' and entity IN ('.getEntity('oauth_token').'). Check the service column of llx_oauth_token, are you sure you stored it?');
 	}
 
 	/**
@@ -109,13 +127,7 @@ class DoliStorage implements TokenStorageInterface
 		//var_dump($token);
 		dol_syslog("storeAccessToken service=".$service);
 
-		$servicepluskeyforprovider = $service;
-		if (!empty($this->keyforprovider)) {
-			// We clean the keyforprovider after the - to be sure it is not present
-			$servicepluskeyforprovider = preg_replace('/\-'.preg_quote($this->keyforprovider, '/').'$/', '', $servicepluskeyforprovider);
-			// Now we add the keyforprovider
-			$servicepluskeyforprovider .= '-'.$this->keyforprovider;
-		}
+		$servicepluskeyforprovider = $this->getServiceKey($service);
 
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/security.lib.php';
 		$serializedToken = serialize($tokenobj);
@@ -171,13 +183,7 @@ class DoliStorage implements TokenStorageInterface
 		// get from db
 		dol_syslog("hasAccessToken service=".$service);
 
-		$servicepluskeyforprovider = $service;
-		if (!empty($this->keyforprovider)) {
-			// We clean the keyforprovider after the - to be sure it is not present
-			$servicepluskeyforprovider = preg_replace('/\-'.preg_quote($this->keyforprovider, '/').'$/', '', $servicepluskeyforprovider);
-			// Now we add the keyforprovider
-			$servicepluskeyforprovider .= '-'.$this->keyforprovider;
-		}
+		$servicepluskeyforprovider = $this->getServiceKey($service);
 
 		$sql = "SELECT token, datec, tms, state FROM ".MAIN_DB_PREFIX."oauth_token";
 		$sql .= " WHERE service = '".$this->db->escape($servicepluskeyforprovider)."'";
@@ -242,13 +248,7 @@ class DoliStorage implements TokenStorageInterface
 	{
 		// TODO Remove token using a loop on each $service
 		/*
-		$servicepluskeyforprovider = $service;
-		if (!empty($this->keyforprovider)) {
-			// We clean the keyforprovider after the - to be sure it is not present
-			$servicepluskeyforprovider = preg_replace('/\-'.preg_quote($this->keyforprovider, '/').'$/', '', $servicepluskeyforprovider);
-			// Now we add the keyforprovider
-			$servicepluskeyforprovider .= '-'.$this->keyforprovider;
-		}
+		$servicepluskeyforprovider = $this->getServiceKey($service);
 		*/
 
 		// allow chaining
@@ -377,9 +377,10 @@ class DoliStorage implements TokenStorageInterface
 	 */
 	public function getTenant()
 	{
-		// Set/Reset tenant now so it will be defined for.
 		// TODO We must store it into the table llx_oauth_token
-		$this->tenant = getDolGlobalString('OAUTH_MICROSOFT'.($this->keyforprovider ? '-'.$this->keyforprovider : '').'_TENANT');
+		if (empty($this->tenant)) {
+			$this->tenant = getDolGlobalString('OAUTH_MICROSOFT'.($this->keyforprovider ? '-'.$this->keyforprovider : '').'_TENANT');
+		}
 
 		return $this->tenant;
 	}

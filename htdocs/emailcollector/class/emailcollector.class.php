@@ -1148,23 +1148,12 @@ class EmailCollector extends CommonObject
 
 				require_once DOL_DOCUMENT_ROOT.'/core/lib/oauth.lib.php';
 
-				$supportedoauth2array = getSupportedOauth2Array();
-
-				$keyforsupportedoauth2array = $this->oauth_service;
-				if (preg_match('/^.*-/', $keyforsupportedoauth2array)) {
-					$keyforprovider = preg_replace('/^.*-/', '', $keyforsupportedoauth2array);
+				if (preg_match('/^.*-/', $this->oauth_service)) {
+					$keyforprovider = preg_replace('/^.*-/', '', $this->oauth_service);
 				} else {
 					$keyforprovider = '';
 				}
-				$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
-				$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
-
-				$OAUTH_SERVICENAME = 'Unknown';
-				if (array_key_exists($keyforsupportedoauth2array, $supportedoauth2array)
-					&& array_key_exists('name', $supportedoauth2array[$keyforsupportedoauth2array])
-					&& !empty($supportedoauth2array[$keyforsupportedoauth2array]['name'])) {
-					$OAUTH_SERVICENAME = $supportedoauth2array[$keyforsupportedoauth2array]['name'].(!empty($keyforprovider) ? '-'.$keyforprovider : '');
-				}
+				$OAUTH_SERVICENAME = getOauthServiceName($this->oauth_service);
 
 				require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 				//$debugtext = "Host: ".$this->host."<br>Port: ".$this->port."<br>Login: ".$this->login."<br>Password: ".$this->password."<br>access type: ".$this->acces_type."<br>oauth service: ".$this->oauth_service."<br>Max email per collect: ".$this->maxemailpercollect;
@@ -1172,7 +1161,7 @@ class EmailCollector extends CommonObject
 
 				$token = '';
 
-				$storage = new DoliStorage($db, $conf, $keyforprovider);
+				$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString('OAUTH_'.$this->oauth_service.'_TENANT'));
 
 				try {
 					$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);

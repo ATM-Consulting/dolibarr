@@ -40,3 +40,6 @@ AOAuthEntryForThisProviderAndLabelAlreadyHasAKey=An OAuth entry for this provide
 URLOfServiceForAuthorization=URL provided by OAuth service for authentication
 Scopes=Permissions (Scopes)
 ScopeUndefined=Permissions (Scopes) undefined (see previous tab)
+OAuthErrorStateDiffers=Value for state=%s differs from value in session. Code is refused.
+OAuthErrorNoScopeInState=No scope received into the 'state' parameter. Dolibarr uses 'state' to carry the list of requested scopes, so this means the constant %s is empty or missing. Go to Home - Setup - Modules - OAuth, tick the scopes of this provider and save.
+OAuthErrorTokenRequestFailed=The OAuth provider refused to exchange the authorization code for a token. Answer of the provider: %s
