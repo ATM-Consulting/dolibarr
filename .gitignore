@@ -92,3 +92,6 @@ phpstan_custom.neon
 
 # ignore .htaccess files
 .htaccess
+
+#themequarantedeux
+htdocs/theme/quarantedeux/
