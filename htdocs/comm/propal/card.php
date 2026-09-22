@@ -2414,7 +2414,8 @@ if ($action == 'create') {
 						// reload page
 						$("input[name=action]").val("create");
 						$("input[name=changecompany]").val("1");
-						$("form[name=addprop]").submit();
+						// DYVA backport PR #40677 - Native submit: this reload is not a user save, it must not be cancelled by the form validators
+						$("form[name=addprop]")[0].submit();
 					});
 				});
 				</script>';
