@@ -1,4 +1,6 @@
 # Backported from Dolibarr:
+- Backport of upstream PR #40677 (submitted, not merged yet) : a mandatory form field configured in
+  Default values makes the next save silently ignored on the creation cards. DA028712.
 - Backport develop commit b9967552a9fa38c8fd6aef2fbd113100259bf851 : JS validation (now native in 23.0)
 - Backport develop PR #33696 : new conf to remove break before country in pdf (now native in 23.0)
 - Backport develop PR #33157 : page break handling in pdf_cornas (now native in 23.0)
