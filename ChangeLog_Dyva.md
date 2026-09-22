@@ -1,4 +1,6 @@
 # Backported from Dolibarr:
+- Backport of upstream PR #40676 (submitted, not merged yet) : customs code and country of origin
+  printed as raw translation keys on a standalone shipment line. DA028789.
 - Backport of upstream PR #40677 (submitted, not merged yet) : a mandatory form field configured in
   Default values makes the next save silently ignored on the creation cards. DA028712.
 - Backport of upstream PR #40676 (submitted, not merged yet) : standalone shipment (SHIPMENT_STANDALONE)
