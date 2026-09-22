@@ -1,4 +1,6 @@
 # Backported from Dolibarr:
+- Backport of upstream PR #40677 (submitted, not merged yet) : a mandatory form field configured in
+  Default values makes the next save silently ignored on the creation cards. DA028712.
 - Backport of upstream PR #40676 (submitted, not merged yet) : standalone shipment (SHIPMENT_STANDALONE)
   loses the shipped quantity and the product description. DA028789.
 - Backport develop commit b9967552a9fa38c8fd6aef2fbd113100259bf851 : JS validation (now native in 23.0)
