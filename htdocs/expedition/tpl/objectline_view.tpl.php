@@ -107,8 +107,12 @@ $tmpexpe = new Expedition($object->db);
 if ($line->fk_product > 0) {
 	print $tmpproduct->getNomUrl(1);
 	print ' - '.$tmpproduct->label;
+	/** DYVA backport PR #40676 : the description of a line bound to a product was never printed */
+	if (!empty($line->description) && $line->description !== $tmpproduct->label) {
+		print '<br>'.dol_htmlentitiesbr($line->description);
+	}
 } else {
-	print ' - '.$line->description;
+	print dol_htmlentitiesbr($line->description); // DYVA backport PR #40676
 }
 print '</td>';
 
