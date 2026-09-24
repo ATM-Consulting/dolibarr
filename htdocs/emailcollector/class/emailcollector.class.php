@@ -1799,12 +1799,12 @@ class EmailCollector extends CommonObject
 						$headers['Subject'] = $headers['subject'];
 					}
 
-					$headers['Subject'] = $this->decodeSMTPSubject($headers['Subject']);
+					$headers['Subject'] = $this->decodeSMTPSubject($headers['Subject'] ?? '');
 
 					if (getDolGlobalInt('MAIN_IMAP_USE_PHPIMAP')) {
 						$emailto = (string) $overview['to'];
 					} else {
-						$emailto = $this->decodeSMTPSubject($overview[0]->to);
+						$emailto = $this->decodeSMTPSubject($overview[0]->to ?? '');
 					}
 
 					$operationslog .= '<br>** Process email #'.dol_escape_htmltag((string) $iforemailloop);
@@ -1816,7 +1816,7 @@ class EmailCollector extends CommonObject
 						$msgid = str_replace(array('<', '>'), '', $overview['message_id']);
 					} else {
 						$operationslog .= " - ".dol_escape_htmltag((string) $imapemail);
-						$msgid = str_replace(array('<', '>'), '', $overview[0]->message_id);
+						$msgid = str_replace(array('<', '>'), '', $overview[0]->message_id ?? '');
 					}
 					$operationslog .= " - MsgId: ".$msgid;
 					$operationslog .= " - Date: ".($headers['Date'] ?? $langs->transnoentitiesnoconv("NotFound"));
@@ -3150,7 +3150,7 @@ class EmailCollector extends CommonObject
 										include_once DOL_DOCUMENT_ROOT.'/core/class/hookmanager.class.php';
 										$hookmanager = new HookManager($this->db);
 									}
-									$hookmanager->initHooks(array('emailcolector'));
+									$hookmanager->initHooks(array('emailcolector', 'emailcollector'));
 									$parameters = array('arrayobject' => $arrayobject);
 									$reshook = $hookmanager->executeHooks('addmoduletoeamailcollectorjoinpiece', $parameters);    // Note that $action and $object may have been modified by some hooks
 									if ($reshook > 0) {
@@ -3620,7 +3620,7 @@ class EmailCollector extends CommonObject
 									include_once DOL_DOCUMENT_ROOT.'/core/class/hookmanager.class.php';
 									$hookmanager = new HookManager($this->db);
 								}
-								$hookmanager->initHooks(['emailcolector']);
+								$hookmanager->initHooks(array('emailcolector', 'emailcollector'));
 
 								$parameters = array(
 									'connection' =>  $connection,
