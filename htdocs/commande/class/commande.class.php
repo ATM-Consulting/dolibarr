@@ -4289,16 +4289,21 @@ class Commande extends CommonOrder
 	/**
 	 * Compute shippable status and tooltip/icon for the order.
 	 *
-	 * BEGIN SPE KOESIO: T260145 document the getShippableInfos hook
+	 * BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
 	 * Can be overridden by a module through the 'getShippableInfos' hook (context
-	 * '<element>dao'). The hook result is merged over the default skeleton below, so every
-	 * key of the contract stays defined whatever the module returns. A module may also
-	 * expose extra keys - a per line verdict under 'lines', for instance, which the order
-	 * line template consumes when present.
+	 * '<element>dao'). The hook result is merged over the default skeleton, so every key of
+	 * the contract stays defined whatever the module returns.
+	 * BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
 	 *
-	 * @param  array<mixed>        $options Extra options, forwarded as-is to the hook
-	 * @return array<string,mixed>          Keys: has_product, shippable, texticon, textinfo, warning
-	 * END SPE KOESIO: T260145 document the getShippableInfos hook
+	 * BEGIN SPE KOESIO: T260145 per line verdict consumed by the order line template
+	 * A module may also expose an extra 'lines' key - one verdict per order line - which
+	 * objectline_view.tpl.php consumes when present. Not part of the upstream hook.
+	 * END SPE KOESIO: T260145 per line verdict consumed by the order line template
+	 *
+	 * BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
+	 * @param array<mixed> $options 	Extra options, forwarded as-is to the hook
+	 * @return  array<string,mixed>     Array with keys: has_product, shippable, texticon, textinfo, warning
+	 * BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
 	 */
 	public function getShippableInfos(array $options = array()) : array
 	{
