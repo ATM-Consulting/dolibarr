@@ -354,12 +354,45 @@ if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('exp
     print '<td class="linecolstock center">';
 
     if ($line->fk_product > 0 && $line->product_type == 0) {
+       // BEGIN SPE KOESIO: T260145 let a module own the per line verdict
+       // This column used to recompute the state on its own, while the header icon goes
+       // through Commande::getShippableInfos() - which a module may replace. Both are driven
+       // by the same ORDER_ENABLE_SHIPPABLE_ICON_ON_CARD conf and cannot be enabled
+       // separately, so a module changing the semantics (per warehouse stock, for instance)
+       // produced two contradicting verdicts on the same card. When the hook exposes a per
+       // line verdict under 'lines', it wins here too.
+       // Vocabulary of the contract: 'shipped' | 'shippable' | 'not_shippable', empty string
+       // or missing key meaning "no opinion, keep the native computation".
+       static $knShippableLines = null;
+       if ($knShippableLines === null) {
+          $knInfos = $object->getShippableInfos();
+          $knShippableLines = (isset($knInfos['lines']) && is_array($knInfos['lines'])) ? $knInfos['lines'] : array();
+       }
+       $knVerdict = isset($knShippableLines[$line->id]) ? $knShippableLines[$line->id] : '';
+
+       if ($knVerdict !== '') {
+          // No stock figure in the label on purpose: the module may scope it to the line
+          // warehouse, and showing a total next to a per warehouse verdict is what made the
+          // display contradictory in the first place.
+          if ($knVerdict === 'shipped') {
+             print img_picto($langs->trans("Shipped"), 'statut5.png');
+          } elseif ($knVerdict === 'shippable') {
+             print img_picto($langs->trans("Shippable"), 'statut4.png');
+          } else {
+             print img_picto($langs->trans("NonShippable"), 'statut8.png');
+          }
+       } else {
        static $productstatcache = array();
 
        if (empty($productstatcache[$line->fk_product])) {
           $prod = new Product($this->db);
           $prod->fetch($line->fk_product);
-          $prod->load_stock('nobatch', 'warehouseopen');
+          // BEGIN SPE KOESIO: T260145 fix load_stock() arguments
+          // Was load_stock('nobatch', 'warehouseopen'): the second argument is
+          // $includedraftpoforvirtual, not part of the option string, so no warehouse status
+          // filter was applied at all and closed warehouses were counted in.
+          $prod->load_stock('nobatch,warehouseopen');
+          // END SPE KOESIO: T260145 fix load_stock() arguments
           $productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
        }
 
@@ -378,6 +411,8 @@ if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('exp
        } else {
           print img_picto($langs->trans("Shipped"), 'statut5.png');
        }
+       }
+       // END SPE KOESIO: T260145 let a module own the per line verdict
     }
     print '</td>';
 }
