@@ -4099,6 +4099,9 @@ abstract class CommonObject
 					} elseif ($objecttype == 'action') {
 						$module = 'agenda';
 						$subelement = 'actionComm';
+					} elseif ($objecttype == 'fin_simulation') {
+						$classpath = 'financement/class';
+						$module = 'financement';
 					}
 
 					// Set classfile
@@ -4142,6 +4145,9 @@ abstract class CommonObject
 						$classfile = 'mo';
 						$classname = 'Mo';
 						$module = 'mrp';
+					} elseif ($objecttype == 'fin_simulation') {
+						$classfile = 'finsimulation';
+						$classname = 'FinSimulation';
 					}
 
 					// Here $module, $classfile and $classname are set, we can use them.
