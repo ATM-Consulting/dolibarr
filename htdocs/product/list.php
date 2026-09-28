@@ -443,6 +443,13 @@ if ($search_type != '' && $search_type != '-1') {
 
 // Build and execute select
 // --------------------------------------------------------------------
+
+//For Multicompany PMP per entity
+$separatedPMP = false;
+if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED') && getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
+	$separatedPMP = true;
+}
+
 $sql = 'SELECT p.rowid, p.ref, p.description, p.label, p.fk_product_type, p.barcode, p.price, p.tva_tx, p.price_ttc, p.price_base_type, p.entity,';
 $sql .= ' p.fk_product_type, p.duration, p.finished, p.tosell, p.tobuy, p.seuil_stock_alerte, p.desiredstock,';
 $sql .= ' p.tobatch, ';
@@ -454,7 +461,13 @@ if (!getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
 } else {
 	$sql .= " ppe.accountancy_code_sell, ppe.accountancy_code_sell_intra, ppe.accountancy_code_sell_export, ppe.accountancy_code_buy, ppe.accountancy_code_buy_intra, ppe.accountancy_code_buy_export,";
 }
-$sql .= ' p.datec as date_creation, p.tms as date_modification, p.pmp, p.stock, p.cost_price,';
+$sql .= ' p.datec as date_creation, p.tms as date_modification,';
+if ($separatedPMP) {
+	$sql .= ' ppe.pmp,';
+} else {
+	$sql .= ' p.pmp,';
+}
+$sql .= ' p.stock, p.cost_price,';
 $sql .= ' p.weight, p.weight_units, p.length, p.length_units, p.width, p.width_units, p.height, p.height_units, p.surface, p.surface_units, p.volume, p.volume_units,';
 $sql .= ' p.fk_country, p.fk_state,';
 $sql .= ' p.import_key,';
@@ -484,7 +497,7 @@ $sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
 if (isModEnabled('workstation')) {
 	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "workstation_workstation as ws ON (p.fk_default_workstation = ws.rowid)";
 }
-if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
+if (getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED') || $separatedPMP) {
 	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "product_perentity as ppe ON ppe.fk_product = p.rowid AND ppe.entity = " . ((int) $conf->entity);
 }
 if (!empty($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
@@ -641,7 +654,13 @@ $reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $objec
 $sql .= $hookmanager->resPrint;
 $sql .= " GROUP BY p.rowid, p.ref, p.description, p.label, p.barcode, p.price, p.tva_tx, p.price_ttc, p.price_base_type,";
 $sql .= " p.fk_product_type, p.duration, p.finished, p.tosell, p.tobuy, p.seuil_stock_alerte, p.desiredstock,";
-$sql .= ' p.datec, p.tms, p.entity, p.tobatch, p.pmp, p.cost_price, p.stock,';
+$sql .= ' p.datec, p.tms, p.entity, p.tobatch,';
+if ($separatedPMP) {
+	$sql .= ' ppe.pmp,';
+} else {
+	$sql .= ' p.pmp,';
+}
+$sql .= ' p.cost_price, p.stock,';
 if (!getDolGlobalString('MAIN_PRODUCT_PERENTITY_SHARED')) {
 	$sql .= " p.accountancy_code_sell, p.accountancy_code_sell_intra, p.accountancy_code_sell_export, p.accountancy_code_buy, p.accountancy_code_buy_intra, p.accountancy_code_buy_export,";
 } else {

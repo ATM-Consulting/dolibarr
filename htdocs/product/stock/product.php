@@ -1009,10 +1009,23 @@ if (!$variants || getDolGlobalString('VARIANT_ALLOW_STOCK_MOVEMENT_ON_VARIANT_PA
 		print '</tr>';
 	}
 
-	$sql = "SELECT e.rowid, e.ref, e.lieu, e.fk_parent, e.statut as status, ps.reel, ps.rowid as product_stock_id, p.pmp";
+	//For Multicompany PMP per entity
+	$separatedPMP = false;
+	if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED') && getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
+		$separatedPMP = true;
+	}
+
+	if ($separatedPMP) {
+		$sql = "SELECT e.rowid, e.ref, e.lieu, e.fk_parent, e.statut as status, ps.reel, ps.rowid as product_stock_id, pa.pmp";
+	} else {
+		$sql = "SELECT e.rowid, e.ref, e.lieu, e.fk_parent, e.statut as status, ps.reel, ps.rowid as product_stock_id, p.pmp";
+	}
 	$sql .= " FROM ".MAIN_DB_PREFIX."entrepot as e,";
 	$sql .= " ".MAIN_DB_PREFIX."product_stock as ps";
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON p.rowid = ps.fk_product";
+	if ($separatedPMP) {
+		$sql .= " LEFT JOIN ".$db->prefix()."product_perentity as pa ON pa.fk_product = ps.fk_product AND pa.entity = ".(int) $conf->entity;
+	}
 	$sql .= " WHERE ps.reel != 0";
 	$sql .= " AND ps.fk_entrepot = e.rowid";
 	$sql .= " AND e.entity IN (".getEntity('stock').")";

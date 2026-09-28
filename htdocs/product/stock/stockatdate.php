@@ -276,14 +276,32 @@ $num = 0;
 
 $title = $langs->trans('StockAtDate');
 
-$sql = 'SELECT p.rowid, p.ref, p.label, p.description, p.price, p.pmp,';
+//For Multicompany PMP per entity
+$separatedPMP = false;
+if (getDolGlobalString('MULTICOMPANY_PRODUCT_SHARING_ENABLED') && getDolGlobalString('MULTICOMPANY_PMP_PER_ENTITY_ENABLED')) {
+	$separatedPMP = true;
+}
+
+if ($separatedPMP) {
+	$sql = 'SELECT p.rowid, p.ref, p.label, p.description, p.price, pa.pmp,';
+} else {
+	$sql = 'SELECT p.rowid, p.ref, p.label, p.description, p.price, p.pmp,';
+}
 $sql .= ' p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
 $sql .= ' p.tms as datem, p.duration, p.tobuy, p.stock, ';
 if (!empty($search_fk_warehouse)) {
-	$sql .= " SUM(p.pmp * ps.reel) as currentvalue, SUM(p.price * ps.reel) as sellvalue";
+	if ($separatedPMP) {
+		$sql .= " SUM(pa.pmp * ps.reel) as currentvalue, SUM(p.price * ps.reel) as sellvalue";
+	} else {
+		$sql .= " SUM(p.pmp * ps.reel) as currentvalue, SUM(p.price * ps.reel) as sellvalue";
+	}
 	$sql .= ', SUM(ps.reel) as stock_reel';
 } else {
-	$sql .= " SUM(p.pmp * p.stock) as currentvalue, SUM(p.price * p.stock) as sellvalue";
+	if ($separatedPMP) {
+		$sql .= " SUM(pa.pmp * p.stock) as currentvalue, SUM(p.price * p.stock) as sellvalue";
+	} else {
+		$sql .= " SUM(p.pmp * p.stock) as currentvalue, SUM(p.price * p.stock) as sellvalue";
+	}
 }
 // Add fields from hooks
 $parameters = array();
@@ -293,6 +311,9 @@ $sql .= $hookmanager->resPrint;
 $sql .= ' FROM '.MAIN_DB_PREFIX.'product as p';
 if (!empty($search_fk_warehouse)) {
 	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'product_stock as ps ON p.rowid = ps.fk_product AND ps.fk_entrepot IN ('.$db->sanitize(implode(",", $search_fk_warehouse)).")";
+}
+if ($separatedPMP) {
+	$sql .= " LEFT JOIN ".$db->prefix()."product_perentity as pa ON pa.fk_product = p.rowid AND pa.entity = ".(int) $conf->entity;
 }
 // Add fields from hooks
 $parameters = array();
@@ -315,7 +336,11 @@ if ($search_nom) {
 	$sql .= natural_search('p.label', $search_nom);
 }
 
-$sqlGroupBy = ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+if ($separatedPMP) {
+	$sqlGroupBy = ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, pa.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+} else {
+	$sqlGroupBy = ' GROUP BY p.rowid, p.ref, p.label, p.description, p.price, p.pmp, p.price_ttc, p.price_base_type, p.fk_product_type, p.desiredstock, p.seuil_stock_alerte,';
+}
 $sqlGroupBy .= ' p.tms, p.duration, p.tobuy, p.stock';
 
 $parameters = array('sqlGroupBy' => $sqlGroupBy);
