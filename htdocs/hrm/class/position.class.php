@@ -883,17 +883,16 @@ class Position extends CommonObject
 	 */
 	public function showInputField($val, $key, $value, $moreparam = '', $keysuffix = '', $keyprefix = '', $morecss = 0, $nonewbutton = 0)
 	{
-		global $langs, $form;
+		global $langs;
 
 		if ($key == 'fk_user') {
-			if (!($form instanceof Form)) {
-				require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-				$form = new Form($this->db);
-			}
+			require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+			$userForm = new Form($this->db);
 			$vacantId = $keyprefix.$key.'vacant'.$keysuffix;
+			$css = $morecss ? $morecss : (!empty($this->fields[$key]['css']) ? $this->fields[$key]['css'] : 'maxwidth100');
 
-			// Inactive users must stay selectable
-			$out = $form->select_dolusers($value, $keyprefix.$key.$keysuffix, 1, null, 0, '', '', '0', 0, 0, '', 0, '', (!empty($this->fields[$key]['css']) ? $this->fields[$key]['css'] : 'maxwidth100'));
+			// Inactive users must stay selectable. A vacant position (0) must not preselect the current user.
+			$out = $userForm->select_dolusers(((int) $value > 0 ? (int) $value : -1), $keyprefix.$key.$keysuffix, 1, null, 0, '', '', '0', 0, 0, '', 0, '', $css);
 			$out .= '<label class="nowrap position-fk-user classfortooltip" title="'.dol_escape_js($langs->trans('VacantCheckboxHelper')).'"><input type="checkbox" id="'.$vacantId.'" name="'.$vacantId.'">&nbsp;'.$langs->trans("Vacant").'</label>'; ?>
 			<script type="text/javascript">
 				$(document).ready(function () {
