@@ -4289,9 +4289,21 @@ class Commande extends CommonOrder
 	/**
 	 * Compute shippable status and tooltip/icon for the order.
 	 *
-	 * @param array<mixed> $options Extra options (reserved for future use)
-	 * @return  array<string,mixed>        Array with keys: has_product, shippable, texticon, textinfo, warning
-	 * /
+	 * BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
+	 * Can be overridden by a module through the 'getShippableInfos' hook (context
+	 * '<element>dao'). The hook result is merged over the default skeleton, so every key of
+	 * the contract stays defined whatever the module returns.
+	 * BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
+	 *
+	 * BEGIN SPE KOESIO: T260145 per line verdict consumed by the order line template
+	 * A module may also expose an extra 'lines' key - one verdict per order line - which
+	 * objectline_view.tpl.php consumes when present. Not part of the upstream hook.
+	 * END SPE KOESIO: T260145 per line verdict consumed by the order line template
+	 *
+	 * BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
+	 * @param array<mixed> $options 	Extra options, forwarded as-is to the hook
+	 * @return  array<string,mixed>     Array with keys: has_product, shippable, texticon, textinfo, warning
+	 * BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
 	 */
 	public function getShippableInfos(array $options = array()) : array
 	{
@@ -4306,6 +4318,22 @@ class Commande extends CommonOrder
 			'textinfo'    => '',
 			'warning'     => false,
 		);
+
+		// BACKPORT 24 START - https://github.com/Dolibarr/dolibarr/pull/39793
+		global $hookmanager;
+		if (is_object($hookmanager)) {
+			$hookmanager->initHooks(array($this->element.'dao'));
+			$parameters = array('options' => $options);
+			$reshook = $hookmanager->executeHooks('getShippableInfos', $parameters, $this);
+			if ($reshook < 0) {
+				dol_syslog(__METHOD__.' hook getShippableInfos failed: '.$hookmanager->error, LOG_ERR);
+			}
+			if (!empty($hookmanager->resArray['shippableinfos'])
+				&& is_array($hookmanager->resArray['shippableinfos'])) {
+				return array_merge($result, $hookmanager->resArray['shippableinfos']);
+			}
+		}
+		// BACKPORT 24 END - https://github.com/Dolibarr/dolibarr/pull/39793
 
 		// Requested naming for statuses
 		if ($this->status == self::STATUS_DRAFT || $this->status == self::STATUS_CLOSED) {

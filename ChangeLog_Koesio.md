@@ -1,4 +1,6 @@
 - BACKPORT develop - T260197 - (PR #39963) insertExtraFields() silently stored null for an unresolvable link extrafield, making the recurring billing cron re-invoice already invoiced periods - **2026-09-01**
+- BACKPORT 24 - T260145 - (PR #39793) Backport Add hook getShippableInfos (context '<element>dao') to allow a module to replace the order shippability computation - **2026-08-12**
+- SPECIFIC - T260145 - The order line stock column consumes the per line verdict exposed by that hook, and its load_stock() arguments are fixed (the second one is $includedraftpoforvirtual, so no warehouse status filter was applied) - **2026-08-12**
 - BACKPORT 24 - Adding contact on ticket creation from API + SPE noTrigger ticket creation from API - **2026-07-09**
 - BACKPORT 24 - T260188 - (PR #26612, #26613) Backport Add sqlfilterlines filter to the /orders and /supplierorders endpoints - **2026-07-08**
 - BACKPORT 24 - T2605-4267 - (PR #38656) Backport Add hook getTicketMessageEmailFrom to override sender in Ticket::sendTicketMessageByEmail - **2026-06-09**
