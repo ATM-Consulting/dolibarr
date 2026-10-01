@@ -109,7 +109,8 @@ if (isModEnabled('multicompany')) {
 }
 $parameters = array('elementtype' => $elementtype);
 $reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
-print $hookmanager->resPrint;
+$hookTitlePrint = (string) $hookmanager->resPrint;
+print $hookTitlePrint;
 // Action column
 if (!$conf->main_checkbox_left_column) {
 	print '<td width="80">&nbsp;</td>';
@@ -227,6 +228,7 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 	if (isModEnabled('multicompany')) {
 		$colspan++;
 	}
+	$colspan += substr_count($hookTitlePrint, '<td') + substr_count($hookTitlePrint, '<th');
 
 	print '<tr class="">';
 	print '<td colspan="'.$colspan.'"><span class="opacitymedium">';
