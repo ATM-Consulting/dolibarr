@@ -4,3 +4,4 @@ Seul le code non rapatriable dans le module clicdcconseil vit ici. Chaque entré
 
 - NEW : T7435 - hooks extrafields `addExtraField`, `afterUpdateExtraField`, clé `elementtype` sur `updateExtrafields`, `formObjectOptions` (admin_extrafields_add/edit), `printFieldListTitle` / `printFieldListValue` (admin_extrafields_view) — requis par clicdcconseil (type d'entretien CDC) — upstream : suite de #34876 - **01/10/2026**
 - FIX : T7435 - HRM poste : utilisateurs inactifs sélectionnables (report DA025748/DA025977, fix upstream #32092 annulé en v24) — upstream : PR à reproposer - **01/10/2026**
+- FIX : T7435 - onglet compétences : filtre `objecttype` manquant, compétences emploi et utilisateur mélangées (report 8f852968e5d, valeur désormais échappée) — upstream : PR à proposer - **01/10/2026**
