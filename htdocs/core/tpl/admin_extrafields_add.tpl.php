@@ -32,6 +32,7 @@
  * @var DoliDB $db
  * @var ExtraFields $extrafields
  * @var Form $form
+ * @var HookManager $hookmanager
  * @var Translate $langs
  *
  * @var string $action
@@ -306,6 +307,11 @@ if (!getDolGlobalString('MAIN_STORE_COMPUTED_EXTRAFIELDS')) {
 	<!-- Multicompany entity -->
 	<tr><td><?php echo $langs->trans("AllEntities"); ?></td><td class="valeur"><input id="entitycurrentorall" type="checkbox" name="entitycurrentorall"<?php echo(GETPOST('entitycurrentorall', 'alpha') ? ' checked' : ''); ?>></td></tr>
 <?php } ?>
+<?php
+$parameters = array('elementtype' => $elementtype);
+$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
+print $hookmanager->resPrint;
+?>
 </table>
 
 <?php print dol_get_fiche_end(); ?>

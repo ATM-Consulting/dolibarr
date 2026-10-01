@@ -32,6 +32,7 @@
  * @var DoliDB $db
  * @var ExtraFields $extrafields
  * @var Form $form
+ * @var HookManager $hookmanager
  * @var Translate $langs
  *
  * @var string $attrname
@@ -404,6 +405,11 @@ if (!getDolGlobalString('MAIN_STORE_COMPUTED_EXTRAFIELDS')) {
 <?php } ?>
 </td></tr>
 
+<?php
+$parameters = array('elementtype' => $elementtype);
+$reshook = $hookmanager->executeHooks('formObjectOptions', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
+print $hookmanager->resPrint;
+?>
 </table>
 
 <?php print dol_get_fiche_end(); ?>

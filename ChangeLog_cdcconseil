@@ -1,0 +1,5 @@
+# ChangeLog cdcconseil — spécifique core 24.0 (T7435, sprint 176)
+
+Seul le code non rapatriable dans le module clicdcconseil vit ici. Chaque entrée indique si une PR upstream est à proposer.
+
+- NEW : T7435 - hooks extrafields `addExtraField`, `afterUpdateExtraField`, clé `elementtype` sur `updateExtrafields`, `formObjectOptions` (admin_extrafields_add/edit), `printFieldListTitle` / `printFieldListValue` (admin_extrafields_view) — requis par clicdcconseil (type d'entretien CDC) — upstream : suite de #34876 - **01/10/2026**

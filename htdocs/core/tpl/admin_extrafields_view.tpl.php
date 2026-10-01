@@ -30,6 +30,7 @@
  * @var DoliDB $db
  * @var ExtraFields $extrafields
  * @var Form $form
+ * @var HookManager $hookmanager
  * @var Translate $langs
  *
  * @var string $action
@@ -42,7 +43,7 @@ if (empty($langs) || !is_object($langs)) {
 	print "Error, template page can't be called as URL";
 	exit(1);
 }
-global $action, $form, $langs;
+global $action, $form, $hookmanager, $langs;
 
 $langs->load("modulebuilder");
 
@@ -106,6 +107,9 @@ print '<td class="center">'.$form->textwithpicto($langs->trans("CssOnList"), $la
 if (isModEnabled('multicompany')) {
 	print '<td class="center">'.$langs->trans("Entity").'</td>';
 }
+$parameters = array('elementtype' => $elementtype);
+$reshook = $hookmanager->executeHooks('printFieldListTitle', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
+print $hookmanager->resPrint;
 // Action column
 if (!$conf->main_checkbox_left_column) {
 	print '<td width="80">&nbsp;</td>';
@@ -203,6 +207,9 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 			}
 			print '</td>';
 		}
+		$parameters = array('elementtype' => $elementtype, 'key' => $key, 'value' => $value);
+		$reshook = $hookmanager->executeHooks('printFieldListValue', $parameters, $extrafields, $action); // Note that $action and $object may have been modified by hook
+		print $hookmanager->resPrint;
 		// Actions
 		if (!$conf->main_checkbox_left_column) {
 			print '<td class="right nowraponall">';

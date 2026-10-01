@@ -170,6 +170,8 @@ class ExtraFields
 	 */
 	public function addExtraField($attrname, $label, $type, $pos, $size, $elementtype, $unique = 0, $required = 0, $default_value = '', $param = '', $alwayseditable = 0, $perms = '', $list = '-1', $help = '', $computed = '', $entity = '', $langfile = '', $enabled = '1', $totalizable = 0, $printable = 0, $moreparams = array(), $aiprompt = "", $emptyonclone = 0, $showintooltip = 0, $personal_data = 0)
 	{
+		global $action, $hookmanager;
+
 		if (empty($attrname)) {
 			return -1;
 		}
@@ -211,6 +213,18 @@ class ExtraFields
 				|| ($type == 'separate' && $err2 == 'DB_ERROR_RECORD_ALREADY_EXISTS')) {
 				$this->error = '';
 				$this->errno = '0';
+
+				if (is_object($hookmanager)) {
+					$hookmanager->initHooks(array('extrafieldsdao'));
+					$parameters = array('attrname' => $attrname, 'label' => $label, 'type' => $type, 'pos' => $pos, 'size' => $size, 'elementtype' => $elementtype, 'unique' => $unique, 'required' => $required, 'default_value' => $default_value, 'param' => $param, 'alwayseditable' => $alwayseditable, 'perms' => $perms, 'list' => $list, 'help' => $help, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable, 'moreparams' => $moreparams);
+					$reshook = $hookmanager->executeHooks('addExtraField', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+					if ($reshook < 0) {
+						$this->error = $hookmanager->error;
+						$this->errors = $hookmanager->errors;
+						return -3;
+					}
+				}
+
 				return 1;
 			} else {
 				return -2;
@@ -801,7 +815,7 @@ class ExtraFields
 
 			if (is_object($hookmanager)) {
 				$hookmanager->initHooks(array('extrafieldsdao'));
-				$parameters = array('field_desc' => &$field_desc, 'table' => $table, 'attr_name' => $attrname, 'label' => $label, 'type' => $type, 'length' => $length, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'emptyonclone' => $emptyonclone, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable, 'showintooltip' => $showintooltip, 'personal_data' => $personal_data);
+				$parameters = array('field_desc' => &$field_desc, 'table' => $table, 'attr_name' => $attrname, 'elementtype' => $elementtype, 'label' => $label, 'type' => $type, 'length' => $length, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'emptyonclone' => $emptyonclone, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable, 'showintooltip' => $showintooltip, 'personal_data' => $personal_data);
 				$reshook = $hookmanager->executeHooks('updateExtrafields', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 
 				if ($reshook < 0) {
@@ -835,6 +849,16 @@ class ExtraFields
 					 $this->error = $this->db->lasterror();
 					 return -1;
 					 }*/
+
+					if (is_object($hookmanager)) {
+						$parameters = array('table' => $table, 'attr_name' => $attrname, 'elementtype' => $elementtype, 'label' => $label, 'type' => $type, 'length' => $length, 'unique' => $unique, 'required' => $required, 'pos' => $pos, 'param' => $param, 'alwayseditable' => $alwayseditable, 'perms' => $perms, 'list' => $list, 'help' => $help, 'default' => $default, 'computed' => $computed, 'entity' => $entity, 'langfile' => $langfile, 'enabled' => $enabled, 'totalizable' => $totalizable, 'printable' => $printable);
+						$reshook = $hookmanager->executeHooks('afterUpdateExtraField', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
+						if ($reshook < 0) {
+							$this->error = $hookmanager->error;
+							$this->errors = $hookmanager->errors;
+							return -1;
+						}
+					}
 					return 1;
 				} else {
 					$this->error = $this->db->lasterror();
