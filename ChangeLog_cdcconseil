@@ -6,3 +6,4 @@ Seul le code non rapatriable dans le module clicdcconseil vit ici. Chaque entré
 - FIX : T7435 - HRM poste : utilisateurs inactifs sélectionnables (report DA025748/DA025977, fix upstream #32092 annulé en v24) — upstream : PR à reproposer - **01/10/2026**
 - FIX : T7435 - onglet compétences : filtre `objecttype` manquant, compétences emploi et utilisateur mélangées (report 8f852968e5d, valeur désormais échappée) — upstream : PR à proposer - **01/10/2026**
 - FIX : T7435 - temps consommé par jour : extrafields de tâche non chargés (`loadextras`), aligné sur perweek (#35135) — upstream : PR à proposer - **01/10/2026**
+- FIX : T7435 - candidature : statut 6 `ContractRefused` absent de la liste des statuts (filtre/affichage liste) — upstream : PR à proposer - **01/10/2026**
