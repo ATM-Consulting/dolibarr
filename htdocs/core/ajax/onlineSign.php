@@ -557,16 +557,28 @@ if ($action == "importSignature") {
 								}
 							}
 
+							// ==============================================================================
+							// [PATCH CUSTOM - V21] FIX POSITION SIGNATURE PDF SOLEIL
+							// ==============================================================================
+							// Explication : Corrige le bug des pages blanches générées par des coordonnées
+							// incorrectes de l'image de signature sur le modèle Soleil.
+							// Lien Issue : https://github.com/Dolibarr/dolibarr/issues/33167
+							// Lien PR    : https://github.com/Dolibarr/dolibarr/pull/38899
+							//
+							// ATTENTION MAJ V25 : Ce correctif a été intégré nativement dans Dolibarr.
+							// ==============================================================================
 							if (!getDolGlobalString("FICHINTER_SIGNATURE_ON_ALL_PAGES")) {
 								// A signature image file is 720 x 180 (ratio 1/4) but we use only the size into PDF
 								// TODO Get position of box from PDF template
-
-								$param['xforimgstart'] = (empty($s['w']) ? 110 : $s['w'] / 2 - 2);
-								$param['yforimgstart'] = (empty($s['h']) ? 250 : $s['h'] - 38);
-								$param['wforimg'] = $s['w'] - ($param['xforimgstart'] + 20);
+								$param['xforimgstart'] = 111;
+								$param['yforimgstart'] = (empty($s['h']) ? 250 : $s['h'] - 60);
+								$param['wforimg'] = $s['w'] - ($param['xforimgstart'] + 16);
 
 								dolPrintSignatureImage($pdf, $langs, $param);
 							}
+							// ==============================================================================
+							// FIN [PATCH CUSTOM - V21]
+							// ==============================================================================
 
 							//$pdf->Close();
 							$pdf->Output($newpdffilename, "F");
