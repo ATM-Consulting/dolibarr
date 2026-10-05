@@ -21,14 +21,22 @@
  *  \ingroup    loan
  *  \brief      Class for loan module
  */
+require_once DOL_DOCUMENT_ROOT.'/loan/class/loanschedule.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 
 
 /**
  *  Loan
  */
-class Loan extends CommonObject
+class Loan extends CommonObject implements \JsonSerializable
 {
+	const IN_ARREAR = 0;
+	const IN_ADVANCE = 1;
+	const CALC_MODES = array(
+		self::IN_ARREAR => 'CalcInArrear',
+		self::IN_ADVANCE => 'CalcInAdvance',
+	);
+
 	/**
 	 * @var string ID to identify managed object
 	 */
@@ -59,9 +67,32 @@ class Loan extends CommonObject
 	 */
 	public $label;
 
+	/** @var int $fk_periodicity  Points to llx_c_financement_periodicite which links Period types to their duration in months */
+	public $fk_periodicity;
+
+	/** @var int $periodicity  Duration of a Period in months */
+	public $periodicity;
+
+	/** @var string $periodicity_label  Translation key for the name of the Period duration (month, quarter, semester, year…) */
+	public $periodicity_label;
+
 	public $capital;
-	public $nbterm;
+
+	/** @var int $nbPeriods  Number of Periods */
+	public $nbPeriods;
+
 	public $rate;
+
+	/**
+	 * @var int $calc_mode  Whether the payments are made in advance or in arrear.
+	 *                      in advance = terme à échoir
+	 *                      in arrear = terme échu
+	 */
+	public $calc_mode;
+
+	/** @var double $future_value  Value of the loan after the last installment of its lifecycle is paid. (usually 0) */
+	public $future_value = 0;
+
 	public $paid;
 	public $account_capital;
 	public $account_insurance;
@@ -113,6 +144,34 @@ class Loan extends CommonObject
 	const STATUS_PAID = 1;
 	const STATUS_STARTED = 2;
 
+	/**
+	 * @var string $currency
+	 */
+	public $currency;
+
+	/**
+	 * @var string[] Names of fields to include when encoding the object as JSON
+	 */
+	protected $jsonEncodableFields = array(
+		'id',
+		'element',
+		'dateend',
+		'datestart',
+		'label',
+		'periodicity',
+		'periodicity_label',
+		'capital',
+		'nbPeriods',
+		'rate',
+		'calc_mode',
+		'future_value',
+		'paid',
+		'account_capital',
+		'account_insurance',
+		'account_interest',
+		'insurance_amount',
+		'currency',
+	);
 
 	/**
 	 * Constructor
@@ -121,7 +180,10 @@ class Loan extends CommonObject
 	 */
 	public function __construct($db)
 	{
+		global $langs, $conf;
 		$this->db = $db;
+		$langs->load('errors');
+		$this->currency = $conf->currency;
 	}
 
 	/**
@@ -132,10 +194,32 @@ class Loan extends CommonObject
 	 */
 	public function fetch($id)
 	{
-		$sql = "SELECT l.rowid, l.label, l.capital, l.datestart, l.dateend, l.nbterm, l.rate, l.note_private, l.note_public, l.insurance_amount,";
-		$sql .= " l.paid, l.fk_bank, l.accountancy_account_capital, l.accountancy_account_insurance, l.accountancy_account_interest, l.fk_projet as fk_project";
-		$sql .= " FROM ".MAIN_DB_PREFIX."loan as l";
-		$sql .= " WHERE l.rowid = ".((int) $id);
+		$sql = /* @lang SQL */
+			'SELECT l.rowid,'
+			. ' l.label,'
+			. ' l.capital,'
+			. ' l.datestart,'
+			. ' l.dateend,'
+			. ' l.nbterm AS nbPeriods,'
+			. ' l.rate,'
+			. ' l.note_private,'
+			. ' l.note_public,'
+			. ' l.insurance_amount,'
+			. ' l.paid,'
+			. ' l.fk_bank,'
+			. ' l.accountancy_account_capital,'
+			. ' l.accountancy_account_insurance,'
+			. ' l.accountancy_account_interest,'
+			. ' l.fk_projet AS fk_project, '
+			. ' l.calc_mode,'
+			. ' l.fk_periodicity,'
+			. ' l.future_value,'
+			. ' d.value AS periodicity,'
+			. ' d.label AS periodicity_label'
+			. ' FROM ' . MAIN_DB_PREFIX . 'loan AS l'
+			. ' LEFT JOIN ' . MAIN_DB_PREFIX . 'c_financement_periodicite AS d'
+			. '    ON d.rowid = l.fk_periodicity AND d.entity IN (' . getEntity('loan') . ')'
+			. ' WHERE l.rowid = ' . intval($id);
 
 		dol_syslog(get_class($this)."::fetch", LOG_DEBUG);
 		$resql = $this->db->query($sql);
@@ -143,24 +227,28 @@ class Loan extends CommonObject
 			if ($this->db->num_rows($resql)) {
 				$obj = $this->db->fetch_object($resql);
 
-				$this->id = $obj->rowid;
-				$this->ref = $obj->rowid;
-				$this->datestart = $this->db->jdate($obj->datestart);
-				$this->dateend				= $this->db->jdate($obj->dateend);
-				$this->label				= $obj->label;
-				$this->capital				= $obj->capital;
-				$this->nbterm = $obj->nbterm;
-				$this->rate					= $obj->rate;
-				$this->note_private = $obj->note_private;
-				$this->note_public = $obj->note_public;
-				$this->insurance_amount = $obj->insurance_amount;
-				$this->paid = $obj->paid;
-				$this->fk_bank = $obj->fk_bank;
-
-				$this->account_capital = $obj->accountancy_account_capital;
-				$this->account_insurance	= $obj->accountancy_account_insurance;
-				$this->account_interest		= $obj->accountancy_account_interest;
-				$this->fk_project = $obj->fk_project;
+				$this->id                  = (int) $obj->rowid;
+				$this->ref                 = $obj->rowid;
+				$this->datestart           = (int) $this->db->jdate($obj->datestart);
+				$this->dateend             = (int) $this->db->jdate($obj->dateend);
+				$this->label               = $obj->label;
+				$this->capital             = (double) $obj->capital;
+				$this->nbPeriods           = (int) $obj->nbPeriods;
+				$this->rate                = (double) $obj->rate;
+				$this->note_private        = $obj->note_private;
+				$this->note_public         = $obj->note_public;
+				$this->insurance_amount    = (double) $obj->insurance_amount;
+				$this->paid                = (bool) $obj->paid;
+				$this->fk_bank             = $obj->fk_bank;
+				$this->account_capital     = $obj->accountancy_account_capital;
+				$this->account_insurance   = $obj->accountancy_account_insurance;
+				$this->account_interest    = $obj->accountancy_account_interest;
+				$this->fk_project          = (int) $obj->fk_project;
+				$this->calc_mode           = (int) $obj->calc_mode;
+				$this->fk_periodicity      = (int) $obj->fk_periodicity;
+				$this->future_value        = (double) $obj->future_value;
+				$this->periodicity         = $obj->periodicity === null ? 1 : (int) $obj->periodicity;
+				$this->periodicity_label   = $obj->periodicity_label === null ? 'Monthly' : $obj->periodicity_label;
 
 				$this->db->free($resql);
 				return 1;
@@ -240,30 +328,58 @@ class Loan extends CommonObject
 			$this->error = $langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("LoanAccountancyInterestCode"));
 			return -2;
 		}
+		if (! in_array($this->calc_mode, array_keys(self::CALC_MODES))) {
+			$this->error = $langs->trans('ErrorBadValueForParameter', $this->calc_mode, $langs->transnoentitiesnoconv('CalcMode'));
+
+			return -2;
+		}
 
 		$this->db->begin();
 
-		$sql = "INSERT INTO ".MAIN_DB_PREFIX."loan (label, fk_bank, capital, datestart, dateend, nbterm, rate, note_private, note_public,";
-		$sql .= " accountancy_account_capital, accountancy_account_insurance, accountancy_account_interest, entity,";
-		$sql .= " datec, fk_projet, fk_user_author, insurance_amount)";
-		$sql .= " VALUES ('".$this->db->escape($this->label)."',";
-		$sql .= " '".$this->db->escape($this->fk_bank)."',";
-		$sql .= " '".price2num($newcapital)."',";
-		$sql .= " '".$this->db->idate($this->datestart)."',";
-		$sql .= " '".$this->db->idate($this->dateend)."',";
-		$sql .= " '".$this->db->escape($this->nbterm)."',";
-		$sql .= " '".$this->db->escape($this->rate)."',";
-		$sql .= " '".$this->db->escape($this->note_private)."',";
-		$sql .= " '".$this->db->escape($this->note_public)."',";
-		$sql .= " '".$this->db->escape($this->account_capital)."',";
-		$sql .= " '".$this->db->escape($this->account_insurance)."',";
-		$sql .= " '".$this->db->escape($this->account_interest)."',";
-		$sql .= " ".$conf->entity.",";
-		$sql .= " '".$this->db->idate($now)."',";
-		$sql .= " ".(empty($this->fk_project) ? 'NULL' : $this->fk_project).",";
-		$sql .= " ".$user->id.",";
-		$sql .= " '".price2num($newinsuranceamount)."'";
-		$sql .= ")";
+		$sql = 'INSERT INTO ' . MAIN_DB_PREFIX . 'loan ('
+			. ' label,'
+			. ' fk_bank,'
+			. ' capital,'
+			. ' datestart,'
+			. ' dateend,'
+			. ' nbterm,'
+			. ' rate,'
+			. ' note_private,'
+			. ' note_public,'
+			. ' accountancy_account_capital,'
+			. ' accountancy_account_insurance,'
+			. ' accountancy_account_interest,'
+			. ' entity,'
+			. ' datec,'
+			. ' fk_projet,'
+			. ' fk_periodicity,'
+			. ' future_value,'
+			. ' fk_user_author,'
+			. ' insurance_amount,'
+			. ' calc_mode'
+			. ')'
+			. ' VALUES ('
+			. " '" . $this->db->escape($this->label) . "',"
+			. " '" . $this->db->escape($this->fk_bank) . "',"
+			. " '" . price2num($newcapital) . "',"
+			. " '" . $this->db->idate($this->datestart) . "',"
+			. " '" . $this->db->idate($this->dateend) . "',"
+			. " '" . $this->db->escape($this->nbPeriods) . "',"
+			. " '" . $this->db->escape($this->rate) . "',"
+			. " '" . $this->db->escape($this->note_private) . "',"
+			. " '" . $this->db->escape($this->note_public) . "',"
+			. " '" . $this->db->escape($this->account_capital) . "',"
+			. " '" . $this->db->escape($this->account_insurance) . "',"
+			. " '" . $this->db->escape($this->account_interest) . "',"
+			. ' ' . (int) $conf->entity . ','
+			. " '" . $this->db->idate($now) . "',"
+			. ' ' . (empty($this->fk_project) ? 'NULL' : $this->fk_project) . ','
+			. ' ' . (int) $this->fk_periodicity . ','
+			. ' ' . (double) $this->future_value . ','
+			. ' ' . (int) $user->id . ','
+			. " '" . price2num($newinsuranceamount) . "',"
+			. ' ' . (int) $this->calc_mode . ''
+			. ')';
 
 		dol_syslog(get_class($this)."::create", LOG_DEBUG);
 		$resql = $this->db->query($sql);
@@ -292,6 +408,11 @@ class Loan extends CommonObject
 		$error = 0;
 
 		$this->db->begin();
+
+		// suppression des liens vers ou depuis cet emprunt
+		if ($this->deleteObjectLinked() < 0) {
+			$error++;
+		}
 
 		// Get bank transaction lines for this loan
 		include_once DOL_DOCUMENT_ROOT.'/compta/bank/class/account.class.php';
@@ -342,6 +463,30 @@ class Loan extends CommonObject
 
 
 	/**
+	 * Deletes all loan schedule elements associated with this loan
+	 * @return int
+	 */
+	public function deleteSchedule() {
+		$loanScheduleStatic = new LoanSchedule($this->db);
+		$this->db->begin();
+		$error = 0;
+		$sql = 'DELETE FROM ' . MAIN_DB_PREFIX . $loanScheduleStatic->table_element
+			. ' WHERE fk_loan = ' . (int) $this->id;
+		$resql = $this->db->query($sql);
+		if (! $resql) {
+			$error++;
+			$this->error = __FILE__ . ':' . __LINE__ . ":\n" . $this->db->lasterror();
+			$this->errors[] = $this->error;
+		}
+		if ($error) {
+			$this->db->rollback();
+			return -$error;
+		}
+		$this->db->commit();
+		return 1;
+	}
+
+	/**
 	 *  Update loan
 	 *
 	 *  @param	User	$user	User who modified
@@ -351,7 +496,7 @@ class Loan extends CommonObject
 	{
 		$this->db->begin();
 
-		if (!is_numeric($this->nbterm)) {
+		if (!is_numeric($this->nbPeriods)) {
 			$this->error = 'BadValueForParameterForNbTerm';
 			return -1;
 		}
@@ -361,7 +506,7 @@ class Loan extends CommonObject
 		$sql .= " capital='".price2num($this->db->escape($this->capital))."',";
 		$sql .= " datestart='".$this->db->idate($this->datestart)."',";
 		$sql .= " dateend='".$this->db->idate($this->dateend)."',";
-		$sql .= " nbterm=".((float) $this->nbterm).",";
+		$sql .= " nbterm=".((float) $this->nbPeriods).",";
 		$sql .= " rate=".((float) $this->rate).",";
 		$sql .= " accountancy_account_capital = '".$this->db->escape($this->account_capital)."',";
 		$sql .= " accountancy_account_insurance = '".$this->db->escape($this->account_insurance)."',";
@@ -649,7 +794,7 @@ class Loan extends CommonObject
 		$this->dateend = $now + (3600 * 24 * 365);
 		$this->note_public = 'SPECIMEN';
 		$this->capital = 20000;
-		$this->nbterm = 48;
+		$this->nbPeriods = 48;
 		$this->rate = 4.3;
 	}
 
@@ -720,5 +865,18 @@ class Loan extends CommonObject
 			$this->error = $this->db->lasterror();
 			return -1;
 		}
+	}
+
+	/**
+	 * Secure calls to json_encode($myLoan) by encoding only business-relevant values
+	 *
+	 * @return array
+	 */
+	public function jsonSerialize(): array {
+		$arrayForJSON = array();
+		foreach ($this->jsonEncodableFields as $attrName) {
+			$arrayForJSON[$attrName] = $this->{$attrName};
+		}
+		return $arrayForJSON;
 	}
 }
