@@ -28,7 +28,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 /**
  *		Class to manage Schedule of loans
  */
-class LoanSchedule extends CommonObject
+class LoanSchedule extends CommonObject implements \JsonSerializable
 {
 	/**
 	 * @var string ID to identify managed object
@@ -102,6 +102,19 @@ class LoanSchedule extends CommonObject
 	public $type_code;
 	public $type_label;
 
+	/**
+	 * @var string[] Names of fields to include when encoding the object as JSON
+	 */
+	protected $jsonEncodableFields = array(
+		'id',
+		'element',
+		'fk_loan',
+		'datep',
+		'amount_capital',
+		'amount_insurance',
+		'amount_interest',
+	);
+
 
 	/**
 	 *	Constructor
@@ -163,39 +176,29 @@ class LoanSchedule extends CommonObject
 		$totalamount = $this->amount_capital + $this->amount_insurance + $this->amount_interest;
 		$totalamount = price2num($totalamount);
 
-		// Check parameters
-		if ($totalamount == 0) {
-			$this->errors[] = 'step1';
-			return -1; // Negative amounts are accepted for reject prelevement but not null
-		}
-
-
 		$this->db->begin();
 
-		if ($totalamount != 0) {
-			$sql = "INSERT INTO ".MAIN_DB_PREFIX.$this->table_element." (fk_loan, datec, datep, amount_capital, amount_insurance, amount_interest,";
-			$sql .= " fk_typepayment, fk_user_creat, fk_bank)";
-			$sql .= " VALUES (".$this->fk_loan.", '".$this->db->idate($now)."',";
-			$sql .= " '".$this->db->idate($this->datep)."',";
-			$sql .= " ".price2num($this->amount_capital).",";
-			$sql .= " ".price2num($this->amount_insurance).",";
-			$sql .= " ".price2num($this->amount_interest).",";
-			$sql .= " ".price2num($this->fk_typepayment).", ";
-			$sql .= " ".((int) $user->id).",";
-			$sql .= " ".((int) $this->fk_bank).")";
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX.$this->table_element." (fk_loan, datec, datep, amount_capital, amount_insurance, amount_interest,";
+		$sql .= " fk_typepayment, fk_user_creat, fk_bank)";
+		$sql .= " VALUES (".$this->fk_loan.", '".$this->db->idate($now)."',";
+		$sql .= " '".$this->db->idate($this->datep)."',";
+		$sql .= " ".price2num($this->amount_capital).",";
+		$sql .= " ".price2num($this->amount_insurance).",";
+		$sql .= " ".price2num($this->amount_interest).",";
+		$sql .= " ".((int) $this->fk_typepayment).", ";
+		$sql .= " ".((int) $user->id).",";
+		$sql .= " ".((int) $this->fk_bank).")";
 
-			dol_syslog(get_class($this)."::create", LOG_DEBUG);
-			$resql = $this->db->query($sql);
-			if ($resql) {
-				$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."payment_loan");
-			} else {
-				$this->error = $this->db->lasterror();
-				$error++;
-			}
+		dol_syslog(get_class($this)."::create", LOG_DEBUG);
+		$resql = $this->db->query($sql);
+		if ($resql) {
+			$this->id = $this->db->last_insert_id(MAIN_DB_PREFIX."payment_loan");
+		} else {
+			$this->error = $this->db->lasterror();
+			$error++;
 		}
 
-		if ($totalamount != 0 && !$error) {
-			$this->amount_capital = $totalamount;
+		if (!$error) {
 			$this->db->commit();
 			return $this->id;
 		} else {
@@ -448,6 +451,7 @@ class LoanSchedule extends CommonObject
 		$sql .= " t.fk_user_modif";
 		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
 		$sql .= " WHERE t.fk_loan = ".((int) $loanid);
+		$sql .= " ORDER BY t.datep, t.rowid";
 
 		dol_syslog(get_class($this)."::fetchAll", LOG_DEBUG);
 		$resql = $this->db->query($sql);
@@ -579,5 +583,24 @@ class LoanSchedule extends CommonObject
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Secure calls to json_encode($myLoanSchedule) by encoding only business-relevant values
+	 *
+	 * @return array
+	 */
+	public function jsonSerialize(): array {
+		$this->id = (double) $this->id;
+		$this->amount_capital = (double) $this->amount_capital;
+		$this->amount_insurance = (double) $this->amount_insurance;
+		$this->amount_interest = (double) $this->amount_interest;
+		$this->datep = (int) $this->datep;
+		$this->fk_loan = (int) $this->fk_loan;
+		$arrayForJSON = array();
+		foreach ($this->jsonEncodableFields as $attrName) {
+			$arrayForJSON[$attrName] = $this->{$attrName};
+		}
+		return $arrayForJSON;
 	}
 }
