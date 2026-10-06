@@ -336,7 +336,7 @@ class pdf_ledger extends ModelePdfAccountancy
 				$this->checkPageBreakIfNeeded($pdf, $this->tabTitleHeight, $heightforfooter, $object, $outputlangs, $tplidx ?? 0, $tab_top_newpage, $curY, $nexY);
 				if (empty($account) || $account != $object->lines[$i]->numero_compte) {
 					$accountingAccount = new AccountingAccount($this->db);
-					$accountingAccount->fetch(0, $object->lines[$i]->numero_compte);
+					$accountingAccount->fetch(0, $object->lines[$i]->numero_compte, true);
 
 					if (!empty($account)) {
 						$this->addTotalLine(
