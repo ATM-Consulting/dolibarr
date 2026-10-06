@@ -3513,7 +3513,10 @@ if (empty($reshook)) {
 							}
 
 
-							if (!empty($object->tab_previous_situation_invoice)) {
+							// BACKPORT V24.0 START - PR #41401
+							// In progressive mode (INVOICE_USE_SITUATION = 2) the line already holds its own delta, so the progress of the previous situation must not be subtracted
+							if (!empty($object->tab_previous_situation_invoice) && getDolGlobalInt('INVOICE_USE_SITUATION') != 2) {
+								// BACKPORT V24.0 END - PR #41401
 								// search the last invoice in cycle
 								$lineIndex = count($object->tab_previous_situation_invoice) - 1;
 								$searchPreviousInvoice = true;

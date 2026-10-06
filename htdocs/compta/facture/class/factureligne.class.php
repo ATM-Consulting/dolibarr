@@ -503,7 +503,9 @@ class FactureLigne extends CommonInvoiceLine
 		$sql .= ' situation_percent, fk_prev_id,';
 		$sql .= ' fk_unit, fk_user_author, fk_user_modif,';
 		$sql .= ' fk_multicurrency, multicurrency_code, multicurrency_subprice, multicurrency_total_ht, multicurrency_total_tva, multicurrency_total_ttc,';
-		$sql .= ' batch, fk_warehouse';
+		// BACKPORT V24.0 START - PR #41369
+		$sql .= ' batch, fk_warehouse, extraparams';
+		// BACKPORT V24.0 END - PR #41369
 		$sql .= ')';
 		$sql .= " VALUES (".((int) $this->fk_facture).",";
 		$sql .= " ".($this->fk_parent_line > 0 ? ((int) $this->fk_parent_line) : "null").",";
@@ -548,6 +550,11 @@ class FactureLigne extends CommonInvoiceLine
 		$sql .= ", ".price2num($this->multicurrency_total_ttc);
 		$sql .= ", '".$this->db->escape($this->batch)."'";
 		$sql .= ", ".((int) $this->fk_warehouse);
+		// BACKPORT V24.0 START - PR #41369
+		// Keep extra parameters (for example the options of subtotal lines) when a line is copied from another one
+		$extraparams = (!empty($this->extraparams) ? dol_trunc(json_encode($this->extraparams), 250) : null);
+		$sql .= ", ".(!empty($extraparams) ? "'".$this->db->escape($extraparams)."'" : "null");
+		// BACKPORT V24.0 END - PR #41369
 		$sql .= ')';
 
 		dol_syslog(get_class($this)."::insert", LOG_DEBUG);
@@ -972,11 +979,18 @@ class FactureLigne extends CommonInvoiceLine
 					$sql .= " WHERE fd.fk_prev_id = ".((int) $this->fk_prev_id);
 					$sql .= " AND f.situation_cycle_ref = ".((int) $invoicecache[$invoiceid]->situation_cycle_ref); // Prevent cycle outed
 					$sql .= " AND f.type = ".((int) Facture::TYPE_CREDIT_NOTE);
+					// BACKPORT V24.0 START - PR #41369
+					$sql .= " AND f.fk_statut IN (".Facture::STATUS_VALIDATED.", ".Facture::STATUS_CLOSED.")"; // A draft or abandoned credit note does not change the progress
+					// BACKPORT V24.0 END - PR #41369
 
 					$res = $this->db->query($sql);
 					if ($res) {
 						while ($obj = $this->db->fetch_object($res)) {
-							$returnPercent += (float) $obj->situation_percent;
+							// BACKPORT V24.0 START - PR #41369
+							// A credit note always reduces the progress. Its situation_percent is stored negative
+							// in legacy mode but positive in progressive mode, so we subtract the absolute value.
+							$returnPercent -= abs((float) $obj->situation_percent);
+							// BACKPORT V24.0 END - PR #41369
 						}
 					} else {
 						dol_print_error($this->db);
@@ -1025,11 +1039,22 @@ class FactureLigne extends CommonInvoiceLine
 			$cumulated_percent = 0.0;
 
 			while (!$all_found) {
-				$sql = "SELECT situation_percent, fk_prev_id FROM ".MAIN_DB_PREFIX."facturedet WHERE rowid = ".((int) $lastprevid);
+				// BACKPORT V24.0 START - PR #41401
+				$sql = "SELECT fd.situation_percent, fd.fk_prev_id, f.situation_cycle_ref";
+				$sql .= " FROM ".MAIN_DB_PREFIX."facturedet as fd";
+				$sql .= " INNER JOIN ".MAIN_DB_PREFIX."facture as f ON f.rowid = fd.fk_facture";
+				$sql .= " WHERE fd.rowid = ".((int) $lastprevid);
+				// BACKPORT V24.0 END - PR #41401
 				$resql = $this->db->query($sql);
 
 				if ($resql && $this->db->num_rows($resql) > 0) {
 					$obj = $this->db->fetch_object($resql);
+					// BACKPORT V24.0 START - PR #41401
+					// A line of another cycle (the invoice was removed from its cycle) is not part of the progress of this cycle
+					if ((int) $obj->situation_cycle_ref != (int) $invoicecache[$invoiceid]->situation_cycle_ref) {
+						break;
+					}
+					// BACKPORT V24.0 END - PR #41401
 					$cumulated_percent += (float) $obj->situation_percent;
 
 					if ($include_credit_note) {
@@ -1038,11 +1063,18 @@ class FactureLigne extends CommonInvoiceLine
 						$sql_credit_note .= " WHERE fd.fk_prev_id = ".((int) $lastprevid);
 						$sql_credit_note .= " AND f.situation_cycle_ref = ".((int) $invoicecache[$invoiceid]->situation_cycle_ref); // Prevent cycle outed
 						$sql_credit_note .= " AND f.type = ".Facture::TYPE_CREDIT_NOTE;
+						// BACKPORT V24.0 START - PR #41369
+						$sql_credit_note .= " AND f.fk_statut IN (".Facture::STATUS_VALIDATED.", ".Facture::STATUS_CLOSED.")"; // A draft or abandoned credit note does not change the progress
+						// BACKPORT V24.0 END - PR #41369
 
 						$res_credit_note = $this->db->query($sql_credit_note);
 						if ($res_credit_note) {
 							while ($cn = $this->db->fetch_object($res_credit_note)) {
-								$cumulated_percent += (float) $cn->situation_percent;
+								// BACKPORT V24.0 START - PR #41369
+								// A credit note always reduces the progress. Its situation_percent is stored negative
+								// in legacy mode but positive in progressive mode, so we subtract the absolute value.
+								$cumulated_percent -= abs((float) $cn->situation_percent);
+								// BACKPORT V24.0 END - PR #41369
 							}
 						} else {
 							dol_print_error($this->db);
