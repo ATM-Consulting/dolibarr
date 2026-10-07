@@ -137,8 +137,6 @@ $note_private = null;
 // Initialize a technical object to manage hooks of page. Note that conf->hooks_modules contains an array of hook context
 $hookmanager->initHooks(array('ordercard', 'globalcard'));
 
-$result = restrictedArea($user, 'commande', $id);
-
 $object = new Commande($db);
 $extrafields = new ExtraFields($db);
 
@@ -148,6 +146,8 @@ $extrafields->fetch_name_optionals_label($object->table_element);
 
 // Load object
 include DOL_DOCUMENT_ROOT . '/core/actions_fetchobject.inc.php';     // Must be 'include', not 'include_once'
+
+$result = restrictedArea($user, 'commande', $id);	// After the fetch: the page may be called with the ref only, the security check must be done on the object found
 
 // Permissions / Rights
 $usercanread    =  $user->hasRight("commande", "lire");
@@ -253,7 +253,7 @@ if (empty($reshook)) {
 					header("Location: " . $_SERVER['PHP_SELF'] . '?id=' . $result);
 					exit;
 				} else {
-					setEventMessages($object->error, $object->errors, 'errors');
+					setEventMessages($objectutil->error, $objectutil->errors, 'errors');
 					$action = '';
 				}
 			}
@@ -829,7 +829,7 @@ if (empty($reshook)) {
 				} else {
 					setEventMessages($prod->error, $prod->errors, 'errors');
 				}
-			} else {
+			} elseif ($line->fk_product) { // Display errors only for non-free lines
 				setEventMessages($prod->error, $prod->errors, 'errors');
 			}
 			// Manage $line->subprice and $line->multicurrency_subprice
@@ -1996,7 +1996,7 @@ if (empty($reshook)) {
 		$fromElementid = GETPOST('fromelementid');
 		$importLines = GETPOST('line_checkbox');
 
-		if (!empty($importLines) && is_array($importLines) && !empty($fromElement) && ctype_alpha($fromElement) && !empty($fromElementid)) {
+		if (!empty($importLines) && is_array($importLines) && !empty($fromElement) && preg_match('/^[a-zA-Z]+$/', $fromElement) && !empty($fromElementid)) {
 			if ($fromElement == 'commande') {
 				dol_include_once('/' . $fromElement . '/class/' . $fromElement . '.class.php');
 				$lineClassName = 'OrderLine';
@@ -2247,7 +2247,7 @@ if ($action == 'create' && $usercancreate) {
 		$mode_reglement_id  = empty($soc->mode_reglement_id) ? $mode_reglement_id : $soc->mode_reglement_id;
 		$fk_account         = empty($soc->mode_reglement_id) ? $fk_account : $soc->fk_account;
 		$availability_id    = 0;
-		$shipping_method_id = $soc->shipping_method_id;
+		$shipping_method_id = empty($soc->shipping_method_id) ? $shipping_method_id : $soc->shipping_method_id;
 		$warehouse_id       = $soc->fk_warehouse;
 		$demand_reason_id   = $soc->demand_reason_id;
 		// $remise_percent = $soc->remise_percent;
@@ -2427,7 +2427,7 @@ if ($action == 'create' && $usercancreate) {
 		if (isModEnabled('shipping')) {
 			print '<tr><td>' . $langs->trans('SendingMethod') . '</td><td>';
 			print img_picto('', 'object_dolly', 'class="pictofixedwidth"');
-			$form->selectShippingMethod(((GETPOSTISSET('shipping_method_id') && GETPOSTINT('shipping_method_id') != 0) ? GETPOST('shipping_method_id') : $shipping_method_id), 'shipping_method_id', '', 1, '', 0, 'maxwidth200 widthcentpercentminusx');
+			$form->selectShippingMethod(((GETPOSTISSET('shipping_method_id') && GETPOSTINT('shipping_method_id') > 0) ? GETPOST('shipping_method_id') : $shipping_method_id), 'shipping_method_id', '', 1, '', 0, 'maxwidth200 widthcentpercentminusx');	// -1 is the "no value" placeholder for this select, not 0, so it must not override the fresh thirdparty default after a company change
 			print '</td></tr>';
 		}
 
@@ -2595,9 +2595,9 @@ if ($action == 'create' && $usercancreate) {
 			print '<tr><td>' . $langs->trans('AmountTTC') . '</td><td>' . price($objectsrc->total_ttc) . "</td></tr>";
 
 			if (isModEnabled("multicurrency")) {
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountHT') . '</td><td>' . price($objectsrc->multicurrency_total_ht) . '</td></tr>';
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountVAT') . '</td><td>' . price($objectsrc->multicurrency_total_tva) . "</td></tr>";
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountTTC') . '</td><td>' . price($objectsrc->multicurrency_total_ttc) . "</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
 			}
 		}
 
@@ -3505,7 +3505,7 @@ if ($action == 'create' && $usercancreate) {
 						'label' => $langs->trans('AddSubtotalLine'),
 						'url' => '/commande/card.php?id=' . $object->id . '&action=add_subtotal_line&token=' . newToken()
 					);
-					print dolGetButtonAction('', $langs->trans('Subtotal'), 'default', $url_button, '', true);
+					print dolGetButtonAction('', $langs->trans('SubTotal'), 'default', $url_button, '', true);
 				}
 
 				// Valid
@@ -3573,12 +3573,12 @@ if ($action == 'create' && $usercancreate) {
 				if (isModEnabled('shipping')) {
 					$numshipping = $object->countNbOfShipments();
 
-					if ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES'))) {
+					if ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || (getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES') && $object->getNbOfServicesLines() > 0))) {
 						if ((getDolGlobalInt('MAIN_SUBMODULE_EXPEDITION') && $user->hasRight('expedition', 'creer')) || (getDolGlobalInt('MAIN_SUBMODULE_DELIVERY') && $user->hasRight('expedition', 'delivery', 'creer'))) {
 							// Add button to create shipment into the combo
 							$arrayforbutaction[] = array(
 								'lang' => 'sendings',
-								'enabled' => (isModEnabled("shipping") && ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES')))),
+								'enabled' => (isModEnabled("shipping") && ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || (getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES') && $object->getNbOfServicesLines() > 0)))),
 								'perm' => $user->hasRight('expedition', 'creer'),
 								'label' => 'CreateShipment',
 								'url' => '/expedition/shipment.php?id=' . $object->id
@@ -3588,7 +3588,7 @@ if ($action == 'create' && $usercancreate) {
 							//print dolGetButtonAction($langs->trans('ErrorModuleSetupNotComplete'), $langs->trans('CreateShipment'), 'default', $_SERVER['PHP_SELF']. '#', '', false);
 							$arrayforbutaction[] = array(
 								'lang' => 'sendings',
-								'enabled' => (isModEnabled("shipping") && ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES')))),
+								'enabled' => (isModEnabled("shipping") && ($object->status > Commande::STATUS_DRAFT && $object->status < Commande::STATUS_CLOSED && ($object->getNbOfProductsLines() > 0 || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || (getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES') && $object->getNbOfServicesLines() > 0)))),
 								'perm' => 0,
 								'label' => 'CreateShipment',
 								'url' => '/expedition/shipment.php?id=' . $object->id

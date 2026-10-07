@@ -389,7 +389,11 @@ if (empty($reshook)) {
 		// Delete link of credit note to invoice
 		$discount = new DiscountAbsolute($db);
 		$result = $discount->fetch(GETPOSTINT("discountid"));
-		$discount->unlink_invoice();
+		if ($result > 0 && $discount->fk_facture == $object->id) {	// The credit note must be linked to this invoice
+			$discount->unlink_invoice();
+		} else {
+			setEventMessages($langs->trans("ErrorRecordNotFound"), null, 'errors');
+		}
 	} elseif ($action == 'valid' && $usercancreate) {
 		// Validation
 		$object->fetch($id);
@@ -1206,15 +1210,18 @@ if (empty($reshook)) {
 		if ($object->status == Facture::STATUS_VALIDATED && $object->paye == 0) {
 			$paiement = new Paiement($db);
 			$result = $paiement->fetch(GETPOSTINT('paiement_id'));
-			if ($result > 0) {
+			$paymentbills = ($result > 0) ? $paiement->getBillsArray() : array();
+			if ($result > 0 && is_array($paymentbills) && in_array($object->id, $paymentbills)) {	// The payment must be linked to this invoice
 				$result = $paiement->delete($user); // If fetch ok and found
 				if ($result >= 0) {
 					header("Location: ".$_SERVER['PHP_SELF']."?id=".$id);
 					exit;
 				}
-			}
-			if ($result < 0) {
-				setEventMessages($paiement->error, $paiement->errors, 'errors');
+				if ($result < 0) {
+					setEventMessages($paiement->error, $paiement->errors, 'errors');
+				}
+			} else {
+				setEventMessages($langs->trans("ErrorRecordNotFound"), null, 'errors');
 			}
 		}
 	} elseif ($action == 'add' && $usercancreate) {
@@ -1400,7 +1407,7 @@ if (empty($reshook)) {
 								// The subtraction below assumes total_ht/situation_percent are stored cumulative on situation invoice lines
 								// (INVOICE_USE_SITUATION = 1, legacy). In progressive mode (INVOICE_USE_SITUATION = 2), each line already
 								// holds its own delta, so subtracting the previous invoice's line here would credit the wrong amount.
-								if (getDolGlobalInt('INVOICE_USE_SITUATION') != 2 && !empty($facture_source->tab_previous_situation_invoice)) {
+								if (getDolGlobalInt('INVOICE_USE_SITUATION') == 1 && !empty($facture_source->tab_previous_situation_invoice)) {
 									// search the last standard invoice in cycle and the possible credit note between this last and facture_source
 									// TODO Move this out of loop of $facture_source->lines
 									$tab_jumped_credit_notes = array();
@@ -2070,7 +2077,7 @@ if (empty($reshook)) {
 											$lines[$i]->fk_unit,
 											0,
 											'',
-											0
+											1  // noupdateafterinsertline: update_price() is called once after the loop, calling it per line is quadratic
 										);
 
 										if ($result > 0) {
@@ -2946,7 +2953,7 @@ if (empty($reshook)) {
 				} else {
 					setEventMessages($prod->error, $prod->errors, 'errors');
 				}
-			} else {
+			} elseif ($line->fk_product) { // Display errors only for non-free lines
 				setEventMessages($prod->error, $prod->errors, 'errors');
 			}
 			// Manage $line->subprice and $line->multicurrency_subprice
@@ -3353,7 +3360,7 @@ if (empty($reshook)) {
 				setEventMessages($object->error, $object->errors, 'errors');
 			}
 		}
-	} elseif ($action == 'updatealllines' && $usercancreate && GETPOST('all_percent') == $langs->trans('Modify')) {	// Update all lines of situation invoice
+	} elseif ($action == 'updatealllines' && $usercancreate && GETPOSTISSET('all_percent')) {	// Update all lines of situation invoice
 		if (!$object->fetch($id) > 0) {
 			dol_print_error($db);
 		}
@@ -4161,7 +4168,7 @@ if ($action == 'create') {
 					}
 
 					$typedeposit = GETPOST('typedeposit', 'aZ09');
-					$valuedeposit = GETPOSTINT('valuedeposit');
+					$valuedeposit = GETPOSTFLOAT('valuedeposit');
 					if (empty($typedeposit) && !empty($objectsrc->deposit_percent)) {
 						$origin_payment_conditions_deposit_percent = getDictionaryValue('c_payment_term', 'deposit_percent', $objectsrc->cond_reglement_id);
 						if (!empty($origin_payment_conditions_deposit_percent)) {
@@ -4878,7 +4885,7 @@ if ($action == 'create') {
 
 	$head = facture_prepare_head($object);
 
-	print dol_get_fiche_head($head, 'compta', $langs->trans('InvoiceCustomer'), -1, $object->picto);
+	print dol_get_fiche_head($head, 'compta', $langs->trans('InvoiceCustomer'), -1, $object->picto, 0, '', '', 0, '', 1);
 
 	$formconfirm = '';
 
@@ -6049,9 +6056,9 @@ if ($action == 'create') {
 				$total_next_ht = $total_next_ttc = 0;
 
 				foreach ($object->tab_next_situation_invoice as $next_invoice) {
-					$totalpaid = $next_invoice->getSommePaiement(0);
-					$totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
-					$totaldeposits = $next_invoice->getSumDepositsUsed(0);
+					$next_totalpaid = $next_invoice->getSommePaiement(0);
+					$next_totalcreditnotes = $next_invoice->getSumCreditNotesUsed(0);
+					$next_totaldeposits = $next_invoice->getSumDepositsUsed(0);
 					$total_next_ht += $next_invoice->total_ht;
 					$total_next_ttc += $next_invoice->total_ttc;
 
@@ -6064,7 +6071,7 @@ if ($action == 'create') {
 					}
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ht).'</span></td>';
 					print '<td class="right"><span class="amount">'.price($next_invoice->total_ttc).'</span></td>';
-					print '<td class="right">'.$next_invoice->getLibStatut(3, $totalpaid + $totalcreditnotes + $totaldeposits).'</td>';
+					print '<td class="right">'.$next_invoice->getLibStatut(3, $next_totalpaid + $next_totalcreditnotes + $next_totaldeposits).'</td>';
 					print '</tr>';
 				}
 
@@ -6681,7 +6688,7 @@ if ($action == 'create') {
 					'label' => $langs->trans('AddSubtotalLine'),
 					'url' => '/compta/facture/card.php?facid='.$object->id.'&action=add_subtotal_line&token='.newToken()
 				);
-				print dolGetButtonAction('', $langs->trans('Subtotal'), 'default', $url_button, '', true);
+				print dolGetButtonAction('', $langs->trans('SubTotal'), 'default', $url_button, '', true);
 			}
 
 			// Validate
@@ -6817,7 +6824,7 @@ if ($action == 'create') {
 						if ($objectidnext) {
 							print '<span class="butActionRefused classfortooltip" title="'.$langs->trans("DisabledBecauseReplacedInvoice").'">'.$langs->trans('ClassifyCanceled').'</span>';
 						} else {
-							print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=canceled">'.$langs->trans('ClassifyCanceled').'</a>';
+							print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=canceled&token='.newToken().'">'.$langs->trans('ClassifyCanceled').'</a>';
 						}
 					}
 				}
@@ -6880,7 +6887,7 @@ if ($action == 'create') {
 				&& $object->is_last_in_cycle()
 				&& $usercanunvalidate
 			) {
-				if (($object->total_ttc - $totalcreditnotes) == 0) {
+				if (price2num($object->total_ttc - $totalcreditnotes, 'MT') == 0) {
 					print '<a id="butSituationOut" class="butAction" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=situationout">'.$langs->trans("RemoveSituationFromCycle").'</a>';
 				} else {
 					print '<a id="butSituationOutRefused" class="butActionRefused classfortooltip" href="#" title="'.$langs->trans("DisabledBecauseNotEnouthCreditNote").'" >'.$langs->trans("RemoveSituationFromCycle").'</a>';

@@ -647,6 +647,9 @@ class Fichinter extends CommonObject
 
 			// Define new ref
 			if ((preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref))) { // empty should not happened, but when it occurs, the test save life
+				if (empty($this->thirdparty)) {	// Not loaded when validated by the API or on closing a ticket
+					$this->fetch_thirdparty();
+				}
 				$num = $this->getNextNumRef($this->thirdparty);
 			} else {
 				$num = (string) $this->ref;
@@ -659,7 +662,7 @@ class Fichinter extends CommonObject
 			$sql .= ", date_valid = '".$this->db->idate($now)."'";
 			$sql .= ", fk_user_valid = ".($user->id > 0 ? (int) $user->id : "null");
 			$sql .= " WHERE rowid = ".((int) $this->id);
-			$sql .= " AND entity = ".((int) $this->entity);
+			$sql .= " AND entity IN (".getEntity('intervention').")";
 
 			$sql .= " AND fk_statut = 0";
 
@@ -770,7 +773,7 @@ class Fichinter extends CommonObject
 			$sql .= " fk_user_modif = " . ((int) $user->id);
 			$sql .= " WHERE rowid = " . ((int) $this->id);
 			$sql .= " AND fk_statut > " . self::STATUS_DRAFT;
-			$sql .= " AND entity = " . ((int) $conf->entity);
+			$sql .= " AND entity IN (".getEntity('intervention').")";
 
 			if ($this->db->query($sql)) {
 				if (!$notrigger) {
@@ -1199,7 +1202,7 @@ class Fichinter extends CommonObject
 
 			// Remove directory with files
 			$fichinterref = dol_sanitizeFileName($this->ref);
-			if ($conf->ficheinter->dir_output) {
+			if ($conf->ficheinter->dir_output && !empty($fichinterref)) {
 				$dir = $conf->ficheinter->dir_output."/".$fichinterref;
 				$file = $conf->ficheinter->dir_output."/".$fichinterref."/".$fichinterref.".pdf";
 				if (file_exists($file)) {

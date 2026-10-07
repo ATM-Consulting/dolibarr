@@ -724,8 +724,8 @@ class CommandeFournisseur extends CommonOrder
 					$sqlsearchpackage .= ' WHERE entity IN ('.getEntity('productsupplierprice').")";
 					$sqlsearchpackage .= " AND fk_product = ".((int) $objp->fk_product);
 					$sqlsearchpackage .= " AND ref_fourn = '".$this->db->escape($objp->ref_supplier)."'";
-					$sqlsearchpackage .= " AND quantity <= ".((float) $objp->qty);	// required to be qualified
-					$sqlsearchpackage .= " AND (packaging IS NULL OR packaging = 0 OR packaging <= ".((float) $objp->qty).")";	// required to be qualified
+					$sqlsearchpackage .= " AND quantity <= ".abs((float) $objp->qty);	// required to be qualified
+					$sqlsearchpackage .= " AND (packaging IS NULL OR packaging = 0 OR packaging <= ".abs((float) $objp->qty).")";	// required to be qualified
 					$sqlsearchpackage .= " AND fk_soc = ".((int) $this->socid);
 					$sqlsearchpackage .= " ORDER BY packaging ASC";		// Take the smaller package first
 					$sqlsearchpackage .= " LIMIT 1";
@@ -1709,14 +1709,14 @@ class CommandeFournisseur extends CommonOrder
 						(int) $line->product_type,
 						(int) $line->info_bits,
 						0,
-						$line->date_start,
-						$line->date_end,
-						$line->array_options,
-						$line->fk_unit,
+						$line->date_start ?? null,
+						$line->date_end ?? null,
+						$line->array_options ?? [],
+						$line->fk_unit ?? null,
 						(float) $line->multicurrency_subprice,  // pu_ht_devise
-						(string) $line->origin,     // origin
+						(string) $line->origin,  // origin
 						(int) $line->origin_id,  // origin_id
-						(int) $line->rang,       // rang
+						(int) ($line->rang ?? -1),       // rang
 						(int) $line->special_code
 					);
 					if ($result < 0) {
@@ -1842,18 +1842,18 @@ class CommandeFournisseur extends CommonOrder
 		$sql .= " fk_soc=".(isset($this->socid) ? $this->socid : "null").",";
 		$sql .= " date_commande=".(strval($this->date_commande) != '' ? "'".$this->db->idate($this->date_commande)."'" : 'null').",";
 		$sql .= " date_valid=".(strval($this->date_validation) != '' ? "'".$this->db->idate($this->date_validation)."'" : 'null').",";
-		$sql .= " total_tva=".(isset($this->total_tva) ? $this->total_tva : "null").",";
-		$sql .= " localtax1=".(isset($this->total_localtax1) ? $this->total_localtax1 : "null").",";
-		$sql .= " localtax2=".(isset($this->total_localtax2) ? $this->total_localtax2 : "null").",";
-		$sql .= " total_ht=".(isset($this->total_ht) ? $this->total_ht : "null").",";
-		$sql .= " total_ttc=".(isset($this->total_ttc) ? $this->total_ttc : "null").",";
-		$sql .= " fk_statut=".(isset($this->status) ? $this->status : "null").",";
-		$sql .= " fk_user_author=".(isset($this->user_author_id) ? $this->user_author_id : "null").",";
-		$sql .= " fk_user_valid=".(isset($this->user_validation_id) && $this->user_validation_id > 0 ? $this->user_validation_id : "null").",";
-		$sql .= " fk_projet=".((!empty($this->fk_project) && $this->fk_project > 0) ? $this->fk_project : "null").",";
-		$sql .= " fk_cond_reglement=".(isset($this->cond_reglement_id) ? $this->cond_reglement_id : "null").",";
-		$sql .= " deposit_percent=".(!empty($this->deposit_percent) ? strval($this->deposit_percent) : "null").",";
-		$sql .= " fk_mode_reglement=".(isset($this->mode_reglement_id) ? $this->mode_reglement_id : "null").",";
+		$sql .= " total_tva=".(isset($this->total_tva) ? (float) $this->total_tva : "null").",";
+		$sql .= " localtax1=".(isset($this->total_localtax1) ? (float) $this->total_localtax1 : "null").",";
+		$sql .= " localtax2=".(isset($this->total_localtax2) ? (float) $this->total_localtax2 : "null").",";
+		$sql .= " total_ht=".(isset($this->total_ht) ? (float) $this->total_ht : "null").",";
+		$sql .= " total_ttc=".(isset($this->total_ttc) ? (float) $this->total_ttc : "null").",";
+		$sql .= " fk_statut=".(isset($this->status) ? (int) $this->status : "null").",";
+		$sql .= " fk_user_author=".(isset($this->user_author_id) ? (int) $this->user_author_id : "null").",";
+		$sql .= " fk_user_valid=".(isset($this->user_validation_id) && $this->user_validation_id > 0 ? (int) $this->user_validation_id : "null").",";
+		$sql .= " fk_projet=".((!empty($this->fk_project) && $this->fk_project > 0) ? (int) $this->fk_project : "null").",";
+		$sql .= " fk_cond_reglement=".(isset($this->cond_reglement_id) ? (int) $this->cond_reglement_id : "null").",";
+		$sql .= " deposit_percent=".(!empty($this->deposit_percent) ? "'".$this->db->escape($this->deposit_percent)."'" : "null").",";
+		$sql .= " fk_mode_reglement=".(isset($this->mode_reglement_id) ? (int) $this->mode_reglement_id : "null").",";
 		$sql .= " date_livraison=".(strval($this->delivery_date) != '' ? "'".$this->db->idate($this->delivery_date)."'" : 'null').",";
 		//$sql .= " fk_shipping_method=".(isset($this->shipping_method_id) ? $this->shipping_method_id : "null").",";
 		$sql .= " fk_account=".($this->fk_account > 0 ? $this->fk_account : "null").",";
@@ -1935,7 +1935,7 @@ class CommandeFournisseur extends CommonOrder
 			if ($objsoc->fetch($socid) > 0) {
 				$this->socid = $objsoc->id;
 				$this->cond_reglement_id	= (!empty($objsoc->cond_reglement_id) ? $objsoc->cond_reglement_id : 0);
-				$this->deposit_percent		= (!empty($objsoc->deposit_percent) ? $objsoc->deposit_percent : 0);
+				$this->deposit_percent		= (!empty($objsoc->deposit_percent) ? $objsoc->deposit_percent : '0');
 				$this->mode_reglement_id	= (!empty($objsoc->mode_reglement_id) ? $objsoc->mode_reglement_id : 0);
 				$this->fk_project = 0;
 				$this->fk_delivery_address = 0;
@@ -2071,7 +2071,7 @@ class CommandeFournisseur extends CommonOrder
 			} else {
 				$pu = $pu_ttc;
 			}
-			$desc = trim($desc);
+			$desc = trim((string) $desc);
 
 			// Check parameters
 			if ($qty < 0 && !$fk_product) {
@@ -2152,15 +2152,10 @@ class CommandeFournisseur extends CommonOrder
 
 					// Align messaging, type and float-safety with the customer-order path at commande.class.php:1720
 					// (#38782 bugs 1, 2, 6).
-					if (abs((float) $qty) < $prod->packaging) {
-						$qty = (float) $prod->packaging;
+					$newqty = $this->roundQtyToPackaging($qty, $prod->packaging);
+					if ($newqty != $qty) {
+						$qty = $newqty;
 						setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
-					} else {
-						if (!empty($prod->packaging) && (float) price2num(fmod((float) $qty, (float) $prod->packaging), 'MS')) {
-							$coeff = intval(abs((float) $qty) / $prod->packaging) + 1;
-							$qty = price2num((float) $prod->packaging * $coeff, 'MS');
-							setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
-						}
 					}
 
 					// Enforce the supplier minimum purchase quantity on top of packaging
@@ -2168,7 +2163,7 @@ class CommandeFournisseur extends CommonOrder
 					// multiple, not that it satisfies pfp.quantity (=qty_min). If the line
 					// is below the supplier minimum, round qty_min itself up to the next
 					// packaging multiple so we end up with the smallest valid order qty (#38783).
-					if (!empty($prod->fourn_qty) && abs((float) $qty) < (float) $prod->fourn_qty) {
+					if (!empty($prod->fourn_qty) && (float) $qty > 0 && (float) $qty < (float) $prod->fourn_qty) {	// A negative quantity (return) is not concerned by the minimum purchase quantity
 						if (!empty($prod->packaging) && (float) price2num(fmod((float) $prod->fourn_qty, (float) $prod->packaging), 'MS')) {
 							$coeff = intval((float) $prod->fourn_qty / (float) $prod->packaging) + 1;
 							$qty = (float) price2num((float) $prod->packaging * $coeff, 'MS');
@@ -2445,6 +2440,10 @@ class CommandeFournisseur extends CommonOrder
 			if ($line->fetch($idline) <= 0) {
 				return 0;
 			}
+			if ($this->id > 0 && (int) $line->fk_commande !== (int) $this->id) {
+				$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
+				return -1;
+			}
 
 			// check if not yet received
 			$dispatchedLines = $this->getDispachedLines();
@@ -2595,7 +2594,7 @@ class CommandeFournisseur extends CommonOrder
 
 			// We remove directory
 			$ref = dol_sanitizeFileName($this->ref);
-			if ($conf->fournisseur->commande->dir_output) {
+			if ($conf->fournisseur->commande->dir_output && !empty($ref)) {
 				$dir = $conf->fournisseur->commande->dir_output."/".$ref;
 				$file = $dir."/".$ref.".pdf";
 				if (file_exists($file)) {
@@ -3122,6 +3121,12 @@ class CommandeFournisseur extends CommonOrder
 	public function updateline($rowid, $desc, $pu, $qty, $remise_percent, $txtva, $txlocaltax1 = 0, $txlocaltax2 = 0, $price_base_type = 'HT', $info_bits = 0, $type = 0, $notrigger = 0, $date_start = 0, $date_end = 0, $array_options = [], $fk_unit = null, $pu_ht_devise = 0, $ref_supplier = '')
 	{
 		global $mysoc, $conf, $langs;
+
+		if (!$this->isLineOfObject($rowid)) {
+			$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
+			return -1;
+		}
+
 		dol_syslog(get_class($this)."::updateline $rowid, $desc, $pu, $qty, $remise_percent, $txtva, $price_base_type, $info_bits, $type, $fk_unit");
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
 
@@ -3188,6 +3193,19 @@ class CommandeFournisseur extends CommonOrder
 				$txtva = preg_replace('/\s*\(.*\)/', '', $txtva); // Remove code into vatrate.
 			}
 
+			// Round the quantity to the packaging before computing the amounts of the line (and checking the stock),
+			// else the line is saved with the rounded quantity but with the amounts of the quantity before rounding
+			if (getDolGlobalString('PRODUCT_USE_SUPPLIER_PACKAGING')) {
+				$tmpline = new CommandeFournisseurLigne($this->db);
+				if ($tmpline->fetch($rowid) > 0) {
+					$newqty = $this->roundQtyToPackaging($qty, $tmpline->packaging);
+					if ($newqty != $qty) {
+						$qty = $newqty;
+						setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
+					}
+				}
+			}
+
 			$tabprice = calcul_price_total($qty, (float) $pu, $remise_percent, $txtva, $txlocaltax1, $txlocaltax2, 0, $price_base_type, $info_bits, $type, $this->thirdparty, $localtaxes_type, 100, (float) $this->multicurrency_tx, (float) $pu_ht_devise);
 			$total_ht  = $tabprice[0];
 			$total_tva = $tabprice[1];
@@ -3221,23 +3239,6 @@ class CommandeFournisseur extends CommonOrder
 			//$this->line->label=$label;
 			$this->line->desc = $desc;
 
-			// redefine quantity according to packaging
-			// Mirror commande.class.php::updateline at line 3289: surface the auto-correction
-			// to the user with a warning, float-safe the fmod / coeff arithmetic and use
-			// abs() so negative qty is handled too (#38782 bugs 3, 4, 5, 6).
-			if (getDolGlobalString('PRODUCT_USE_SUPPLIER_PACKAGING')) {
-				if (abs((float) $qty) < $this->line->packaging) {
-					$qty = $this->line->packaging;
-					setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'warnings');
-				} else {
-					if (!empty($this->line->packaging) && is_numeric($this->line->packaging) && (float) $this->line->packaging > 0
-						&& (float) price2num(fmod((float) $qty, (float) $this->line->packaging), 'MS')) {
-						$coeff = intval(abs((float) $qty) / $this->line->packaging) + 1;
-						$qty = price2num((float) $this->line->packaging * $coeff, 'MS');
-						setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'warnings');
-					}
-				}
-			}
 
 			$this->line->qty = $qty;
 			$this->line->ref_supplier = $ref_supplier;
@@ -3796,6 +3797,10 @@ class CommandeFournisseur extends CommonOrder
 						}
 					}
 					foreach ($this->lines as $line) {
+						// Free lines have no product and cannot be dispatched to stock.
+						if (empty($line->fk_product)) {
+							continue;
+						}
 						// Exclude lines not qualified for shipment, similar code is found into interface_20_modWrokflow for customers
 						if (!getDolGlobalString('STOCK_SUPPORTS_SERVICES') && $line->product_type > 0) {
 							continue;

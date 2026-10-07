@@ -1306,9 +1306,8 @@ if ($action == 'create' && $permissiontoadd) {
 		// Here $object can be of an object Reception
 		$extrafields->fetch_name_optionals_label($object->table_element);
 		if (empty($reshook) && !empty($extrafields->attributes[$object->table_element]['label'])) {
-			// copy from order
-			if ($objectsrc->fetch_optionals() > 0) {
-				$recept->array_options = array_merge($recept->array_options, $objectsrc->array_options);
+			if ($object->fetch_optionals() > 0) {
+				$recept->array_options = array_merge($recept->array_options, $object->array_options);
 			}
 			print $recept->showOptionals($extrafields, 'create', $parameters);
 		}
@@ -2029,7 +2028,7 @@ if ($action == 'create' && $permissiontoadd) {
 		$objectsrc = new Propal($db);
 		$objectsrc->fetch($object->origin_object->id);
 	}
-	if (($typeobject == 'supplier_order' || $typeobject == 'CommandeFournisseur') && $object->origin_object->id && isModEnabled("supplier_order")) {
+	if (($typeobject == 'order_supplier' || $typeobject == 'supplier_order' || $typeobject == 'CommandeFournisseur') && $object->origin_object->id && isModEnabled("supplier_order")) {
 		$objectsrc = new CommandeFournisseur($db);
 		$objectsrc->fetch($object->origin_object->id);
 	}
@@ -2116,7 +2115,7 @@ if ($action == 'create' && $permissiontoadd) {
 		print "</td>\n";
 		print '</tr>';
 	}
-	if (($typeobject == 'supplier_order' || $typeobject == 'CommandeFournisseur') && $object->origin_object->id && isModEnabled("propal")) {
+	if (($typeobject == 'order_supplier' || $typeobject == 'supplier_order' || $typeobject == 'CommandeFournisseur') && $object->origin_object->id && isModEnabled("supplier_order")) {
 		print '<tr><td>';
 		print $langs->trans("SupplierOrder").'</td>';
 		print '<td colspan="3">';
@@ -2505,7 +2504,9 @@ if ($action == 'create' && $permissiontoadd) {
 		// Get list of products already sent for same source object into $alreadysent
 		$alreadysent = array();
 
-		if (empty($origin)) {
+		// The origin may arrive as 'order_supplier' from some callers, while the table name below is
+		// built from 'supplier_order'. Normalise it or the query targets a table that does not exist.
+		if (empty($origin) || $origin == 'order_supplier') {
 			$origin = 'supplier_order';
 		}
 

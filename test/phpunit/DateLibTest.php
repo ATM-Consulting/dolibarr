@@ -443,6 +443,39 @@ class DateLibTest extends CommonClassTest
 		print __METHOD__." result=".$result."\n";
 		$this->assertEquals('28/10/2025 00:00', $result);
 
+		// Add months to a date at midnight in a timezone ahead of UTC (like date_when of a recurring invoice read with jdate()
+		// on a server in Europe/Paris): delay must be added in this timezone, in UTC the date is the day before (30 September 22:00)
+		$tz = new DateTimeZone('Europe/Paris');
+		$time = (new DateTime('2026-10-01 00:00:00', $tz))->getTimestamp();
+		$result = (new DateTime('@'.dol_time_plus_duree($time, 3, 'm', 0, 'Europe/Paris')))->setTimezone($tz)->format('Y-m-d H:i:s');
+		print __METHOD__." result=".$result."\n";
+		$this->assertEquals('2027-01-01 00:00:00', $result);
+
+		// Same with the rule for end of month
+		$result = (new DateTime('@'.dol_time_plus_duree($time, 3, 'm', 1, 'Europe/Paris')))->setTimezone($tz)->format('Y-m-d H:i:s');
+		print __METHOD__." result=".$result."\n";
+		$this->assertEquals('2027-01-01 00:00:00', $result);
+
+		// Rule for end of month applied in the timezone
+		$time = (new DateTime('2026-01-31 00:00:00', $tz))->getTimestamp();
+		$result = (new DateTime('@'.dol_time_plus_duree($time, 1, 'm', 1, 'Europe/Paris')))->setTimezone($tz)->format('Y-m-d H:i:s');
+		print __METHOD__." result=".$result."\n";
+		$this->assertEquals('2026-02-28 00:00:00', $result);
+
+		// Next date of a monthly recurring invoice on the 1st after a month of 30 days (or February): in UTC, the rule for
+		// end of month moved it to the day before the original date, so the same invoice was generated twice
+		foreach (array('2026-10-01', '2026-03-01', '2026-12-01') as $day) {
+			$time = (new DateTime($day.' 00:00:00', $tz))->getTimestamp();
+			$result = (new DateTime('@'.dol_time_plus_duree($time, 1, 'm', 1, 'Europe/Paris')))->setTimezone($tz)->format('Y-m-d H:i:s');
+			print __METHOD__." result=".$result."\n";
+			$this->assertEquals((new DateTime($day.' 00:00:00', $tz))->modify('+1 month')->format('Y-m-d H:i:s'), $result);
+		}
+
+		// Rule for end of month in GMT
+		$result = dol_print_date(dol_time_plus_duree(dol_mktime(0, 0, 0, 1, 31, 2028, 'gmt'), 1, 'm', 1, 'gmt'), 'dayhour', 'gmt', $outputlangs);
+		print __METHOD__." result=".$result."\n";
+		$this->assertEquals('29/02/2028 00:00', $result);
+
 		return $result;
 	}
 
@@ -513,6 +546,54 @@ class DateLibTest extends CommonClassTest
 		return 1;
 	}
 
+	/**
+	 * testGetFirstDayOfEachWeek
+	 *
+	 * @return int
+	 */
+	public function testGetFirstDayOfEachWeek()
+	{
+		// June 2026 (no year overlap): weeks 23 to 27
+		$TWeek = getWeekNumbersOfMonth(6, 2026);
+		$this->assertEquals(array('23' => '01', '24' => '08', '25' => '15', '26' => '22', '27' => '29'), getFirstDayOfEachWeek($TWeek, 2026));
+
+		// December 2025 ends with week 01 of 2026: week 01 starts on monday 2025-12-29
+		$TWeek = getWeekNumbersOfMonth(12, 2025);
+		$this->assertEquals(array('49' => '01', '50' => '08', '51' => '15', '52' => '22', '01' => '29'), getFirstDayOfEachWeek($TWeek, 2025));
+
+		// January 2022 starts with week 52 of 2021 (monday 2021-12-27). Week 01 of 2022 starts on monday the 3rd,
+		// week 02 on the 10th, ... (weeks 01 to 05 must not be shifted to next year)
+		$TWeek = getWeekNumbersOfMonth(1, 2022);
+		$this->assertEquals(array('52' => '27', '01' => '03', '02' => '10', '03' => '17', '04' => '24', '05' => '31'), getFirstDayOfEachWeek($TWeek, 2022));
+
+		// January 2021 starts with week 53 of 2020 (monday 2020-12-28)
+		$TWeek = getWeekNumbersOfMonth(1, 2021);
+		$this->assertEquals(array('53' => '28', '01' => '04', '02' => '11', '03' => '18', '04' => '25'), getFirstDayOfEachWeek($TWeek, 2021));
+
+		return 1;
+	}
+
+	/**
+	 * testGetLastDayOfEachWeek
+	 *
+	 * @return int
+	 */
+	public function testGetLastDayOfEachWeek()
+	{
+		// June 2026 (no year overlap): weeks 23 to 27
+		$TWeek = getWeekNumbersOfMonth(6, 2026);
+		$this->assertEquals(array('23' => '07', '24' => '14', '25' => '21', '26' => '28', '27' => '05'), getLastDayOfEachWeek($TWeek, 2026));
+
+		// December 2025 ends with week 01 of 2026: week 01 ends on sunday 2026-01-04
+		$TWeek = getWeekNumbersOfMonth(12, 2025);
+		$this->assertEquals(array('49' => '07', '50' => '14', '51' => '21', '52' => '28', '01' => '04'), getLastDayOfEachWeek($TWeek, 2025));
+
+		// January 2022 starts with week 52 of 2021: week 52 ends on sunday 2022-01-02
+		$TWeek = getWeekNumbersOfMonth(1, 2022);
+		$this->assertEquals(array('52' => '02', '01' => '09', '02' => '16', '03' => '23', '04' => '30', '05' => '06'), getLastDayOfEachWeek($TWeek, 2022));
+
+		return 1;
+	}
 
 	/**
 	 * testDolGetFirstHour
