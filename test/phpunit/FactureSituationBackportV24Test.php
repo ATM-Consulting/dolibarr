@@ -17,12 +17,12 @@
  */
 
 /**
- *      \file       test/phpunit/FactureSituationProgressTest.php
+ *      \file       test/phpunit/FactureSituationBackportV24Test.php
  *      \ingroup    test
  *      \brief      PHPUnit test of the progress of situation invoice lines in progressive mode (INVOICE_USE_SITUATION = 2)
  *      \remarks    To run this script as CLI:  phpunit filename.php
  *
- * BACKPORT V24.0 - PR #41369 and PR #41401: remove this file once both are merged upstream
+ * BACKPORT V24.0 - PR #41369 and PR #41401: remove this file once both are merged upstream (named apart from the test of #41401 to avoid an add/add conflict)
  */
 
 global $conf,$user,$langs,$db;
@@ -45,8 +45,13 @@ $conf->global->MAIN_DISABLE_ALL_MAILS = 1;
  * @backupStaticAttributes enabled
  * @remarks	backupGlobals must be disabled to have db,conf,user and lang not erased.
  */
-class FactureSituationProgressTest extends CommonClassTest
+class FactureSituationBackportV24Test extends CommonClassTest
 {
+	/**
+	 * @var mixed INVOICE_USE_SITUATION before the test
+	 */
+	private $savedSituationMode;
+
 	/**
 	 * setUp
 	 *
@@ -57,8 +62,26 @@ class FactureSituationProgressTest extends CommonClassTest
 		global $conf, $invoicecache;
 
 		parent::setUp();
+		$this->savedSituationMode = $conf->global->INVOICE_USE_SITUATION ?? null;
 		$conf->global->INVOICE_USE_SITUATION = 2;
 		$invoicecache = array();
+	}
+
+	/**
+	 * tearDown
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void
+	{
+		global $conf;
+
+		if ($this->savedSituationMode === null) {
+			unset($conf->global->INVOICE_USE_SITUATION);
+		} else {
+			$conf->global->INVOICE_USE_SITUATION = $this->savedSituationMode;
+		}
+		parent::tearDown();
 	}
 
 	/**
@@ -186,5 +209,117 @@ class FactureSituationProgressTest extends CommonClassTest
 		$this->assertEquals(0, $this->previousProgress($nextNew, $lRemoved), 'next situation of the new cycle');
 		$nextOld = $this->insertInvoice(Facture::TYPE_SITUATION, $oldCycle, Facture::STATUS_DRAFT);
 		$this->assertEquals(30, $this->previousProgress($nextOld, $l1), 'next situation of the old cycle');
+	}
+
+	/**
+	 * Credit note of S2 on a line invoiced at 60 %: returns the credit note and its line, credited line at 60 %
+	 *
+	 * @return array{0:Facture,1:int}
+	 */
+	private function insertCreditNoteOnSecondSituation(): array
+	{
+		$db = $this->savdb;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 30, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l2 = $this->insertLine($s2, 30, $l1);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($creditNoteId, 30, $l2);
+		$db->query("UPDATE ".$db->prefix()."facturedet SET subprice = -1000 WHERE rowid = ".$lineId);
+
+		$creditNote = new Facture($db);
+		$creditNote->fetch($creditNoteId);
+
+		return [$creditNote, $lineId];
+	}
+
+	/**
+	 * A credit note line left at its previous progress (0 % to credit) credits nothing, not 100 %
+	 *
+	 * @return void
+	 */
+	public function testCreditNoteLineLeftAtPreviousProgressCreditsNothing()
+	{
+		[$creditNote, $lineId] = $this->insertCreditNoteOnSecondSituation();
+
+		$result = $creditNote->updateline($lineId, 'Lot A', -1000, 1, 0, '', '', 0, 0, 0, 'HT', 0, 1, 0, 0, null, 0, '', 0, array(), 0.0);
+		$this->assertGreaterThan(0, $result, (string) $creditNote->error.implode(",", $creditNote->errors));
+
+		$line = new FactureLigne($this->savdb);
+		$line->fetch($lineId);
+		$this->assertEquals(0, $line->situation_percent);
+		$this->assertEquals(0, $line->total_ht);
+	}
+
+	/**
+	 * A negative progress on a credit note never credits more than what was invoiced
+	 *
+	 * @return void
+	 */
+	public function testNegativeProgressOnCreditNoteIsBounded()
+	{
+		[$creditNote, $lineId] = $this->insertCreditNoteOnSecondSituation();
+
+		$creditNote->update_percent($creditNote->lines[0], -10, false);
+
+		$line = new FactureLigne($this->savdb);
+		$line->fetch($lineId);
+		$this->assertEquals(60, $line->situation_percent);
+		$this->assertEquals(-600, $line->total_ht);
+	}
+
+	/**
+	 * A line added on the credit note (no previous line) keeps the percent entered as the percent credited
+	 *
+	 * @return void
+	 */
+	public function testLineAddedOnCreditNoteKeepsPercentEntered()
+	{
+		[$creditNote] = $this->insertCreditNoteOnSecondSituation();
+		$db = $this->savdb;
+		$freeLineId = $this->insertLine($creditNote->id, 100, null);
+		$db->query("UPDATE ".$db->prefix()."facturedet SET subprice = -200 WHERE rowid = ".$freeLineId);
+		$creditNote->fetch($creditNote->id);
+		foreach ($creditNote->lines as $creditNoteLine) {
+			if ($creditNoteLine->id == $freeLineId) {
+				$creditNote->update_percent($creditNoteLine, 50, false);
+			}
+		}
+
+		$line = new FactureLigne($db);
+		$line->fetch($freeLineId);
+		$this->assertEquals(50, $line->situation_percent);
+		$this->assertEquals(-100, $line->total_ht);
+	}
+
+	/**
+	 * Legacy mode (INVOICE_USE_SITUATION = 1): a credit note stored negative is still deducted, update_percent keeps the percent entered
+	 *
+	 * @return void
+	 */
+	public function testLegacyModeIsUnchanged()
+	{
+		global $conf;
+
+		$conf->global->INVOICE_USE_SITUATION = 1;
+		$db = $this->savdb;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 30, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l2 = $this->insertLine($s2, 60, $l1);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_VALIDATED);
+		$lineId = $this->insertLine($creditNoteId, -20, $l2);
+		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->assertEquals(70, $this->previousProgress($s3, $l2));
+
+		$db->query("UPDATE ".$db->prefix()."facture SET fk_statut = ".Facture::STATUS_DRAFT." WHERE rowid = ".$creditNoteId);
+		$creditNote = new Facture($db);
+		$creditNote->fetch($creditNoteId);
+		$creditNote->update_percent($creditNote->lines[0], -30, false);
+		$line = new FactureLigne($db);
+		$line->fetch($lineId);
+		$this->assertEquals(-30, $line->situation_percent);
 	}
 }

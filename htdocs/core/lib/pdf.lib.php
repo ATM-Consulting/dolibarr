@@ -2871,8 +2871,8 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 				}
 				// BACKPORT V24.0 START - PR #41369
 				if (!$isCumulative && $object->element == 'facture' && $object->type == Facture::TYPE_CREDIT_NOTE) {
-					// new mode, credit note: the previous progress already deducts the credit note itself
-					$result = $prev_progress;
+					// new mode, credit note: the previous progress deducts the credit note itself once validated
+					$result = $prev_progress - ($object->status == Facture::STATUS_DRAFT && !empty($object->lines[$i]->fk_prev_id) ? abs((float) $object->lines[$i]->situation_percent) : 0);
 				} else {
 					$result = $isCumulative ?
 						// old mode: we need to compute the delta (total - sum of previous)

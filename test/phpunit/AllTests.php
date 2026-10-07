@@ -229,6 +229,8 @@ class AllTests
 		$suite->addTestSuite('FactureRecTest');
 		require_once dirname(__FILE__).'/FactureTestRounding.php';
 		$suite->addTestSuite('FactureTestRounding');
+		require_once dirname(__FILE__).'/FactureSituationBackportV24Test.php';
+		$suite->addTestSuite('FactureSituationBackportV24Test');
 		require_once dirname(__FILE__).'/PaiementTest.php';
 		$suite->addTestSuite('PaiementTest');
 		require_once dirname(__FILE__).'/FactureFournisseurTest.php';

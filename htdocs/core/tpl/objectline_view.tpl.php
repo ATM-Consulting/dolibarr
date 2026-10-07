@@ -571,8 +571,8 @@ if (isset($this->situation_cycle_ref) && $this->situation_cycle_ref) {
 		$previous_progress = $line->getAllPrevProgress($object->id);
 		// BACKPORT V24.0 START - PR #41369
 		if ($object->type == Facture::TYPE_CREDIT_NOTE) {
-			// The previous progress of a credit note line already deducts the credit note itself
-			$current_progress = $previous_progress;
+			// The previous progress of a credit note line deducts the credit note itself once validated
+			$current_progress = $previous_progress - ($object->status == Facture::STATUS_DRAFT && !empty($line->fk_prev_id) ? abs((float) $line->situation_percent) : 0);
 		} else {
 			$current_progress = $previous_progress + (float) $line->situation_percent;
 		}

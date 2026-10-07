@@ -3973,7 +3973,12 @@ class Facture extends CommonInvoice
 					while (($i < $nboflines) && $final) {
 						$line = $this->lines[$i];
 						'@phan-var-force FactureLigne $line';
-						if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+						// BACKPORT V24.0 START - PR #41401
+						if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && $this->type == self::TYPE_CREDIT_NOTE) {
+							// A credit note never ends the cycle (its lines add up to the progress left after the credit)
+							$final = false;
+						} elseif (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+							// BACKPORT V24.0 END - PR #41401
 							$previousprogress = $line->getAllPrevProgress($line->fk_facture);
 							$current_progress = (float) $line->situation_percent;
 							$full_progress = $previousprogress + $current_progress;
@@ -4631,7 +4636,10 @@ class Facture extends CommonInvoice
 			}
 			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null) {
 				// INVOICE_USE_SITUATION = 2 - If there is no progress on a line, percent must not be 100% (No cumulative)
-				if ($this->type == Facture::TYPE_SITUATION && getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && (int) $situation_percent < 100) {
+				// BACKPORT V24.0 START - PR #41401
+				// Same on a credit note of the cycle: a line left at its previous progress credits 0 %, not 100 %
+				if (($this->type == Facture::TYPE_SITUATION || ($this->type == Facture::TYPE_CREDIT_NOTE && $this->situation_cycle_ref > 0)) && getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && (int) $situation_percent < 100) {
+					// BACKPORT V24.0 END - PR #41401
 					$situation_percent = 0;
 				} else {
 					$situation_percent = 100;
@@ -4903,9 +4911,12 @@ class Facture extends CommonInvoice
 			$previous_progress = $line->getAllPrevProgress($line->fk_facture);
 			$current_progress = $percent - $previous_progress;
 			// BACKPORT V24.0 START - PR #41401
-			if ($this->type == self::TYPE_CREDIT_NOTE) {
+			if ($this->type == self::TYPE_CREDIT_NOTE && !empty($line->fk_prev_id)) {
 				// On a credit note $percent is the progress left after the credit: the credit note holds the difference, as a positive percent
-				$current_progress = $previous_progress - $percent;
+				$current_progress = $previous_progress - max(0, $percent);
+			} elseif ($this->type == self::TYPE_CREDIT_NOTE) {
+				// A line added on the credit note credits no situation line: $percent is the percent credited
+				$current_progress = max(0, $percent);
 			}
 			// BACKPORT V24.0 END - PR #41401
 			$line->situation_percent = $current_progress;
