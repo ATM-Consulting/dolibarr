@@ -4639,7 +4639,9 @@ class Facture extends CommonInvoice
 			if (empty($special_code) || $special_code == 3) {
 				$special_code = 0;
 			}
-			if (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null) {
+			// INVOICE_USE_SITUATION = 2 - A numeric 0 is a delta of no progress, on a credit note as on a situation
+			$isProgressDelta = getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && $this->isSituationInvoice() && is_numeric($situation_percent) && $situation_percent <= 100;
+			if (!$isProgressDelta && (!isset($situation_percent) || $situation_percent > 100 || (string) $situation_percent == '' || $situation_percent == null)) {
 				// INVOICE_USE_SITUATION = 2 - If there is no progress on a line, percent must not be 100% (No cumulative)
 				if ($this->type == Facture::TYPE_SITUATION && getDolGlobalInt('INVOICE_USE_SITUATION') == 2 && (int) $situation_percent < 100) {
 					$situation_percent = 0;

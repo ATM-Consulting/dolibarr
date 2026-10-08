@@ -493,4 +493,61 @@ class FactureSituationProgressTest extends CommonClassTest
 
 		$this->assertEquals(1, $this->validateAndGetFinal($s2));
 	}
+
+	/**
+	 * Update a credit note line linked to a 60 % situation line with $situationPercent and return the stored line
+	 *
+	 * @param int   $mode             INVOICE_USE_SITUATION
+	 * @param float $situationPercent situation_percent given to updateline()
+	 * @return FactureLigne
+	 */
+	private function updateCreditNoteLine(int $mode, float $situationPercent): FactureLigne
+	{
+		global $conf, $mysoc;
+
+		if (!is_object($mysoc)) {
+			$mysoc = new Societe($this->savdb);
+			$mysoc->setMysoc($conf);
+		}
+		$conf->global->INVOICE_USE_SITUATION = $mode;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 60, null);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($creditNoteId, 20, $l1);
+
+		$creditNote = new Facture($this->savdb);
+		$this->assertEquals(1, $creditNote->fetch($creditNoteId));
+		$this->assertGreaterThan(0, $creditNote->updateline($lineId, 'Lot A', -1000, 1, 0, '', '', 0, 0, 0, 'HT', 0, 1, 0, 0, null, 0, '', 0, array(), $situationPercent), (string) $creditNote->error);
+
+		$line = new FactureLigne($this->savdb);
+		$line->fetch($lineId);
+
+		return $line;
+	}
+
+	/**
+	 * Progressive mode: a credit note line updated with a delta of 0 credits nothing
+	 *
+	 * @return void
+	 */
+	public function testCreditNoteZeroDeltaCreditsNothing()
+	{
+		$line = $this->updateCreditNoteLine(2, 0.0);
+
+		$this->assertEquals(0, $line->situation_percent);
+		$this->assertEquals(0, $line->total_ht);
+	}
+
+	/**
+	 * Legacy mode: a credit note line updated with 0 is still stored at 100 %
+	 *
+	 * @return void
+	 */
+	public function testLegacyCreditNoteZeroIsUnchanged()
+	{
+		$line = $this->updateCreditNoteLine(1, 0.0);
+
+		$this->assertEquals(100, $line->situation_percent);
+	}
 }
