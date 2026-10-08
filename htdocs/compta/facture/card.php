@@ -1464,7 +1464,7 @@ if (empty($reshook)) {
 								// The subtraction below assumes total_ht/situation_percent are stored cumulative on situation invoice lines
 								// (INVOICE_USE_SITUATION = 1, legacy). In progressive mode (INVOICE_USE_SITUATION = 2), each line already
 								// holds its own delta, so subtracting the previous invoice's line here would credit the wrong amount.
-								if (getDolGlobalInt('INVOICE_USE_SITUATION') != 2 && !empty($facture_source->tab_previous_situation_invoice)) {
+								if (getDolGlobalInt('INVOICE_USE_SITUATION') == 1 && !empty($facture_source->tab_previous_situation_invoice)) {
 									// search the last standard invoice in cycle and the possible credit note between this last and facture_source
 									// TODO Move this out of loop of $facture_source->lines
 									$tab_jumped_credit_notes = array();
@@ -6911,8 +6911,8 @@ if ($action == 'create') {
 				}
 			}
 
-			// Create next situation invoice
-			if ($usercancreate && $object->isSituationInvoice() && ($object->status == 1 || $object->status == 2)) {
+			// Create next situation invoice (a credit note of the cycle is not a situation to continue from)
+			if ($usercancreate && $object->isSituationInvoice() && $object->type == Facture::TYPE_SITUATION && ($object->status == 1 || $object->status == 2)) {
 				if ($object->is_last_in_cycle() && $object->situation_final != 1) {
 					print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?action=create&type=5&origin=facture&originid='.$object->id.'&socid='.$object->socid.'" >'.$langs->trans('CreateNextSituationInvoice').'</a>';
 				} elseif (!$object->is_last_in_cycle()) {
