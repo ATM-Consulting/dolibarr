@@ -975,16 +975,16 @@ class MouvementStock extends CommonObject
 			// No error
 			if ($pdluo->id > 0) {	// product_batch record found
 				//print "Avant ".$pdluo->qty." Apres ".($pdluo->qty + $qty)."<br>";
-				$pdluo->qty += $qty;
 				// BACKPORT Dolibarr PR #41473 - BEGIN
-				if ($this->isBatchQtyNull((float) $pdluo->qty)) {
+				$pdluo->qty = (float) price2num($pdluo->qty + $qty, 'MS');
 				// BACKPORT Dolibarr PR #41473 - END
+				if ($pdluo->qty == 0) {
 					$result = $pdluo->delete($user, 1);
 				} else {
 					$result = $pdluo->update($user, 1);
 				}
 			// BACKPORT Dolibarr PR #41473 - BEGIN
-			} elseif ($this->isBatchQtyNull((float) $qty)) {
+			} elseif ((float) price2num($qty, 'MS') == 0) {
 				$result = 0;
 			// BACKPORT Dolibarr PR #41473 - END
 			} else {					// product_batch record not found
@@ -1003,22 +1003,6 @@ class MouvementStock extends CommonObject
 
 		return $result;
 	}
-
-	// BACKPORT Dolibarr PR #41473 - BEGIN
-	/**
-	 * Check if a batch quantity is below the smallest quantity that can be stored for stock (MAIN_MAX_DECIMALS_STOCK)
-	 *
-	 * @param	float	$qty	Quantity
-	 * @return	bool			True if quantity must be considered as null
-	 */
-	private function isBatchQtyNull(float $qty): bool
-	{
-		$nbdec = getDolGlobalInt('MAIN_MAX_DECIMALS_STOCK', 5);
-
-		// Rounding to one more decimal avoids treating a float like 9.9999999E-6 as below 10^-nbdec
-		return abs((float) price2num($qty, $nbdec + 1)) < pow(10, -$nbdec);
-	}
-	// BACKPORT Dolibarr PR #41473 - END
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**
