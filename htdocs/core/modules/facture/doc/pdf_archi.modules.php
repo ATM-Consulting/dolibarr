@@ -886,7 +886,8 @@ class pdf_archi extends ModelePDFFactures
 						$sign = -1;
 					}
 					// Collecte des totaux par valeur de tva dans $this->tva["taux"]=total_tva
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
+					// Lines are already stored as delta (not cumulative) once INVOICE_USE_SITUATION=2, so no ratio must be reapplied here (same guard as CommonObject::update_price())
+					$prev_progress = getDolGlobalInt('INVOICE_USE_SITUATION') == 2 ? 0 : $object->lines[$i]->get_prev_progress($object->id);
 					if ($prev_progress > 0 && !empty($object->lines[$i]->situation_percent)) { // Compute progress from previous situation
 						if (isModEnabled("multicurrency") && $object->multicurrency_tx != 1) {
 							$tvaligne = $sign * $object->lines[$i]->multicurrency_total_tva * ($object->lines[$i]->situation_percent - $prev_progress) / $object->lines[$i]->situation_percent;
@@ -1512,7 +1513,13 @@ class pdf_archi extends ModelePDFFactures
 		$i = 0;
 		foreach ($object->lines as $line) {
 			if ($line->product_type != 9) {
-				$percent += $line->situation_percent;
+				if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+					// In progressive mode situation_percent is the delta of the line, the overall progress needs the cumulative one
+					$previousProgress = (float) $line->getAllPrevProgress($object->id);
+					$percent += ($object->type == Facture::TYPE_CREDIT_NOTE ? $previousProgress : $previousProgress + (float) $line->situation_percent);
+				} else {
+					$percent += $line->situation_percent;
+				}
 				$i++;
 			}
 		}
