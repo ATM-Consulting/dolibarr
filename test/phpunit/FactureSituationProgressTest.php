@@ -420,4 +420,51 @@ class FactureSituationProgressTest extends CommonClassTest
 		$this->insertLine($full, 100, null);
 		$this->assertEquals(1, $this->validateAndGetFinal($full));
 	}
+	/**
+	 * Insert a title line (product_type 9) on an invoice
+	 *
+	 * @param int $invoiceId Invoice id
+	 * @return void
+	 */
+	private function insertTitleLine(int $invoiceId): void
+	{
+		$db = $this->savdb;
+		$sql = "INSERT INTO ".$db->prefix()."facturedet (fk_facture, description, qty, subprice, tva_tx, total_ht, total_tva, total_ttc, product_type, special_code, situation_percent, rang)";
+		$sql .= " VALUES (".$invoiceId.", 'Title', 1, 0, 0, 0, 0, 0, 9, 104777, 0, 0)";
+		$this->assertTrue((bool) $db->query($sql), (string) $db->lasterror().' '.$sql);
+	}
+
+	/**
+	 * Legacy mode: a situation at 100 % with a title line is final
+	 *
+	 * @return void
+	 */
+	public function testLegacyTitleLineDoesNotBlockFinal()
+	{
+		global $conf;
+
+		$conf->global->INVOICE_USE_SITUATION = 1;
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, 900000 + mt_rand(1, 99999), Facture::STATUS_DRAFT);
+		$this->insertTitleLine($s1);
+		$this->insertLine($s1, 100, null);
+
+		$this->assertEquals(1, $this->validateAndGetFinal($s1));
+	}
+
+	/**
+	 * Progressive mode: a situation completing the cycle with a title line is final
+	 *
+	 * @return void
+	 */
+	public function testTitleLineDoesNotBlockFinal()
+	{
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 40, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->insertTitleLine($s2);
+		$this->insertLine($s2, 60, $l1);
+
+		$this->assertEquals(1, $this->validateAndGetFinal($s2));
+	}
 }

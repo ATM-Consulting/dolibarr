@@ -3974,6 +3974,11 @@ class Facture extends CommonInvoice
 					while (($i < $nboflines) && $final) {
 						$line = $this->lines[$i];
 						'@phan-var-force FactureLigne $line';
+						$i++;
+						// Title, subtotal and free text lines have no progress
+						if ($line->product_type == 9) {
+							continue;
+						}
 						if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
 							$previousprogress = $line->getAllPrevProgress($line->fk_facture);
 							$current_progress = (float) $line->situation_percent;
@@ -3982,7 +3987,6 @@ class Facture extends CommonInvoice
 						} else {
 							$final = ($line->situation_percent == 100);
 						}
-						$i++;
 					}
 
 					if (!$final) {
