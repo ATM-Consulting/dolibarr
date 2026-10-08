@@ -3328,17 +3328,17 @@ if (empty($reshook)) {
 		// Invoice situation
 		if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
 			$previousprogress = $line->getAllPrevProgress($line->fk_facture, true, true);
-			$fullprogress = (float) price2num(GETPOST('progress', 'alpha'), 2);
+			$fullprogress = (float) price2num(GETPOST('progress', 'alpha'), FactureLigne::SITUATION_PROGRESS_DECIMALS);
 
 			if ($object->type == Facture::TYPE_CREDIT_NOTE) {
 				// On a credit note the progress entered is the one left after the credit: the credit note holds the difference, as a positive percent
-				if ($fullprogress > $previousprogress) {
+				if ($fullprogress > FactureLigne::roundSituationProgress($previousprogress)) {
 					$error++;
 					setEventMessages($langs->trans('CantBeMoreThanMinPercent'), null, 'errors');
 				}
 				$addprogress = $previousprogress - $fullprogress;
 			} else {
-				if ($fullprogress < $previousprogress) {
+				if ($fullprogress < FactureLigne::roundSituationProgress($previousprogress)) {
 					$error++;
 					setEventMessages($langs->trans('CantBeLessThanMinPercent'), null, 'errors');
 				}
@@ -3459,7 +3459,7 @@ if (empty($reshook)) {
 
 			foreach ($object->lines as $line) {
 				if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
-					$percent = $line->getAllPrevProgress($object->id, true, true);
+					$percent = FactureLigne::roundSituationProgress($line->getAllPrevProgress($object->id, true, true));
 				} else {
 					$percent = $line->get_prev_progress($object->id, true, true);
 				}

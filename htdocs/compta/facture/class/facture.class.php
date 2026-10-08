@@ -3978,7 +3978,7 @@ class Facture extends CommonInvoice
 							$previousprogress = $line->getAllPrevProgress($line->fk_facture);
 							$current_progress = (float) $line->situation_percent;
 							$full_progress = $previousprogress + $current_progress;
-							$final = ($full_progress == 100);
+							$final = (FactureLigne::roundSituationProgress($full_progress) == 100);
 						} else {
 							$final = ($line->situation_percent == 100);
 						}

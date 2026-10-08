@@ -575,7 +575,7 @@ if (isset($this->situation_cycle_ref) && $this->situation_cycle_ref) {
 		} else {
 			$current_progress = $previous_progress + (float) $line->situation_percent;
 		}
-		print '<td class="linecolcycleref nowrap right">'.$current_progress.'%</td>';
+		print '<td class="linecolcycleref nowrap right">'.FactureLigne::roundSituationProgress((float) $current_progress).'%</td>';
 		$coldisplay++;
 		print '<td  class="nowrap right">'.$line->situation_percent.'%</td>';
 		$coldisplay++;

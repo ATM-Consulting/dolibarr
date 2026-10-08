@@ -323,4 +323,101 @@ class FactureSituationProgressTest extends CommonClassTest
 		$this->assertEquals(55, $line->get_prev_progress($creditNoteId, true, true), 'abandoned, before');
 		$this->assertEquals(55, $this->previousProgress($s1, $l1), 'abandoned, ignored by another invoice');
 	}
+	/**
+	 * Validate an invoice and return its situation_final
+	 *
+	 * @param int $invoiceId Invoice id
+	 * @return int
+	 */
+	private function validateAndGetFinal(int $invoiceId): int
+	{
+		global $conf, $mysoc, $user;
+
+		if (!is_object($mysoc)) {
+			$mysoc = new Societe($this->savdb);
+			$mysoc->setMysoc($conf);
+		}
+		$invoice = new Facture($this->savdb);
+		$this->assertEquals(1, $invoice->fetch($invoiceId));
+		$this->assertGreaterThan(0, $invoice->validate($user), $invoice->error.' '.implode(',', $invoice->errors));
+		$invoice->fetch($invoiceId);
+
+		return (int) $invoice->situation_final;
+	}
+
+	/**
+	 * Progressive mode: a cycle completed by 33.33 + 33.33 + 33.34 is final
+	 *
+	 * @return void
+	 */
+	public function testThirdsCompleteTheCycle()
+	{
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 33.33, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l2 = $this->insertLine($s2, 33.33, $l1);
+		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->insertLine($s3, 33.34, $l2);
+
+		$this->assertEquals(1, $this->validateAndGetFinal($s3));
+	}
+
+	/**
+	 * Progressive mode: float noise on the cumul of the deltas still reaches 100 %
+	 *
+	 * @return void
+	 */
+	public function testCumulWithFloatNoiseIsFinal()
+	{
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 50, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->insertLine($s2, 50.000000004, $l1);
+
+		$this->assertEquals(100, FactureLigne::roundSituationProgress(100.000000004));
+		$this->assertEquals(1, $this->validateAndGetFinal($s2));
+	}
+
+	/**
+	 * Progressive mode: entering the previous cumul again is not below it
+	 *
+	 * @return void
+	 */
+	public function testPreviousCumulCanBeEnteredAgain()
+	{
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 0.1, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l2 = $this->insertLine($s2, 0.2, $l1);
+		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+
+		$previous = $this->previousProgress($s3, $l2);
+		$entered = (float) price2num('0.3', FactureLigne::SITUATION_PROGRESS_DECIMALS);
+		$this->assertTrue($entered < $previous, 'raw float cumul is above the entered value');
+		$this->assertFalse($entered < FactureLigne::roundSituationProgress($previous));
+		$this->assertFalse($entered > FactureLigne::roundSituationProgress($previous));
+	}
+
+	/**
+	 * Legacy mode: situation_final still requires situation_percent strictly equal to 100
+	 *
+	 * @return void
+	 */
+	public function testLegacyFinalIsUnchanged()
+	{
+		global $conf;
+
+		$conf->global->INVOICE_USE_SITUATION = 1;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$noisy = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->insertLine($noisy, 99.999999999, null);
+		$this->assertEquals(0, $this->validateAndGetFinal($noisy));
+
+		$full = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle + 100000, Facture::STATUS_DRAFT);
+		$this->insertLine($full, 100, null);
+		$this->assertEquals(1, $this->validateAndGetFinal($full));
+	}
 }

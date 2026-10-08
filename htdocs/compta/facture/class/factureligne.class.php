@@ -55,6 +55,11 @@ require_once DOL_DOCUMENT_ROOT.'/margin/lib/margins.lib.php';
 class FactureLigne extends CommonInvoiceLine
 {
 	/**
+	 * Decimals kept on a cumulated situation progress before comparing it
+	 */
+	public const SITUATION_PROGRESS_DECIMALS = 6;
+
+	/**
 	 * @var string ID to identify managed object
 	 */
 	public $element = 'facturedet';
@@ -1084,6 +1089,18 @@ class FactureLigne extends CommonInvoiceLine
 			}
 			return $cumulated_percent;
 		}
+	}
+
+	/**
+	 * Round a cumulated situation progress so that it can be compared.
+	 * In progressive mode the cumul is a float sum of deltas: compare it only through this method.
+	 *
+	 * @param  float $progress Cumulated progress in percent
+	 * @return float           Progress rounded to SITUATION_PROGRESS_DECIMALS
+	 */
+	public static function roundSituationProgress(float $progress): float
+	{
+		return round($progress, self::SITUATION_PROGRESS_DECIMALS);
 	}
 
 	/**

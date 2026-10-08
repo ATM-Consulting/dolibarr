@@ -370,10 +370,11 @@ $coldisplay++;
 			$tmp_fieldv = (GETPOSTISSET('progress') ? GETPOST('progress') : $line->situation_percent);
 			$old_fieldv = $line->getAllPrevProgress($line->fk_facture, true, true);
 			if ($object->type == Facture::TYPE_CREDIT_NOTE) {
-				$fieldv = $old_fieldv - (float) $tmp_fieldv;
+				$fieldv = FactureLigne::roundSituationProgress($old_fieldv - (float) $tmp_fieldv);
 			} else {
-				$fieldv = $tmp_fieldv + $old_fieldv;
+				$fieldv = FactureLigne::roundSituationProgress((float) $tmp_fieldv + $old_fieldv);
 			}
+			$old_fieldv = FactureLigne::roundSituationProgress($old_fieldv);
 
 			print '<td class="nowrap right linecolcycleref"><input class="right" type="text" size="1" value="'.$fieldv.'" name="progress">%';
 			print ' '.$form->textwithpicto('', $langs->trans("PreviousProgress").' ('.$old_fieldv.'%)');
