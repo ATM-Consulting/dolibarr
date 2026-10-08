@@ -85,7 +85,8 @@ class Contracts extends DolibarrApi
 			throw new RestException(403, 'Access to this contract is not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
-		$this->contract->fetchObjectLinked();
+		//SPE KN (pour le moment afin d'éviter les erreurs 500 pour dépassement de memory limit)
+		//$this->contract->fetchObjectLinked();
 
 		if (!$withLines) {
 			unset($this->contract->lines);
@@ -707,7 +708,8 @@ class Contracts extends DolibarrApi
 
 		$updateRes = $this->contract->deleteLine($lineid, DolibarrApiAccess::$user);
 		if ($updateRes > 0) {
-			return $this->get($id);
+			// SPÉ KN (pour que l'appel mette moins de 90 secondes) 
+			return $this->get($id, '', false); 
 		} else {
 			throw new RestException(405, $this->contract->error);
 		}

@@ -4510,7 +4510,8 @@ class Facture extends CommonInvoice
 					if (!empty($fk_parent_line)) {
 						// Always reorder if child line
 						$this->line_order(true, 'DESC');
-					} elseif ($ranktouse > 0 && $ranktouse <= count($this->lines)) {
+					// SPÉ KN (indispensable pour la génération des factures via CRON) 
+					} elseif ($ranktouse > 0 && $ranktouse <= count($this->lines) && false) {
 						// Update all rank of all other lines starting from the same $ranktouse
 						$linecount = count($this->lines);
 						for ($ii = $ranktouse; $ii <= $linecount; $ii++) {

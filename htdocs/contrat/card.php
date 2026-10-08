@@ -2524,7 +2524,8 @@ if ($action == 'create') {
 			$htmltoenteralink = $tmparray['htmltoenteralink'];
 			print $htmltoenteralink;
 
-			$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
+			// SPÉ KN
+			//$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
 
 			// Show online signature link
 			if ($object->status != Contrat::STATUS_DRAFT && getDolGlobalString('CONTRACT_ALLOW_ONLINESIGN')) {
