@@ -1104,6 +1104,23 @@ class FactureLigne extends CommonInvoiceLine
 	}
 
 	/**
+	 * Progress delta to store on a line in progressive mode, from the cumul entered by the user.
+	 * The delta is taken from the rounded previous cumul, so entering that cumul again gives exactly 0.
+	 *
+	 * @param  float $fullProgress     Cumulated progress entered, in percent
+	 * @param  float $previousProgress Cumulated progress of the previous situations (getAllPrevProgress())
+	 * @param  bool  $isCreditNote     True on a credit note: the delta is then the progress credited, as a positive percent
+	 * @return float                   Delta rounded to SITUATION_PROGRESS_DECIMALS, never -0
+	 */
+	public static function getSituationProgressDelta(float $fullProgress, float $previousProgress, bool $isCreditNote = false): float
+	{
+		$previous = self::roundSituationProgress($previousProgress);
+		$delta = $isCreditNote ? $previous - $fullProgress : $fullProgress - $previous;
+
+		return self::roundSituationProgress($delta) + 0.0;
+	}
+
+	/**
 	 * SQL filter on the credit notes deducted from the progress of a line of $invoiceId (table alias f).
 	 * A draft or abandoned credit note does not change the progress of other invoices, but always the one of its own lines.
 	 *

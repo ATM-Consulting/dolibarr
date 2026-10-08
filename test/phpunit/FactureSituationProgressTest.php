@@ -346,20 +346,21 @@ class FactureSituationProgressTest extends CommonClassTest
 	}
 
 	/**
-	 * Progressive mode: a cycle completed by 33.33 + 33.33 + 33.34 is final
+	 * Progressive mode: 94.41 + 3.38 + 2.21 sums to 99.99999999999999 and completes the cycle
 	 *
 	 * @return void
 	 */
-	public function testThirdsCompleteTheCycle()
+	public function testDriftingCumulCompletesTheCycle()
 	{
 		$cycle = 900000 + mt_rand(1, 99999);
 		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
-		$l1 = $this->insertLine($s1, 33.33, null);
+		$l1 = $this->insertLine($s1, 94.41, null);
 		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
-		$l2 = $this->insertLine($s2, 33.33, $l1);
+		$l2 = $this->insertLine($s2, 3.38, $l1);
 		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
-		$this->insertLine($s3, 33.34, $l2);
+		$this->insertLine($s3, 2.21, $l2);
 
+		$this->assertLessThan(100.0, $this->previousProgress($s3, $l2) + 2.21);
 		$this->assertEquals(1, $this->validateAndGetFinal($s3));
 	}
 
@@ -381,24 +382,49 @@ class FactureSituationProgressTest extends CommonClassTest
 	}
 
 	/**
-	 * Progressive mode: entering the previous cumul again is not below it
+	 * Store the cumul $entered on a draft situation through update_percent() and return the delta stored
+	 *
+	 * @param float[] $previousDeltas Deltas of the validated situations, in cycle order
+	 * @param float   $entered        Cumul entered on the draft situation
+	 * @return string                 situation_percent as stored in database
+	 */
+	private function storeCumulOnDraft(array $previousDeltas, float $entered): string
+	{
+		global $conf, $mysoc;
+
+		if (!is_object($mysoc)) {
+			$mysoc = new Societe($this->savdb);
+			$mysoc->setMysoc($conf);
+		}
+		$cycle = 900000 + mt_rand(1, 99999);
+		$prevId = null;
+		foreach ($previousDeltas as $delta) {
+			$invoiceId = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+			$prevId = $this->insertLine($invoiceId, $delta, $prevId);
+		}
+		$draftId = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($draftId, 0, $prevId);
+
+		$invoice = new Facture($this->savdb);
+		$this->assertEquals(1, $invoice->fetch($draftId));
+		$invoice->update_percent($invoice->lines[0], $entered, false);
+
+		$resql = $this->savdb->query("SELECT situation_percent FROM ".$this->savdb->prefix()."facturedet WHERE rowid = ".((int) $lineId));
+		$obj = $this->savdb->fetch_object($resql);
+		$this->savdb->free($resql);
+
+		return (string) $obj->situation_percent;
+	}
+
+	/**
+	 * Progressive mode: entering again the rounded previous cumul stores a delta of exactly 0
 	 *
 	 * @return void
 	 */
-	public function testPreviousCumulCanBeEnteredAgain()
+	public function testPreviousCumulEnteredAgainStoresZero()
 	{
-		$cycle = 900000 + mt_rand(1, 99999);
-		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
-		$l1 = $this->insertLine($s1, 0.1, null);
-		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
-		$l2 = $this->insertLine($s2, 0.2, $l1);
-		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
-
-		$previous = $this->previousProgress($s3, $l2);
-		$entered = (float) price2num('0.3', FactureLigne::SITUATION_PROGRESS_DECIMALS);
-		$this->assertTrue($entered < $previous, 'raw float cumul is above the entered value');
-		$this->assertFalse($entered < FactureLigne::roundSituationProgress($previous));
-		$this->assertFalse($entered > FactureLigne::roundSituationProgress($previous));
+		$this->assertSame('0', $this->storeCumulOnDraft(array(89.163259113), 89.163259));
+		$this->assertSame('0', $this->storeCumulOnDraft(array(0.1, 0.2), 0.3));
 	}
 
 	/**

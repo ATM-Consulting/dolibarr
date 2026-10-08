@@ -3336,7 +3336,7 @@ if (empty($reshook)) {
 					$error++;
 					setEventMessages($langs->trans('CantBeMoreThanMinPercent'), null, 'errors');
 				}
-				$addprogress = $previousprogress - $fullprogress;
+				$addprogress = FactureLigne::getSituationProgressDelta($fullprogress, $previousprogress, true);
 			} else {
 				if ($fullprogress < FactureLigne::roundSituationProgress($previousprogress)) {
 					$error++;
@@ -3347,7 +3347,7 @@ if (empty($reshook)) {
 				if ($fullprogress > 100) {
 					$fullprogress = 100;
 				}
-				$addprogress = $fullprogress - $previousprogress;
+				$addprogress = FactureLigne::getSituationProgressDelta($fullprogress, $previousprogress);
 			}
 		} else {
 			$addprogress = price2num(GETPOST('progress', 'alpha'));
