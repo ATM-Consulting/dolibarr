@@ -1418,6 +1418,7 @@ function pdf_writeLinkedObjects(&$pdf, $object, $outputlangs, $posx, $posy, $w, 
 	return $pdf->getY();
 }
 
+// PR Dolibarr #41474 (https://github.com/Dolibarr/dolibarr/pull/41474)
 /**
  * Convert the left indentation of div and p tags (style margin-left in px, as produced by the WYSIWYG editor)
  * into nested blockquote tags, because TCPDF ignores margin-left.
@@ -1503,6 +1504,7 @@ function pdf_writelinedesc(&$pdf, $object, $i, $outputlangs, $w, $h, $posx, $pos
 		$nbrep = 0;
 		$labelproductservice = preg_replace('/(<img[^>]*src=")([^"]*)(&amp;)([^"]*")/', '\1\2&\4', $labelproductservice, -1, $nbrep);
 
+		// PR Dolibarr #41474 (https://github.com/Dolibarr/dolibarr/pull/41474)
 		$labelproductservice = pdfConvertIndentToBlockquote($labelproductservice);
 
 		if (getDolGlobalString('MARGIN_TOP_ZERO_UL')) {
