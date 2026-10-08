@@ -1779,7 +1779,20 @@ class pdf_sponge extends ModelePDFFactures
 		$i = 0;
 		foreach ($object->lines as $line) {
 			if ($line->product_type != 9) {
-				$percent += $line->situation_percent;
+				// BACKPORT V24.0 START - PR #41401
+				if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+					// In progressive mode situation_percent is the delta of the line, the overall progress needs the cumulative one
+					$previousProgress = (float) $line->getAllPrevProgress($object->id);
+					if ($object->type != Facture::TYPE_CREDIT_NOTE) {
+						$percent += $previousProgress + (float) $line->situation_percent;
+					} else {
+						// The previous progress deducts the credit note itself once validated
+						$percent += $previousProgress - ($object->status == Facture::STATUS_DRAFT && !empty($line->fk_prev_id) ? abs((float) $line->situation_percent) : 0);
+					}
+				} else {
+					$percent += $line->situation_percent;
+				}
+				// BACKPORT V24.0 END - PR #41401
 				$i++;
 			}
 		}

@@ -2308,6 +2308,21 @@ if (empty($reshook)) {
 							}
 						}
 					}
+					// BACKPORT V24.0 START - PR #41401
+				} elseif (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+					// Without origin the lines are copied as they are: in progressive mode their percent is the delta of the previous situation, so it must restart at 0
+					foreach ($object->lines as $line) {
+						$line->situation_percent = 0;
+						$line->total_ht = 0;
+						$line->total_tva = 0;
+						$line->total_ttc = 0;
+						$line->total_localtax1 = 0;
+						$line->total_localtax2 = 0;
+						$line->multicurrency_total_ht = 0;
+						$line->multicurrency_total_tva = 0;
+						$line->multicurrency_total_ttc = 0;
+					}
+					// BACKPORT V24.0 END - PR #41401
 				}
 
 				$object->fetch_thirdparty();
@@ -3215,7 +3230,10 @@ if (empty($reshook)) {
 		$percent = $line->get_prev_progress($object->id);
 		$progress = price2num(GETPOST('progress', 'alpha'));
 
-		if ($object->type == Facture::TYPE_CREDIT_NOTE && $object->situation_cycle_ref > 0) {
+		// BACKPORT V24.0 START - PR #41401
+		// Legacy mode only: a negative delta is entered; in progressive mode the progress left after the credit is entered and checked below
+		if ($object->type == Facture::TYPE_CREDIT_NOTE && $object->situation_cycle_ref > 0 && getDolGlobalInt('INVOICE_USE_SITUATION') != 2) {
+			// BACKPORT V24.0 END - PR #41401
 			// in case of situation credit note
 			if ($progress >= 0) {
 				$mesg = $langs->trans("CantBeNullOrPositive");
@@ -3316,16 +3334,36 @@ if (empty($reshook)) {
 			$previousprogress = $line->getAllPrevProgress($line->fk_facture);
 			$fullprogress = (float) price2num(GETPOST('progress', 'alpha'), 2);
 
-			if ($fullprogress < $previousprogress) {
+			// BACKPORT V24.0 START - PR #41401
+			if ($object->type == Facture::TYPE_CREDIT_NOTE && $fullprogress < 0) {
+				$addprogress = 0;
 				$error++;
-				setEventMessages($langs->trans('CantBeLessThanMinPercent'), null, 'errors');
-			}
+				setEventMessages($langs->trans('ErrorBadValueForParameter', $fullprogress, $langs->transnoentitiesnoconv('Progress')), null, 'errors');
+			} elseif ($object->type == Facture::TYPE_CREDIT_NOTE && !empty($line->fk_prev_id)) {
+				// On a credit note the progress entered is the one left after the credit: the credit note holds the difference, as a positive percent
+				if ($fullprogress > $previousprogress) {
+					$error++;
+					setEventMessages($langs->trans('CantBeMoreThanMinPercent'), null, 'errors');
+				}
+				$addprogress = $previousprogress - $fullprogress;
+			} elseif ($object->type == Facture::TYPE_CREDIT_NOTE) {
+				// A line added on the credit note credits no situation line: the percent entered is the one credited
+				$addprogress = min($fullprogress, 100);
+			} else {
+				// BACKPORT V24.0 END - PR #41401
+				if ($fullprogress < $previousprogress) {
+					$error++;
+					setEventMessages($langs->trans('CantBeLessThanMinPercent'), null, 'errors');
+				}
 
-			// Max 100%
-			if ($fullprogress > 100) {
-				$fullprogress = 100;
+				// Max 100%
+				if ($fullprogress > 100) {
+					$fullprogress = 100;
+				}
+				$addprogress = $fullprogress - $previousprogress;
+				// BACKPORT V24.0 START - PR #41401
 			}
-			$addprogress = $fullprogress - $previousprogress;
+			// BACKPORT V24.0 END - PR #41401
 		} else {
 			$addprogress = price2num(GETPOST('progress', 'alpha'));
 		}
@@ -3433,26 +3471,40 @@ if (empty($reshook)) {
 			if ($all_progress > 100) {
 				$all_progress = 100;
 			}
-
-			foreach ($object->lines as $line) {
-				if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
-					$percent = $line->getAllPrevProgress($object->id);
-				} else {
-					$percent = $line->get_prev_progress($object->id);
+			// BACKPORT V24.0 START - PR #41401
+			$isProgressiveCreditNote = $object->type == $object::TYPE_CREDIT_NOTE && getDolGlobalInt('INVOICE_USE_SITUATION') == 2;
+			if ($isProgressiveCreditNote && $all_progress < 0) {
+				setEventMessages($langs->trans('ErrorBadValueForParameter', $all_progress, $langs->transnoentitiesnoconv('Progress')), null, 'errors');
+			} else {
+				// BACKPORT V24.0 END - PR #41401
+				foreach ($object->lines as $line) {
+					// BACKPORT V24.0 START - PR #41401
+					// A line added on the credit note credits no situation line: it keeps the percent entered on the line
+					if ($isProgressiveCreditNote && empty($line->fk_prev_id)) {
+						continue;
+					}
+					// BACKPORT V24.0 END - PR #41401
+					if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
+						$percent = $line->getAllPrevProgress($object->id);
+					} else {
+						$percent = $line->get_prev_progress($object->id);
+					}
+					if ($object->type != $object::TYPE_CREDIT_NOTE && (float) $all_progress < (float) $percent) {
+						$mesg = $langs->trans("Line").' '.$line->rang.' : '.$langs->trans("CantBeLessThanMinPercent");
+						setEventMessages($mesg, null, 'warnings');
+						$result = -1;
+					} elseif ($object->type == $object::TYPE_CREDIT_NOTE && (float) $all_progress > (float) $percent) {
+						$mesg = $langs->trans("Line").' '.$line->rang.' : '.$langs->trans("CantBeMoreThanMinPercent");
+						setEventMessages($mesg, null, 'warnings');
+						$result = -1;
+					} else {
+						$object->update_percent($line, $all_progress, false);
+					}
 				}
-				if ($object->type != $object::TYPE_CREDIT_NOTE && (float) $all_progress < (float) $percent) {
-					$mesg = $langs->trans("Line").' '.$line->rang.' : '.$langs->trans("CantBeLessThanMinPercent");
-					setEventMessages($mesg, null, 'warnings');
-					$result = -1;
-				} elseif ($object->type == $object::TYPE_CREDIT_NOTE && (float) $all_progress > (float) $percent) {
-					$mesg = $langs->trans("Line").' '.$line->rang.' : '.$langs->trans("CantBeMoreThanMinPercent");
-					setEventMessages($mesg, null, 'warnings');
-					$result = -1;
-				} else {
-					$object->update_percent($line, $all_progress, false);
-				}
+				$object->update_price(1);
+				// BACKPORT V24.0 START - PR #41401
 			}
-			$object->update_price(1);
+			// BACKPORT V24.0 END - PR #41401
 		}
 	} elseif ($action == 'updateline' && $usercancreate && !$cancel) {
 		header('Location: '.$_SERVER["PHP_SELF"].'?facid='.$id); // To show again edited page
@@ -3513,7 +3565,10 @@ if (empty($reshook)) {
 							}
 
 
-							if (!empty($object->tab_previous_situation_invoice)) {
+							// BACKPORT V24.0 START - PR #41401
+							// In progressive mode (INVOICE_USE_SITUATION = 2) the line already holds its own delta, so the progress of the previous situation must not be subtracted
+							if (!empty($object->tab_previous_situation_invoice) && getDolGlobalInt('INVOICE_USE_SITUATION') != 2) {
+								// BACKPORT V24.0 END - PR #41401
 								// search the last invoice in cycle
 								$lineIndex = count($object->tab_previous_situation_invoice) - 1;
 								$searchPreviousInvoice = true;
@@ -6911,8 +6966,8 @@ if ($action == 'create') {
 				}
 			}
 
-			// Create next situation invoice
-			if ($usercancreate && $object->isSituationInvoice() && ($object->status == 1 || $object->status == 2)) {
+			// Create next situation invoice (a credit note of the cycle is not a situation to continue from)
+			if ($usercancreate && $object->isSituationInvoice() && $object->type == Facture::TYPE_SITUATION && ($object->status == 1 || $object->status == 2)) {
 				if ($object->is_last_in_cycle() && $object->situation_final != 1) {
 					print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?action=create&type=5&origin=facture&originid='.$object->id.'&socid='.$object->socid.'" >'.$langs->trans('CreateNextSituationInvoice').'</a>';
 				} elseif (!$object->is_last_in_cycle()) {

@@ -370,6 +370,12 @@ $coldisplay++;
 			$tmp_fieldv = (GETPOSTISSET('progress') ? GETPOST('progress') : $line->situation_percent);
 			$old_fieldv = $line->getAllPrevProgress($line->fk_facture);
 			$fieldv = $tmp_fieldv + $old_fieldv;
+			// BACKPORT V24.0 START - PR #41401
+			// On a credit note the progress left after the credit is entered (a line added on the credit note: the percent credited)
+			if ($object->element == 'facture' && $object->type == Facture::TYPE_CREDIT_NOTE && !GETPOSTISSET('progress')) {
+				$fieldv = empty($line->fk_prev_id) ? $line->situation_percent : $old_fieldv - ($object->status == Facture::STATUS_DRAFT ? abs((float) $line->situation_percent) : 0);
+			}
+			// BACKPORT V24.0 END - PR #41401
 
 			print '<td class="nowrap right linecolcycleref"><input class="right" type="text" size="1" value="'.$fieldv.'" name="progress">%';
 			print ' '.$form->textwithpicto('', $langs->trans("PreviousProgress").' ('.$old_fieldv.'%)');

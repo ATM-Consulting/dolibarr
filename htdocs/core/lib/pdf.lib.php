@@ -2869,11 +2869,18 @@ function pdf_getlineprogress($object, $i, $outputlangs, $hidedetails = 0, $hookm
 						$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
 					}
 				}
-				$result = $isCumulative ?
-					// old mode: we need to compute the delta (total - sum of previous)
-					$object->lines[$i]->situation_percent - $prev_progress :
-					// new mode: we need to compute the total (sum of previous + delta)
-					$prev_progress + $object->lines[$i]->situation_percent;
+				// BACKPORT V24.0 START - PR #41369
+				if (!$isCumulative && $object->element == 'facture' && $object->type == Facture::TYPE_CREDIT_NOTE) {
+					// new mode, credit note: the previous progress deducts the credit note itself once validated
+					$result = $prev_progress - ($object->status == Facture::STATUS_DRAFT && !empty($object->lines[$i]->fk_prev_id) ? abs((float) $object->lines[$i]->situation_percent) : 0);
+				} else {
+					$result = $isCumulative ?
+						// old mode: we need to compute the delta (total - sum of previous)
+						$object->lines[$i]->situation_percent - $prev_progress :
+						// new mode: we need to compute the total (sum of previous + delta)
+						$prev_progress + $object->lines[$i]->situation_percent;
+				}
+				// BACKPORT V24.0 END - PR #41369
 			}
 			$result = round($result, 1).'%';
 		}
