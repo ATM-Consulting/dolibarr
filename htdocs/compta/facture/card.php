@@ -3225,7 +3225,7 @@ if (empty($reshook)) {
 
 		$line = new FactureLigne($db);
 		$line->fetch(GETPOSTINT('lineid'));
-		$percent = $line->get_prev_progress($object->id);
+		$percent = $line->get_prev_progress($object->id, true, true);
 		$progress = price2num(GETPOST('progress', 'alpha'));
 
 		// Legacy mode only: a negative delta is entered; in progressive mode the progress left after the credit is entered and checked below
@@ -3327,7 +3327,7 @@ if (empty($reshook)) {
 
 		// Invoice situation
 		if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
-			$previousprogress = $line->getAllPrevProgress($line->fk_facture);
+			$previousprogress = $line->getAllPrevProgress($line->fk_facture, true, true);
 			$fullprogress = (float) price2num(GETPOST('progress', 'alpha'), 2);
 
 			if ($object->type == Facture::TYPE_CREDIT_NOTE) {
@@ -3459,9 +3459,9 @@ if (empty($reshook)) {
 
 			foreach ($object->lines as $line) {
 				if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
-					$percent = $line->getAllPrevProgress($object->id);
+					$percent = $line->getAllPrevProgress($object->id, true, true);
 				} else {
-					$percent = $line->get_prev_progress($object->id);
+					$percent = $line->get_prev_progress($object->id, true, true);
 				}
 				if ($object->type != $object::TYPE_CREDIT_NOTE && (float) $all_progress < (float) $percent) {
 					$mesg = $langs->trans("Line").' '.$line->rang.' : '.$langs->trans("CantBeLessThanMinPercent");

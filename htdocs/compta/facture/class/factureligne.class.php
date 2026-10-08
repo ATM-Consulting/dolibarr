@@ -933,13 +933,15 @@ class FactureLigne extends CommonInvoiceLine
 	/**
 	 * Returns situation_percent of the previous line. Used when INVOICE_USE_SITUATION = 1.
 	 * Warning: If invoice is a replacement invoice, this->fk_prev_id is id of the replaced line.
+	 * On a credit note line, the result deducts that credit note whatever its status, unless $exclude_invoice is true.
 	 *
 	 * @param  int     $invoiceid      			Invoice id
 	 * @param  bool    $include_credit_note		Include credit note or not
+	 * @param  bool    $exclude_invoice			True to never deduct the credit notes lines of $invoiceid (progress before it)
 	 * @return float|int                     	Return previous situation percent, 0 or -1 if error
 	 * @see get_allprev_progress()
 	 **/
-	public function get_prev_progress($invoiceid, $include_credit_note = true)
+	public function get_prev_progress($invoiceid, $include_credit_note = true, $exclude_invoice = false)
 	{
 		// phpcs:enable
 		global $invoicecache;
@@ -975,7 +977,7 @@ class FactureLigne extends CommonInvoiceLine
 					$sql .= " WHERE fd.fk_prev_id = ".((int) $this->fk_prev_id);
 					$sql .= " AND f.situation_cycle_ref = ".((int) $invoicecache[$invoiceid]->situation_cycle_ref); // Prevent cycle outed
 					$sql .= " AND f.type = ".((int) Facture::TYPE_CREDIT_NOTE);
-					$sql .= " AND f.fk_statut IN (".Facture::STATUS_VALIDATED.", ".Facture::STATUS_CLOSED.")"; // A draft or abandoned credit note does not change the progress
+					$sql .= $this->getCreditNoteStatusFilter((int) $invoiceid, $exclude_invoice);
 
 					$res = $this->db->query($sql);
 					if ($res) {
@@ -1003,13 +1005,15 @@ class FactureLigne extends CommonInvoiceLine
 	/**
 	 * Returns situation_percent of all the previous line. Used when INVOICE_USE_SITUATION = 2.
 	 * Warning: If invoice is a replacement invoice, this->fk_prev_id is id of the replaced line.
+	 * On a credit note line, the result deducts that credit note whatever its status, unless $exclude_invoice is true.
 	 *
 	 * @param  int     $invoiceid      Invoice id
 	 * @param  bool    $include_credit_note		Include credit note or not
+	 * @param  bool    $exclude_invoice			True to never deduct the credit notes lines of $invoiceid (progress before it)
 	 * @return float                   >= 0
 	 * @see get_prev_progress()
 	 */
-	public function getAllPrevProgress($invoiceid, $include_credit_note = true)
+	public function getAllPrevProgress($invoiceid, $include_credit_note = true, $exclude_invoice = false)
 	{
 		// phpcs:enable
 		global $invoicecache;
@@ -1051,7 +1055,7 @@ class FactureLigne extends CommonInvoiceLine
 						$sql_credit_note .= " WHERE fd.fk_prev_id = ".((int) $lastprevid);
 						$sql_credit_note .= " AND f.situation_cycle_ref = ".((int) $invoicecache[$invoiceid]->situation_cycle_ref); // Prevent cycle outed
 						$sql_credit_note .= " AND f.type = ".Facture::TYPE_CREDIT_NOTE;
-						$sql_credit_note .= " AND f.fk_statut IN (".Facture::STATUS_VALIDATED.", ".Facture::STATUS_CLOSED.")"; // A draft or abandoned credit note does not change the progress
+						$sql_credit_note .= $this->getCreditNoteStatusFilter((int) $invoiceid, $exclude_invoice);
 
 						$res_credit_note = $this->db->query($sql_credit_note);
 						if ($res_credit_note) {
@@ -1080,6 +1084,24 @@ class FactureLigne extends CommonInvoiceLine
 			}
 			return $cumulated_percent;
 		}
+	}
+
+	/**
+	 * SQL filter on the credit notes deducted from the progress of a line of $invoiceId (table alias f).
+	 * A draft or abandoned credit note does not change the progress of other invoices, but always the one of its own lines.
+	 *
+	 * @param  int    $invoiceId       Invoice id
+	 * @param  bool   $excludeInvoice  True to never deduct the credit notes lines of $invoiceId
+	 * @return string                  SQL condition starting with " AND "
+	 */
+	protected function getCreditNoteStatusFilter(int $invoiceId, bool $excludeInvoice): string
+	{
+		$validStatus = "f.fk_statut IN (".Facture::STATUS_VALIDATED.", ".Facture::STATUS_CLOSED.")";
+		if ($excludeInvoice) {
+			return " AND ".$validStatus." AND f.rowid <> ".$invoiceId;
+		}
+
+		return " AND (".$validStatus." OR f.rowid = ".$invoiceId.")";
 	}
 
 	/**

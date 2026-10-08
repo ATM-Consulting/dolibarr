@@ -46,6 +46,11 @@ $conf->global->MAIN_DISABLE_ALL_MAILS = 1;
 class FactureSituationProgressTest extends CommonClassTest
 {
 	/**
+	 * @var mixed
+	 */
+	private $savedSituationMode;
+
+	/**
 	 * setUp
 	 *
 	 * @return void
@@ -55,8 +60,26 @@ class FactureSituationProgressTest extends CommonClassTest
 		global $conf, $invoicecache;
 
 		parent::setUp();
+		$this->savedSituationMode = $conf->global->INVOICE_USE_SITUATION ?? null;
 		$conf->global->INVOICE_USE_SITUATION = 2;
 		$invoicecache = array();
+	}
+
+	/**
+	 * tearDown
+	 *
+	 * @return void
+	 */
+	protected function tearDown(): void
+	{
+		global $conf;
+
+		if ($this->savedSituationMode === null) {
+			unset($conf->global->INVOICE_USE_SITUATION);
+		} else {
+			$conf->global->INVOICE_USE_SITUATION = $this->savedSituationMode;
+		}
+		parent::tearDown();
 	}
 
 	/**
@@ -160,5 +183,144 @@ class FactureSituationProgressTest extends CommonClassTest
 		$this->assertEquals(30, $this->previousProgress($nextNew, $lRemoved), 'next situation of the new cycle');
 		$nextOld = $this->insertInvoice(Facture::TYPE_SITUATION, $oldCycle, Facture::STATUS_DRAFT);
 		$this->assertEquals(30, $this->previousProgress($nextOld, $l1), 'next situation of the old cycle');
+	}
+
+	/**
+	 * Set the status of an invoice and reset the invoice cache
+	 *
+	 * @param int $invoiceId Invoice id
+	 * @param int $status    Invoice status
+	 * @return void
+	 */
+	private function setStatus(int $invoiceId, int $status): void
+	{
+		global $invoicecache;
+
+		$db = $this->savdb;
+		$this->assertTrue((bool) $db->query("UPDATE ".$db->prefix()."facture SET fk_statut = ".$status." WHERE rowid = ".$invoiceId));
+		$invoicecache = array();
+	}
+
+	/**
+	 * Legacy mode: a draft total credit note of a situation is rated like the validated one
+	 *
+	 * @return void
+	 */
+	public function testLegacyDraftTotalCreditNoteKeepsFullRatio()
+	{
+		global $conf;
+
+		$conf->global->INVOICE_USE_SITUATION = 1;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 60, null);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($creditNoteId, 60, $l1);
+
+		$line = new FactureLigne($this->savdb);
+		$line->fetch($lineId);
+		$this->assertEquals(0, $line->get_prev_progress($creditNoteId), 'draft');
+		$this->assertEquals(1, $line->getSituationRatio(), 'draft');
+
+		$this->setStatus($creditNoteId, Facture::STATUS_VALIDATED);
+		$this->assertEquals(0, $line->get_prev_progress($creditNoteId), 'validated');
+		$this->assertEquals(1, $line->getSituationRatio(), 'validated');
+	}
+
+	/**
+	 * Progressive mode: the progress of a draft credit note deducts the credit note itself, like the validated one
+	 *
+	 * @return void
+	 */
+	public function testDraftCreditNoteDeductsItself()
+	{
+		$db = $this->savdb;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 30, null);
+		$s2 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l2 = $this->insertLine($s2, 30, $l1);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($creditNoteId, 10, $l2);
+		$db->query("UPDATE ".$db->prefix()."facturedet SET subprice = -1000, total_ht = -100, total_ttc = -100 WHERE rowid = ".$lineId);
+
+		$line = new FactureLigne($db);
+		$line->fetch($lineId);
+		$this->assertEquals(50, $line->getAllPrevProgress($creditNoteId), 'draft');
+		$this->assertEquals(20, $line->get_prev_progress($creditNoteId), 'draft, last situation only');
+		$s3 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_DRAFT);
+		$this->assertEquals(60, $this->previousProgress($s3, $l2), 'another invoice ignores the draft credit note');
+
+		$creditNote = new Facture($db);
+		$creditNote->fetch($creditNoteId);
+		$creditNote->update_percent($creditNote->lines[0], 50, false);
+		$line->fetch($lineId);
+		$this->assertEquals(10, $line->situation_percent, 'saving the same progress again');
+		$creditNote->fetch($creditNoteId);
+		$creditNote->update_percent($creditNote->lines[0], 40, false);
+		$line->fetch($lineId);
+		$this->assertEquals(20, $line->situation_percent, 'saving a lower progress');
+		$this->assertEquals(-200, $line->total_ht, 'saving a lower progress');
+
+		$this->setStatus($creditNoteId, Facture::STATUS_VALIDATED);
+		$this->assertEquals(40, $line->getAllPrevProgress($creditNoteId), 'validated');
+		$this->assertEquals(40, $this->previousProgress($s3, $l2), 'next situation after the validated credit note');
+	}
+
+	/**
+	 * A credit note line pointing to a line removed from its cycle has no previous progress to credit
+	 *
+	 * @return void
+	 */
+	public function testCreditNoteOnLineOutOfCycleHasNoPreviousProgress()
+	{
+		$db = $this->savdb;
+		$cycle = 900000 + mt_rand(1, 99999);
+		$removed = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle + 100000, Facture::STATUS_VALIDATED);
+		$lRemoved = $this->insertLine($removed, 30, null);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_DRAFT);
+		$lineId = $this->insertLine($creditNoteId, 10, $lRemoved);
+		$db->query("UPDATE ".$db->prefix()."facturedet SET subprice = -1000 WHERE rowid = ".$lineId);
+
+		$line = new FactureLigne($db);
+		$line->fetch($lineId);
+		$this->assertEquals(0, $line->getAllPrevProgress($creditNoteId, true, true));
+
+		$creditNote = new Facture($db);
+		$creditNote->fetch($creditNoteId);
+		$creditNote->update_percent($creditNote->lines[0], 0, false);
+		$line->fetch($lineId);
+		$this->assertEquals(0, $line->situation_percent);
+	}
+
+	/**
+	 * The progress before a credit note never deducts it, whatever its status
+	 *
+	 * @return void
+	 */
+	public function testProgressBeforeCreditNoteExcludesItself()
+	{
+		global $conf;
+
+		$cycle = 900000 + mt_rand(1, 99999);
+		$s1 = $this->insertInvoice(Facture::TYPE_SITUATION, $cycle, Facture::STATUS_VALIDATED);
+		$l1 = $this->insertLine($s1, 60, null);
+		$creditNoteId = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_VALIDATED);
+		$lineId = $this->insertLine($creditNoteId, 10, $l1);
+		$other = $this->insertInvoice(Facture::TYPE_CREDIT_NOTE, $cycle, Facture::STATUS_VALIDATED);
+		$this->insertLine($other, 5, $l1);
+
+		$line = new FactureLigne($this->savdb);
+		$line->fetch($lineId);
+		$this->assertEquals(45, $line->getAllPrevProgress($creditNoteId), 'mode 2, after');
+		$this->assertEquals(55, $line->getAllPrevProgress($creditNoteId, true, true), 'mode 2, before');
+		$conf->global->INVOICE_USE_SITUATION = 1;
+		$this->assertEquals(45, $line->get_prev_progress($creditNoteId), 'mode 1, after');
+		$this->assertEquals(55, $line->get_prev_progress($creditNoteId, true, true), 'mode 1, before');
+
+		$this->setStatus($creditNoteId, Facture::STATUS_ABANDONED);
+		$this->assertEquals(45, $line->get_prev_progress($creditNoteId), 'abandoned, its own view');
+		$this->assertEquals(55, $line->get_prev_progress($creditNoteId, true, true), 'abandoned, before');
+		$this->assertEquals(55, $this->previousProgress($s1, $l1), 'abandoned, ignored by another invoice');
 	}
 }

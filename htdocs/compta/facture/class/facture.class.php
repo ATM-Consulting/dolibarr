@@ -4906,7 +4906,7 @@ class Facture extends CommonInvoice
 			$percent = 100;
 		}
 		if (getDolGlobalInt('INVOICE_USE_SITUATION') == 2) {
-			$previous_progress = $line->getAllPrevProgress($line->fk_facture);
+			$previous_progress = $line->getAllPrevProgress($line->fk_facture, true, true);
 			$current_progress = $percent - $previous_progress;
 			if ($this->type == self::TYPE_CREDIT_NOTE) {
 				// On a credit note $percent is the progress left after the credit: the credit note holds the difference, as a positive percent
