@@ -2630,3 +2630,21 @@ AvailableWithSomePDFTemplatesOnly=Fonctionnalité non prise en charge sur les an
 SelectAService=Select the kind of service to use
 SelectFeatureToTest=Select the feature to test
 AIModelForFeature=AI model for features (AI service %s)
+
+PropalSignatureAliasUrl=Domaine d'alias de signature (Propositions)
+PropalSignatureAliasUrlHelp=Définit le nom de domaine "propre" pour la signature des propositions (ex: signature-propal.mon-domaine.fr). Le lien final sera https://[domaine]/[ref].
+ContractSignatureAliasUrl=Domaine d'alias de signature (Contrats)
+ContractSignatureAliasUrlHelp=Définit le nom de domaine "propre" pour la signature des contrats (ex: signature-contrat.mon-domaine.fr). Le lien final sera https://[domaine]/[ref].
+FichinterSignatureAliasUrl=Domaine d'alias de signature (Interventions)
+FichinterSignatureAliasUrlHelp=Définit le nom de domaine "propre" pour la signature des fiches d'intervention (ex: signature-inter.mon-domaine.fr). Le lien final sera https://[domaine]/[ref].
+ExpeditionSignatureAliasUrl=Domaine d'alias de signature (Expéditions)
+ExpeditionSignatureAliasUrlHelp=Définit le nom de domaine "propre" pour la signature des bons d'expédition (ex: signature-expedition.mon-domaine.fr). Le lien final sera https://[domaine]/[ref].
+
+PropalSignatureUseProxyMode=Utiliser le mode Proxy (masquer l'URL interne)
+PropalSignatureUseProxyModeHelp=Si activé, le script utilisera cURL pour récupérer le contenu de la page de signature sans rediriger le navigateur. L'URL interne restera masquée et le client restera sur l'alias. <br>Si désactivé (par défaut), une redirection HTTP standard est effectuée vers l'URL technique de Dolibarr.
+ContractSignatureUseProxyMode=Utiliser le mode Proxy (masquer l'URL interne)
+ContractSignatureUseProxyModeHelp=Si activé, le script utilisera cURL pour récupérer le contenu de la page de signature sans rediriger le navigateur. L'URL interne restera masquée et le client restera sur l'alias. <br>Si désactivé (par défaut), une redirection HTTP standard est effectuée vers l'URL technique de Dolibarr.
+FichinterSignatureUseProxyMode=Utiliser le mode Proxy (masquer l'URL interne)
+FichinterSignatureUseProxyModeHelp=Si activé, le script utilisera cURL pour récupérer le contenu de la page de signature sans rediriger le navigateur. L'URL interne restera masquée et le client restera sur l'alias. <br>Si désactivé (par défaut), une redirection HTTP standard est effectuée vers l'URL technique de Dolibarr.
+ExpeditionSignatureUseProxyMode=Utiliser le mode Proxy (masquer l'URL interne)
+ExpeditionSignatureUseProxyModeHelp=Si activé, le script utilisera cURL pour récupérer le contenu de la page de signature sans rediriger le navigateur. L'URL interne restera masquée et le client restera sur l'alias. <br>Si désactivé (par défaut), une redirection HTTP standard est effectuée vers l'URL technique de Dolibarr.
