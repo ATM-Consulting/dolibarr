@@ -11237,26 +11237,94 @@ function dolGetButtonAction($label, $text = '', $actionType = 'default', $url = 
 {
 	global $hookmanager, $action, $object, $langs;
 
-	// If $url is an array, we must build a dropdown button
+	// BACKPORT V24 START - Commit 16f4f4a6
+	// If $url is an array, we must build a dropdown button or recursively iterate over each value
 	if (is_array($url)) {
-		$out = '<div class="dropdown inline-block dropdown-holder">';
-		$out .= '<a style="margin-right: auto;" class="dropdown-toggle butAction" data-toggle="dropdown">'.$label.'</a>';
-		$out .= '<div class="dropdown-content">';
-		foreach ($url as $subbutton) {
-			if ($subbutton['enabled'] && $subbutton['perm']) {
+		// Loop on $url array to remove entries of disabled modules
+		foreach ($url as $key => $subbutton) {
+			if (isset($subbutton['enabled']) && empty($subbutton['enabled'])) {
+				unset($url[$key]);
+			}
+		}
+
+		$out = '';
+
+		if (array_key_exists('areDropdownButtons', $params) && $params["areDropdownButtons"] === false) {  // @phan-suppress-current-line PhanTypeInvalidDimOffset
+			foreach ($url as $button) {
+				if (!empty($button['lang'])) {
+					$langs->load($button['lang']);
+				}
+				$label = $langs->trans($button['label']);
+				$text = $button['text'] ?? '';
+				$actionType = $button['actionType'] ?? '';
+				$tmpUrl = DOL_URL_ROOT . $button['url'] . (empty($params['backtopage']) ? '' : '&amp;backtopage=' . urlencode($params['backtopage']));
+				$id = $button['id'] ?? '';
+				$userRight = $button['perm'] ?? 1;
+				$button['params'] = $button['params'] ?? [];  // @phan-suppress-current-line PhanPluginDuplicateExpressionAssignmentOperation
+
+				$out .= dolGetButtonAction($label, $text, $actionType, $tmpUrl, $id, $userRight, $button['params']);
+			}
+			return $out;
+		}
+
+		if (count($url) > 1) {
+			$out .= '<div class="dropdown inline-block dropdown-holder">';
+			// SPE KOESIO START - As v17 behavior differs from v24, we need a small hack to avoid generating a title-only tooltip. Remove when upgrading to v24
+			// $out .= '<a style="margin-right: auto;" class="dropdown-toggle classfortooltip butAction' . ($userRight ? '' : 'Refused') . '" title="' . dol_escape_htmltag($label) . '" data-toggle="dropdown">' . ($text ? $text : $label) . '</a>';
+			$out .= '<a style="margin-right: auto;" class="dropdown-toggle butAction' . ($userRight ? '' : 'Refused') . '" data-toggle="dropdown">' . ($text ? $text : $label) . '</a>';
+			// SPE KOESIO END
+			$out .= '<div class="dropdown-content">';
+			foreach ($url as $subbutton) {
 				if (!empty($subbutton['lang'])) {
 					$langs->load($subbutton['lang']);
 				}
-				$out .= dolGetButtonAction('', $langs->trans($subbutton['label']), 'default', DOL_URL_ROOT.$subbutton['url'].(empty($params['backtopage']) ? '' : '&amp;backtopage='.urlencode($params['backtopage'])), '', 1, array('isDropDown' => true));
+
+				if (!empty($subbutton['urlraw'])) {
+					$tmpurl = $subbutton['urlraw']; // Use raw url, no url completion, use only what developer send
+				} else {
+					$tmpurl = !empty($subbutton['urlroot']) ? $subbutton['urlroot'] : $subbutton['url'];
+					$tmpurl = dolCompletUrlForDropdownButton($tmpurl, $params, empty($subbutton['urlroot']));
+				}
+
+				$subbuttonparam = array();
+				if (!empty($subbutton['attr'])) {
+					$subbuttonparam['attr'] = $subbutton['attr'];
+				}
+				$subbuttonparam['isDropDown'] = (empty($params['isDropDown']) ? ($subbutton['isDropDown'] ?? false) : $params['isDropDown']);
+
+				$out .= dolGetButtonAction($subbutton['text'], $langs->trans($subbutton['label']), 'default', $tmpurl, $subbutton['id'] ?? '', $subbutton['perm'], $subbuttonparam);
+			}
+			$out .= "</div>";
+			$out .= "</div>";
+		} else {
+			foreach ($url as $subbutton) {	// Should loop on 1 record only
+				if (!empty($subbutton['lang'])) {
+					$langs->load($subbutton['lang']);
+				}
+
+				if (!empty($subbutton['urlraw'])) {
+					$tmpurl = $subbutton['urlraw']; // Use raw url, no url completion, use only what developer send
+				} else {
+					$tmpurl = !empty($subbutton['urlroot']) ? $subbutton['urlroot'] : $subbutton['url'];
+					$tmpurl = dolCompletUrlForDropdownButton($tmpurl, $params, empty($subbutton['urlroot']));
+				}
+
+				$label = $langs->trans($subbutton['label']);
+				$text = $subbutton['text'] ?? '';
+				if (empty($text)) {
+					$text = $label;
+					$label = '';
+				}
+
+				$out .= dolGetButtonAction($label, $text, 'default', $tmpurl, '', $subbutton['perm'], $params);
 			}
 		}
-		$out .= "</div>";
-		$out .= "</div>";
 
 		return $out;
 	}
+	// BACKPORT V24 END - Commit 16f4f4a6
 
-	// If $url is a simple link
+	//var_dump($params);
 	if (!empty($params['isDropdown']))
 		$class = "dropdown-item";
 	else {
@@ -12980,35 +13048,110 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = '', $n
 	}
 }
 
+// BACKPORT V24 START - Commit 7faa9bad
+/**
+ * An function to complete dropdown url in dolGetButtonAction
+ *
+ * @param string 				$url 			the Url to complete
+ * @param array<string,mixed> 	$params 		params of dolGetButtonAction function
+ * @param bool 					$addDolUrlRoot 	to add root url
+ * @return string
+ */
+function dolCompletUrlForDropdownButton(string $url, array $params, bool $addDolUrlRoot = true)
+{
+	if (empty($url)) {
+		return '';
+	}
+
+	$parsedUrl = parse_url($url);
+	if ((isset($parsedUrl['scheme']) && in_array($parsedUrl['scheme'], ['javascript', 'mailto', 'tel'])) || strpos($url, '#') === 0) {
+		return $url;
+	}
+
+	if (!empty($parsedUrl['query'])) {
+		// Use parse_str() function to parse the string passed via URL
+		parse_str($parsedUrl['query'], $urlQuery);
+		if (!isset($urlQuery['backtopage']) && isset($params['backtopage'])) {
+			$url .= '&amp;backtopage=' . urlencode($params['backtopage']);
+		}
+	}
+
+	if (!isset($parsedUrl['scheme']) && $addDolUrlRoot) {
+		$url = DOL_URL_ROOT . $url;
+	}
+
+	return $url;
+}
+// BACKPORT V24 END - Commit 7faa9bad
+
+// BACKPORT V24 START - Commit e8ac6cdd
 /**
  * Helper function that combines values of a dolibarr DatePicker (such as Form::selectDate) for year, month, day (and
  * optionally hour, minute, second) fields to return a timestamp.
  *
- * @param string $prefix Prefix used to build the date selector (for instance using Form::selectDate)
- * @param string $hourTime  'getpost' to include hour, minute, second values from the HTTP request, 'XX:YY:ZZ' to set
- *                          hour, minute, second respectively (for instance '23:59:59')
- * @param string $gm Passed to dol_mktime
- * @return int|string  Date as a timestamp, '' or false if error
+ * @param 	string 		$prefix 		Prefix used to build the date selector (for instance using Form::selectDate). Example: 'select_datec'
+ * @param 	string 		$hourTime		'getpost' or 'getpostend' to include hour, minute, second values from the HTTP request,
+ * 										or 'XX:YY:ZZ' to set hour, minute, second respectively, for example '23:59:59'
+ * 										or 'end' means '23:59:59'
+ * 										or '' means '00:00:00' (default)
+ * @param 	int|string 	$gm 			Passed to dol_mktime. In most cases, when used with 'getpost' or 'getpostend', it should be 'tzuserrel'. Use 'auto' if you need dates related to 'tzserver' (like in accountancy).
+ * @param	string		$saverestore	Use a string family context to save retrieved date so it will be used on the next retrieval for the same family context (if value not already defined in parameters).
+ * @return 	int|string  				Date as a timestamp, '' or false if error
+ *
+ * @see dol_mktime()
  */
-function GETPOSTDATE($prefix, $hourTime = '', $gm = 'auto')
+function GETPOSTDATE($prefix, $hourTime = '', $gm = 'auto', $saverestore = '')
 {
-	if ($hourTime === 'getpost') {
-		$hour   = GETPOSTINT($prefix . 'hour');
-		$minute = GETPOSTINT($prefix . 'min');
-		$second = GETPOSTINT($prefix . 'sec');
+	$m = array();
+	if ($hourTime === 'getpost' || $hourTime === 'getpostend') {
+		$hour   = (GETPOSTISSET($prefix . 'hour') && GETPOSTINT($prefix . 'hour') >= 0) ? GETPOSTINT($prefix . 'hour') : ($hourTime === 'getpostend' ? 23 : 0);
+		$minute = (GETPOSTISSET($prefix . 'min') && GETPOSTINT($prefix . 'min') >= 0) ? GETPOSTINT($prefix . 'min') : ($hourTime === 'getpostend' ? 59 : 0);
+		$second = (GETPOSTISSET($prefix . 'sec') && GETPOSTINT($prefix . 'sec') >= 0) ? GETPOSTINT($prefix . 'sec') : ($hourTime === 'getpostend' ? 59 : 0);
 	} elseif (preg_match('/^(\d\d):(\d\d):(\d\d)$/', $hourTime, $m)) {
 		$hour   = intval($m[1]);
 		$minute = intval($m[2]);
 		$second = intval($m[3]);
+	} elseif ($hourTime === 'end') {
+		$hour = 23;
+		$minute = 59;
+		$second = 59;
 	} else {
 		$hour = $minute = $second = 0;
 	}
+
+	if (
+		$saverestore
+		&& !GETPOSTISSET($prefix . 'day')
+		&& !GETPOSTISSET($prefix . 'month')
+		&& !GETPOSTISSET($prefix . 'year')
+		&& isset($_SESSION['DOLDATE_' . $saverestore . '_day'])
+		&& isset($_SESSION['DOLDATE_' . $saverestore . '_month'])
+		&& isset($_SESSION['DOLDATE_' . $saverestore . '_year'])
+	) {
+		$day = $_SESSION['DOLDATE_' . $saverestore . '_day'];
+		$month = $_SESSION['DOLDATE_' . $saverestore . '_month'];
+		$year = $_SESSION['DOLDATE_' . $saverestore . '_year'];
+	} else {
+		$month = GETPOSTINT($prefix . 'month');
+		$day = GETPOSTINT($prefix . 'day');
+		$year = GETPOSTINT($prefix . 'year');
+	}
+
 	// normalize out of range values
-	$hour = min($hour, 23);
-	$minute = min($minute, 59);
-	$second = min($second, 59);
-	return dol_mktime($hour, $minute, $second, GETPOSTINT($prefix . 'month'), GETPOSTINT($prefix . 'day'), GETPOSTINT($prefix . 'year'), $gm);
+	$hour = (int) min($hour, 23);
+	$minute = (int) min($minute, 59);
+	$second = (int) min($second, 59);
+
+	if ($saverestore) {
+		$_SESSION['DOLDATE_' . $saverestore . '_day'] = $day;
+		$_SESSION['DOLDATE_' . $saverestore . '_month'] = $month;
+		$_SESSION['DOLDATE_' . $saverestore . '_year'] = $year;
+	}
+
+	//print "$hour, $minute, $second, $month, $day, $year, $gm<br>";
+	return dol_mktime($hour, $minute, $second, $month, $day, $year, $gm);
 }
+// BACKPORT V24 END - Commit e8ac6cdd
 
 /**
  * Helper function that combines values of a dolibarr DatePicker (such as Form::selectDate) for year, month, day (and

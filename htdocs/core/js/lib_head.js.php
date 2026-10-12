@@ -1315,23 +1315,6 @@ jQuery(document).ready(function() {
 });
 
 
-jQuery(document).ready(function() {
-	jQuery(".butAction.dropdown-toggle").on("click", function(event) {
-		console.log("Click on .butAction.dropdown-toggle");
-		var parentholder = jQuery(".butAction.dropdown-toggle").closest(".dropdown");
-			 var offset = parentholder.offset();
-		var widthdocument = $(document).width();
-		var left = offset.left;
-		var right = widthdocument - offset.left - parentholder.width();
-		var widthpopup = parentholder.children(".dropdown-content").width();
-		console.log("left="+left+" right="+right+" width="+widthpopup+" widthdocument="+widthdocument);
-		if (widthpopup + right >= widthdocument) {
-			right = 10;
-		}
-		parentholder.toggleClass("open");
-		parentholder.children(".dropdown-content").css({"right": right+"px", "left": "auto"});
-	});
-});
 
 
 // Code to manage the js for combo list with dependencies (called by extrafields_view.tpl.php)
@@ -1392,5 +1375,63 @@ $(document).on('select2:open', (e) => {
 }
 ?>
 
+// BACKPORT V24 START - commit e412dbbe
+$(document).ready(function() {
+	// Code to toggle dropdown components
+	jQuery(document).on("click", ".butAction.dropdown-toggle", function(event) {
+		console.log("Click on .butAction.dropdown-toggle");
+		let parentHolder = jQuery(event.target).parent();
+		let dropDownContent = parentHolder.children(".dropdown-content");
+		let offset = parentHolder.offset();
+		let widthDocument = $(document).width();
+		let heightDocument = $(document).height();
+		let right = widthDocument - offset.left - parentHolder.width();
+		let widthPopup = parentHolder.children(".dropdown-content").width();
+		if (widthPopup + right >= widthDocument) {
+			//right = 10;
+		}
+
+		parentHolder.toggleClass("open");	/* If open, it closes, if closed, it opens */
+
+		// Check tooltip is in viewport
+		let dropDownContentTop = dropDownContent.offset().top;
+		let dropDownContentLeft = dropDownContent.offset().left;
+		let dropDownContentHeight = dropDownContent.outerHeight();
+		let dropDownContentBottom = dropDownContentTop + dropDownContentHeight;
+		let viewportBottom = $(window).scrollTop() + $(window).height();
+
+		// Change dropdown Up/Down orientation if dropdown is close to bottom viewport
+		if (parentHolder.hasClass('open')
+			&& dropDownContentBottom > viewportBottom // Check bottom of dropdown is behind viewport
+			&& dropDownContentTop - dropDownContentHeight > 0 // check if set dropdown to --up will not go over the top of document
+		) {
+			parentHolder.addClass("--up");
+		} else {
+			parentHolder.removeClass("--up");
+		}
+
+		// Change dropdown left/right offset if dropdown is close to left viewport
+		if (parentHolder.hasClass('open') && dropDownContentLeft < 0) {
+			parentHolder.addClass("--left");
+		} else {
+			parentHolder.removeClass("--left");
+		}
+	});
+
+
+	// Close drop down
+	jQuery(document).on("click", function(event) {
+		// search if click was outside drop down
+		if (!$(event.target).closest('.butAction.dropdown-toggle').length) {
+			/* console.log("click close butAction - we click outside"); */
+			let parentholder = jQuery(".butAction.dropdown-toggle").closest(".dropdown.open");
+			if (parentholder){
+				// Hide the menus.
+				parentholder.removeClass("open --up --left");
+			}
+		}
+	});
+});
+// BACKPORT V24 END - commit e412dbbe
 
 // End of lib_head.js.php
