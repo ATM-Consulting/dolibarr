@@ -2234,6 +2234,10 @@ function dol_escape_htmltag($stringtoescape, $keepb = 0, $keepn = 0, $noescapeta
 				} while ($diff);
 			}
 
+			// @ATM-PATCH BEGIN escape-htmltag-amp — keep an already-encoded &amp untouched, backport of Dolibarr core commit 202ffe732e0 (native in v22)
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			$tmp = str_ireplace('&amp', '__ANDNOSEMICOLON__', $tmp);
+			// @ATM-PATCH END escape-htmltag-amp
 			$tmp = str_ireplace('&quot', '__DOUBLEQUOTENOSEMICOLON__', $tmp);
 			$tmp = str_ireplace('&lt', '__LESSTHAN__', $tmp);
 			$tmp = str_ireplace('&gt', '__GREATERTHAN__', $tmp);
@@ -2256,6 +2260,10 @@ function dol_escape_htmltag($stringtoescape, $keepb = 0, $keepn = 0, $noescapeta
 
 			$result = str_ireplace('__DOUBLEQUOTE__', '"', $result);
 
+			// @ATM-PATCH BEGIN escape-htmltag-amp — keep an already-encoded &amp untouched, backport of Dolibarr core commit 202ffe732e0 (native in v22)
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			$result = str_ireplace('__ANDNOSEMICOLON__', '&amp', $result);
+			// @ATM-PATCH END escape-htmltag-amp
 			$result = str_ireplace('__DOUBLEQUOTENOSEMICOLON__', '&quot', $result);
 			$result = str_ireplace('__LESSTHAN__', '&lt', $result);
 			$result = str_ireplace('__GREATERTHAN__', '&gt', $result);

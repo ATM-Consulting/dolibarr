@@ -881,6 +881,11 @@ class SecurityTest extends CommonClassTest
 		print __METHOD__." result=".$result."\n";
 		$this->assertEquals($stringfixed, $result, 'Error in dolPrintHTML test 2');    // Expected '' because should failed because login 'auto' does not exists
 
+		$stringtotest = "<p>Tom &amp; Jerry</p>";
+		$stringfixed = "<p>Tom &amp; Jerry</p>";
+		$result = dolPrintHTML($stringtotest);
+		$this->assertEquals($stringfixed, $result, 'Error in dolPrintHTML test 3');
+
 
 		// dolPrintHTMLForAttribute - With dolPrintHTMLForAttribute(), the content is HTML encode, even if it is already HTML content.
 
