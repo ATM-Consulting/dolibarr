@@ -890,6 +890,10 @@ class ImportCsv extends ModeleImports
 										$filters[] = $col.' = '.$data[$key];
 									}
 								}
+								if (!empty($tablewithentity_cache[$tablename])) {
+									$where[] = "entity = ".((int) $conf->entity);
+									$filters[] = "entity = ".((int) $conf->entity);
+								}
 								$sqlSelect .= " WHERE ".implode(' AND ', $where);
 
 								$resql = $this->db->query($sqlSelect);
@@ -925,6 +929,10 @@ class ImportCsv extends ModeleImports
 									$keyfield = 'rowid';
 								}
 								$sqlSelect .= " WHERE ".$keyfield." = ".((int) $lastinsertid);
+
+								if (!empty($tablewithentity_cache[$tablename])) {
+									$sqlSelect .= " AND entity = ".((int) $conf->entity);
+								}
 
 								$resql = $this->db->query($sqlSelect);
 								if ($resql) {
@@ -969,6 +977,10 @@ class ImportCsv extends ModeleImports
 
 								if ($is_table_category_link) {
 									$sqlend = " WHERE " . implode(' AND ', $where);
+								}
+
+								if (!empty($tablewithentity_cache[$tablename])) {
+									$sqlend .= " AND entity = ".((int) $conf->entity);
 								}
 
 								$sql = $sqlstart.$sqlend;

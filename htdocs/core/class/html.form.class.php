@@ -9002,6 +9002,11 @@ class Form
 					if (!isModEnabled('mrp')) {
 						continue; // Do not show if module disabled
 					}
+				} elseif ($objecttype == 'fin_simulation') {
+					$tplpath = 'financement/simulation';
+					if (!isModEnabled('financement')) {
+						continue; // Do not show if module disabled
+					}
 				}
 
 				global $linkedObjectBlock;
