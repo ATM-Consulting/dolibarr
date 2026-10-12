@@ -113,7 +113,12 @@ TicketsLimitViewAssignedOnlyHelp=Seuls les tickets affectés à l'utilisateur ac
 TicketsActivatePublicInterface=Activer l'interface publique
 TicketsActivatePublicInterfaceHelp=L'interface publique permet à tous les visiteurs de créer des tickets.
 TicketsAutoAssignTicket=Affecter automatiquement l'utilisateur qui a créé le ticket
-TicketsAutoAssignTicketHelp=Lors de la création d'un ticket, l'utilisateur peut être automatiquement affecté au ticket.
+# ===== BACKPORT 41639 V21 =====
+TicketsAutoAssignTicketHelp=Assigné d'un ticket créé depuis le back-office quand aucun n'est fourni dans la requête.
+TicketsAutoAssignTicketNever=Personne (champ vide)
+TicketsAutoAssignTicketIfNoneAssigned=Utilisateur courant par défaut (modifiable)
+TicketsAutoAssignTicketAlways=Utilisateur courant, forcé à l'enregistrement même si modifié
+# ===== FIN BACKPORT 41639 V21 =====
 TicketAutoChangeStatusOnAnswer=Assigner automatiquement un status lors de la réponse à un ticket
 TicketAutoChangeStatusOnAnswerHelp=Lorsqu'un utilisateur répond à un ticket, l'état sera automatiquement appliqué au ticket
 TicketNumberingModules=Module de numérotation des tickets
