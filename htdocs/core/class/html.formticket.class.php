@@ -273,7 +273,17 @@ class FormTicket
 			$email = GETPOSTISSET('email') ? GETPOST('email', 'alpha') : '';
 			$msg = GETPOSTISSET('message') ? GETPOST('message', 'restricthtml') : '';
 			$projectid = GETPOSTISSET('projectid') ? GETPOST('projectid', 'int') : '';
-			$user_assign = GETPOSTISSET('fk_user_assign') ? GETPOSTINT('fk_user_assign') : $this->fk_user_create;
+			/*===========
+			BACKPORT 41639 V21
+			=============*/
+			if (GETPOSTISSET('fk_user_assign') || !getDolGlobalInt('TICKET_AUTO_ASSIGN_USER_CREATE')) {
+				$user_assign = GETPOSTINT('fk_user_assign');
+			} else {
+				$user_assign = $this->fk_user_create;
+			}
+			/*===========
+			FIN BACKPORT 41639 V21
+			=============*/
 			$contractid = GETPOSTISSET('contractid') ? GETPOSTINT('contractid') : '';
 		} else {
 			$ref = GETPOSTISSET("ref") ? GETPOST("ref", 'alpha') : $object->ref;
