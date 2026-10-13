@@ -74,7 +74,9 @@ if (isModEnabled('project')) {
 	require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 }
 
-$langs->loadLangs(array("receptions", "companies", "bills", 'orders', 'stocks', 'other', 'propal', 'sendings'));
+/** START BACKPORT v25 : PR#41643 */
+$langs->loadLangs(array("receptions", "companies", "bills", 'orders', 'stocks', 'other', 'propal', 'sendings', 'productbatch'));
+/** END BACKPORT */
 
 if (isModEnabled('incoterm')) {
 	$langs->load('incoterm');
@@ -1144,7 +1146,10 @@ $title = $object->ref.' - '.$langs->trans('Reception');
 if ($action == 'create') {
 	$title = $langs->trans("NewReception");
 }
-llxHeader('', $title, 'Reception', '', 0, 0, '', '', '', 'mod-reception page-card');
+/** START BACKPORT v25 : PR#41643 */
+$arrayofjs = (isModEnabled('productbatch') && !empty($conf->use_javascript_ajax)) ? array('/core/js/lib_batchlines_toggle.js') : array();
+llxHeader('', $title, 'Reception', '', 0, 0, $arrayofjs, '', '', 'mod-reception page-card');
+/** END BACKPORT */
 
 $form = new Form($db);
 $formfile = new FormFile($db);
@@ -2463,6 +2468,46 @@ if ($action == 'create' && $permissiontoadd) {
 			<input type="hidden" name="mode" value="">
 			<input type="hidden" name="id" value="' . $object->id.'">';
 		}
+		/** START BACKPORT v25 : PR#41643 */
+		$withBatchToggle = isModEnabled('productbatch') && !empty($conf->use_javascript_ajax);
+		$showBatchByDefault = !$withBatchToggle || getDolGlobalInt('RECEPTION_SHOW_ALL_BATCH_BY_DEFAULT', 1);
+		// Contiguous lines of a same purchase order line of a product with lots, indexed by the position of their first line
+		$batchGroups = array();
+		$batchGroupOfLine = array();
+		if (isModEnabled('productbatch')) {
+			$groupStart = -1;
+			for ($i = 0; $i < $num_prod; $i++) {
+				if (!($lines[$i]->fk_product > 0 && !empty($lines[$i]->product->status_batch) && !empty($lines[$i]->fk_commandefourndet))) {
+					$groupStart = -1;
+					continue;
+				}
+				if ($groupStart < 0 || $lines[$groupStart]->fk_commandefourndet != $lines[$i]->fk_commandefourndet) {
+					$groupStart = $i;
+					$batchGroups[$groupStart] = array('nb' => 0, 'qty' => 0, 'weight' => 0, 'volume' => 0, 'warehouses' => array(), 'editing' => false);
+				}
+				$batchGroups[$groupStart]['nb']++;
+				$batchGroups[$groupStart]['qty'] += $lines[$i]->qty;
+				$batchGroups[$groupStart]['weight'] += $lines[$i]->product->weight * $lines[$i]->qty;
+				$batchGroups[$groupStart]['volume'] += $lines[$i]->product->volume * $lines[$i]->qty;
+				$batchGroups[$groupStart]['warehouses'][$lines[$i]->fk_entrepot] = $lines[$i]->fk_entrepot;
+				if ($action == 'editline' && $lines[$i]->id == $line_id) {
+					$batchGroups[$groupStart]['editing'] = true;
+				}
+				$batchGroupOfLine[$i] = $groupStart;
+			}
+			foreach ($batchGroups as $groupStart => $batchGroup) {
+				if ($batchGroup['editing']) {
+					unset($batchGroups[$groupStart]);
+				}
+			}
+			foreach ($batchGroupOfLine as $i => $groupStart) {
+				if (!isset($batchGroups[$groupStart])) {
+					unset($batchGroupOfLine[$i]);
+				}
+			}
+		}
+		/** END BACKPORT */
+
 		print '<br><br>';
 
 		print '<div class="div-table-responsive-no-min">';
@@ -2530,7 +2575,13 @@ if ($action == 'create' && $permissiontoadd) {
 			}
 
 			if (isModEnabled('productbatch')) {
-				print '<td class="left">'.$langs->trans("Batch").'</td>';
+				/** START BACKPORT v25 : PR#41643 */
+				print '<td class="left">'.$langs->trans("Batch");
+				if ($withBatchToggle && !empty($batchGroups)) {
+					print '<br>'.getBatchLinesToggleHeader($langs, $showBatchByDefault);
+				}
+				print '</td>';
+				/** END BACKPORT */
 			}
 
 			$parameters = array();
@@ -2616,57 +2667,59 @@ if ($action == 'create' && $permissiontoadd) {
 		// Loop on each product to send/sent. Warning: $lines must be sorted by ->fk_commandefourndet (it is a regroupment key on output)
 		print '<tbody>';
 		for ($i = 0; $i < $num_prod; $i++) {
+			/** START BACKPORT v25 : PR#41643 */
+			if (isset($batchGroups[$i])) {
+				$batchGroup = $batchGroups[$i];
+				print '<tr class="oddeven nodrag nodrop">';
+				if (getDolGlobalString('MAIN_VIEW_LINE_NUMBER')) {
+					print '<td></td>';
+				}
+				print getReceptionLineProductCell($db, $form, $langs, $outputlangs, $lines[$i], $i, true);
+				print '<td></td>';
+				print getReceptionLineQtyOrderedCells($db, $form, $langs, $lines[$i], $alreadysent, (int) $origin_id, true);
+				print '<td class="center linecolqtytoreceive">'.price2num($batchGroup['qty'], 'MS').'</td>';
+				if (isModEnabled('stock')) {
+					print '<td class="left tdoverflowmax150">';
+					$batchGroupWarehouseId = (count($batchGroup['warehouses']) == 1 ? (int) reset($batchGroup['warehouses']) : 0);
+					if ($batchGroupWarehouseId > 0) {
+						if (empty($conf->cache['warehouse'][$batchGroupWarehouseId])) {
+							$warehousestatic = new Entrepot($db);
+							$warehousestatic->fetch($batchGroupWarehouseId);
+							$conf->cache['warehouse'][$batchGroupWarehouseId] = $warehousestatic;
+						}
+						print $conf->cache['warehouse'][$batchGroupWarehouseId]->getNomUrl(1);
+					}
+					print '</td>';
+				}
+				print '<td class="linecolbatch nowrap">'.$langs->trans("NbOfLots", $batchGroup['nb']);
+				if ($withBatchToggle) {
+					print getBatchLineToggleLink('rcp'.$lines[$i]->id, $showBatchByDefault);
+				}
+				print '</td>';
+				$isProductLine = (!empty($lines[$i]->fk_product_type) && $lines[$i]->fk_product_type == Product::TYPE_PRODUCT);
+				print '<td class="center linecolweight">'.($isProductLine ? price2num($batchGroup['weight'], 'MS').' '.measuringUnitString(0, "weight", $lines[$i]->product->weight_units) : '').'</td>';
+				print '<td class="center linecolvolume">'.($isProductLine ? price2num($batchGroup['volume'], 'MS').' '.measuringUnitString(0, "volume", $lines[$i]->product->volume_units) : '').'</td>';
+				if ($object->statut == Reception::STATUS_DRAFT) {
+					print '<td class="linecoledit"></td>';
+					print '<td class="linecoldelete"></td>';
+				}
+				print '</tr>';
+			}
+			$isBatchChild = isset($batchGroupOfLine[$i]);
+			$showHead = !$isBatchChild && !array_key_exists($lines[$i]->fk_commandefourndet, $arrayofpurchaselinealreadyoutput);
+
 			print '<!-- origin line id = '.(!empty($lines[$i]->origin_line_id) ? $lines[$i]->origin_line_id : 0).' -->'; // id of order line
-			print '<tr class="oddeven" id="row-'.$lines[$i]->id.'" data-id="'.$lines[$i]->id.'" data-element="'.$lines[$i]->element.'">';
+			print '<tr class="oddeven" id="row-'.$lines[$i]->id.'" data-id="'.$lines[$i]->id.'" data-element="'.$lines[$i]->element.'"'.($isBatchChild ? ' '.getBatchLineChildRowAttributes('rcp'.$lines[$batchGroupOfLine[$i]]->id, $showBatchByDefault) : '').'>';
+			/** END BACKPORT */
 
 			// #
 			if (getDolGlobalString('MAIN_VIEW_LINE_NUMBER')) {
 				print '<td class="center">'.($i + 1).'</td>';
 			}
 
-			// Predefined product or service
-			if ($lines[$i]->fk_product > 0) {
-				// Define output language
-				if (getDolGlobalInt('MAIN_MULTILANGS') && getDolGlobalString('PRODUIT_TEXTS_IN_THIRDPARTY_LANGUAGE')) {
-					$prod = new Product($db);
-					$prod->fetch($lines[$i]->fk_product);
-					$label = (!empty($prod->multilangs[$outputlangs->defaultlang]["label"])) ? $prod->multilangs[$outputlangs->defaultlang]["label"] : $lines[$i]->product->label;
-				} else {
-					$label = (!empty($lines[$i]->product->label) ? $lines[$i]->product->label : $lines[$i]->product->product_label);
-				}
-
-				print '<td class="linecoldescription">';
-				if (!array_key_exists($lines[$i]->fk_commandefourndet, $arrayofpurchaselinealreadyoutput)) {
-					$text = $lines[$i]->product->getNomUrl(1);
-					$text .= ' - '.$label;
-					$description = (getDolGlobalInt('PRODUIT_DESC_IN_FORM_ACCORDING_TO_DEVICE') ? '' : dol_htmlentitiesbr($lines[$i]->description));
-					print $form->textwithtooltip($text, $description, 3, 0, '', (string) $i);
-					print_date_range(!empty($lines[$i]->date_start) ? $lines[$i]->date_start : 0, !empty($lines[$i]->date_end) ? $lines[$i]->date_end : 0);
-					if (getDolGlobalInt('PRODUIT_DESC_IN_FORM_ACCORDING_TO_DEVICE')) {
-						print (!empty($lines[$i]->description) && $lines[$i]->description != $label) ? '<br>'.dol_htmlentitiesbr($lines[$i]->description) : '';
-					}
-				}
-				print "</td>\n";
-			} else {
-				print '<td class="linecoldescription">';
-				if (!array_key_exists($lines[$i]->fk_commandefourndet, $arrayofpurchaselinealreadyoutput)) {
-					if ($lines[$i]->product_type == Product::TYPE_SERVICE) {
-						$text = img_object($langs->trans('Service'), 'service');
-					} else {
-						$text = img_object($langs->trans('Product'), 'product');
-					}
-
-					if (!empty($lines[$i]->label)) {
-						$text .= ' <strong>'.$lines[$i]->label.'</strong>';
-						print $form->textwithtooltip($text, $lines[$i]->description, 3, 0, '', (string) $i);
-					} else {
-						print $text.' '.nl2br($lines[$i]->description);
-					}
-
-					print_date_range($lines[$i]->date_start, $lines[$i]->date_end);
-				}
-				print "</td>\n";
-			}
+			/** START BACKPORT v25 : PR#41643 */
+			print getReceptionLineProductCell($db, $form, $langs, $outputlangs, $lines[$i], $i, $showHead);
+			/** END BACKPORT */
 
 			if ($action == 'editline' && $lines[$i]->id == $line_id) {
 				print '<td><input name="comment'.$line_id.'" id="comment'.$line_id.'" value="'.dol_escape_htmltag($lines[$i]->comment).'"></td>';
@@ -2675,53 +2728,9 @@ if ($action == 'create' && $permissiontoadd) {
 			}
 
 
-			// Qty ordered
-			print '<td class="center linecolqty">';
-			if (!array_key_exists($lines[$i]->fk_commandefourndet, $arrayofpurchaselinealreadyoutput)) {
-				print $lines[$i]->qty_asked;
-			}
-			print '</td>';
-
-			// Qty in other receptions (with reception and warehouse used)
-			if ($origin && $origin_id > 0) {
-				print '<td class="center nowrap linecolqtyinotherreceptions">';
-				$htmltooltip = '';
-				$qtyalreadyreceived = 0;
-				if (!array_key_exists($lines[$i]->fk_commandefourndet, $arrayofpurchaselinealreadyoutput)) {
-					foreach ($alreadysent as $key => $val) {
-						if ($lines[$i]->fk_commandefourndet == $key) {
-							$j = 0;
-							foreach ($val as $receptionline_id => $receptionline_var) {
-								if ($receptionline_var['reception_id'] == $lines[$i]->fk_reception) {
-									continue; // We want to show only "other receptions"
-								}
-
-								$j++;
-								if ($j > 1) {
-									$htmltooltip .= '<br>';
-								}
-								$reception_static->fetch($receptionline_var['reception_id']);
-								$htmltooltip .= $reception_static->getNomUrl(1, 'nolink', 0, 0, 1);
-								$htmltooltip .= ' - '.$receptionline_var['qty'];
-
-								$htmltext = $langs->trans("DateValidation").' : '.(empty($receptionline_var['date_valid']) ? $langs->trans("Draft") : dol_print_date($receptionline_var['date_valid'], 'dayhour'));
-								if (isModEnabled('stock') && $receptionline_var['warehouse'] > 0) {
-									$warehousestatic->fetch($receptionline_var['warehouse']);
-									$htmltext .= '<br>'.$langs->trans("From").' : '.$warehousestatic->getNomUrl(1, '', 0, 1);
-								}
-								$htmltooltip .= ' '.$form->textwithpicto('', $htmltext, 1);
-
-								$qtyalreadyreceived += $receptionline_var['qty'];
-							}
-							if ($j) {
-								$htmltooltip = $langs->trans("QtyInOtherReceptions").'...<br><br>'.$htmltooltip.'<br><input type="submit" name="dummyhiddenbuttontogetfocus" style="display:none" autofocus>';
-							}
-						}
-					}
-				}
-				print $form->textwithpicto((string) $qtyalreadyreceived, $htmltooltip, 1, 'info', '', 0, 3, 'tooltip'.$lines[$i]->id);
-				print '</td>';
-			}
+			/** START BACKPORT v25 : PR#41643 */
+			print getReceptionLineQtyOrderedCells($db, $form, $langs, $lines[$i], $alreadysent, (int) $origin_id, $showHead);
+			/** END BACKPORT */
 
 			if ($action == 'editline' && $lines[$i]->id == $line_id) {
 				// edit mode
@@ -2795,22 +2804,9 @@ if ($action == 'create' && $permissiontoadd) {
 						print '<td class="linecolbatch nowrap">';
 						$detail = $langs->trans("NA");
 						if ($lines[$i]->product->status_batch > 0 && $lines[$i]->fk_product > 0) {
-							require_once DOL_DOCUMENT_ROOT.'/product/stock/class/productlot.class.php';
-							$productlot = new Productlot($db);
-							$reslot = $productlot->fetch(0, $lines[$i]->fk_product, $lines[$i]->batch);
-							if ($reslot > 0) {
-								$detail = $productlot->getNomUrl(1);
-							} else {
-								// lot is not created and info is only in reception lines
-								$batchinfo = $langs->trans("Batch").': '.$lines[$i]->batch;
-								if (!getDolGlobalString('PRODUCT_DISABLE_SELLBY')) {
-									$batchinfo .= ' - '.$langs->trans("SellByDate").': '.dol_print_date($lines[$i]->sellby, "day");
-								}
-								if (!getDolGlobalString('PRODUCT_DISABLE_EATBY')) {
-									$batchinfo .= ' - '.$langs->trans("EatByDate").': '.dol_print_date($lines[$i]->eatby, "day");
-								}
-								$detail = $form->textwithtooltip(img_picto('', 'object_barcode').' '.$langs->trans("DetailBatchNumber"), $batchinfo);
-							}
+							/** START BACKPORT v25 : PR#41643 */
+							$detail = getBatchLotNomUrl($db, $form, $langs, (int) $lines[$i]->fk_product, (string) $lines[$i]->batch, $lines[$i]->sellby, $lines[$i]->eatby);
+							/** END BACKPORT */
 						}
 						print $detail . '</td>';
 					} else {
