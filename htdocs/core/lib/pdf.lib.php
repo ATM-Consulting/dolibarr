@@ -2450,14 +2450,19 @@ function pdf_getlinetotalexcltax($object, $i, $outputlangs, $hidedetails = 0)
 		} elseif (empty($hidedetails) || $hidedetails > 1) {
 			$total_ht = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->lines[$i]->multicurrency_total_ht : $object->lines[$i]->total_ht);
 			if (!empty($object->lines[$i]->situation_percent) && $object->lines[$i]->situation_percent > 0) {
-				// TODO Remove this. The total should be saved correctly in database instead of being modified here.
-				$prev_progress = 0;
-				$progress = 1;
-				if (method_exists($object->lines[$i], 'get_prev_progress')) {
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+				if (method_exists($object->lines[$i], 'getSituationDeltaAmount')) {
+					$fieldname = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? 'multicurrency_total_ht' : 'total_ht');
+					$result .= price($sign * $object->lines[$i]->getSituationDeltaAmount($object->id, $fieldname), 0, $outputlangs);
+				} else {
+					// TODO Remove this. The total should be saved correctly in database instead of being modified here.
+					$prev_progress = 0;
+					$progress = 1;
+					if (method_exists($object->lines[$i], 'get_prev_progress')) {
+						$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
+						$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+					}
+					$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
 				}
-				$result .= price($sign * ($total_ht / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
 			} else {
 				$result .= price($sign * $total_ht, 0, $outputlangs);
 			}
@@ -2506,14 +2511,19 @@ function pdf_getlinetotalwithtax($object, $i, $outputlangs, $hidedetails = 0)
 		} elseif (empty($hidedetails) || $hidedetails > 1) {
 			$total_ttc = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? $object->lines[$i]->multicurrency_total_ttc : $object->lines[$i]->total_ttc);
 			if (isset($object->lines[$i]->situation_percent) && $object->lines[$i]->situation_percent > 0) {
-				// TODO Remove this. The total should be saved correctly in database instead of being modified here.
-				$prev_progress = 0;
-				$progress = 1;
-				if (method_exists($object->lines[$i], 'get_prev_progress')) {
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-					$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+				if (method_exists($object->lines[$i], 'getSituationDeltaAmount')) {
+					$fieldname = (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? 'multicurrency_total_ttc' : 'total_ttc');
+					$result .= price($sign * $object->lines[$i]->getSituationDeltaAmount($object->id, $fieldname), 0, $outputlangs);
+				} else {
+					// TODO Remove this. The total should be saved correctly in database instead of being modified here.
+					$prev_progress = 0;
+					$progress = 1;
+					if (method_exists($object->lines[$i], 'get_prev_progress')) {
+						$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
+						$progress = ($object->lines[$i]->situation_percent - $prev_progress) / 100;
+					}
+					$result .= price($sign * ($total_ttc / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
 				}
-				$result .= price($sign * ($total_ttc / ($object->lines[$i]->situation_percent / 100)) * $progress, 0, $outputlangs);
 			} else {
 				$result .= price($sign * $total_ttc, 0, $outputlangs);
 			}
