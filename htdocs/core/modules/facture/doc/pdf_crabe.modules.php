@@ -733,20 +733,7 @@ class pdf_crabe extends ModelePDFFactures
 						$sign = -1;
 					}
 					// Collection of totals by value of VAT in $this->tva["taux"]=total_tva
-					$prev_progress = $object->lines[$i]->get_prev_progress($object->id);
-					if ($prev_progress > 0 && !empty($object->lines[$i]->situation_percent)) { // Compute progress from previous situation
-						if (isModEnabled("multicurrency") && $object->multicurrency_tx != 1) {
-							$tvaligne = $sign * $object->lines[$i]->multicurrency_total_tva * ($object->lines[$i]->situation_percent - $prev_progress) / $object->lines[$i]->situation_percent;
-						} else {
-							$tvaligne = $sign * $object->lines[$i]->total_tva * ($object->lines[$i]->situation_percent - $prev_progress) / $object->lines[$i]->situation_percent;
-						}
-					} else {
-						if (isModEnabled("multicurrency") && $object->multicurrency_tx != 1) {
-							$tvaligne = $sign * $object->lines[$i]->multicurrency_total_tva;
-						} else {
-							$tvaligne = $sign * $object->lines[$i]->total_tva;
-						}
-					}
+					$tvaligne = $sign * $object->lines[$i]->getSituationDeltaAmount($object->id, (isModEnabled("multicurrency") && $object->multicurrency_tx != 1 ? 'multicurrency_total_tva' : 'total_tva'));
 
 					$localtax1ligne = $object->lines[$i]->total_localtax1;
 					$localtax2ligne = $object->lines[$i]->total_localtax2;
