@@ -237,6 +237,8 @@ if (empty($reshook)) {
 
 			$object->fk_project = $projectid;
 
+			// BACKPORT v23 - https://github.com/Dolibarr/dolibarr/pull/35590
+			$object->context['contact_id'] = GETPOST('contactid', 'int');
 			$id = $object->create($user);
 			if ($id <= 0) {
 				$error++;
