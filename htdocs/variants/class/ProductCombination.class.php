@@ -614,7 +614,9 @@ class ProductCombination
 					$new_price += $this->variation_price;
 				}
 
-				$ret = $child->updatePrice($new_price, $new_type, $user, $new_vat, $new_min_price, 1, $new_npr, $new_psq);
+				//--fix backport v22 ----------
+				$ret = $child->updatePrice($new_price, $new_type, $user, $new_vat, $new_min_price, 1, $new_npr, $new_psq, 0, [], $parent->default_vat_code);
+				//--fix backport v22 ----------
 
 				if ($ret < 0) {
 					$this->db->rollback();
