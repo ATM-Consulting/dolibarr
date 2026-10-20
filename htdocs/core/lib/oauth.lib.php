@@ -34,6 +34,9 @@ if (isModEnabled('stripe')) {
 }
 $supportedoauth2array['OAUTH_GITHUB_NAME'] = array('callbackfile' => 'github', 'picto' => 'github', 'urlforapp' => 'OAUTH_GITHUB_DESC', 'name'=>'GitHub', 'urlforcredentials'=>'https://github.com/settings/developers', 'availablescopes'=>'user,public_repo', 'returnurl'=>'/core/modules/oauth/github_oauthcallback.php');
 $supportedoauth2array['OAUTH_MICROSOFT_NAME'] = array('callbackfile' => 'microsoft', 'picto' => 'microsoft', 'urlforapp' => 'OAUTH_MICROSOFT_DESC', 'name'=>'Microsoft', 'urlforcredentials'=>'https://portal.azure.com/', 'availablescopes'=>'openid,offline_access,profile,email,User.Read,https://outlook.office365.com/IMAP.AccessAsUser.All,https://outlook.office365.com/SMTP.Send', 'returnurl'=>'/core/modules/oauth/microsoft_oauthcallback.php');
+// 'servicename' must match the OAuth service class name, used as key to store the token.
+// Do NOT mix outlook.office.com scopes with Graph scopes (openid/profile/email): it causes error AADSTS28000.
+$supportedoauth2array['OAUTH_MICROSOFT3_NAME'] = array('callbackfile' => 'microsoft3', 'servicename' => 'Microsoft3', 'picto' => 'microsoft', 'urlforapp' => 'OAUTH_MICROSOFT3_DESC', 'name'=>'Microsoft Exchange Online [SMTP/IMAP]', 'urlforcredentials'=>'https://portal.azure.com/', 'availablescopes'=>'offline_access,https://outlook.office.com/SMTP.Send,https://outlook.office.com/IMAP.AccessAsUser.All', 'returnurl'=>'/core/modules/oauth/microsoft3_oauthcallback.php');
 if (getDolGlobalInt('MAIN_FEATURES_LEVEL') >= 2) {
 	$supportedoauth2array['OAUTH_OTHER_NAME'] = array('callbackfile' => 'generic', 'picto' => 'generic', 'urlforapp' => 'OAUTH_OTHER_DESC', 'name'=>'Other', 'urlforcredentials'=>'', 'availablescopes'=>'Standard', 'returnurl'=>'/core/modules/oauth/generic_oauthcallback.php');
 	// See https://learn.microsoft.com/fr-fr/azure/active-directory/develop/quickstart-register-app#register-an-application
@@ -158,6 +161,12 @@ $list = array(
 		'OAUTH_MICROSOFT_NAME',
 		'OAUTH_MICROSOFT_ID',
 		'OAUTH_MICROSOFT_SECRET',
+	),
+	array(
+		'OAUTH_MICROSOFT3_NAME',
+		'OAUTH_MICROSOFT3_ID',
+		'OAUTH_MICROSOFT3_SECRET',
+		'OAUTH_MICROSOFT3_DESC',
 	),
 	array(
 		'OAUTH_NEST_NAME',

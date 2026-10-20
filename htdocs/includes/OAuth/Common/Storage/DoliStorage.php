@@ -69,12 +69,14 @@ class DoliStorage implements TokenStorageInterface
 	 * @param 	DoliDB 	$db					Database handler
 	 * @param 	Conf 	$conf				Conf object
 	 * @param	string	$keyforprovider		Key to manage several providers of the same type. For example 'abc' will be added to 'Google' to defined storage key.
+	 * @param	string	$tenant				Tenant of the provider. If empty, getTenant() falls back on OAUTH_MICROSOFT[-keyforprovider]_TENANT.
 	 */
-	public function __construct(DoliDB $db, $conf, $keyforprovider = '')
+	public function __construct(DoliDB $db, $conf, $keyforprovider = '', $tenant = '')
 	{
 		$this->db = $db;
 		$this->conf = $conf;
 		$this->keyforprovider = $keyforprovider;
+		$this->tenant = $tenant;
 		$this->token = '';
 		$this->tokens = array();
 		$this->states = array();
@@ -375,10 +377,11 @@ class DoliStorage implements TokenStorageInterface
 	 */
 	public function getTenant()
 	{
-		// Set/Reset tenant now so it will be defined for.
-		// TODO We must store it into the table llx_oauth_token
-		$this->tenant = getDolGlobalString('OAUTH_MICROSOFT'.($this->keyforprovider ? '-'.$this->keyforprovider : '').'_TENANT');
+		if (!empty($this->tenant)) {
+			return $this->tenant;
+		}
 
-		return $this->tenant;
+		// TODO We must store it into the table llx_oauth_token
+		return getDolGlobalString('OAUTH_MICROSOFT'.($this->keyforprovider ? '-'.$this->keyforprovider : '').'_TENANT');
 	}
 }
