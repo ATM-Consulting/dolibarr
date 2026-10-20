@@ -1134,7 +1134,7 @@ class EmailCollector extends CommonObject
 				$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
 				$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
-				$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : $supportedoauth2array[$keyforsupportedoauth2array]['name'].($keyforprovider ? '-'.$keyforprovider : ''));
+				$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : (empty($supportedoauth2array[$keyforsupportedoauth2array]['servicename']) ? $supportedoauth2array[$keyforsupportedoauth2array]['name'] : $supportedoauth2array[$keyforsupportedoauth2array]['servicename']).($keyforprovider ? '-'.$keyforprovider : ''));
 
 				require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 				//$debugtext = "Host: ".$this->host."<br>Port: ".$this->port."<br>Login: ".$this->login."<br>Password: ".$this->password."<br>access type: ".$this->acces_type."<br>oauth service: ".$this->oauth_service."<br>Max email per collect: ".$this->maxemailpercollect;
@@ -1142,7 +1142,7 @@ class EmailCollector extends CommonObject
 
 				$token = '';
 
-				$storage = new DoliStorage($db, $conf, $keyforprovider);
+				$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString('OAUTH_'.$this->oauth_service.'_TENANT'));
 
 				try {
 					$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);

@@ -1,0 +1,1 @@
+/home/atm/leaseboard/htdocs/custom/financement/script/webservice/scoring_franfinance.php

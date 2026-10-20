@@ -932,14 +932,14 @@ class CMailFile
 					$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
 					if (isset($supportedoauth2array)) {
-						$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : $supportedoauth2array[$keyforsupportedoauth2array]['name'].($keyforprovider ? '-'.$keyforprovider : ''));
+						$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : (empty($supportedoauth2array[$keyforsupportedoauth2array]['servicename']) ? $supportedoauth2array[$keyforsupportedoauth2array]['name'] : $supportedoauth2array[$keyforsupportedoauth2array]['servicename']).($keyforprovider ? '-'.$keyforprovider : ''));
 					} else {
 						$OAUTH_SERVICENAME = 'Unknown';
 					}
 
 					require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 
-					$storage = new DoliStorage($db, $conf, $keyforprovider);
+					$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString('OAUTH_'.getDolGlobalString($keyforsmtpoauthservice).'_TENANT'));
 					try {
 						$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
 						$expire = false;
@@ -1081,11 +1081,11 @@ class CMailFile
 					$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
 					$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
-					$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : $supportedoauth2array[$keyforsupportedoauth2array]['name'].($keyforprovider ? '-'.$keyforprovider : ''));
+					$OAUTH_SERVICENAME = (empty($supportedoauth2array[$keyforsupportedoauth2array]['name']) ? 'Unknown' : (empty($supportedoauth2array[$keyforsupportedoauth2array]['servicename']) ? $supportedoauth2array[$keyforsupportedoauth2array]['name'] : $supportedoauth2array[$keyforsupportedoauth2array]['servicename']).($keyforprovider ? '-'.$keyforprovider : ''));
 
 					require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
 
-					$storage = new DoliStorage($db, $conf, $keyforprovider);
+					$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString('OAUTH_'.getDolGlobalString($keyforsmtpoauthservice).'_TENANT'));
 
 					try {
 						$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);

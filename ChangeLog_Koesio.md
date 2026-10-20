@@ -1,3 +1,4 @@
+- Backport 24 : PR #37329 + #40257 - Add OAuth2 provider Microsoft Exchange Online [SMTP/IMAP] (MICROSOFT3), prompt configurable with `OAUTH_MICROSOFT3_FORCE_PROMPT` (default `select_account`) - **2026-10-20**
 - Backport 24 : Commit 0b4cacd2 - Add dolChmod - **2026-06-30**
 - Backport 24 : Commit e8ac6cdd - Add GETPOSTDATE - **2026-06-30**
 - Backport 24 : Commit 7faa9bad, e412dbbe, 16f4f4a6 - Add dropdown on button  - **2026-06-30**
