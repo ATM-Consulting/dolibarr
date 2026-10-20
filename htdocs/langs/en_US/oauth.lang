@@ -39,3 +39,4 @@ AOAuthEntryForThisProviderAndLabelAlreadyHasAKey=An OAuth entry for this provide
 URLOfServiceForAuthorization=URL provided by OAuth service for authentication
 Scopes=Permissions (Scopes)
 ScopeUndefined=Permissions (Scopes) undefined (see previous tab)
+OAuthErrorStateDiffers=Value for state=%s differs from value in session. Code is refused.
