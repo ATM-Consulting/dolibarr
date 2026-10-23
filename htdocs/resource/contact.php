@@ -43,6 +43,7 @@ $action = GETPOST('action', 'aZ09');
 
 $object = new Dolresource($db);
 
+
 // Load object
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php';     // Must be include, not include_once
 
@@ -127,6 +128,7 @@ if ($id > 0 || !empty($ref)) {
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
 
+	$object->loadTypeLabel();
 
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';

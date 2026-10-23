@@ -49,7 +49,7 @@ if ($user->socid > 0) {
 	accessforbidden();
 }
 
-$object = new Dolresource($db);
+$object = new DolResource($db);
 $extrafields = new ExtraFields($db);
 
 // fetch optionals attributes and labels
@@ -100,7 +100,7 @@ if (empty($reshook)) {
 				$object->ref                    = $ref;
 				$object->description            = $description;
 				$object->fk_code_type_resource  = $fk_code_type_resource;
-				$object->country_id             = $country_id;
+				$object->fk_country             = $country_id;
 
 				// Fill array 'array_options' with data from add form
 				$ret = $extrafields->setOptionalsFromPost(null, $object);
@@ -140,7 +140,7 @@ if (empty($reshook)) {
 				$object->ref          			= $ref;
 				$object->description  			= $description;
 				$object->fk_code_type_resource  = $fk_code_type_resource;
-				$object->country_id             = $country_id;
+				$object->fk_country             = $country_id;
 
 				// Fill array 'array_options' with data from add form
 				$ret = $extrafields->setOptionalsFromPost(null, $object, '@GETPOSTISSET');
@@ -238,7 +238,7 @@ if ($action == 'create' || $object->fetch($id, $ref) > 0) {
 
 		// Origin country
 		print '<tr><td>'.$langs->trans("CountryOrigin").'</td><td>';
-		print $form->select_country($object->country_id, 'country_id');
+		print $form->select_country($object->fk_country, 'country_id');
 		if ($user->admin) {
 			print info_admin($langs->trans("YouCanChangeValuesForThisListFromDictionarySetup"), 1);
 		}
@@ -283,6 +283,7 @@ if ($action == 'create' || $object->fetch($id, $ref) > 0) {
 
 		dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
 
+		$object->loadTypeLabel();
 
 		print '<div class="fichecenter">';
 		print '<div class="underbanner clearboth"></div>';
@@ -312,7 +313,7 @@ if ($action == 'create' || $object->fetch($id, $ref) > 0) {
 		print '<tr>';
 		print '<td>'.$langs->trans("CountryOrigin").'</td>';
 		print '<td>';
-		print getCountry($object->country_id, 0, $db);
+		print getCountry($object->fk_country, 0, $db);
 		print '</td>';
 
 

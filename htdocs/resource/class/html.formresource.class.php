@@ -87,7 +87,7 @@ class FormResource
 		$out = '';
 		$outarray = array();
 
-		$resourcestat = new Dolresource($this->db);
+		$resourcestat = new DolResource($this->db);
 
 		$resources_used = $resourcestat->fetchAll('ASC', 't.rowid', $limit, 0, $filter);
 
@@ -119,7 +119,7 @@ class FormResource
 					$resourceclass = ucfirst($resourcestat->lines[$i]->element);
 
 					$label = $resourcestat->lines[$i]->ref ? $resourcestat->lines[$i]->ref : ''.$resourcestat->lines[$i]->label;
-					if ($resourceclass != 'Dolresource') {
+					if ($resourceclass != 'Resource') {
 						$label .= ' ('.$langs->trans($resourceclass).')';
 					}
 
@@ -180,7 +180,7 @@ class FormResource
 		// phpcs:enable
 		global $langs, $user;
 
-		$resourcestat = new Dolresource($this->db);
+		$resourcestat = new DolResource($this->db);
 
 		dol_syslog(get_class($this)."::select_types_resource ".$selected.", ".$htmlname.", ".$filtertype.", ".$format, LOG_DEBUG);
 

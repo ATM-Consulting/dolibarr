@@ -185,7 +185,7 @@ class box_dolibarr_state_board extends ModeleBoxes
 				'expensereports' => DOL_DOCUMENT_ROOT . "/expensereport/class/expensereport.class.php",
 				'holidays' => DOL_DOCUMENT_ROOT . "/holiday/class/holiday.class.php",
 				'ticket' => DOL_DOCUMENT_ROOT . "/ticket/class/ticket.class.php",
-				'dolresource' => DOL_DOCUMENT_ROOT . "/resource/class/dolresource.class.php"
+				'resource' => DOL_DOCUMENT_ROOT . "/resource/class/dolresource.class.php"
 			);
 			$links = array(
 				'users' => DOL_URL_ROOT . '/user/list.php',
