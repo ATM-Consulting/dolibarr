@@ -146,6 +146,10 @@ TicketsAllowClassificationModificationIfClosed=Autoriser la modification de la c
 TicketsAllowClassificationModificationIfClosedHelp=Permet de modifier la classification (type, groupe de ticket, gravité) même si les tickets sont fermés.
 TicketAutoCheckNotifyThirdParty=Cochez par défaut « Notifier tiers » lors de la création d'un ticket
 TicketAutoCheckNotifyThirdPartyHelp=Lors de la création d'un ticket, l'option « Notifier le tiers » sera automatiquement cochée.
+# @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+TicketEmailHideExtrafields=Masquer les attributs supplémentaires dans les e-mails de notification des tickets
+TicketEmailHideExtrafieldsHelp=Les e-mails envoyés à l'adresse d'administration et au client à la création d'un ticket, et à la personne assignée, ne listent plus les attributs supplémentaires. Les autres informations restent inchangées.
+# @ATM-PATCH END ticket-email-hide-extrafields
 TicketAssignContactToMessage=Assigner un contact externe à un message
 TicketAssignContactToMessageHelp=Lorsqu'un contact connu répond à un message, son nom s'affiche dans la liste des messages de tickets.
 # Index & list page

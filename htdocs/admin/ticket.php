@@ -200,6 +200,16 @@ if ($action == 'updateMask') {
 		$error++;
 	}
 } elseif ($action == 'setvar') {
+	// @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	if (empty($conf->use_javascript_ajax)) {
+		$res = dolibarr_set_const($db, 'TICKET_EMAIL_HIDE_EXTRAFIELDS', GETPOSTINT('TICKET_EMAIL_HIDE_EXTRAFIELDS', 2), 'chaine', 0, '', $conf->entity);
+		if (!($res > 0)) {
+			$error++;
+		}
+	}
+	// @ATM-PATCH END ticket-email-hide-extrafields
+
 	include_once DOL_DOCUMENT_ROOT."/core/lib/files.lib.php";
 
 	$notification_email = GETPOST('TICKET_NOTIFICATION_EMAIL_FROM', 'alpha');
@@ -702,6 +712,23 @@ print '<td class="center">';
 print $formcategory->textwithpicto('', $langs->trans("TicketAutoCheckNotifyThirdPartyHelp"), 1, 'help');
 print '</td>';
 print '</tr>';
+
+// @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+// grep: git grep '@ATM-PATCH' -- htdocs/
+print '<tr class="oddeven"><td>'.$langs->trans("TicketEmailHideExtrafields").'</td>';
+print '<td class="left">';
+if ($conf->use_javascript_ajax) {
+	print ajax_constantonoff('TICKET_EMAIL_HIDE_EXTRAFIELDS');
+} else {
+	$arrval = array('0' => $langs->trans("No"), '1' => $langs->trans("Yes"));
+	print $formcategory->selectarray("TICKET_EMAIL_HIDE_EXTRAFIELDS", $arrval, getDolGlobalString('TICKET_EMAIL_HIDE_EXTRAFIELDS'));
+}
+print '</td>';
+print '<td class="center">';
+print $formcategory->textwithpicto('', $langs->trans("TicketEmailHideExtrafieldsHelp"), 1, 'help');
+print '</td>';
+print '</tr>';
+// @ATM-PATCH END ticket-email-hide-extrafields
 
 // Message header
 $mail_intro = htmlspecialchars_decode(getDolGlobalString('TICKET_MESSAGE_MAIL_INTRO', ''));
