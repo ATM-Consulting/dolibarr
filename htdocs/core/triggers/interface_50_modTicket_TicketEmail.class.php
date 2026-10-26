@@ -338,15 +338,19 @@ class InterfaceTicketEmail extends DolibarrTriggers
 		$message_admin .= '<li>'.$langs->trans('TicketCategory').' : '.$langs->getLabelFromKey($this->db, 'TicketCategoryShort'.$object->category_code, 'c_ticket_category', 'code', 'label', $object->category_code).'</li>';
 		$message_admin .= '<li>'.$langs->trans('Severity').' : '.$langs->getLabelFromKey($this->db, 'TicketSeverityShort'.$object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code).'</li>';
 		$message_admin .= '<li>'.$langs->trans('From').' : '.($object->email_from ? $object->email_from : ($object->fk_user_create > 0 ? $langs->trans('Internal') : '')).'</li>';
-		// Extrafields
-		$extraFields = new ExtraFields($this->db);
-		$extraFields->fetch_name_optionals_label($object->table_element);
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			foreach ($object->array_options as $key => $value) {
-				$key = substr($key, 8); // remove "options_"
-				$message_admin .= '<li>'.$langs->trans($extraFields->attributes[$object->element]['label'][$key]).' : '.$extraFields->showOutputField($key, $value, '', $object->table_element).'</li>';
+		// @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		if (!getDolGlobalInt('TICKET_EMAIL_HIDE_EXTRAFIELDS')) {
+			$extraFields = new ExtraFields($this->db);
+			$extraFields->fetch_name_optionals_label($object->table_element);
+			if (is_array($object->array_options) && count($object->array_options) > 0) {
+				foreach ($object->array_options as $key => $value) {
+					$key = substr($key, 8); // remove "options_"
+					$message_admin .= '<li>'.$langs->trans($extraFields->attributes[$object->element]['label'][$key]).' : '.$extraFields->showOutputField($key, $value, '', $object->table_element).'</li>';
+				}
 			}
 		}
+		// @ATM-PATCH END ticket-email-hide-extrafields
 		if ($object->fk_soc > 0) {
 			$object->fetch_thirdparty();
 			$message_admin .= '<li>'.$langs->trans('Company').' : '.$object->thirdparty->name.'</li>';
@@ -410,31 +414,35 @@ class InterfaceTicketEmail extends DolibarrTriggers
 		$message_customer .= '<li>'.$langs->trans('TicketCategory').' : '.$langs->getLabelFromKey($this->db, 'TicketCategoryShort'.$object->category_code, 'c_ticket_category', 'code', 'label', $object->category_code).'</li>';
 		$message_customer .= '<li>'.$langs->trans('Severity').' : '.$langs->getLabelFromKey($this->db, 'TicketSeverityShort'.$object->severity_code, 'c_ticket_severity', 'code', 'label', $object->severity_code).'</li>';
 
-		// Extrafields
-		if (is_array($extrafields->attributes[$object->table_element]['label'])) {
-			foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $value) {
-				$enabled = 1;
-				if ($enabled && isset($extrafields->attributes[$object->table_element]['list'][$key])) {
-					$enabled = (int) dol_eval($extrafields->attributes[$object->table_element]['list'][$key], 1);
-				}
-				$perms = 1;
-				if ($perms && isset($extrafields->attributes[$object->table_element]['perms'][$key])) {
-					$perms = (int) dol_eval($extrafields->attributes[$object->table_element]['perms'][$key], 1);
-				}
+		// @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		if (!getDolGlobalInt('TICKET_EMAIL_HIDE_EXTRAFIELDS')) {
+			if (is_array($extrafields->attributes[$object->table_element]['label'])) {
+				foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $value) {
+					$enabled = 1;
+					if ($enabled && isset($extrafields->attributes[$object->table_element]['list'][$key])) {
+						$enabled = (int) dol_eval($extrafields->attributes[$object->table_element]['list'][$key], 1);
+					}
+					$perms = 1;
+					if ($perms && isset($extrafields->attributes[$object->table_element]['perms'][$key])) {
+						$perms = (int) dol_eval($extrafields->attributes[$object->table_element]['perms'][$key], 1);
+					}
 
-				$qualified = true;
-				if (empty($enabled)) {
-					$qualified = false;
-				}
-				if (empty($perms)) {
-					$qualified = false;
-				}
+					$qualified = true;
+					if (empty($enabled)) {
+						$qualified = false;
+					}
+					if (empty($perms)) {
+						$qualified = false;
+					}
 
-				if ($qualified) {
-					$message_customer .= '<li>' . $langs->trans($key) . ' : ' . $value . '</li>';
+					if ($qualified) {
+						$message_customer .= '<li>' . $langs->trans($key) . ' : ' . $value . '</li>';
+					}
 				}
 			}
 		}
+		// @ATM-PATCH END ticket-email-hide-extrafields
 
 		$message_customer .= '</ul>';
 
@@ -509,12 +517,16 @@ class InterfaceTicketEmail extends DolibarrTriggers
 		$message .= '<li>'.$langs->trans('Type').' : '.$object->type_label.'</li>';
 		$message .= '<li>'.$langs->trans('Category').' : '.$object->category_label.'</li>';
 		$message .= '<li>'.$langs->trans('Severity').' : '.$object->severity_label.'</li>';
-		// Extrafields
-		if (is_array($object->array_options) && count($object->array_options) > 0) {
-			foreach ($object->array_options as $key => $value) {
-				$message .= '<li>'.$langs->trans($key).' : '.$value.'</li>';
+		// @ATM-PATCH BEGIN ticket-email-hide-extrafields — TICKET_EMAIL_HIDE_EXTRAFIELDS, sent upstream to develop
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		if (!getDolGlobalInt('TICKET_EMAIL_HIDE_EXTRAFIELDS')) {
+			if (is_array($object->array_options) && count($object->array_options) > 0) {
+				foreach ($object->array_options as $key => $value) {
+					$message .= '<li>'.$langs->trans($key).' : '.$value.'</li>';
+				}
 			}
 		}
+		// @ATM-PATCH END ticket-email-hide-extrafields
 
 		$message .= '</ul>';
 		$message .= '<p>'.$langs->trans('Message').' : <br>'.$object->message.'</p>';
