@@ -3306,6 +3306,7 @@ class ExtraFields
 		if ($type == 'sellist') {
 			return ($v == '0');
 		}
+		// Backport of PR Dolibarr/dolibarr#42274
 		if (in_array($type, array('int', 'double', 'price'))) {
 			return false;
 		}

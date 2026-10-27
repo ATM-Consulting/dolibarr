@@ -619,6 +619,7 @@ class pdf_octopus extends ModelePDFFactures
 				$pdf->setPage(2);
 				$pagenb++;
 				$this->_pagehead($pdf, $object, 0, $outputlangs, $outputlangsbis);
+				// Backport of PR Dolibarr/dolibarr#42275
 				$pdf->setTopMargin($this->tab_top_newpage + $this->tabTitleHeight + 2);
 
 				// Incoterms, sale rep signature, extrafields, and public note are now processed in tableFirstPage method
@@ -716,6 +717,7 @@ class pdf_octopus extends ModelePDFFactures
 						$imglinesize = pdf_getSizeForImage($realpatharray[$i]);
 					}
 
+					// Backport of PR Dolibarr/dolibarr#42275
 					$pdf->setTopMargin($this->tab_top_newpage + $this->tabTitleHeight + 2);
 					$pdf->setPageOrientation('', true, $this->heightforfooter + $this->heightforfreetext + $this->heightforinfotot); // The only function to edit the bottom margin of current page to set it.
 					$pageposbefore = $pdf->getPage();
@@ -736,6 +738,7 @@ class pdf_octopus extends ModelePDFFactures
 							}
 							$pdf->setPage($pageposbefore + 1);
 							$pdf->setPageOrientation('', true, $this->heightforfooter); // The only function to edit the bottom margin of current page to set it.
+							// Backport of PR Dolibarr/dolibarr#42275 and Dolibarr/dolibarr#41022
 							$posy = $this->tab_top_newpage + $this->tabTitleHeight;
 							// The 'position' and 'totalexcltax' columns are output at $curY, not at $posy.
 							// Without this update, they stay at the coordinate of the previous page.
@@ -806,6 +809,7 @@ class pdf_octopus extends ModelePDFFactures
 					// We suppose that a too long description or photo were moved completely on next page
 					if ($pageposafter > $pageposbefore && empty($showpricebeforepagebreak)) {
 						$pdf->setPage($pageposafter);
+						// Backport of PR Dolibarr/dolibarr#42275 and Dolibarr/dolibarr#41022
 						$posy = $this->tab_top_newpage + $this->tabTitleHeight;
 						// Same as above: 'position' and 'totalexcltax' are output at $curY.
 						$curY = $posy;
@@ -1011,6 +1015,7 @@ class pdf_octopus extends ModelePDFFactures
 					// Detect if some page were added automatically and output _tableau for past pages
 					while ($pagenb < $pageposafter) {
 						$pdf->setPage($pagenb);
+						// Backport of PR Dolibarr/dolibarr#42275
 						$tabtop = $this->tab_top_newpage;
 						$tabhauteur = $this->page_hauteur - $tabtop - $this->heightforfooter;
 						if ($pagenb != $pageposbeforeprintlines) {
@@ -1033,6 +1038,7 @@ class pdf_octopus extends ModelePDFFactures
 					}
 
 					if (isset($object->lines[$i + 1]->pagebreak) && $object->lines[$i + 1]->pagebreak) {  // @phan-suppress-current-line PhanUndeclaredProperty
+						// Backport of PR Dolibarr/dolibarr#42275
 						$tabtop = $this->tab_top_newpage;
 						$tabhauteur = $this->page_hauteur - $tabtop - $this->heightforfooter;
 						if ($pagenb != $pageposbeforeprintlines) {
