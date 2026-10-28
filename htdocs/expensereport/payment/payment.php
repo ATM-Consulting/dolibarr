@@ -47,13 +47,15 @@ $amounts = array();
 $accountid = GETPOSTINT('accountid');
 $cancel = GETPOST('cancel');
 
-$object = new PaymentExpenseReport($db);
+// $id and $ref identify the expense report to pay, not a payment
+$expensereport = new ExpenseReport($db);
 
-if ($id > 0) {
-	$result = $object->fetch($id);
-	if (!$result) {
-		dol_print_error($db, 'Failed to get payment id '.$id);
-	}
+if (!($id > 0) && empty($ref)) {
+	recordNotFound();
+}
+$result = $expensereport->fetch($id, $ref);
+if ($result <= 0) {
+	recordNotFound();
 }
 
 // Security check
@@ -62,7 +64,7 @@ if ($user->socid > 0) {
 	$socid = $user->socid;
 }
 
-$result = restrictedArea($user, 'expensereport', $object->fk_expensereport, 'expensereport');
+$result = restrictedArea($user, 'expensereport', $expensereport, 'expensereport');
 
 $permissiontoadd = $user->hasRight('expensereport', 'creer');
 
@@ -75,16 +77,9 @@ if ($action == 'add_payment' && $permissiontoadd) {
 	$error = 0;
 
 	if ($cancel) {
-		$loc = DOL_URL_ROOT.'/expensereport/card.php?id='.$id;
+		$loc = DOL_URL_ROOT.'/expensereport/card.php?id='.$expensereport->id;
 		header("Location: ".$loc);
 		exit;
-	}
-
-	$expensereport = new ExpenseReport($db);
-	$result = $expensereport->fetch($id, $ref);
-	if (!$result) {
-		$error++;
-		setEventMessages($expensereport->error, $expensereport->errors, 'errors');
 	}
 
 	$datepaid = dol_mktime(12, 0, 0, GETPOSTINT("remonth"), GETPOSTINT("reday"), GETPOSTINT("reyear"));
@@ -166,7 +161,7 @@ if ($action == 'add_payment' && $permissiontoadd) {
 
 			if (!$error) {
 				$db->commit();
-				$loc = DOL_URL_ROOT.'/expensereport/card.php?id='.$id;
+				$loc = DOL_URL_ROOT.'/expensereport/card.php?id='.$expensereport->id;
 				header('Location: '.$loc);
 				exit;
 			} else {
@@ -190,9 +185,6 @@ $form = new Form($db);
 
 // Form to create expense report payment
 if ($action == 'create' || empty($action)) {
-	$expensereport = new ExpenseReport($db);
-	$expensereport->fetch($id, $ref);
-
 	$total = $expensereport->total_ttc;
 
 	// autofill remainder amount
@@ -233,7 +225,7 @@ if ($action == 'create' || empty($action)) {
 
 	$sql = "SELECT sum(p.amount) as total";
 	$sql .= " FROM ".MAIN_DB_PREFIX."payment_expensereport as p, ".MAIN_DB_PREFIX."expensereport as e";
-	$sql .= " WHERE p.fk_expensereport = e.rowid AND p.fk_expensereport = ".((int) $id);
+	$sql .= " WHERE p.fk_expensereport = e.rowid AND p.fk_expensereport = ".((int) $expensereport->id);
 	$sql .= ' AND e.entity IN ('.getEntity('expensereport').')';
 	$sumpaid = 0;
 	$resql = $db->query($sql);
