@@ -1,4 +1,6 @@
 # Backported from Dolibarr:
+- Backport of upstream PR #42326 (submitted, not merged yet) : the shipment PDF models ignore the contacts
+  set on a standalone shipment (SHIPMENT_STANDALONE) and print the thirdparty address. DA029056.
 - Backport of upstream PR #40676 (submitted, not merged yet) : customs code and country of origin
   printed as raw translation keys on a standalone shipment line. DA028789.
 - Backport of upstream PR #40677 (submitted, not merged yet) : a mandatory form field configured in
