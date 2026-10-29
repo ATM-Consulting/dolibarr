@@ -750,6 +750,13 @@ class Documents extends DolibarrApi
 			throw new RestException(400, 'Modulepart not provided.');
 		}
 
+		/** START SPÉ KN - TK2610-5379 maintainer API: upload restricted to his maintenance tickets, ref is the ticket id */
+		if (isModEnabled('clinetworksticketing') && dol_include_once('/clinetworksticketing/class/Maintainer/MaintainerApiPolicy.php') && class_exists('\CliNetworksTicketing\Maintainer\MaintainerApiPolicy')) {
+			$maintainerApiPolicy = new \CliNetworksTicketing\Maintainer\MaintainerApiPolicy($this->db, DolibarrApiAccess::$user);
+			$maintainerApiPolicy->assertUploadAllowed((string) $modulepart, (string) $ref, (string) $subdir, (int) $overwriteifexists);
+		}
+		/** END SPÉ KN */
+
 		$newfilecontent = '';
 		if (empty($fileencoding)) {
 			$newfilecontent = $filecontent;
