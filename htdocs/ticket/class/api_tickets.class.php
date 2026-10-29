@@ -195,6 +195,14 @@ class Tickets extends DolibarrApi
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		/** START SPÉ KN - TK2610-5379 maintainer API: ticket scope and public messages only */
+		if (isModEnabled('clinetworksticketing') && dol_include_once('/clinetworksticketing/class/Maintainer/MaintainerApiPolicy.php') && class_exists('\CliNetworksTicketing\Maintainer\MaintainerApiPolicy')) {
+			$maintainerApiPolicy = new \CliNetworksTicketing\Maintainer\MaintainerApiPolicy($this->db, DolibarrApiAccess::$user);
+			$maintainerApiPolicy->assertTicketReadable($this->ticket);
+			$maintainerApiPolicy->filterTicketMessages($this->ticket);
+		}
+		/** END SPÉ KN */
+
 		if ($contact_list > -1) {
 			// Add external contacts ids
 			$tmparray = $this->ticket->liste_contact(-1, 'external', $contact_list);
