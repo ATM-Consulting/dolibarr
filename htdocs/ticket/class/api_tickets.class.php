@@ -485,6 +485,12 @@ class Tickets extends DolibarrApi
 			$this->ticket->$field = $this->_checkValForAPI($field, $value, $this->ticket);
 		}
 		$ticketMessageText = $this->ticket->message;
+		/** START SPÉ KN - TK2610-5379 maintainer API: an empty track_id would make fetch() fail and leave the posted fields in place */
+		if (empty($this->ticket->track_id) && isModEnabled('clinetworksticketing') && dol_include_once('/clinetworksticketing/class/Maintainer/MaintainerApiPolicy.php') && class_exists('\CliNetworksTicketing\Maintainer\MaintainerApiPolicy')
+			&& \CliNetworksTicketing\Maintainer\MaintainerApiPolicy::isMaintainer(DolibarrApiAccess::$user)) {
+			throw new RestException(404, 'Ticket not found');
+		}
+		/** END SPÉ KN */
 		$result = $this->ticket->fetch(0, '', $this->ticket->track_id);
 		if (!$result) {
 			throw new RestException(404, 'Ticket not found');
