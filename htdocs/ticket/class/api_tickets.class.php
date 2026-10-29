@@ -494,6 +494,13 @@ class Tickets extends DolibarrApi
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		/** START SPÉ KN - TK2610-5379 maintainer API: public messages on his maintenance tickets only, checked before any attachment is written */
+		if (isModEnabled('clinetworksticketing') && dol_include_once('/clinetworksticketing/class/Maintainer/MaintainerApiPolicy.php') && class_exists('\CliNetworksTicketing\Maintainer\MaintainerApiPolicy')) {
+			$maintainerApiPolicy = new \CliNetworksTicketing\Maintainer\MaintainerApiPolicy($this->db, DolibarrApiAccess::$user);
+			$maintainerApiPolicy->assertMessageAllowed($this->ticket, !empty($request_data['private']));
+		}
+		/** END SPÉ KN */
+
 		$this->ticket->message = $ticketMessageText;
 
 		$filename_list = array();
@@ -636,6 +643,11 @@ class Tickets extends DolibarrApi
 		if ($this->ticket->update(DolibarrApiAccess::$user) > 0) {
 			return $this->get($id);
 		} else {
+			/** START SPÉ KN - TK2610-5379 maintainer API: a refusal of the clinetworksticketing trigger is a 401 */
+			if (!empty($this->ticket->context['clinetworksticketing_maintainer_refused'])) {
+				throw new RestException(401, $this->ticket->error);
+			}
+			/** END SPÉ KN */
 			throw new RestException(500, $this->ticket->error);
 		}
 	}
