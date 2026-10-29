@@ -1,3 +1,5 @@
+- FIX : Social contributions list logged "dol_print_date called with a bad value" for every row - backport of core commit 7fb0390d678 (PR #42364, develop) - *2026-11-02*
+  - Only the two jdate() lines of the upstream commit are taken: on the upgrade that ships it, keep the upstream version.
 - FIX : PHP warnings "opendir(): Failed to open directory" on the API explorer and on Setup > Third parties for modules without class or model directory - the directory is checked with is_dir() before opendir() (htdocs/api/index.php, htdocs/societe/admin/societe.php) - still open upstream - *2026-11-02*
 - FIX : PHP warnings "include(.../tpl/linkedobjectblock.tpl.php): Failed to open stream" in the linked objects block - backport of the html.form.class.php hunk of core commit 700463596e3 (PR #35548), native in v23 - *2026-11-02*
   - Same code as upstream, without markers: the v23 upgrade takes it without conflict.
