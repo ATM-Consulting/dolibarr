@@ -254,6 +254,12 @@ class Tickets extends DolibarrApi
 		if ($socid > 0) {
 			$sql .= " AND t.fk_soc = ".((int) $socid);
 		}
+		/** START SPÉ KN - TK2610-5379 maintainer API: list restricted to maintenance tickets */
+		if (isModEnabled('clinetworksticketing') && dol_include_once('/clinetworksticketing/class/Maintainer/MaintainerApiPolicy.php') && class_exists('\CliNetworksTicketing\Maintainer\MaintainerApiPolicy')) {
+			$maintainerApiPolicy = new \CliNetworksTicketing\Maintainer\MaintainerApiPolicy($this->db, DolibarrApiAccess::$user);
+			$sql .= $maintainerApiPolicy->listSqlFilter();
+		}
+		/** END SPÉ KN */
 		// Search on sale representative
 		if ($search_sale && $search_sale != '-1') {
 			if ($search_sale == -2) {
