@@ -244,6 +244,11 @@ class Propal extends CommonObject
 	public $cond_reglement_doc;
 
 	/**
+	 * @var string Label of the payment terms, used when there is no label for documents
+	 */
+	public $cond_reglement_label;
+
+	/**
 	 * @var string method of payment code
 	 */
 	public $mode_reglement_code;
@@ -749,15 +754,10 @@ class Propal extends CommonObject
 			if (getDolGlobalString('PRODUCT_USE_CUSTOMER_PACKAGING')) {
 				$tmpproduct = new Product($this->db);
 				$result = $tmpproduct->fetch($fk_product);
-				if (abs((float) $qty) < $tmpproduct->packaging) {
-					$qty = (float) $tmpproduct->packaging;
+				$newqty = $this->roundQtyToPackaging($qty, $tmpproduct->packaging);
+				if ($newqty != $qty) {
+					$qty = $newqty;
 					setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
-				} else {
-					if (!empty($tmpproduct->packaging) && (float) price2num(fmod((float) $qty, (float) $tmpproduct->packaging), 'MS')) {
-						$coeff = intval(abs((float) $qty) / $tmpproduct->packaging) + 1;
-						$qty = price2num((float) $tmpproduct->packaging * $coeff, 'MS');
-						setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
-					}
 				}
 			}
 
@@ -861,9 +861,12 @@ class Propal extends CommonObject
 						$this->line_order(true, 'DESC');
 					} elseif ($ranktouse > 0 && $ranktouse <= count($this->lines)) {
 						// Update all rank of all other lines starting from the same $ranktouse
-						$linecount = count($this->lines);
-						for ($ii = $ranktouse; $ii <= $linecount; $ii++) {
-							$this->updateRangOfLine($this->lines[$ii - 1]->id, $ii + 1);
+						foreach ($this->lines as $tmpline) {
+							if ($tmpline->rang >= $ranktouse) {
+								if (!empty($tmpline->id)) {
+									$this->updateRangOfLine($tmpline->id, $tmpline->rang + 1);
+								}
+							}
 						}
 					}
 
@@ -936,6 +939,11 @@ class Propal extends CommonObject
 	{
 		global $mysoc, $langs;
 
+		if (!$this->isLineOfObject($rowid)) {
+			$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
+			return -1;
+		}
+
 		dol_syslog(get_class($this)."::updateLine rowid=$rowid, pu=$pu, qty=$qty, remise_percent=$remise_percent,
         txtva=$txtva, desc=".dol_trunc($desc, 16).", price_base_type=$price_base_type, info_bits=$info_bits, special_code=$special_code, fk_parent_line=$fk_parent_line, pa_ht=$pa_ht, type=$type, date_start=$date_start, date_end=$date_end");
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
@@ -986,6 +994,19 @@ class Propal extends CommonObject
 
 			// TODO Implement  if (getDolGlobalInt('MAIN_UNIT_PRICE_WITH_TAX_IS_FOR_ALL_TAXES')) ?
 
+			// Round the quantity to the packaging before computing the amounts of the line (and checking the stock),
+			// else the line is saved with the rounded quantity but with the amounts of the quantity before rounding
+			if (getDolGlobalString('PRODUCT_USE_CUSTOMER_PACKAGING')) {
+				$tmpline = new PropaleLigne($this->db);
+				if ($tmpline->fetch($rowid) > 0) {
+					$newqty = $this->roundQtyToPackaging($qty, $tmpline->packaging);
+					if ($newqty != $qty) {
+						$qty = $newqty;
+						setEventMessages($langs->trans('QtyRecalculatedWithPackaging'), null, 'warnings');
+					}
+				}
+			}
+
 			$tabprice = calcul_price_total($qty, (float) $pu, (float) $remise_percent, $txtva, (float) $txlocaltax1, (float) $txlocaltax2, 0, $price_base_type, $info_bits, $type, $mysoc, $localtaxes_type, 100, $this->multicurrency_tx, (float) $pu_ht_devise);
 			$total_ht  = $tabprice[0];
 			$total_tva = $tabprice[1];
@@ -1019,21 +1040,6 @@ class Propal extends CommonObject
 				$this->line->rang = $rangmax + 1;
 			}
 
-			if (getDolGlobalString('PRODUCT_USE_CUSTOMER_PACKAGING')) {
-				if (abs((float) $qty) < $this->line->packaging) {
-					$qty = $this->line->packaging;
-					setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'warnings');
-				} else {
-					if (!empty($this->line->packaging)
-						&& is_numeric($this->line->packaging)
-						&& (float) $this->line->packaging > 0
-						&& (float) price2num(fmod((float) $qty, (float) $this->line->packaging), 'MS')) {
-						$coeff = intval(abs((float) $qty) / $this->line->packaging) + 1;
-						$qty = $this->line->packaging * $coeff;
-						setEventMessage($langs->trans('QtyRecalculatedWithPackaging'), 'warnings');
-					}
-				}
-			}
 
 			$this->line->id = $rowid;
 			$this->line->label = $label;
@@ -1129,7 +1135,11 @@ class Propal extends CommonObject
 			// Load data
 			$line->fetch($lineid);
 
-			if ($id > 0 && $line->fk_propal != $id) {
+			if ($id <= 0) {
+				$id = $this->id;
+			}
+			if ($id > 0 && (int) $line->fk_propal !== (int) $id) {
+				$this->db->rollback();
 				$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
 				return -1;
 			}
@@ -1344,13 +1354,20 @@ class Propal extends CommonObject
 					$fk_parent_line = 0;
 					$num = count($this->lines);
 
+					// Convert all lines into PropaleLigne objects before inserting the first one: when coming from REST API, they are still arrays, and addline() reads the whole of this->lines
 					for ($i = 0; $i < $num; $i++) {
-						if (!is_object($this->lines[$i])) {	// If this->lines is not array of objects, coming from REST API
-							// Convert into object this->lines[$i].
-							$line = (object) $this->lines[$i];
-						} else {
-							$line = $this->lines[$i];
+						if (!is_object($this->lines[$i])) {
+							$lineobj = new PropaleLigne($this->db);
+							foreach ($this->lines[$i] as $key => $val) {
+								$lineobj->$key = $val;
+							}
+							$this->lines[$i] = $lineobj;
 						}
+					}
+
+					for ($i = 0; $i < $num; $i++) {
+						$line = $this->lines[$i];
+
 						// Reset fk_parent_line for line that are not child lines or special product
 						if (($line->product_type != 9 && empty($line->fk_parent_line)) || $line->product_type == 9) {
 							$fk_parent_line = 0;
@@ -1408,6 +1425,15 @@ class Propal extends CommonObject
 
 						// Set the id on created row
 						$line->id = $result;
+
+						// Keep the extra parameters of the source line (for example the options of subtotal lines): addline() can't
+						// do it when the object is cloned, because the origin it receives is the one of the source line, not the source line
+						if ($result > 0 && !empty($line->extraparams)) {
+							$newline = new PropaleLigne($this->db);
+							$newline->id = $result;
+							$newline->extraparams = $line->extraparams;
+							$newline->setExtraParameters();
+						}
 
 						// Defined the new fk_parent_line
 						if ($result > 0 && $line->product_type == 9) {
@@ -1575,6 +1601,17 @@ class Propal extends CommonObject
 								$line->subprice = $pu_ht;
 								$line->tva_tx = $tva_tx;
 								$line->remise_percent = $remise_percent;
+								// Refresh the buying price too: current supplier price if one was selected on the line, otherwise let PropaleLigne::insert() recompute it (defineBuyPrice(), according to MARGIN_TYPE)
+								$line->pa_ht = '';
+								if ($line->fk_fournprice > 0) {
+									require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
+									$prodfourn = new ProductFournisseur($this->db);
+									if ($prodfourn->fetch_product_fournisseur_price($line->fk_fournprice) > 0) {
+										$line->pa_ht = price2num($prodfourn->fourn_unitprice * (1 - $prodfourn->fourn_remise_percent / 100), 'MU');
+									} else {
+										$line->fk_fournprice = 0;
+									}
+								}
 							}
 							if ($update_desc === true) {
 								$line->desc = $prod->description;
@@ -1779,6 +1816,7 @@ class Propal extends CommonObject
 				$this->cond_reglement_id    = $obj->fk_cond_reglement;
 				$this->cond_reglement_code  = $obj->cond_reglement_code;
 				$this->cond_reglement       = $obj->cond_reglement;
+				$this->cond_reglement_label = $obj->cond_reglement;
 				$this->cond_reglement_doc   = $obj->cond_reglement_libelle_doc;
 				$this->deposit_percent      = $obj->deposit_percent;
 
@@ -2706,7 +2744,7 @@ class Propal extends CommonObject
 
 				// The connected company is classified as a client
 				$soc = new Societe($this->db);
-				$soc->id = $this->socid;
+				$soc->fetch($this->socid);
 				$result = $soc->setAsCustomer();
 
 				if ($result < 0) {
@@ -3857,7 +3895,7 @@ class Propal extends CommonObject
 			}
 			if (!$nofetch) {
 				$langs->load('project');
-				if (is_null($this->project) || (is_object($this->project) && $this->project->isEmpty())) {
+				if (is_null($this->project) || (is_object($this->project) && empty($this->project->id))) {
 					$res = $this->fetchProject();
 					if ($res > 0 && $this->project instanceof Project) {
 						$datas['project'] = '<br><b>'.$langs->trans('Project').':</b> '.$this->project->getNomUrl(1, '', 0, '1');

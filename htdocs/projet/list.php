@@ -133,9 +133,9 @@ if (GETPOSTISSET('formfilteraction')) {
 
 $searchCategoryProjectOperator = 0;
 if (GETPOSTISSET('formfilteraction')) {
-	$searchCategoryUserOperator = GETPOSTINT('search_category_project_operator');
+	$searchCategoryProjectOperator = GETPOSTINT('search_category_project_operator');
 } elseif (getDolGlobalString('MAIN_SEARCH_CAT_PROJECT_OR_BY_DEFAULT')) {
-	$searchCategoryUserOperator = getDolGlobalString('MAIN_SEARCH_CAT_PROJECT_OR_BY_DEFAULT');
+	$searchCategoryProjectOperator = getDolGlobalString('MAIN_SEARCH_CAT_PROJECT_OR_BY_DEFAULT');
 }
 
 /*
@@ -358,12 +358,14 @@ if ($mode == 'kanbangroupby' && $groupby) {
 				$i = 1;
 				while ($i < ($num + 1)) {	// $num + 1 because we added the undefined entry so we start with $i=1;
 					$objp = $db->fetch_object($resql);
-					$groupbyvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $objp->label);
+					// Same label as in the lead status selector: translation of OppStatus<code>, else label of dictionary
+					$labeloppstatus = ($langs->transnoentitiesnoconv("OppStatus".$objp->code) != "OppStatus".$objp->code ? $langs->transnoentitiesnoconv("OppStatus".$objp->code) : $objp->label);
+					$groupbyvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $labeloppstatus);
 					// If this is a group code that need to be collapsed
 					if ($objp->code == 'WON') {
-						$groupofcollpasedvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $objp->label);
+						$groupofcollpasedvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $labeloppstatus);
 					} elseif ($objp->code == 'LOST') {
-						$groupofcollpasedvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $objp->label);
+						$groupofcollpasedvalues[$i] = array('id' => (string) $objp->rowid, 'label' => $labeloppstatus);
 					}
 
 					$i++;
@@ -2124,7 +2126,7 @@ while ($i < $imaxinloop) {
 		// Project title
 		if (!empty($arrayfields['p.title']['checked'])) {
 			print '<td class="" title="'.dolPrintHTMLForAttribute($obj->title).'">';
-			print '<div class="twolinesmax-normallineheight minwidth200onall">';
+			print '<div class="twolinesmax-normallineheight minwidth200onall spantitle">';
 			print dolPrintHTML($obj->title);
 			print '</div>';
 			print '</td>';

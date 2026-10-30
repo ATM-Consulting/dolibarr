@@ -642,7 +642,6 @@ class Ticket extends CommonObject
 				return $this->id;
 			}
 		} else {
-			$this->db->rollback();
 			dol_syslog(get_class($this)."::Create fails verify ".implode(',', $this->errors), LOG_WARNING);
 			return -3;
 		}
@@ -1076,15 +1075,15 @@ class Ticket extends CommonObject
 		}
 
 		if (isset($this->type_code)) {
-			$this->timing = trim($this->type_code);
+			$this->type_code = trim($this->type_code);
 		}
 
 		if (isset($this->category_code)) {
-			$this->timing = trim($this->category_code);
+			$this->category_code = trim($this->category_code);
 		}
 
 		if (isset($this->severity_code)) {
-			$this->timing = trim($this->severity_code);
+			$this->severity_code = trim($this->severity_code);
 		}
 		if (isset($this->model_pdf)) {
 			$this->model_pdf = trim($this->model_pdf);
@@ -2499,7 +2498,7 @@ class Ticket extends CommonObject
 			$sql .= ", t.office_phone as phone, t.user_mobile as phone_mobile";
 		}
 
-		if ($source == 'external') {
+		if ($source == 'external' || $source == 'thirdparty') {
 			$sql .= ", t.phone as phone, t.phone_mobile as phone_mobile, t.phone_perso as phone_perso";
 		}
 

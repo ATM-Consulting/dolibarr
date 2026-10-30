@@ -124,6 +124,8 @@ if (!empty($extrafields)) {
 		$objectline = new FactureLigneRec($this->db);
 	} elseif ($this->table_element_line == 'facture_fourn_det_rec') {
 		$objectline = new FactureFournisseurLigneRec($this->db);
+	} elseif ($this->table_element_line == 'expeditiondet') {
+		$objectline = new ExpeditionLigne($this->db);
 	}
 }
 print "<!-- BEGIN PHP TEMPLATE objectline_create.tpl.php -->\n";
@@ -363,6 +365,11 @@ if ($nolinesbefore) {
 
 			$addproducton = (isModEnabled('product') && $user->hasRight('produit', 'creer'));
 			$addserviceon = (isModEnabled('service') && $user->hasRight('service', 'creer'));
+			// After creation, product card replaces __ID__ with the new product id so it is preselected in the line form.
+			// The supplier combo uses 'idprod_ID' for a product without supplier price.
+			$urlbacktoobject = $_SERVER["PHP_SELF"].'?id='.$object->id;
+			$paramforselectedproduct = (empty($senderissupplier) ? 'idprod=__ID__' : 'idprodfournprice=idprod___ID__');
+			$paramsbacktoobject = '&backtopage='.urlencode($urlbacktoobject.'&prod_entry_mode=predef&'.$paramforselectedproduct).'&backtopageforcancel='.urlencode($urlbacktoobject);
 			if ($addproducton || $addserviceon) {
 				if ($addproducton && $addserviceon) {
 					echo '<div id="dropdownAddProductAndService" class="dropdown inline-block">';
@@ -370,8 +377,8 @@ if ($nolinesbefore) {
 					echo '<span class="fa fa-plus-circle valignmiddle paddingleft"></span>';
 					echo '</a>';
 					echo '<div class="dropdown-menu" aria-labelledby="dropdownAddProductAndServiceLink" style="top:auto; left:auto;">';
-					echo '<a class="dropdown-item" href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$object->id).'"> '.$langs->trans("NewProduct").'</a>';
-					echo '<a class="dropdown-item" href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=1&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$object->id).'"> '.$langs->trans("NewService").'</a>';
+					echo '<a class="dropdown-item" href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=0'.$paramsbacktoobject.'"> '.$langs->trans("NewProduct").'</a>';
+					echo '<a class="dropdown-item" href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=1'.$paramsbacktoobject.'"> '.$langs->trans("NewService").'</a>';
 					echo '</div>';
 					echo '</div>';
 				} else {
@@ -384,7 +391,7 @@ if ($nolinesbefore) {
 							// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
 							print dolButtonToOpenUrlInDialogPopup('addproduct', $langs->transnoentitiesnoconv('AddProduct'), $newbutton, $url, '', '', $jsonclode);
 						} else {
-							print '<a href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=0&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$object->id).'" title="'.dol_escape_htmltag($langs->trans("NewProduct")).'"><span class="fa fa-plus-circle valignmiddle paddingleft"></span></a>';
+							print '<a href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=0'.$paramsbacktoobject.'" title="'.dol_escape_htmltag($langs->trans("NewProduct")).'"><span class="fa fa-plus-circle valignmiddle paddingleft"></span></a>';
 						}
 					}
 					if ($addserviceon) {
@@ -396,7 +403,7 @@ if ($nolinesbefore) {
 							// @phan-suppress-next-line PhanPluginSuspiciousParamOrder
 							print dolButtonToOpenUrlInDialogPopup('addproduct', $langs->transnoentitiesnoconv('AddService'), $newbutton, $url, '', '', $jsonclode);
 						} else {
-							print '<a href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=1&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$object->id).'" title="'.dol_escape_htmltag($langs->trans("NewService")).'"><span class="fa fa-plus-circle valignmiddle paddingleft"></span></a>';
+							print '<a href="'.DOL_URL_ROOT.'/product/card.php?action=create&type=1'.$paramsbacktoobject.'" title="'.dol_escape_htmltag($langs->trans("NewService")).'"><span class="fa fa-plus-circle valignmiddle paddingleft"></span></a>';
 						}
 					}
 				}
@@ -805,7 +812,6 @@ if (!empty($object->thirdparty)) {
 	/** @type {JsConf} */
 	const jsConf = <?php print json_encode($jsConf); ?>;
 	if(jsConf.conf.usemargins && jsConf.userRight.margins.creer){
-
 		/* Some js test when we click on button "Add" */
 		$(function() {
 			if (jsConf.conf.DISPLAY_MARGIN_RATES) {
@@ -869,7 +875,7 @@ if (!empty($object->thirdparty)) {
 				}
 			}
 
-			$("input[name='price_ht']:first").val(price);	// TODO Must use a function like php price to have here a formatted value
+			$("input[name='price_ht']:first").val(pricejs(price, 'MU'));
 
 			return true;
 		}
@@ -1051,7 +1057,7 @@ if (!empty($object->thirdparty)) {
 								jQuery('#date_end').removeClass('inputmandatory');
 							}
 
-							if (jsConf.conf.inputalsopricewithtax == 1 && data.pricebasetype == 'TTC' && jsConf.conf.MAIN_NO_INPUT_PRICE_WITH_TAX) {
+							if (jsConf.conf.inputalsopricewithtax == 1 && data.pricebasetype == 'TTC' && !jsConf.conf.MAIN_NO_INPUT_PRICE_WITH_TAX) {
 								console.log("objectline_create.tpl set content of price_ttc");
 								jQuery("#price_ttc").val(data.price_ttc);
 							} else {
@@ -1159,7 +1165,7 @@ if (!empty($object->thirdparty)) {
 										}
 									}
 								} else {
-									jQuery('#dp_desc').text(proddesc);
+									jQuery('#dp_desc').val(proddesc);
 								}
 							}
 
@@ -1259,7 +1265,7 @@ if (!empty($object->thirdparty)) {
 
 						/* Define default price at loading */
 						var defaultprice = $("#fournprice_predef").find('option:selected').attr("price");
-						$("#buying_price").val(defaultprice);
+						$("#buying_price").val((defaultprice === undefined || defaultprice === '') ? '' : pricejs(defaultprice, 'MU'));	/* an empty buying price must stay empty, not become 0 */
 
 						$("#fournprice_predef").change(function() {
 							console.log("change on fournprice_predef");
@@ -1267,13 +1273,13 @@ if (!empty($object->thirdparty)) {
 							var linevalue=$(this).find('option:selected').val();
 							var pricevalue = $(this).find('option:selected').attr("price");
 							if (linevalue != 'inputprice' && linevalue != 'pmpprice') {
-								$("#buying_price").val(pricevalue).hide();	/* We set value then hide field */
+								$("#buying_price").val(pricejs(pricevalue, 'MU')).hide();	/* We set value then hide field */
 							}
 							if (linevalue == 'inputprice') {
 								$('#buying_price').show();
 							}
 							if (linevalue == 'pmpprice') {
-								$("#buying_price").val(pricevalue);
+								$("#buying_price").val(pricejs(pricevalue, 'MU'));
 								$('#buying_price').hide();
 							}
 						});
@@ -1455,7 +1461,7 @@ if (!empty($object->thirdparty)) {
 							}
 						}
 					} else {
-						jQuery('#dp_desc').text(description);
+						jQuery('#dp_desc').val(description);
 					}
 				}
 			} else if (jQuery('#idprodfournprice').length > 0) {
@@ -1498,7 +1504,7 @@ if (!empty($object->thirdparty)) {
 							}
 						}
 					} else {
-						jQuery('#dp_desc').text('');
+						jQuery('#dp_desc').val('');
 					}
 				}
 			}

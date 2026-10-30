@@ -4,7 +4,7 @@
  * Copyright (C) 2012       Christophe Battarel         <christophe.battarel@altairis.fr>
  * Copyright (C) 2022       Charlene Benke              <charlene@patas-monkey.com>
  * Copyright (C) 2024-2026	MDW                         <mdeweerd@users.noreply.github.com>
- * Copyright (C) 2024-2025  Frédéric France             <frederic.france@free.fr>
+ * Copyright (C) 2024-2026  Frédéric France             <frederic.france@free.fr>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -155,8 +155,8 @@ $excludefirstline = (GETPOST('excludefirstline', 'alphanohtml', 3) ? GETPOST('ex
 $endatlinenb = (GETPOST('endatlinenb', 'alphanohtml', 3) ? GETPOST('endatlinenb', 'alphanohtml', 3) : '');
 $updatekeys			= (GETPOST('updatekeys', 'array', 3) ? GETPOST('updatekeys', 'array', 3) : array());
 $importtriggermode = GETPOST('importtriggermode', 'alpha', 3);
-$separator			= (GETPOST('separator', 'nohtml') ? GETPOST('separator', 'nohtml', 3) : '');
-$enclosure			= (GETPOST('enclosure', 'nohtml') ? GETPOST('enclosure', 'nohtml') : '"');	// We must use 'nohtml' and not 'alphanohtml' because we must accept "
+$separator			= (GETPOST('separator', 'nohtml') ? GETPOST('separator', 'nohtml', 3) : '');	// We must use 'nohtml' and not 'alphanohtml' because we must accept "
+$enclosure			= (GETPOST('enclosure', 'nohtml') ? GETPOST('enclosure', 'nohtml') : '"');		// We must use 'nohtml' and not 'alphanohtml' because we must accept "
 $charset            = GETPOST('charset', 'aZ09');
 $separator_used     = str_replace('\t', "\t", $separator);
 $relativepath = '';
@@ -247,7 +247,9 @@ if ($step == 2 && $datatoimport) {
 		$nowyearmonth = dol_print_date(dol_now(), '%Y%m%d%H%M%S');
 
 		$fullpath = $conf->import->dir_temp."/".$nowyearmonth.'-'.dol_string_nohtmltag(dol_sanitizeFileName($_FILES['userfile']['name']));
-		if (dol_move_uploaded_file($_FILES['userfile']['tmp_name'], $fullpath, 1) > 0) {
+		// Note: the returned value is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+		$resultupload = dol_move_uploaded_file($_FILES['userfile']['tmp_name'], $fullpath, 1);
+		if (is_numeric($resultupload) && $resultupload > 0) {
 			dol_syslog("File ".$fullpath." was added for import");
 		} else {
 			$langs->load("errors");

@@ -285,6 +285,42 @@ class FunctionsLibTest extends CommonClassTest
 		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr, 0, 0, 0, array('fk_soc'));
 		$this->assertEquals(" AND (1=1)", $sql);
 
+		// Test that a forbidden field with 2 levels of prefix (dbprefix.table.field) is also forbidden (protection against CVE-2026-89012 bypass)
+		$filter = "(dolibarr.u.pass_crypted:like:'ZZZZ%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr);
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		$filter = "(DOLIBARR.U.API_KEY:like:'ZZZZ%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr);
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		$filter = "(mydb.t.pass_temp:like:'ZZZZ%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr);
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		$filter = "(u.pass_temp:like:'ZZZZ%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr);
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		// Test that any other field with 2 levels of prefix is neutralized too (no db prefix existence oracle, no SQL error)
+		$filter = "(dolibarr.t.ref:like:'SO-%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr);
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		// Test that a field forbidden by the caller is also forbidden with 2 levels of prefix
+		$filter = "(dolibarr.u.salary:like:'1%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr, 0, 0, 0, array('salary'));
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		// Test that valid filters with a single level of prefix still work
+		$filter = "(u.api_key:like:'ZZZZ%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr, 0, 0, 0, array('ref'));
+		$this->assertEquals(" AND (1=1)", $sql);
+
+		$filter = "(t.ref:like:'SO-%')";
+		$sql = forgeSQLFromUniversalSearchCriteria($filter, $errorstr, 0, 0, 0, array('salary'));
+		$this->assertEquals(" AND ((t.ref LIKE 'SO-%'))", $sql);
+
 
 		global $dolibarr_allow_unsecured_select_in_extrafields_filter;
 
@@ -1387,19 +1423,17 @@ class FunctionsLibTest extends CommonClassTest
 	/**
 	 * testVerifCond
 	 *
-	 * @dataProvider verifCondDataProvider
-	 *
-	 * @param string $cond     Condition to test using verifCond
-	 * @param string $expected Expected outcome of verifCond
-	 *
 	 * @return	void
 	 */
-	public function testVerifCond($cond, $expected)
+	public function testVerifCond()
 	{
-		if ($expected) {
-			$this->assertTrue(verifCond($cond));
-		} else {
-			$this->assertFalse(verifCond($cond));
+		foreach ($this->verifCondDataProvider() as $case) {
+			list($cond, $expected) = $case;
+			if ($expected) {
+				$this->assertTrue(verifCond($cond));
+			} else {
+				$this->assertFalse(verifCond($cond));
+			}
 		}
 	}
 
@@ -1994,6 +2028,12 @@ class FunctionsLibTest extends CommonClassTest
 		$newstring = make_substitutions($chaine, $substit, $langs, 1);
 		print __METHOD__." ".$newstring."\n";
 		$this->assertEquals($newstring, "This is a text with<br>\nNew line<br>\nThen<br>\nNo html<br>\nThen<br>\n<b>HTML</b>", 'Test on make_substitutions with full conversion of text accepted');
+
+
+		// Try mix HTML into not HTML but no replaement is done
+		$newstring = make_substitutions('¿Necesitas ayuda para empezar con GLPI?', array('__SENDEREMAIL_SIGNATURE__' => '<br><strong>HTML content</strong>'), $langs, 1);
+		print __METHOD__." ".$newstring."\n";
+		$this->assertEquals($newstring, '¿Necesitas ayuda para empezar con GLPI?');
 
 		return true;
 	}

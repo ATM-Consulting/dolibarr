@@ -891,8 +891,9 @@ abstract class CommonDocGenerator
 			'line_up_locale' => price($line->subprice, 0, $outputlangs),
 			'line_total_up' => price2num($line->subprice * (float) $line->qty),
 			'line_total_up_locale' => price($line->subprice * (float) $line->qty, 0, $outputlangs),
-			'line_qty' => $line->qty,
-			'line_qty_locale' => price($line->qty),
+			// A title or subtotal line of the Subtotals module (special_code 3) carries the level in qty, not a quantity. The PDF hides it, see pdf_getlineqty().
+			'line_qty' => (empty($line->special_code) || $line->special_code != 3) ? $line->qty : '',
+			'line_qty_locale' => (empty($line->special_code) || $line->special_code != 3) ? price($line->qty) : '',
 			'line_discount_percent' => ($line->remise_percent ? $line->remise_percent.'%' : ''),
 			'line_price_ht' => price2num($line->total_ht),
 			'line_price_ttc' => price2num($line->total_ttc),
@@ -2012,6 +2013,9 @@ abstract class CommonDocGenerator
 
 					// Add space for lines (more if we need to show a second alternative language)
 					global $outputlangsbis;
+					/** @var Translate $outputlangsbis */
+					'@phan-var-force Translate $outputlangsbis';
+
 					if (is_object($outputlangsbis)) {
 						// set cell padding with column title definition
 						$pdf->setCellPaddings($colDef['title']['padding'][3], $colDef['title']['padding'][0], $colDef['title']['padding'][1], 0.5);
