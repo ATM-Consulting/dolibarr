@@ -110,6 +110,7 @@ class Documents extends DolibarrApi
 		if (!$accessallowed) {
 			throw new RestException(403);
 		}
+		// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 		// Check permission on the object the document is attached to (thirdparties of a restricted sales representative, ...)
 		if (!checkUserAccessToDocumentObject(DolibarrApiAccess::$user, $modulepart, $relativefile, 'read')) {
 			throw new RestException(403, 'Access not allowed to the object of this document');
@@ -217,6 +218,7 @@ class Documents extends DolibarrApi
 		if (!$accessallowed) {
 			throw new RestException(403);
 		}
+		// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 		// Check permission on the object the document is attached to (thirdparties of a restricted sales representative, ...)
 		if (!checkUserAccessToDocumentObject(DolibarrApiAccess::$user, $modulepart, $relativefile, 'write')) {
 			throw new RestException(403, 'Access not allowed to the object of this document');
@@ -922,6 +924,7 @@ class Documents extends DolibarrApi
 			if (empty($tmp['accessallowed'])) {
 				throw new RestException(403, 'Access not allowed to upload file into this directory');
 			}
+			// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 			// Check permission on the object the document is attached to (thirdparties of a restricted sales representative, ...)
 			if (!checkUserAccessToDocumentObject(DolibarrApiAccess::$user, $modulepart, $relativefile.'/'.$original_file, 'write')) {
 				throw new RestException(403, 'Access not allowed to the object of this document');
@@ -952,6 +955,7 @@ class Documents extends DolibarrApi
 				if (empty($tmp['accessallowed'])) {
 					throw new RestException(403, 'Access not allowed to upload file into this directory');
 				}
+				// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 				// Check permission on the object the document is attached to (thirdparties of a restricted sales representative, ...)
 				if (!checkUserAccessToDocumentObject(DolibarrApiAccess::$user, $modulepart, $relativefile.'/'.$original_file, 'write')) {
 					throw new RestException(403, 'Access not allowed to the object of this document');
@@ -1146,6 +1150,7 @@ class Documents extends DolibarrApi
 		if (!$accessallowed) {
 			throw new RestException(403);
 		}
+		// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 		// Check permission on the object the document is attached to (thirdparties of a restricted sales representative, ...)
 		if (!checkUserAccessToDocumentObject(DolibarrApiAccess::$user, $modulepart, $relativefile, 'write')) {
 			throw new RestException(403, 'Access not allowed to the object of this document');

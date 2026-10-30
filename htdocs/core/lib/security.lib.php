@@ -710,6 +710,7 @@ function restrictedArea(User $user, $features, $object = 0, $tableandshare = '',
 	return 1;
 }
 
+// Backport of Dolibarr commit 0c33f4c3598 (https://github.com/Dolibarr/dolibarr/commit/0c33f4c3598), merged without PR
 /**
  * Check that a user can access the object a document is attached to. The permission on the module must have been checked
  * before with dol_check_secure_access_document().
