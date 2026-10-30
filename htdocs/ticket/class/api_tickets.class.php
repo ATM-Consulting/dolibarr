@@ -486,7 +486,8 @@ class Tickets extends DolibarrApi
 		}
 		$ticketMessageText = $this->ticket->message;
 		$result = $this->ticket->fetch(0, '', $this->ticket->track_id);
-		if (!$result) {
+		// Backport of Dolibarr PR #42413 (https://github.com/Dolibarr/dolibarr/pull/42413)
+		if ($result <= 0) {
 			throw new RestException(404, 'Ticket not found');
 		}
 
