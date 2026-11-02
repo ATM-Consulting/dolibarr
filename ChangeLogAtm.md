@@ -1,3 +1,4 @@
+- FIX : PHP warning "Trying to access array offset on value of type bool" on the event card when no resource is assigned - backport of core commit 8c55ffd3245, native in v23 - *2026-11-02*
 - FIX : "calcul_price_total ... seller that is missing" warning for each line when a supplier invoice total is recalculated (create, discount, line deletion, credit note) - update_price() now receives the supplier, as addline()/updateline() already do (htdocs/fourn/class/fournisseur.facture.class.php, htdocs/fourn/facture/card.php) - still open upstream - *2026-11-02*
 - FIX : Social contributions list logged "dol_print_date called with a bad value" for every row - backport of core commit 7fb0390d678 (PR #42364, develop) - *2026-11-02*
   - Only the two jdate() lines of the upstream commit are taken: on the upgrade that ships it, keep the upstream version.
