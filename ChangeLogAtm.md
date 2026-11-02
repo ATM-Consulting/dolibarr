@@ -1,3 +1,4 @@
+- FIX : "calcul_price_total ... seller that is missing" warning for each line when a supplier invoice total is recalculated (create, discount, line deletion, credit note) - update_price() now receives the supplier, as addline()/updateline() already do (htdocs/fourn/class/fournisseur.facture.class.php, htdocs/fourn/facture/card.php) - still open upstream - *2026-11-02*
 - FIX : Social contributions list logged "dol_print_date called with a bad value" for every row - backport of core commit 7fb0390d678 (PR #42364, develop) - *2026-11-02*
   - Only the two jdate() lines of the upstream commit are taken: on the upgrade that ships it, keep the upstream version.
 - FIX : PHP warnings "opendir(): Failed to open directory" on the API explorer and on Setup > Third parties for modules without class or model directory - the directory is checked with is_dir() before opendir() (htdocs/api/index.php, htdocs/societe/admin/societe.php) - still open upstream - *2026-11-02*
