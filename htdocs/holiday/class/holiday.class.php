@@ -882,7 +882,7 @@ class Holiday extends CommonObject
 
 		if ($checkBalance > 0) {
 			$balance = $this->getCPforUser($this->fk_user, $this->fk_type);
-			$daysAsked = num_open_day($this->date_debut, $this->date_fin, 0, 1);
+			$daysAsked = num_open_day($this->date_debut_gmt, $this->date_fin_gmt, 0, 1, (int) $this->halfday);
 
 			if (($balance - $daysAsked) < 0) {
 				$this->error = 'LeaveRequestCreationBlockedBecauseBalanceIsNegative';
