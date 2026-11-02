@@ -1588,7 +1588,7 @@ if ($action == 'create') {
 				$listofresourceid = array();
 			}
 			$firstelem = reset($listofresourceid);
-			if (isset($listofresourceid[$firstelem['id']])) {
+			if ($firstelem && isset($listofresourceid[$firstelem['id']])) {
 				$listofresourceid[$firstelem['id']]['transparency'] = (GETPOSTISSET('transparency') ? GETPOST('transparency', 'alpha') : 0); // 0 by default when refreshing
 			}
 		}
