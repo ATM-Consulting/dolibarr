@@ -1,3 +1,5 @@
+- FIX : PHP warnings "include(.../tpl/linkedobjectblock.tpl.php): Failed to open stream" in the linked objects block - backport of the html.form.class.php hunk of core commit 700463596e3 (PR #35548), native in v23 - *2026-11-02*
+  - Same code as upstream, without markers: the v23 upgrade takes it without conflict.
 - FIX : PHP warnings "include_once(...core/modules/<element>/mod_xxx.php): Failed to open stream" on every card creating a ref (proposal, order, shipment, supplier invoice, leave, expense report...) - getNextNumRef() tried each module models directory with @include_once; it now checks file_exists() first, same line in the 36 classes - still open upstream - *2026-11-02*
 - FIX : PHP warning "exif_read_data(): File not supported" on every PNG thumbnail (ticket attachments, uploads) - vignette() reads the EXIF orientation only for JPEG and TIFF files (htdocs/core/lib/images.lib.php) - still open upstream - *2026-11-02*
 - FIX : Pressing Enter in the top global search input threw a JS TypeError (inputs[n].trigger is not a function) - inputs[n] is a DOM element, inputs.eq(n) is used instead (htdocs/main.inc.php) - still open upstream - *2026-11-02*
