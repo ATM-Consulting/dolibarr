@@ -407,7 +407,7 @@ $arrayofmodules = array();
 foreach ($dirsociete as $dirroot) {
 	$dir = dol_buildpath($dirroot, 0);
 
-	$handle = @opendir($dir);
+	$handle = is_dir($dir) ? opendir($dir) : false;
 	if (is_resource($handle)) {
 		// Loop on each module find in opened directory
 		while (($file = readdir($handle)) !== false) {
@@ -497,7 +497,7 @@ $arrayofmodules = array();
 foreach ($dirsociete as $dirroot) {
 	$dir = dol_buildpath($dirroot, 0);
 
-	$handle = @opendir($dir);
+	$handle = is_dir($dir) ? opendir($dir) : false;
 	if (is_resource($handle)) {
 		while (($file = readdir($handle)) !== false) {
 			if (substr($file, 0, 15) == 'mod_codecompta_' && substr($file, -3) == 'php') {
@@ -589,7 +589,7 @@ print "</tr>\n";
 foreach ($dirsociete as $dirroot) {
 	$dir = dol_buildpath($dirroot.'doc/', 0);
 
-	$handle = @opendir($dir);
+	$handle = is_dir($dir) ? opendir($dir) : false;
 	if (is_resource($handle)) {
 		while (($file = readdir($handle)) !== false) {
 			if (preg_match('/\.modules\.php$/i', $file)) {

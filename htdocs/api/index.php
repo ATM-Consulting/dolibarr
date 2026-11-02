@@ -271,7 +271,7 @@ if (!empty($reg[1]) && $reg[1] == 'explorer' && ($reg[2] == '/swagger.json' || $
 						// @todo : use getElementProperties() function ?
 						$dir_part = dol_buildpath('/'.$moduledirforclass.'/class/');
 
-						$handle_part = @opendir(dol_osencode($dir_part));
+						$handle_part = is_dir(dol_osencode($dir_part)) ? opendir(dol_osencode($dir_part)) : false;
 						if (is_resource($handle_part)) {
 							while (($file_searched = readdir($handle_part)) !== false) {
 								if ($file_searched == 'api_access.class.php') {
