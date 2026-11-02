@@ -804,7 +804,7 @@ class PaiementFourn extends Paiement
 
 				// Load file with numbering class (if found)
 				if (is_file($dir.$file) && is_readable($dir.$file)) {
-					$mybool = ((bool) @include_once $dir.$file) || $mybool;
+					$mybool = (file_exists($dir.$file) && include_once $dir.$file) || $mybool;
 				}
 			}
 
@@ -819,7 +819,7 @@ class PaiementFourn extends Paiement
 
 					// Load file with numbering class (if found)
 					if (is_file($dir.$file) && is_readable($dir.$file)) {
-						$mybool = ((bool) @include_once $dir.$file) || $mybool;
+						$mybool = (file_exists($dir.$file) && include_once $dir.$file) || $mybool;
 					}
 				}
 			}
