@@ -102,7 +102,7 @@ class FileUpload
 			// never shown to the user.
 			// Note: getMultidirOutput() only knows the elements of its own switch, that is a minority of them. For
 			// all the others it does not return an empty string but the string
-			// 'error-diroutput-not-defined-for-this-object=x', and keeping the directory of getElementProperties()
+			// 'error-diroutput-not-defined-for-this-entity-and-object=x', and keeping the directory of getElementProperties()
 			// is then the nominal case, not a degraded one. So we only accept an absolute path: that string is a
 			// relative path, and writing into it would create the files under the web root.
 			$tmpdir = getMultidirOutput($object, $element);
@@ -304,7 +304,8 @@ class FileUpload
 		$new_file_path = $options['upload_dir'].$file_name;
 
 		if (dol_mkdir($options['upload_dir']) >= 0) {
-			list($img_width, $img_height) = @getimagesize($file_path);
+			$imagesize = @getimagesize($file_path);	// false if the file is not an image, and destructuring false raises a warning since PHP 8.5
+			list($img_width, $img_height) = (is_array($imagesize) ? $imagesize : array(null, null));
 			if (!$img_width || !$img_height) {
 				return false;
 			}
@@ -373,7 +374,8 @@ class FileUpload
 			$file->error = 'maxNumberOfFiles';
 			return false;
 		}
-		list($img_width, $img_height) = @getimagesize($uploaded_file);
+		$imagesize = @getimagesize($uploaded_file);	// false if the file is not an image, and destructuring false raises a warning since PHP 8.5
+		list($img_width, $img_height) = (is_array($imagesize) ? $imagesize : array(null, null));
 		if (is_numeric($img_width)) {
 			if ($this->options['max_width'] && $img_width > $this->options['max_width'] ||
 					$this->options['max_height'] && $img_height > $this->options['max_height']) {

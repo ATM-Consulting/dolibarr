@@ -74,7 +74,7 @@ class FunctionsLibDragDropTest extends CommonClassTest
 	 * The string returned by getMultidirOutput() when it does not know the module of the object.
 	 * It is a relative path, so writing into it creates files under the web root.
 	 */
-	const SENTINEL = 'error-diroutput-not-defined-for-this-object=';
+	const SENTINEL = 'error-diroutput-not-defined-for-this-entity-and-object=';
 
 	/**
 	 * The elements equipped with the drag and drop of a file on their card by this work.
@@ -121,7 +121,7 @@ class FunctionsLibDragDropTest extends CommonClassTest
 		$this->assertStringStartsNotWith('/', $dir, 'The sentinel is a relative path, so it must never be used to forge a path');
 
 		// The 'temp' mode has its own sentinel
-		$this->assertSame('error-dirtemp-not-defined-for-this-object=anelementthatdoesnotexist', getMultidirTemp($object, 'anelementthatdoesnotexist'));
+		$this->assertSame('error-dirtemp-not-defined-for-this-entity-and-object=anelementthatdoesnotexist', getMultidirTemp($object, 'anelementthatdoesnotexist'));
 
 		// And a bad mode has a third one
 		$this->assertSame('error-bad-value-for-mode', getMultidirOutput($object, 'anelementthatdoesnotexist', 0, 'notamode'));
