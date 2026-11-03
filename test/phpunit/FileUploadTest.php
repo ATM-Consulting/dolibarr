@@ -257,7 +257,7 @@ class FileUploadTest extends CommonClassTest
 
 		$object = self::$objects['contact'];
 
-		$this->assertStringStartsWith('error-diroutput-not-defined-for-this-object=', (string) getMultidirOutput($object, 'contact'), 'The fixture requires getMultidirOutput to fail on a contact');
+		$this->assertStringStartsWith('error-diroutput-not-defined-for-this-entity-and-object=', (string) getMultidirOutput($object, 'contact'), 'The fixture requires getMultidirOutput to fail on a contact');
 
 		// The formula of contact/document.php
 		$expected = $conf->societe->multidir_output[$object->entity].'/contact/'.dol_sanitizeFileName($object->ref).'/';
@@ -301,7 +301,7 @@ class FileUploadTest extends CommonClassTest
 		foreach (array('product', 'societe', 'contact', 'project_task') as $element) {
 			$dir = $this->uploadDirOf($element, self::$objects[$element]->id);
 
-			$this->assertStringNotContainsString('error-diroutput-not-defined-for-this-object', $dir, 'The sentinel leaked into the directory of the element '.$element);
+			$this->assertStringNotContainsString('error-diroutput-not-defined-for-this-entity-and-object', $dir, 'The sentinel leaked into the directory of the element '.$element);
 			$this->assertStringStartsWith(DOL_DATA_ROOT, $dir, 'The directory of the element '.$element.' must be inside DOL_DATA_ROOT');
 			$this->assertStringNotContainsString('//', $dir, 'The directory of the element '.$element.' must not hold a double slash');
 			$this->assertStringEndsWith('/', $dir, 'The directory must end with a slash, the file name is concatenated to it');

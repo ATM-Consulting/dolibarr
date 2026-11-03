@@ -287,7 +287,7 @@ class FunctionsLibTest extends CommonClassTest
 			$prop = getElementProperties($element);
 			foreach (array('dir_output', 'dir_temp') as $key) {
 				$dir = (string) $prop[$key];
-				$this->assertStringNotContainsString('error-diroutput-not-defined-for-this-object', $dir, 'The '.$key.' of the element '.$element.' must never be the sentinel of getMultidirOutput');
+				$this->assertStringNotContainsString('error-diroutput-not-defined-for-this-entity-and-object', $dir, 'The '.$key.' of the element '.$element.' must never be the sentinel of getMultidirOutput');
 				$this->assertTrue(
 					$dir === '' || strpos($dir, DOL_DATA_ROOT) === 0,
 					'The '.$key.' of the element '.$element.' must be empty or inside DOL_DATA_ROOT, got "'.$dir.'"'
@@ -589,7 +589,7 @@ class FunctionsLibTest extends CommonClassTest
 		print __METHOD__." ".$input." result=".$result."\n";
 		$this->assertEquals(0, $result);
 
-		$input = "usace.army.mil";
+		$input = "microsoft.com";
 		$result = isValidMXRecord($input);
 		print __METHOD__." ".$input." result=".$result."\n";
 		$this->assertEquals(1, $result);
@@ -2221,6 +2221,35 @@ class FunctionsLibTest extends CommonClassTest
 		$result = fetchObjectByElement(0, 'product');
 
 		$this->assertTrue(is_object($result));
+
+		$hasvariantsmodule = array_key_exists('variants', $conf->modules);
+		$originalvariantsmodule = $hasvariantsmodule ? $conf->modules['variants'] : null;
+
+		try {
+			$conf->modules['variants'] = 1;
+
+			$productattribute = getElementProperties('product_attribute');
+			$this->assertSame('variants', $productattribute['module']);
+			$this->assertSame('variants/class', $productattribute['classpath']);
+			$this->assertSame('ProductAttribute', $productattribute['classfile']);
+			$this->assertSame('ProductAttribute', $productattribute['classname']);
+
+			$productattributevalue = getElementProperties('product_attribute_value');
+			$this->assertSame('variants', $productattributevalue['module']);
+			$this->assertSame('variants/class', $productattributevalue['classpath']);
+			$this->assertSame('ProductAttributeValue', $productattributevalue['classfile']);
+			$this->assertSame('ProductAttributeValue', $productattributevalue['classname']);
+			$this->assertSame('product_attribute', $productattributevalue['parent_element']);
+
+			$this->assertInstanceOf(ProductAttribute::class, fetchObjectByElement(0, 'product_attribute'));
+			$this->assertInstanceOf(ProductAttributeValue::class, fetchObjectByElement(0, 'product_attribute_value'));
+		} finally {
+			if ($hasvariantsmodule) {
+				$conf->modules['variants'] = $originalvariantsmodule;
+			} else {
+				unset($conf->modules['variants']);
+			}
+		}
 
 		return true;
 	}
