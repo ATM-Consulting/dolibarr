@@ -1215,6 +1215,7 @@ class Documents extends DolibarrApi
 
 		if (is_object($object) && $generateThumbs) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+			require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';	// image_format_supported() is defined here
 			if (image_format_supported($dest_file)) {
 				$object->addThumbs($dest_file);
 			}
@@ -1272,7 +1273,7 @@ class Documents extends DolibarrApi
 		$relativefile = $tmpreldir.dol_sanitizeFileName($object->ref); */
 		$relativefile = $original_file;
 
-		$check_access = dol_check_secure_access_document($modulepart, $relativefile, $entity, DolibarrApiAccess::$user, '', 'read');
+		$check_access = dol_check_secure_access_document($modulepart, $relativefile, $entity, DolibarrApiAccess::$user, '', 'write');
 		$accessallowed = $check_access['accessallowed'];
 		$sqlprotectagainstexternals = $check_access['sqlprotectagainstexternals'];
 		$original_file = $check_access['original_file'];

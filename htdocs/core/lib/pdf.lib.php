@@ -2917,9 +2917,11 @@ function pdfGetLineTotalDiscountAmount($object, $i, $outputlangs, $hidedetails =
 
 		if (empty($hidedetails) || $hidedetails > 1) {
 			if (empty($multicurrency)) {
-				return (float) price2num($sign * (($object->lines[$i]->subprice * (float) $object->lines[$i]->qty) - $object->lines[$i]->total_ht), 'MT', 1);
+				$diff = (float) price2num($sign * $object->lines[$i]->subprice * (float) $object->lines[$i]->qty, 'MT', 1) - $object->lines[$i]->total_ht;
+				return (float) price2num($diff, 'MT', 1);
 			} else {
-				return (float) price2num($sign * (($object->lines[$i]->multicurrency_subprice * (float) $object->lines[$i]->qty) - $object->lines[$i]->multicurrency_total_ht), 'MT', 1);
+				$diff = (float) price2num($sign * $object->lines[$i]->multicurrency_subprice * (float) $object->lines[$i]->qty, 'MT', 1) - $object->lines[$i]->multicurrency_total_ht;
+				return (float) price2num($diff, 'MT', 1);
 			}
 		}
 	}
@@ -2993,7 +2995,7 @@ function pdf_render_subtotals(
 
 	if ($isSubtotal && $applySubtotalLogic && $object->lines[$i]->qty < 0) {
 		$outputlangs->load("subtotals");
-		$object->lines[$i]->desc = $outputlangs->trans("SubtotalOf", $object->lines[$i]->desc);
+		$object->lines[$i]->desc = getDolGlobalString("SUBTOTAL_LINE_TEXT_DOES_NOT_INCLUDE_TITLE_TEXT") ? $outputlangs->trans("SubTotal") : $outputlangs->trans("SubtotalOf", $object->lines[$i]->desc);
 		$generator->cols['desc']['content']['align'] = ($prevAlign === 'L') ? 'R' : 'L';
 	}
 
