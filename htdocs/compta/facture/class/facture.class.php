@@ -6958,4 +6958,49 @@ class FactureLigne extends CommonInvoiceLine
 			return $cumulated_percent;
 		}
 	}
+
+	/**
+	 * Return the amount of a total field for the current situation only. Used when INVOICE_USE_SITUATION != 2.
+	 *
+	 * @param  int     $invoiceid      Invoice id
+	 * @param  string  $field          'total_ht', 'total_tva', 'total_ttc', 'multicurrency_total_ht', 'multicurrency_total_tva' or 'multicurrency_total_ttc'
+	 * @return float                   Amount of this situation, or the amount stored on the line when it is not a cumulated situation line
+	 */
+	public function getSituationDeltaAmount(int $invoiceid, string $field): float
+	{
+		global $invoicecache;
+
+		if (!in_array($field, array('total_ht', 'total_tva', 'total_ttc', 'multicurrency_total_ht', 'multicurrency_total_tva', 'multicurrency_total_ttc'), true)) {
+			dol_syslog(get_class($this)."::getSituationDeltaAmount Unsupported field ".$field, LOG_WARNING);
+			return 0.0;
+		}
+		$amount = (float) $this->$field;
+		if (empty($this->fk_prev_id) || getDolGlobalInt('INVOICE_USE_SITUATION') === 2) {
+			return $amount;
+		}
+
+		if (!isset($invoicecache[$invoiceid])) {
+			$invoicecache[$invoiceid] = new Facture($this->db);
+			$invoicecache[$invoiceid]->fetch($invoiceid);
+		}
+		if ($invoicecache[$invoiceid]->type != Facture::TYPE_SITUATION) {
+			return $amount;
+		}
+
+		$sql = "SELECT SUM(fd.".$field.") as prev_amount FROM ".$this->db->prefix()."facturedet as fd";
+		$sql .= " INNER JOIN ".$this->db->prefix()."facture as f ON f.rowid = fd.fk_facture";
+		$sql .= " WHERE fd.rowid = ".((int) $this->fk_prev_id);
+		$sql .= " OR (fd.fk_prev_id = ".((int) $this->fk_prev_id);
+		$sql .= " AND f.situation_cycle_ref = ".((int) $invoicecache[$invoiceid]->situation_cycle_ref);
+		$sql .= " AND f.type = ".Facture::TYPE_CREDIT_NOTE.")";
+
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			dol_syslog(get_class($this)."::getSituationDeltaAmount Error ".$this->db->lasterror(), LOG_ERR);
+			return $amount;
+		}
+		$obj = $this->db->fetch_object($resql);
+
+		return (float) price2num($amount - (float) $obj->prev_amount, 'MT');
+	}
 }
