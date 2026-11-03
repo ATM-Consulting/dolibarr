@@ -163,6 +163,46 @@ if (empty($reshook)) {
 		}
 	}
 
+	// Allow editing qty while MO is still in draft status.
+	// IMPORTANT: this handler MUST run BEFORE actions_addupdatedelete.inc.php,
+	// which has a generic 'set<key>' matcher that would intercept 'setqty' and
+	// call $object->fetch() + update() without setting $object->oldQty, so
+	// Mo::updateProduction() would skip the line scaling (its condition is
+	// !empty($this->oldQty)).
+	if ($action == 'setqty' && $permissiontoadd && $object->status == Mo::STATUS_DRAFT) {
+		$newqty = GETPOSTFLOAT('qty');
+		if ($newqty > 0) {
+			$object->oldQty = (float) $object->qty;
+			$object->qty = $newqty;
+			$res = $object->update($user);
+			if ($res > 0) {
+				// Enforce invariant: the 'toproduce' line for the MO's main product
+				// must equal the MO qty. Mo::updateProduction() scales by ratio
+				// (newQty/oldQty) which can drift if the line state was already
+				// inconsistent (e.g. legacy data from before this patch). Realign
+				// the main product line, leaving sub-products and frozen lines
+				// untouched.
+				$object->fetchLines();
+				foreach ($object->lines as $line) {
+					if ($line->role === 'toproduce'
+						&& (int) $line->fk_product === (int) $object->fk_product
+						&& empty($line->qty_frozen)
+						&& (float) $line->qty != (float) $object->qty) {
+						$line->qty = (float) $object->qty;
+						$line->update($user);
+					}
+				}
+				setEventMessages($langs->trans("RecordSaved"), null, 'mesgs');
+			} else {
+				setEventMessages($object->error, $object->errors, 'errors');
+			}
+		} else {
+			setEventMessages($langs->trans("ErrorFieldRequired", $langs->trans("Qty")), null, 'errors');
+		}
+		header("Location: ".$_SERVER["PHP_SELF"]."?id=".$object->id);
+		exit;
+	}
+
 	// Actions cancel, add, update, delete or clone
 	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
 
@@ -188,7 +228,7 @@ if (empty($reshook)) {
 		$object->setProject(GETPOSTINT('projectid'));
 	}
 
-	if ($action == 'confirm_reopen' && $permissiontoadd) {
+	if ($action == 'confirm_reopen' && $permissiontoadd && $object->status == $object::STATUS_PRODUCED) {	// The reopen of a canceled MO is done by $object->reopen() (with confirm=yes)
 		$result = $object->setStatut($object::STATUS_INPROGRESS, 0, '', 'MRP_REOPEN');
 	}
 
@@ -257,6 +297,13 @@ if (empty($reshook)) {
 		exit;
 	}
 
+	// Consumption and production are possible only on a validated or in progress MO
+	if (in_array($action, array('confirm_consumeorproduce', 'confirm_consumeandproduceall')) && $object->status != $object::STATUS_VALIDATED && $object->status != $object::STATUS_INPROGRESS) {
+		$langs->load("errors");
+		setEventMessages($langs->trans("ErrorObjectHasWrongStatus", $object->ref), null, 'errors');
+		$action = '';
+	}
+
 	if (in_array($action, array('confirm_consumeorproduce', 'confirm_consumeandproduceall')) && $permissiontoproduce) {
 		$stockmove = new MouvementStock($db);
 
@@ -283,7 +330,7 @@ if (empty($reshook)) {
 								setEventMessages($langs->trans("ErrorFieldRequiredForProduct", $langs->transnoentitiesnoconv("Warehouse"), $tmpproduct->ref), null, 'errors');
 								$error++;
 							}
-							if ($tmpproduct->status_batch && (!GETPOST('batch-'.$line->id.'-'.$i))) {
+							if (isModEnabled('productbatch') && $tmpproduct->status_batch && (!GETPOST('batch-'.$line->id.'-'.$i))) {
 								$langs->load("errors");
 								setEventMessages($langs->trans("ErrorFieldRequiredForProduct", $langs->transnoentitiesnoconv("Batch"), $tmpproduct->ref), null, 'errors');
 								$error++;
@@ -300,7 +347,7 @@ if (empty($reshook)) {
 							if ($qtytoprocess >= 0) {
 								$idstockmove = $stockmove->livraison($user, $line->fk_product, GETPOSTINT('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess, 0, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
 							} else {
-								$idstockmove = $stockmove->reception($user, $line->fk_product, GETPOSTINT('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess * -1, 0, $labelmovement, dol_now(), '', '', GETPOST('batch-'.$line->id.'-'.$i), $id_product_batch, $codemovement);
+								$idstockmove = $stockmove->reception($user, $line->fk_product, GETPOSTINT('idwarehouse-'.$line->id.'-'.$i), $qtytoprocess * -1, 0, $labelmovement, '', '', GETPOST('batch-'.$line->id.'-'.$i), dol_now(), $id_product_batch, $codemovement);
 							}
 							if ($idstockmove < 0) {
 								$error++;
@@ -500,9 +547,15 @@ if (empty($reshook)) {
 		}
 	}
 
-	if ($action == 'confirm_editline' && $permissiontoadd) {
+	if ($action == 'confirm_editline' && $permissiontoadd && !in_array($object->status, array($object::STATUS_PRODUCED, $object::STATUS_CANCELED))) {
 		$moline = new MoLine($db);
-		$res = $moline->fetch(GETPOSTINT('lineid'));
+		$result = $moline->fetch(GETPOSTINT('lineid'));
+		if ($result > 0 && $moline->fk_mo != $object->id) {
+			$result = -1;	// The line must belong to this MO
+		}
+		if ($result > 0 && in_array($moline->role, array('consumed', 'produced'))) {
+			$result = -1;	// A consumed or produced quantity is changed by its stock movement, not here (only the quantities to consume or produce can be edited)
+		}
 		if ($result > 0) {
 			$extrafields->fetch_name_optionals_label($moline->table_element);
 			if (!empty($extrafields->attributes[$moline->table_element]['label'])) {
@@ -672,7 +725,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	if (is_object($object->thirdparty)) {
 		$morehtmlref .= $object->thirdparty->getNomUrl(1, 'customer');
 		if (!getDolGlobalString('MAIN_DISABLE_OTHER_LINK') && $object->thirdparty->id > 0) {
-			$morehtmlref .= ' (<a href="'.DOL_URL_ROOT.'/commande/list.php?socid='.$object->thirdparty->id.'&search_societe='.urlencode($object->thirdparty->name).'">'.$langs->trans("OtherOrders").'</a>)';
+			$morehtmlref .= ' (<a href="'.DOL_URL_ROOT.'/commande/list.php?socid='.$object->thirdparty->id.'">'.$langs->trans("OtherOrders").'</a>)';
 		}
 	}
 
@@ -714,6 +767,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$keyforbreak = 'fk_warehouse';
 	unset($object->fields['fk_project']);
 	unset($object->fields['fk_soc']);
+	// Allow inline edit of qty while MO is in draft status.
+	// Note: editfieldval() does not handle type 'real' (no <input> rendered, only
+	// Save/Cancel buttons appear). So we override the type to 'numeric' only when
+	// the user has actually clicked the edit pencil (action=editqty). This keeps
+	// the read-mode rendering (price() format) untouched.
+	if ($object->status == Mo::STATUS_DRAFT && $permissiontoadd && isset($object->fields['qty'])) {
+		$object->fields['qty']['alwayseditable'] = 1;
+		if ($action == 'editqty') {
+			$object->fields['qty']['type'] = 'numeric';
+		}
+	}
+
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
 
 	// Other attributes
@@ -1056,7 +1121,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 								$qtyhourforline = convertDurationtoHour($line->qty, $unitforline);
 							}
 
-							if ($qtyhourservice && $qtyhourforline) {
+							// Add the workstation cost for the manufacturing order cost when a workstation is set
+							if (isModEnabled('workstation') && $line->fk_default_workstation > 0) {
+								$workstation = new Workstation($db);
+								$workstation->fetch($line->fk_default_workstation);
+								$linecost = price2num($qtyhourforline * ($workstation->thm_operator_estimated + $workstation->thm_machine_estimated) / $object->qty, 'MT'); //if global const MRP_SHOW_COST_FOR_CONSUMPTION is used to show price for each line
+								$bomcostupdated += price2num($qtyhourforline * ($workstation->thm_operator_estimated + $workstation->thm_machine_estimated) / $object->qty, 'MU');
+							} elseif ($qtyhourservice && $qtyhourforline) {
 								$linecost = price2num(($qtyhourforline / $qtyhourservice * $costprice) / $object->qty, 'MT');	// price for line for all quantities
 								$bomcostupdated += price2num(($qtyhourforline / $qtyhourservice * $costprice) / $object->qty, 'MU');	// same but with full accuracy
 							} else {
@@ -1488,13 +1559,13 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						// Split
 						$type = 'batch';
 						print '<td align="right" class="split">';
-						print ' '.img_picto($langs->trans('AddStockLocationLine'), 'split', 'class="splitbutton" onClick="addDispatchLine('.((int) $line->id).', \''.dol_escape_js($type).'\', \'qtymissingconsume\')"');
+						print ' '.img_picto($langs->trans('AddStockLocationLine'), 'split', 'class="splitbutton" onClick="addDispatchLine('.((int) $line->id).', \''.dol_escape_js($type).'\', \'qtymissingconsume\', 1)"');
 						print '</td>';
 
 						// Split All
 						print '<td align="right" class="splitall">';
 						if (($action == 'consumeorproduce' || $action == 'consumeandproduceall') && $tmpproduct->status_batch == 2) {
-							print img_picto($langs->trans('SplitAllQuantity'), 'split', 'class="splitbutton splitallbutton field-error-icon" data-max-qty="1" onClick="addDispatchLine('.$line->id.', \'batch\', \'allmissingconsume\')"');
+							print img_picto($langs->trans('SplitAllQuantity'), 'split', 'class="splitbutton splitallbutton field-error-icon" data-max-qty="1" onClick="addDispatchLine('.$line->id.', \'batch\', \'allmissingconsume\', 1)"');
 						}
 						print '</td>';
 
@@ -1790,9 +1861,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 						// Split All
 						print '<td></td>';
 					}
-					// Delete
+					// Delete, if nothing was produced for this line
 					if ($permissiontodelete) {
-						if ($line->origin_type == 'free') {
+						if ($line->origin_type == 'free' && empty($arrayoflines)) {
 							$href = $_SERVER["PHP_SELF"];
 							$href .= '?id='.$object->id;
 							$href .= '&action=deleteline';

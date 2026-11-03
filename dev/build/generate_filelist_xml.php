@@ -106,7 +106,7 @@ while ($i < $argc) {
 		$includeconstants[$tmp[0]][$tmp[1]] = $tmp[2];
 	}
 	if (!empty($result["buildzip"])) {
-		$buildzip = 1;
+		$buildzip = $result["buildzip"];
 	}
 	$i++;
 }
@@ -124,7 +124,7 @@ $savrelease = $release;
 $tmpver = explode('-', $release, 2);
 if ($tmpver[0] == 'auto') {
 	$release = DOL_VERSION;
-	if (!empty($tmpver[1]) && $tmpver[0] == 'auto') {
+	if (!empty($tmpver[1])) {
 		$release .= '-'.$tmpver[1];
 	}
 }
@@ -132,7 +132,7 @@ if ($tmpver[0] == 'auto') {
 $tmpver = explode('-', $checklock, 2);
 if ($tmpver[0] == 'auto') {
 	$checklock = DOL_VERSION;
-	if (!empty($tmpver[1]) && $tmpver[0] == 'auto') {
+	if (!empty($tmpver[1])) {
 		$checklock .= '-'.$tmpver[1];
 	}
 }

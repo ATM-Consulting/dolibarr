@@ -76,14 +76,14 @@ $cancel = GETPOST('cancel', 'alpha');
 
 $id = GETPOSTINT('id');
 $ref = GETPOST('ref', 'alpha');
-$stocklimit = GETPOSTFLOAT('seuil_stock_alerte');
-$desiredstock = GETPOSTFLOAT('desiredstock');
+$stocklimit = (GETPOST('seuil_stock_alerte') !== '') ? GETPOSTFLOAT('seuil_stock_alerte') : null;
+$desiredstock = (GETPOST('desiredstock') !== '') ? GETPOSTFLOAT('desiredstock') : null;
 $cancel = GETPOST('cancel', 'alpha');
 $fieldid = GETPOSTISSET("ref") ? 'ref' : 'rowid';
 $d_eatby = dol_mktime(0, 0, 0, GETPOSTINT('eatbymonth'), GETPOSTINT('eatbyday'), GETPOSTINT('eatbyyear'));
 $d_sellby = dol_mktime(0, 0, 0, GETPOSTINT('sellbymonth'), GETPOSTINT('sellbyday'), GETPOSTINT('sellbyyear'));
 $pdluoid = GETPOSTINT('pdluoid');
-$batchnumber = GETPOST('batch_number', 'aZ09comma');
+$batchnumber = GETPOST('batch_number', 'alphanohtml'); // Lot/serial number may contain chars like '/' so we must not use aZ09 sanitizing here. Value is escaped before SQL use.
 if (!empty($batchnumber)) {
 	$batchnumber = trim($batchnumber);
 }
@@ -193,8 +193,8 @@ if ($action == 'setcost_price' && $usercancreate) {
 }
 
 if ($action == 'addlimitstockwarehouse' && $usercancreate) {
-	$seuil_stock_alerte = GETPOST('seuil_stock_alerte');
-	$desiredstock = GETPOST('desiredstock');
+	$seuil_stock_alerte = GETPOSTFLOAT('seuil_stock_alerte');
+	$desiredstock = GETPOSTFLOAT('desiredstock');
 
 	$maj_ok = true;
 	if ($seuil_stock_alerte == '') {
@@ -222,7 +222,7 @@ if ($action == 'addlimitstockwarehouse' && $usercancreate) {
 			// Create
 			$pse->fk_entrepot = GETPOSTINT('fk_entrepot');
 			$pse->fk_product  	 	 = $id;
-			$pse->seuil_stock_alerte = GETPOST('seuil_stock_alerte');
+			$pse->seuil_stock_alerte = GETPOSTFLOAT('seuil_stock_alerte');
 			$pse->desiredstock  	 = GETPOSTFLOAT('desiredstock');
 			if ($pse->create($user) > 0) {
 				setEventMessages($langs->trans('ProductStockWarehouseCreated'), null, 'mesgs');
@@ -423,13 +423,14 @@ if ($action == "transfert_stock" && !$cancel && $usercanupdatestock) {
 
 				if ($pdluoid > 0) {
 					$result = $pdluo->fetch($pdluoid);
-					if ($result) {
-						$srcwarehouseid = $pdluo->warehouseid;
+					if ($result > 0 && $pdluo->id > 0 && $pdluo->fk_product == $object->id) {
+						// The lot row gives the lot and its dates, the source warehouse is the one selected in the form (checked against the target above)
+						$srcwarehouseid = GETPOSTINT('id_entrepot');
 						$batch = $pdluo->batch;
 						$eatby = $pdluo->eatby;
 						$sellby = $pdluo->sellby;
 					} else {
-						setEventMessages($pdluo->error, $pdluo->errors, 'errors');
+						setEventMessages($pdluo->error ? $pdluo->error : $langs->trans('ErrorRecordNotFound'), $pdluo->errors, 'errors');
 						$error++;
 					}
 				} else {
@@ -529,37 +530,6 @@ if ($action == "transfert_stock" && !$cancel && $usercanupdatestock) {
 		}
 	}
 }
-
-// Update batch information
-if ($action == 'updateline' && GETPOST('save') == $langs->trans("Save") && $usercancreate) {
-	$pdluo = new Productbatch($db);
-	$result = $pdluo->fetch(GETPOSTINT('pdluoid'));
-
-	if ($result > 0) {
-		if ($pdluo->id) {
-			if ((!GETPOST("sellby")) && (!GETPOST("eatby")) && (!$batchnumber)) {
-				setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("atleast1batchfield")), null, 'errors');
-			} else {
-				$d_eatby = dol_mktime(0, 0, 0, GETPOSTINT('eatbymonth'), GETPOSTINT('eatbyday'), GETPOSTINT('eatbyyear'));
-				$d_sellby = dol_mktime(0, 0, 0, GETPOSTINT('sellbymonth'), GETPOSTINT('sellbyday'), GETPOSTINT('sellbyyear'));
-				$pdluo->batch = $batchnumber;
-				$pdluo->eatby = $d_eatby;
-				$pdluo->sellby = $d_sellby;
-				$result = $pdluo->update($user);
-				if ($result < 0) {
-					setEventMessages($pdluo->error, $pdluo->errors, 'errors');
-				}
-			}
-		} else {
-			setEventMessages($langs->trans('BatchInformationNotfound'), null, 'errors');
-		}
-	} else {
-		setEventMessages($pdluo->error, null, 'errors');
-	}
-	header("Location: product.php?id=".$id);
-	exit;
-}
-
 
 /*
  * View
@@ -750,7 +720,7 @@ if ($id > 0 || $ref) {
 			}
 			print '</td></tr>';
 
-			if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+			if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 				// Price
 				print '<tr><td>'.$langs->trans("SellingPrice").'</td><td>';
 				if ($usercancreadprice) {
@@ -1328,7 +1298,7 @@ if ($showstockdetails) {
 	print '<td class="liste_total right amount">';
 	if ($num) {
 		print '<span class="valignmiddle">';
-		if (!getDolGlobalString('PRODUIT_MULTIPRICES') && $usercancreadprice) {
+		if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES') && $usercancreadprice) {
 			print price(price2num($totalvaluesell, 'MT'), 1);
 		} else {
 			print $form->textwithpicto('', $langs->trans("Variable"));

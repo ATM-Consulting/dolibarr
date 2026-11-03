@@ -186,6 +186,7 @@ var subcategories = <?php echo json_encode($subcategories); ?>;
 
 var currentcat;
 var pageproducts=0;
+var currentsubcategories=[];	// Subcategories of currentcat, shown before its products in the product grid
 var pagecategories=0;
 var pageactions=0;
 var place="<?php echo $place; ?>";
@@ -305,6 +306,28 @@ function MoreCategories(moreorless) {
 	ClearSearch(false);
 }
 
+// Show a subcategory into the tile ishow of the product grid
+function PrintSubCategory(ishow, val) {
+	$("#prodivdesc"+ishow).show();
+	<?php if (getDolGlobalString('TAKEPOS_SHOW_CATEGORY_DESCRIPTION') == 1) { ?>
+		$("#prodesc"+ishow).html(val.label.bold() + ' - ' + val.description);
+	   $("#probutton"+ishow).html(val.label);
+	<?php } else { ?>
+		$("#prodesc"+ishow).text(val.label);
+	  $("#probutton"+ishow).text(val.label);
+	<?php } ?>
+	$("#probutton"+ishow).show();
+	$("#proprice"+ishow).attr("class", "hidden");
+	$("#proprice"+ishow).html("");
+	$("#proimg"+ishow).attr("src","genimg/index.php?query=cat&id="+val.rowid);
+	$("#prodiv"+ishow).data("rowid",val.rowid);
+	$("#prodiv"+ishow).attr("data-rowid",val.rowid);
+	$("#prodiv"+ishow).data("iscat", 1);
+	$("#prodiv"+ishow).attr("data-iscat", 1);
+	$("#prodiv"+ishow).removeClass("divempty");
+	$("#prowatermark"+ishow).show();
+}
+
 // LoadProducts
 function LoadProducts(position, issubcat) {
 	console.log("LoadProducts position="+position+" issubcat="+issubcat);
@@ -333,31 +356,19 @@ function LoadProducts(position, issubcat) {
 	pageproducts=0;
 	ishow=0; //product to show counter
 
+	currentsubcategories = [];
 	if (currentcat != "supplements") {
 		console.log("Loop on each category level 2 or more");
 		jQuery.each(subcategories, function(i, val) {
 			if (currentcat == val.fk_parent) {
-				$("#prodivdesc"+ishow).show();
-				<?php if (getDolGlobalString('TAKEPOS_SHOW_CATEGORY_DESCRIPTION') == 1) { ?>
-					$("#prodesc"+ishow).html(val.label.bold() + ' - ' + val.description);
-				   $("#probutton"+ishow).html(val.label);
-				<?php } else { ?>
-					$("#prodesc"+ishow).text(val.label);
-				  $("#probutton"+ishow).text(val.label);
-				<?php } ?>
-				$("#probutton"+ishow).show();
-				$("#proprice"+ishow).attr("class", "hidden");
-				$("#proprice"+ishow).html("");
-				$("#proimg"+ishow).attr("src","genimg/index.php?query=cat&id="+val.rowid);
-				$("#prodiv"+ishow).data("rowid",val.rowid);
-				$("#prodiv"+ishow).attr("data-rowid",val.rowid);
-				$("#prodiv"+ishow).data("iscat", 1);
-				$("#prodiv"+ishow).attr("data-iscat", 1);
-				$("#prodiv"+ishow).removeClass("divempty");
-				$("#prowatermark"+ishow).show();
-				ishow++;
+				currentsubcategories.push(val);
 			}
 		});
+	}
+	// Show the first subcategories, the next ones are shown by MoreProducts()
+	while (ishow < currentsubcategories.length && ishow < maxproduct) {
+		PrintSubCategory(ishow, currentsubcategories[ishow]);
+		ishow++;
 	}
 
 	idata=0; //product data counter
@@ -498,8 +509,9 @@ function MoreProducts(moreorless) {
 		limit = maxproduct-1;
 	}
 
-	var nb_cat_shown = $('.div5 div.wrapper2[data-iscat=1]').length;
-	var offset = <?php echo ($MAXPRODUCT - 2); ?> * pageproducts - nb_cat_shown;
+	// The grid shows the subcategories of currentcat first, then its products
+	var first = maxproduct * pageproducts;	// Rank of the first tile of the page into the list of subcategories then products
+	var offset = Math.max(0, first - currentsubcategories.length);
 
 	// Get socid
 	let socid = jQuery('#thirdpartyid').val();
@@ -511,9 +523,14 @@ function MoreProducts(moreorless) {
 	$.getJSON('<?php echo DOL_URL_ROOT ?>/takepos/ajax/ajax.php?action=getProducts&token=<?php echo newToken();?>&thirdpartyid=' + socid + '&category='+currentcat+'&tosell=1&limit='+limit+'&offset='+offset, function(data) {
 		console.log("Call ajax.php (in MoreProducts) to get Products of category "+currentcat);
 
-		if (typeof (data[0]) == "undefined" && moreorless=="more"){ // Return if no more pages
+		if (typeof (data[0]) == "undefined" && first >= currentsubcategories.length && moreorless=="more"){ // Return if no more pages
 			pageproducts=pageproducts-1;
 			return;
+		}
+
+		while (ishow < maxproduct && first + ishow < currentsubcategories.length) {
+			PrintSubCategory(ishow, currentsubcategories[first + ishow]);
+			ishow++;
 		}
 
 		while (ishow < maxproduct) {
@@ -527,6 +544,8 @@ function MoreProducts(moreorless) {
 				$("#proimg"+ishow).attr("src","genimg/empty.png");
 				$("#prodiv"+ishow).data("rowid","");
 				$("#prodiv"+ishow).attr("data-rowid","");
+				$("#prodiv"+ishow).data("iscat",0);
+				$("#prodiv"+ishow).attr("data-iscat",0);
 			} else {
 				$("#prodivdesc"+ishow).show();
 				<?php if (getDolGlobalInt('TAKEPOS_SHOW_PRODUCT_REFERENCE') == 1) { ?>
@@ -556,6 +575,7 @@ function MoreProducts(moreorless) {
 				$("#prodiv"+ishow).data("rowid",data[idata]['id']);
 				$("#prodiv"+ishow).attr("data-rowid",data[idata]['id']);
 				$("#prodiv"+ishow).data("iscat",0);
+				$("#prodiv"+ishow).attr("data-iscat",0);
 			}
 			$("#prowatermark"+ishow).hide();
 			ishow++; //Next product to show after print data product
@@ -587,7 +607,7 @@ function ClickProduct(position, qty = 1) {
 			return;
 		}
 		// Call page invoice.php to generate the section with product lines
-		$("#poslines").load("invoice.php?action=addline&token=<?php echo newToken(); ?>&place="+place+"&idproduct="+idproduct+"&qty="+qty+"&invoiceid="+invoiceid, function() {
+		$("#poslines").load("invoice.php?action=addline&token=<?php echo newToken(); ?>&place="+place+"&idproduct="+idproduct+"&selectedline="+selectedline+"&qty="+qty+"&invoiceid="+invoiceid, function() {
 			<?php if (getDolGlobalString('TAKEPOS_CUSTOMER_DISPLAY')) {
 				echo "CustomerDisplay();";
 			}?>
@@ -798,7 +818,7 @@ function Search2(keyCodeForEnter, moreorless) {
 			}
 
 			$.getJSON('<?php echo DOL_URL_ROOT ?>/takepos/ajax/ajax.php?action=search&token=<?php echo newToken();?>&search_term=' + search_term + '&thirdpartyid=' + socid + '&search_start=' + search_start + '&search_limit=' + search_limit, function (data) {
-				for (i = 0; i < <?php echo $MAXPRODUCT ?>; i++) {
+				for (i = 0; i < <?php echo($MAXPRODUCT - 2); ?>; i++) {	// the last 2 slots are the pager arrows, not product slots
 					if (typeof (data[i]) == "undefined") {
 						$("#prowatermark" + i).html("");
 						$("#prodesc" + i).text("");
@@ -1101,11 +1121,14 @@ $( document ).ready(function() {
 	}
 
 	if (getDolGlobalString('TAKEPOS_CONTROL_CASH_OPENING')) {
+		// Look for any cash control fence created today on this terminal, regardless of its status,
+		// so the auto-open popup only fires on the first cash control of a calendar day. Without this,
+		// refreshing the browser the same day after closing a fence used to immediately re-fire the
+		// popup because the closed fences were filtered out by the status check (#38597).
 		$sql = "SELECT rowid, status FROM ".MAIN_DB_PREFIX."pos_cash_fence WHERE";
 		$sql .= " entity = ".((int) $conf->entity)." AND ";
 		$sql .= " posnumber = ".((int) $_SESSION["takeposterminal"])." AND ";
 		$sql .= " date_creation > '".$db->idate(dol_get_first_hour(dol_now()))."'";
-		$sql .= " AND status = 0 ";
 		$resql = $db->query($sql);
 		if ($resql) {
 			$obj = $db->fetch_object($resql);
@@ -1353,7 +1376,9 @@ if (!getDolGlobalString('TAKEPOS_HIDE_HEAD_BAR')) {
 			<button type="button" class="calcbutton" onclick="Edit(0);">0</button>
 			<button type="button" class="calcbutton" onclick="Edit('.')">.</button>
 			<button type="button" class="calcbutton poscolorblue" onclick="Edit('c')">C</button>
+			<?php if ($user->hasRight('takepos', 'editlines')) { ?>
 			<button type="button" class="calcbutton2 poscolordelete" id="delete" onclick="deleteline()"><span class="fa fa-trash"></span></button>
+			<?php } ?>
 		</div>
 
 <?php

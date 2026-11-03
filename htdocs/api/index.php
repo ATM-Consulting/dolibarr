@@ -29,6 +29,15 @@
 
 use Luracast\Restler\Format\UploadFormat;
 
+// API endpoints return JSON (or XML). A stray PHP warning or notice in the
+// response body corrupts the parser on the caller side. Silence the display
+// of PHP messages here while keeping them in the server log so that the
+// problem is still observable to the operator (filefunc.inc.php only does
+// this when dolibarr_main_prod is set, which leaves development setups
+// emitting HTML into every API answer).
+@ini_set('display_errors', '0');
+@ini_set('log_errors', '1');
+
 if (!defined('NOCSRFCHECK')) {
 	define('NOCSRFCHECK', '1'); // Do not check anti CSRF attack test
 }
@@ -181,8 +190,8 @@ if (!empty($reg[1]) && $reg[1] == 'explorer' && ($reg[2] == '/swagger.json' || $
 	$refreshcache = true;
 	if (!is_writable($conf->api->dir_temp)) {
 		dol_syslog("ErrorFailedToWriteInApiTempDirectory ".$conf->api->dir_temp, LOG_ERR);
-		print 'Erreur temp dir api/temp not writable';
 		header('HTTP/1.1 500 temp dir api/temp not writable');
+		print 'Erreur temp dir api/temp not writable';
 		exit(0);
 	}
 }
@@ -380,8 +389,8 @@ if (!empty($reg[1]) && ($reg[1] != 'explorer' || ($reg[2] != '/swagger.json' && 
 
 		if (! $endpointisallowed) {
 			dol_syslog('The API with endpoint /'.$classfile.' is forbidden by config API_ENDPOINT_RULES', LOG_WARNING);
-			print 'The API with endpoint /'.$classfile.' is forbidden by config API_ENDPOINT_RULES';
 			header('HTTP/1.1 501 API is forbidden by API_ENDPOINT_RULES');
+			print 'The API with endpoint /'.$classfile.' is forbidden by config API_ENDPOINT_RULES';
 			//session_destroy();
 			exit(0);
 		}
@@ -404,13 +413,19 @@ if (!empty($reg[1]) && ($reg[1] != 'explorer' || ($reg[2] != '/swagger.json' && 
 	}
 	if (!$res) {
 		dol_syslog('Failed to make include_once '.$dir_part_file, LOG_WARNING);
-		print 'API not found (failed to include API file)';
 		header('HTTP/1.1 501 API not found (failed to include API file)');
+		print 'API not found (failed to include API file)';
 		//session_destroy();
 		exit(0);
 	}
 
-	if (class_exists($classname)) {
+	// Match the discovery loop above which accepts both "Foo" and "FooApi" class
+	// names (see line ~308). Without the Api suffix branch, a module file named
+	// api_mymodule.class.php exposing class MyModuleApi cannot be dispatched
+	// even though the api explorer lists it (#37282).
+	if (class_exists($classname.'Api')) {
+		$api->r->addAPIClass($classname.'Api');
+	} elseif (class_exists($classname)) {
 		$api->r->addAPIClass($classname);
 	}
 }

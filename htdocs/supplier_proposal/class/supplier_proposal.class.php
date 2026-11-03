@@ -177,6 +177,10 @@ class SupplierProposal extends CommonObject
 	 * @var string
 	 */
 	public $cond_reglement_doc;		// label doc
+	/**
+	 * @var string Label of the payment terms, used when there is no label for documents
+	 */
+	public $cond_reglement_label;
 
 	/**
 	 * @var string
@@ -746,6 +750,11 @@ class SupplierProposal extends CommonObject
 	{
 		global $mysoc;
 
+		if (!$this->isLineOfObject($rowid)) {
+			$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
+			return -1;
+		}
+
 		dol_syslog(get_class($this)."::updateLine $rowid, $pu, $qty, $remise_percent, $txtva, $desc, $price_base_type, $info_bits");
 		include_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
 
@@ -934,6 +943,11 @@ class SupplierProposal extends CommonObject
 
 			// For triggers
 			$line->fetch($lineid);
+
+			if ($this->id > 0 && (int) $line->fk_supplier_proposal !== (int) $this->id) {
+				$this->error = 'ErrorLineIDDoesNotMatchWithObjectID';
+				return -1;
+			}
 
 			if ($line->delete($user) > 0) {
 				$this->update_price(1);
@@ -1283,7 +1297,7 @@ class SupplierProposal extends CommonObject
 	{
 		$sql = "SELECT p.rowid, p.entity, p.ref, p.fk_soc as socid";
 		$sql .= ", p.total_ttc, p.total_tva, p.localtax1, p.localtax2, p.total_ht";
-		$sql .= ", p.datec, GREATEST(p.tms, pef.tms) as date_modification";
+		$sql .= ", p.datec, GREATEST(p.tms, COALESCE(pef.tms, p.tms)) as date_modification";
 		$sql .= ", p.date_valid as datev";
 		$sql .= ", p.date_livraison as delivery_date";
 		$sql .= ", p.model_pdf, p.extraparams";
@@ -1352,6 +1366,7 @@ class SupplierProposal extends CommonObject
 				$this->cond_reglement_id    = $obj->fk_cond_reglement;
 				$this->cond_reglement_code  = $obj->cond_reglement_code;
 				$this->cond_reglement       = $obj->cond_reglement;
+				$this->cond_reglement_label = $obj->cond_reglement;
 				$this->cond_reglement_doc   = $obj->cond_reglement_libelle_doc;
 
 				$this->extraparams = (array) (!empty($obj->extraparams) ? json_decode($obj->extraparams, true) : array());
@@ -1369,11 +1384,11 @@ class SupplierProposal extends CommonObject
 				$this->multicurrency_total_tva = $obj->multicurrency_total_tva;
 				$this->multicurrency_total_ttc = $obj->multicurrency_total_ttc;
 
+				$this->db->free($resql);
+
 				// Retrieve all extrafield
 				// fetch optionals attributes and labels
 				$this->fetch_optionals();
-
-				$this->db->free($resql);
 
 				$this->lines = array();
 
@@ -1449,6 +1464,8 @@ class SupplierProposal extends CommonObject
 						$line->multicurrency_total_ttc 	= $objp->multicurrency_total_ttc;
 						$line->fk_unit = $objp->fk_unit;
 
+						$line->fetch_optionals();
+
 						$this->lines[$i] = $line;
 
 						$i++;
@@ -1459,10 +1476,6 @@ class SupplierProposal extends CommonObject
 					return -1;
 				}
 
-				// Retrieve all extrafield
-				// fetch optionals attributes and labels
-				$this->fetch_optionals();
-
 				return 1;
 			}
 
@@ -1472,6 +1485,65 @@ class SupplierProposal extends CommonObject
 			$this->error = $this->db->error();
 			return -1;
 		}
+	}
+
+	/**
+	 *  Update the header fields of the price request that can be edited without a dedicated action
+	 *
+	 *  @param	User	$user		Object user that modify
+	 *  @param	int		$notrigger	1=Does not execute triggers, 0= execute triggers
+	 *  @return	int					Return integer <0 if KO, >0 if OK
+	 */
+	public function update($user, $notrigger = 0)
+	{
+		$error = 0;
+
+		$sql = "UPDATE ".MAIN_DB_PREFIX."supplier_proposal SET";
+		$sql .= " fk_projet = ".($this->fk_project > 0 ? ((int) $this->fk_project) : "null");
+		$sql .= ", fk_cond_reglement = ".($this->cond_reglement_id > 0 ? ((int) $this->cond_reglement_id) : "null");
+		$sql .= ", fk_mode_reglement = ".($this->mode_reglement_id > 0 ? ((int) $this->mode_reglement_id) : "null");
+		$sql .= ", fk_account = ".($this->fk_account > 0 ? ((int) $this->fk_account) : "null");
+		$sql .= ", fk_shipping_method = ".($this->shipping_method_id > 0 ? ((int) $this->shipping_method_id) : "null");
+		$sql .= ", date_livraison = ".($this->delivery_date ? "'".$this->db->idate($this->delivery_date)."'" : "null");
+		$sql .= ", note_private = ".(isset($this->note_private) ? "'".$this->db->escape($this->note_private)."'" : "null");
+		$sql .= ", note_public = ".(isset($this->note_public) ? "'".$this->db->escape($this->note_public)."'" : "null");
+		$sql .= ", model_pdf = ".(isset($this->model_pdf) ? "'".$this->db->escape($this->model_pdf)."'" : "null");
+		$sql .= ", fk_user_modif = ".((int) $user->id);
+		$sql .= " WHERE rowid = ".((int) $this->id);
+
+		$this->db->begin();
+
+		dol_syslog(get_class($this)."::update", LOG_DEBUG);
+		$resql = $this->db->query($sql);
+		if (!$resql) {
+			$error++;
+			$this->errors[] = "Error ".$this->db->lasterror();
+		}
+
+		if (!$error) {
+			$result = $this->insertExtraFields();
+			if ($result < 0) {
+				$error++;
+			}
+		}
+
+		if (!$error && !$notrigger) {
+			// Call trigger
+			$result = $this->call_trigger('PROPOSAL_SUPPLIER_MODIFY', $user);
+			if ($result < 0) {
+				$error++;
+			}
+			// End call triggers
+		}
+
+		if ($error) {
+			$this->error = implode(', ', $this->errors);
+			$this->db->rollback();
+			return -1 * $error;
+		}
+
+		$this->db->commit();
+		return 1;
 	}
 
 	/**
@@ -2138,6 +2210,19 @@ class SupplierProposal extends CommonObject
 			// End call triggers
 		}
 
+		// Remove linked categories.
+		if (!$error) {
+			$sql = "DELETE FROM ".MAIN_DB_PREFIX."categorie_supplier_proposal";
+			$sql .= " WHERE fk_supplier_proposal = ".((int) $this->id);
+
+			$result = $this->db->query($sql);
+			if (!$result) {
+				$error++;
+				$this->error = $this->db->lasterror();
+				$this->errors[] = $this->error;
+			}
+		}
+
 		if (!$error) {
 			$main = MAIN_DB_PREFIX.'supplier_proposaldet';
 			$ef = $main."_extrafields";
@@ -2227,7 +2312,7 @@ class SupplierProposal extends CommonObject
 	 */
 	public function info($id)
 	{
-		$sql = "SELECT c.rowid, GREATEST(c.tms, cef.tms) as date_modification,";
+		$sql = "SELECT c.rowid, GREATEST(c.tms, COALESCE(cef.tms, c.tms)) as date_modification,";
 		$sql .= " c.datec as date_creation, c.date_valid as date_validation, c.date_cloture as date_closure,";
 		$sql .= " c.fk_user_author, c.fk_user_modif, c.fk_user_valid, c.fk_user_cloture";
 		$sql .= " FROM ".MAIN_DB_PREFIX."supplier_proposal as c";
@@ -2752,9 +2837,11 @@ class SupplierProposal extends CommonObject
 				$this->lines[$i] = new SupplierProposalLine($this->db);
 				$this->lines[$i]->id = $obj->rowid; // for backward compatibility
 				$this->lines[$i]->rowid = $obj->rowid;
+
 				$this->lines[$i]->label = $obj->custom_label;
 				$this->lines[$i]->description = $obj->description; // deprecated
 				$this->lines[$i]->desc = $obj->description;
+
 				$this->lines[$i]->fk_product = $obj->fk_product;
 				$this->lines[$i]->ref = $obj->ref;
 				$this->lines[$i]->product_label = $obj->product_label;
@@ -2792,6 +2879,8 @@ class SupplierProposal extends CommonObject
 				$this->lines[$i]->multicurrency_total_ttc 	= $obj->multicurrency_total_ttc;
 				$this->lines[$i]->fk_unit = $obj->fk_unit;
 				$this->lines[$i]->extraparams = !empty($obj->extraparams) ? (array) json_decode($obj->extraparams, true) : array();
+
+				$this->lines[$i]->fetch_optionals();
 
 				$i++;
 			}

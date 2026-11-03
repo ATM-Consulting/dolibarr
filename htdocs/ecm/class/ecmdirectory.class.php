@@ -293,11 +293,36 @@ class EcmDirectory extends CommonObject
 	/**
 	 *	Update cache of nb of documents into database
 	 *
-	 * 	@param	string	$value		'+' or '-' or new number
+	 * 	@param	string	$value		'+' (one more) or '-' (one less) or new number (like '5') or 'database' (recompute from database)
 	 *  @return int		         	Return integer <0 if KO, >0 if OK
 	 */
 	public function changeNbOfFiles($value)
 	{
+		global $conf;
+
+		if ($value == 'database') {
+			$relativepath = $conf->ecm->dir_output . '/' . $this->getRelativePath(); // Ex: dir1/dir2/dir3/
+			$relativepath = preg_replace('/^' . preg_quote(DOL_DATA_ROOT, '/') . '/', '', $relativepath);
+			$relativepath = trim($relativepath, '/');
+
+			// Get nb file in relative path
+			$sql = "SELECT COUNT(*) AS nb";
+			$sql .= " FROM " . $this->db->prefix() . "ecm_files";
+			$sql .= " WHERE filepath = '" . $this->db->escape($relativepath) . "'";
+
+			dol_syslog(get_class($this) . "::changeNbOfFiles - Get nb file in relative path", LOG_DEBUG);
+			$resql = $this->db->query($sql);
+			if (!$resql) {
+				$this->error = "Error " . $this->db->lasterror();
+				return -1;
+			} else {
+				$value = 0;
+				if ($obj = $this->db->fetch_object($resql)) {
+					$value = (int) $obj->nb;
+				}
+			}
+		}
+
 		// Update request
 		$sql = "UPDATE ".MAIN_DB_PREFIX."ecm_directories SET";
 		if (preg_match('/[0-9]+/', $value)) {
@@ -402,6 +427,22 @@ class EcmDirectory extends CommonObject
 		dol_syslog(get_class($this)."::delete remove directory id=".$this->id." mode=".$mode.(($mode == 'databaseonly') ? '' : ' relativepath='.$relativepath));
 
 		$this->db->begin();
+
+		// With the content, the subdirectories are deleted too (their files are deleted with the directory on disk)
+		if ($deletedirrecursive) {
+			$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."ecm_directories WHERE fk_parent = ".((int) $this->id);
+			$resql = $this->db->query($sql);
+			if ($resql) {
+				while ($obj = $this->db->fetch_object($resql)) {
+					$subdir = new EcmDirectory($this->db);
+					if ($subdir->fetch($obj->rowid) > 0 && $subdir->delete($user, 'databaseonly', 1) < 0) {
+						$this->error = $subdir->error;
+						$this->db->rollback();
+						return -2;
+					}
+				}
+			}
+		}
 
 		$sql = "DELETE FROM ".MAIN_DB_PREFIX."ecm_directories";
 		$sql .= " WHERE rowid=".((int) $this->id);

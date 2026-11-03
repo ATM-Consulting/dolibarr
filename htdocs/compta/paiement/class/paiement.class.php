@@ -346,7 +346,17 @@ class Paiement extends CommonObject
 				if ($way == 'dolibarr') {
 					$value_converted = (float) price2num($value * $invoice_multicurrency_tx, 'MU');
 				} else {
-					$value_converted = (float) price2num($value / $invoice_multicurrency_tx, 'MU');
+					// A payment that settles the whole remaining amount in the foreign currency must
+					// clear the invoice: dividing by the rate and rounding can leave or take one cent,
+					// which keeps the invoice partially paid, so take the remaining amount directly.
+					include_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
+					$invoice = new Facture($this->db);
+					$invoice->fetch($key);
+					if ((float) price2num($value, 'MT') == (float) $invoice->getRemainToPay(1)) {
+						$value_converted = (float) $invoice->getRemainToPay(0);
+					} else {
+						$value_converted = (float) price2num($value / $invoice_multicurrency_tx, 'MU');
+					}
 				}
 			} else {
 				$invoice_multicurrency_tx = false;
@@ -541,41 +551,47 @@ class Paiement extends CommonObject
 										$discount->fk_facture_source = $invoice->id;
 
 										// Loop on each vat rate
+										// Bucket by tva_tx and vat_src_code so the generated discount keeps the source VAT code
 										$i = 0;
 										foreach ($invoice->lines as $line) {
 											if ($line->product_type != 9 && $line->total_ht != 0) {    // no need to create discount if amount is null or is special product
-												if (!array_key_exists($line->tva_tx, $amount_ht)) {
-													$amount_ht[$line->tva_tx] = 0.0;
-													$amount_tva[$line->tva_tx] = 0.0;
-													$amount_ttc[$line->tva_tx] = 0.0;
-													$multicurrency_amount_ht[$line->tva_tx] = 0.0;
-													$multicurrency_amount_tva[$line->tva_tx] = 0.0;
-													$multicurrency_amount_ttc[$line->tva_tx] = 0.0;
+												$key = $line->tva_tx.'|'.(string) $line->vat_src_code;
+												if (!array_key_exists($key, $amount_ht)) {
+													$amount_ht[$key] = 0.0;
+													$amount_tva[$key] = 0.0;
+													$amount_ttc[$key] = 0.0;
+													$multicurrency_amount_ht[$key] = 0.0;
+													$multicurrency_amount_tva[$key] = 0.0;
+													$multicurrency_amount_ttc[$key] = 0.0;
 												}
-												$amount_ht[$line->tva_tx] += $line->total_ht;
-												$amount_tva[$line->tva_tx] += $line->total_tva;
-												$amount_ttc[$line->tva_tx] += $line->total_ttc;
-												$multicurrency_amount_ht[$line->tva_tx] += $line->multicurrency_total_ht;
-												$multicurrency_amount_tva[$line->tva_tx] += $line->multicurrency_total_tva;
-												$multicurrency_amount_ttc[$line->tva_tx] += $line->multicurrency_total_ttc;
+												$amount_ht[$key] += $line->total_ht;
+												$amount_tva[$key] += $line->total_tva;
+												$amount_ttc[$key] += $line->total_ttc;
+												$multicurrency_amount_ht[$key] += $line->multicurrency_total_ht;
+												$multicurrency_amount_tva[$key] += $line->multicurrency_total_tva;
+												$multicurrency_amount_ttc[$key] += $line->multicurrency_total_ttc;
 												$i++;
 											}
 										}
 
-										foreach ($amount_ht as $tva_tx => $xxx) {
-											$discount->amount_ht = abs($amount_ht[$tva_tx]);
-											$discount->total_ht = abs($amount_ht[$tva_tx]);
-											$discount->amount_tva = abs($amount_tva[$tva_tx]);
-											$discount->total_tva = abs($amount_tva[$tva_tx]);
-											$discount->amount_ttc = abs($amount_ttc[$tva_tx]);
-											$discount->total_ttc = abs($amount_ttc[$tva_tx]);
-											$discount->multicurrency_amount_ht = abs($multicurrency_amount_ht[$tva_tx]);
-											$discount->multicurrency_total_ht = abs($multicurrency_amount_ht[$tva_tx]);
-											$discount->multicurrency_amount_tva = abs($multicurrency_amount_tva[$tva_tx]);
-											$discount->multicurrency_total_tva = abs($multicurrency_amount_tva[$tva_tx]);
-											$discount->multicurrency_amount_ttc = abs($multicurrency_amount_ttc[$tva_tx]);
-											$discount->multicurrency_total_ttc = abs($multicurrency_amount_ttc[$tva_tx]);
+										foreach ($amount_ht as $key => $xxx) {
+											$parts = explode('|', (string) $key, 2);
+											$tva_tx = $parts[0];
+											$vat_src_code = isset($parts[1]) ? $parts[1] : '';
+											$discount->amount_ht = abs($amount_ht[$key]);
+											$discount->total_ht = abs($amount_ht[$key]);
+											$discount->amount_tva = abs($amount_tva[$key]);
+											$discount->total_tva = abs($amount_tva[$key]);
+											$discount->amount_ttc = abs($amount_ttc[$key]);
+											$discount->total_ttc = abs($amount_ttc[$key]);
+											$discount->multicurrency_amount_ht = abs($multicurrency_amount_ht[$key]);
+											$discount->multicurrency_total_ht = abs($multicurrency_amount_ht[$key]);
+											$discount->multicurrency_amount_tva = abs($multicurrency_amount_tva[$key]);
+											$discount->multicurrency_total_tva = abs($multicurrency_amount_tva[$key]);
+											$discount->multicurrency_amount_ttc = abs($multicurrency_amount_ttc[$key]);
+											$discount->multicurrency_total_ttc = abs($multicurrency_amount_ttc[$key]);
 											$discount->tva_tx = abs((float) $tva_tx);
+											$discount->vat_src_code = $vat_src_code;
 
 											$result = $discount->create($user);
 											if ($result < 0) {
@@ -898,6 +914,11 @@ class Paiement extends CommonObject
 				if (!$error) {
 					$linkaddedforthirdparty = array();
 					foreach ($this->amounts as $key => $value) {  // We should have invoices always for same third party but we loop in case of.
+						// Skip the invoices that were listed but not paid, the same way create() does. Without this,
+						// a 'company' link is added to the bank line for a third party that received no payment.
+						if (!is_numeric($value) || $value == 0) {
+							continue;
+						}
 						if ($mode == 'payment') {
 							$fac = new Facture($this->db);
 							$fac->fetch($key);

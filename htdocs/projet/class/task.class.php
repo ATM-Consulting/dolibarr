@@ -453,6 +453,7 @@ class Task extends CommonObjectLine
 		$sql .= ", priority";
 		$sql .= ", billable";
 		$sql .= ", fk_statut";
+		$sql .= ", rang";
 		$sql .= ") VALUES (";
 		$sql .= (!empty($this->entity) ? (int) $this->entity : (int) $conf->entity);
 		$sql .= ", ".((int) $this->fk_project);
@@ -472,6 +473,7 @@ class Task extends CommonObjectLine
 		$sql .= ", ".(($this->priority != '' && $this->priority >= 0) ? (int) $this->priority : 'null');
 		$sql .= ", ".((int) $this->billable);
 		$sql .= ", ".((int) $this->status);
+		$sql .= ", ".((!empty($this->rang)) ? ((int) $this->rang) : "0");
 		$sql .= ")";
 
 		$this->db->begin();
@@ -1266,6 +1268,7 @@ class Task extends CommonObjectLine
 		// Add where from extra fields
 		$extrafieldsobjectkey = 'projet_task';
 		$extrafieldsobjectprefix = 'efpt.';
+		$search_options_pattern = 'search_task_options_'; // Aligned with perweek.php/perday.php that build $search_array_options with this prefix (via extrafields->getOptionalsFromPost('projet_task', '', 'search_task_')). Without it, the SQL template falls back to 'search_options_' and the preg_replace fails to strip the actual prefix, generating phantom column names like efpt.search_task_options_<field>.
 		global $db, $conf; // needed for extrafields_list_search_sql.tpl
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 
@@ -1636,7 +1639,10 @@ class Task extends CommonObjectLine
 		if (isset($this->timespent_note)) {
 			$this->timespent_note = trim($this->timespent_note);
 		}
-		if (empty($this->timespent_datehour) || ($this->timespent_date != $this->timespent_datehour)) {
+		if (empty($this->timespent_datehour) || empty($this->timespent_withhour)) {
+			// Sync datehour from the day-level date when no start hour was provided (withhour = 0), or when
+			// datehour is empty. When a start hour was entered (withhour = 1), keep datehour untouched so the
+			// hour is not discarded (#39276). This still resynchronizes datehour when only the day changes.
 			$this->timespent_datehour = $this->timespent_date;
 		}
 
@@ -1681,6 +1687,16 @@ class Task extends CommonObjectLine
 		} else {
 			$this->error = $this->db->lasterror();
 			$ret = -1;
+		}
+
+		// Propagate trigger handler messages from $this->errors (plural array)
+		// to $this->error (singular string) so callers like the REST API can
+		// surface a useful message instead of an empty error tail.
+		if ($ret <= 0 && empty($this->error) && !empty($this->errors)) {
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(__METHOD__.' Error: '.$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
 		}
 
 		if ($ret > 0) {
@@ -2005,7 +2021,7 @@ class Task extends CommonObjectLine
 		$sql .= " p.rowid as project_id,";
 		$sql .= " p.ref as project_ref,";
 		$sql .= " p.title as project_label,";
-		$sql .= " p.public as public";
+		$sql .= " p.public as project_public";
 		$sql .= " FROM ".MAIN_DB_PREFIX."element_time as ptt, ".MAIN_DB_PREFIX."projet_task as pt, ".MAIN_DB_PREFIX."projet as p";
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON p.fk_soc = s.rowid";
 		$sql .= " WHERE ptt.fk_element = pt.rowid AND pt.fk_projet = p.rowid";
@@ -2034,7 +2050,8 @@ class Task extends CommonObjectLine
 				$newobj->fk_project			= $obj->project_id;
 				$newobj->project_ref		= $obj->project_ref;
 				$newobj->project_label = $obj->project_label;
-				$newobj->public				= $obj->project_public;
+				$newobj->project_public		= $obj->project_public;
+				$newobj->public				= $obj->project_public;		// deprecated
 
 				$newobj->fk_task			= $obj->task_id;
 				$newobj->task_ref = $obj->task_ref;
@@ -2084,16 +2101,19 @@ class Task extends CommonObjectLine
 		}
 
 		// Clean parameters
-		if (empty($this->timespent_datehour) || ($this->timespent_date != $this->timespent_datehour)) {
+		if (empty($this->timespent_datehour) || empty($this->timespent_withhour)) {
+			// Sync datehour from the day-level date when no start hour was provided (withhour = 0), or when
+			// datehour is empty. When a start hour was entered (withhour = 1), keep datehour untouched so the
+			// hour is not discarded (#39276). This still resynchronizes datehour when only the day changes.
 			$this->timespent_datehour = $this->timespent_date;
 		}
 		if (isset($this->timespent_note)) {
 			$this->timespent_note = trim($this->timespent_note);
 		}
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));
@@ -2143,6 +2163,16 @@ class Task extends CommonObjectLine
 			$this->error = $this->db->lasterror();
 			$this->db->rollback();
 			$ret = -1;
+		}
+
+		// Propagate trigger handler messages from $this->errors (plural array)
+		// to $this->error (singular string) so callers like the REST API can
+		// surface a useful message instead of an empty error tail.
+		if ($ret < 0 && empty($this->error) && !empty($this->errors)) {
+			foreach ($this->errors as $errmsg) {
+				dol_syslog(__METHOD__.' Error: '.$errmsg, LOG_ERR);
+				$this->error .= ($this->error ? ', '.$errmsg : $errmsg);
+			}
 		}
 
 		if ($ret == 1 && (($this->timespent_old_duration != $this->timespent_duration) || getDolGlobalString('TIMESPENT_ALWAYS_UPDATE_THM'))) {
@@ -2226,9 +2256,9 @@ class Task extends CommonObjectLine
 
 		$error = 0;
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));
@@ -2262,7 +2292,7 @@ class Task extends CommonObjectLine
 
 		if (!$error) {
 			$sql = "UPDATE ".MAIN_DB_PREFIX."projet_task";
-			$sql .= " SET duration_effective = duration_effective - ".$this->db->escape($this->timespent_duration ? (string) $this->timespent_duration : '0');
+			$sql .= " SET duration_effective = duration_effective - ".((int) $this->timespent_duration);
 			$sql .= " WHERE rowid = ".((int) $this->id);
 
 			dol_syslog(get_class($this)."::delTimeSpent", LOG_DEBUG);
@@ -2327,6 +2357,8 @@ class Task extends CommonObjectLine
 
 		$origin_task->fetch($fromid);
 
+		$clone_task->date_c = $datec;	// Set the new creation date before computing the ref, else the numbering mask uses the source task year
+
 		$defaultref = '';
 		$obj = !getDolGlobalString('PROJECT_TASK_ADDON') ? 'mod_task_simple' : $conf->global->PROJECT_TASK_ADDON;
 		if (getDolGlobalString('PROJECT_TASK_ADDON') && is_readable(DOL_DOCUMENT_ROOT."/core/modules/project/task/" . getDolGlobalString('PROJECT_TASK_ADDON').".php")) {
@@ -2342,7 +2374,6 @@ class Task extends CommonObjectLine
 		$clone_task->ref				= $defaultref;
 		$clone_task->fk_project = $project_id;
 		$clone_task->fk_task_parent = $parent_task_id;
-		$clone_task->date_c = $datec;
 		$clone_task->planned_workload = $origin_task->planned_workload;
 		$clone_task->rang = $origin_task->rang;
 		$clone_task->priority = $origin_task->priority;

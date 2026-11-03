@@ -890,8 +890,9 @@ abstract class CommonDocGenerator
 			'line_up_locale' => price($line->subprice, 0, $outputlangs),
 			'line_total_up' => price2num($line->subprice * (float) $line->qty),
 			'line_total_up_locale' => price($line->subprice * (float) $line->qty, 0, $outputlangs),
-			'line_qty' => $line->qty,
-			'line_qty_locale' => price($line->qty),
+			// A title or subtotal line of the Subtotals module (special_code 3) carries the level in qty, not a quantity. The PDF hides it, see pdf_getlineqty().
+			'line_qty' => (empty($line->special_code) || $line->special_code != 3) ? $line->qty : '',
+			'line_qty_locale' => (empty($line->special_code) || $line->special_code != 3) ? price($line->qty) : '',
 			'line_discount_percent' => ($line->remise_percent ? $line->remise_percent.'%' : ''),
 			'line_price_ht' => price2num($line->total_ht),
 			'line_price_ttc' => price2num($line->total_ttc),
@@ -1758,6 +1759,7 @@ abstract class CommonDocGenerator
 
 		// Load extrafields if not already done
 		if (is_null($this->extrafieldsCache)) {
+			include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 			$this->extrafieldsCache = new ExtraFields($this->db);
 		}
 		if (empty($this->extrafieldsCache->attributes[$object->table_element])) {

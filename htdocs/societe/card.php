@@ -12,7 +12,7 @@
  * Copyright (C) 2015       Raphaël Doursenaud      <rdoursenaud@gpcsolutions.fr>
  * Copyright (C) 2018       Nicolas ZABOURI         <info@inovea-conseil.com>
  * Copyright (C) 2018       Ferran Marcet           <fmarcet@2byte.es.com>
- * Copyright (C) 2018-2025  Frédéric France         <frederic.france@free.fr>
+ * Copyright (C) 2018-2026  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2022-2023  George Gkantinas        <info@geowv.eu>
  * Copyright (C) 2023       Nick Fragoulis
  * Copyright (C) 2023       Alexandre Janniaux      <alexandre.janniaux@gmail.com>
@@ -364,12 +364,16 @@ if (empty($reshook)) {
 			$object->email					= trim(GETPOST('email', 'email'));
 			$object->no_email 				= GETPOSTINT("no_email");
 			$object->url					= trim(GETPOST('url', 'url'));
-			$object->idprof1				= trim(GETPOST('idprof1', 'alphanohtml'));
-			$object->idprof2				= trim(GETPOST('idprof2', 'alphanohtml'));
-			$object->idprof3				= trim(GETPOST('idprof3', 'alphanohtml'));
-			$object->idprof4				= trim(GETPOST('idprof4', 'alphanohtml'));
-			$object->idprof5				= trim(GETPOST('idprof5', 'alphanohtml'));
-			$object->idprof6				= trim(GETPOST('idprof6', 'alphanohtml'));
+			// Only the professional ids displayed by the form are posted: the edit form renders the id N
+			// only when N <= THIRDPARTY_MIN_NB_PROF_ID or when the key ProfId<N><country code> is
+			// translated for the language of the user. Reading the 6 of them unconditionally erases
+			// the stored value of a hidden one, so keep it when the field was not submitted.
+			for ($i = 1; $i <= 6; $i++) {
+				$key = 'idprof'.$i;
+				if (GETPOSTISSET($key)) {
+					$object->$key = trim(GETPOST($key, 'alphanohtml'));
+				}
+			}
 			$object->prefix_comm			= GETPOST('prefix_comm', 'alphanohtml');
 			$object->code_client			= GETPOSTISSET('customer_code') ? GETPOST('customer_code', 'alpha') : GETPOST('code_client', 'alpha');
 			$object->code_fournisseur		= GETPOSTISSET('supplier_code') ? GETPOST('supplier_code', 'alpha') : GETPOST('code_fournisseur', 'alpha');
@@ -597,7 +601,8 @@ if (empty($reshook)) {
 								$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 								$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-								if (!($result > 0)) {
+								// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+								if (!is_numeric($result) || $result <= 0) {
 									$errors[] = "ErrorFailedToSaveFile";
 								} else {
 									// Create thumbs
@@ -770,7 +775,8 @@ if (empty($reshook)) {
 							$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 							$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-							if (!($result > 0)) {
+							// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+							if (!is_numeric($result) || $result <= 0) {
 								$errors[] = "ErrorFailedToSaveFile";
 							} else {
 								// Create thumbs
@@ -1172,7 +1178,8 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 					$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 					$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-					if (!($result > 0)) {
+					// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+					if (!is_numeric($result) || $result <= 0) {
 						$errors[] = "ErrorFailedToSaveFile";
 					} else {
 						// Create thumbs
@@ -1190,6 +1197,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			$object->country = $tmparray['label'];
 		}
 		$object->forme_juridique_code = GETPOSTINT('forme_juridique_code');
+		$object->birth = dol_mktime(0, 0, 0, GETPOSTINT('birthmonth'), GETPOSTINT('birthday'), GETPOSTINT('birthyear'));
 
 		// We set multicurrency_code if enabled
 		if (isModEnabled("multicurrency")) {
@@ -1489,6 +1497,11 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			$selectedprospect = ((GETPOSTISSET('prospect') && $action == 'create') ? GETPOSTINT('prospect') : $selectedprospect);
 			$selectedcustomer = ((GETPOSTISSET('customer') && $action == 'create') ? GETPOSTINT('customer') : $selectedcustomer);
 			$selectedsupplier = ((GETPOSTISSET('supplier') && $action == 'create') ? GETPOSTINT('supplier') : $object->fournisseur);
+
+			if ($selectedprospect && $selectedcustomer && getDolGlobalString("SOCIETE_DISABLE_PROSPECTSCUSTOMERS")) {
+				// If both are not allowed, we reset $selectedcustomer
+				$selectedcustomer = 0;
+			}
 
 			print '<tr class="marginbottomlarge height50">';
 			if ($conf->browser->layout != 'phone') {
@@ -1904,7 +1917,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			print '</td></tr>';
 
 			// Date birth
-			print '<tr class="morefields"><td>'.$form->editfieldkey('CompnanyBirthDate', 'birth', '', $object, 0).'</td>';
+			print '<tr class="morefields"><td>'.$form->editfieldkey('CompanyBirthDate', 'birth', '', $object, 0).'</td>';
 			print '<td colspan="3" class="maxwidthonsmartphone">';
 			print $form->selectDate($object->birth, 'birth', 0, 0, 1, "", 1);
 			print '</td></tr>';
@@ -2191,7 +2204,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 				//Incoterms
 				if (isModEnabled('incoterm')) {
 					$object->fk_incoterms = GETPOSTINT('incoterm_id');
-					$object->location_incoterms = GETPOST('lcoation_incoterms', 'alpha');
+					$object->location_incoterms = GETPOST('location_incoterms', 'alpha');
 				}
 
 				//Local Taxes
@@ -2771,7 +2784,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 				print '</td></tr>';
 
 				// Date birth
-				print '<tr class="morefields"><td>'.$form->editfieldkey('CompnanyBirthDate', 'birth', '', $object, 0).'</td>';
+				print '<tr class="morefields"><td>'.$form->editfieldkey('CompanyBirthDate', 'birth', '', $object, 0).'</td>';
 				print '<td class="maxwidthonsmartphone" colspan="3">';
 				print $form->selectDate($object->birth, 'birth', 0, 0, 1, "", 1);
 				print '</td></tr>';
@@ -3298,7 +3311,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			print '<tr><td>'.$langs->trans('JuridicalStatus').'</td><td>'.dolPrintHTML($object->forme_juridique).'</td></tr>';
 
 			// Date birth
-			print '<tr><td>'.$langs->trans('CompnanyBirthDate').'</td><td>'.dol_print_date($object->birth).'</td></tr>';
+			print '<tr><td>'.$langs->trans('CompanyBirthDate').'</td><td>'.dol_print_date($object->birth).'</td></tr>';
 
 			// Capital
 			print '<tr><td>'.$langs->trans('Capital').'</td><td>';

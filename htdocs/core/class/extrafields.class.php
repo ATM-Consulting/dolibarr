@@ -1450,7 +1450,7 @@ class ExtraFields
 										search: params.term,
 										page: params.page || 1,
 										objecttype: '".$extrafieldsobjectkey."',
-										objectid: '".$object->id."',
+										objectid: '".$objectid."',
 										objectkey: '".$key."',
 										mode: '".$mode."',
 										value: '".$value."'
@@ -1539,6 +1539,10 @@ class ExtraFields
 						} else {
 							$keyList .= ', '.$parentField;
 						}
+						// Re-add parent field that was removed by keyList reset above
+						if (!empty($parentField)) {
+							$keyList .= ', '.$parentField;
+						}
 					}
 
 					$filter_categorie = false;
@@ -1584,12 +1588,15 @@ class ExtraFields
 							} elseif (substr($_SERVER["PHP_SELF"], -8) == 'list.php') {
 								// In filters of list views, we do not want $ID$ replaced by 0. So we remove the '=' condition.
 								// Do nothing if condition is using 'IN' keyword
-								// Replace 'column = $ID$' by "word"
+								// Replace 'column = $ID$' by an always true test, the parent object is unknown in a list
 								$word = '#\b([a-zA-Z0-9-\.-_]+)\b *= *\$ID\$#';
-								$InfoFieldList[4] = preg_replace($word, '$1', $InfoFieldList[4]);
-								// Replace '$ID$ = column' by "word"
+								$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
+								// Replace '$ID$ = column' by an always true test
 								$word = '#\$ID\$ *= *\b([a-zA-Z0-9-\.-_]+)\b#';
-								$InfoFieldList[4] = preg_replace($word, '$1', $InfoFieldList[4]);
+								$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
+								// Same with the Universal Search Filter syntax, '(column:=:$ID$)'
+								$word = '#\b([a-zA-Z0-9-\.-_]+)\b *: *[<>!=]?= *: *\$ID\$#';
+								$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
 							} else {
 								$InfoFieldList[4] = str_replace('$ID$', '0', $InfoFieldList[4]);
 							}
@@ -1797,9 +1804,9 @@ class ExtraFields
 						$InfoFieldList = array_merge($InfoFieldList, explode(':', $tmpafter));
 					}
 
-					// Fix better compatibility with some old extrafield syntax filter "(field=123)"
+					// Fix better compatibility with some old extrafield syntax filter "(field_name=123)"
 					$reg = array();
-					if (preg_match('/^\(?([a-z0-9]+)([=<>]+)(\d+)\)?$/i', $InfoFieldList[4], $reg)) {
+					if (preg_match('/^\(?([a-z0-9_]+)([=<>]+)(\d+)\)?$/i', $InfoFieldList[4], $reg)) {
 						$InfoFieldList[4] = '('.$reg[1].':'.$reg[2].':'.$reg[3].')';
 					}
 
@@ -1827,9 +1834,13 @@ class ExtraFields
 					} else {
 						$keyList .= ', '.$parentField;
 					}
+					// Re-add parent field that was removed by keyList reset above
+					if (!empty($parentField)) {
+						$keyList .= ', '.$parentField;
+					}
 				}
 
-				$InfoFieldList[5] = (string) $InfoFieldList[5];
+				$InfoFieldList[5] = (string) ($InfoFieldList[5]??'');
 
 				$filter_categorie = false;
 				if (count($InfoFieldList) > 5 && ($InfoFieldList[5] != '')) {
@@ -1869,12 +1880,15 @@ class ExtraFields
 						} elseif (substr($_SERVER["PHP_SELF"], -8) == 'list.php') {
 							// In filters of list views, we do not want $ID$ replaced by 0. So we remove the '=' condition.
 							// Do nothing if condition is using 'IN' keyword
-							// Replace 'column = $ID$' by "word"
+							// Replace 'column = $ID$' by an always true test, the parent object is unknown in a list
 							$word = '#\b([a-zA-Z0-9-\.-_]+)\b *= *\$ID\$#';
-							$InfoFieldList[4] = preg_replace($word, '$1', $InfoFieldList[4]);
-							// Replace '$ID$ = column' by "word"
+							$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
+							// Replace '$ID$ = column' by an always true test
 							$word = '#\$ID\$ *= *\b([a-zA-Z0-9-\.-_]+)\b#';
-							$InfoFieldList[4] = preg_replace($word, '$1', $InfoFieldList[4]);
+							$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
+							// Same with the Universal Search Filter syntax, '(column:=:$ID$)'
+							$word = '#\b([a-zA-Z0-9-\.-_]+)\b *: *[<>!=]?= *: *\$ID\$#';
+							$InfoFieldList[4] = preg_replace($word, '1 = 1', $InfoFieldList[4]);
 						} else {
 							$InfoFieldList[4] = str_replace('$ID$', '0', $InfoFieldList[4]);
 						}
@@ -2477,7 +2491,7 @@ class ExtraFields
 						while ($obj = $this->db->fetch_object($resql)) {
 							$c = new Categorie($this->db);
 							$c->fetch($obj->rowid);
-							if ($mode != 'list') {
+							if ((string) $mode != 'list') {
 								$ways = $c->print_all_ways(); // $ways[0] = "ccc2 >> ccc2a >> ccc2a1" with html formatted text
 								foreach ($ways as $way) {
 									$toprint[] = '<li class="select2-search-choice-dolibarr noborderoncategories'.($mode ? ' '.$mode : '').'"'.($c->color ? ' style="background: #'.$c->color.';"' : ' style="background: #bbb"').'>'.img_object('', 'category').' '.$way.'</li>';
@@ -2491,7 +2505,7 @@ class ExtraFields
 									}
 								}
 
-								$s = '<li class="select2-search-choice-dolibarr noborderoncategories '.$forced_color.($mode ? ' '.$mode : '').'"'.($c->color ? ' style="background: #'.$c->color.';"' : ' style="background: #bbb"').'>';
+								$s = '<li class="select2-search-choice-dolibarr noborderoncategories '.$forced_color.' list"'.($c->color ? ' style="background: #'.$c->color.';"' : ' style="background: #bbb"').'>';
 								if ($numElem >= 2) {
 									$s .= img_object($c->label, 'category', 'class="small"');
 								} else {
@@ -2519,6 +2533,11 @@ class ExtraFields
 				$classpath = $InfoFieldList[1];
 				if (!empty($classpath)) {
 					dol_include_once($InfoFieldList[1]);
+					if (!$classname || !class_exists($classname)) {
+						// Without this, the raw id is printed with nothing telling why, which is very
+						// hard to diagnose. Most often the class path stored in the definition is wrong.
+						dol_syslog('Extrafields::showOutputField the class '.$classname.' of the link field '.$key.' could not be loaded from '.$classpath.', check the extrafield definition', LOG_WARNING);
+					}
 					if ($classname && class_exists($classname)) {
 						$tmpobject = new $classname($this->db);
 						'@phan-var-force CommonObject $tmpobject';
@@ -2914,7 +2933,7 @@ class ExtraFields
 				} elseif (in_array($key_type, array('price', 'double'))) {
 					$value_arr = GETPOST("options_".$key, 'alpha');
 					$value_key = price2num($value_arr);
-				} elseif (in_array($key_type, array('pricecy', 'double'))) {
+				} elseif (in_array($key_type, array('pricecy'))) {
 					$value_key = price2num(GETPOST("options_".$key, 'alpha')).':'.GETPOST("options_".$key."currency_id", 'alpha');
 				} elseif (in_array($key_type, array('html'))) {
 					$value_key = GETPOST("options_".$key, 'restricthtml');
@@ -3069,6 +3088,16 @@ class ExtraFields
 					// Make sure we get an array even if there's only one checkbox
 					$value_arr = (array) $value_arr;
 					$value_key = implode(',', $value_arr);
+				} elseif (in_array($key_type, array('pricecy'))) {
+					if (!GETPOSTISSET($keyprefix."options_".$key.$keysuffix)) {
+						continue; // Value was not provided, we should not set it.
+					}
+					$value_arr = GETPOST($keyprefix."options_".$key.$keysuffix);
+					if ($keyprefix != 'search_') {    // If value is for a search, we must keep complex string like '>100 <=150'
+						$value_key = price2num($value_arr).':'.GETPOST($keyprefix."options_".$key.$keysuffix."currency_id", 'alpha');
+					} else {
+						$value_key = $value_arr;
+					}
 				} elseif (in_array($key_type, array('price', 'double', 'int'))) {
 					if (!GETPOSTISSET($keyprefix."options_".$key.$keysuffix)) {
 						continue; // Value was not provided, we should not set it.

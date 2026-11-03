@@ -178,6 +178,7 @@ if (empty($reshook)) {
 	if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) { // All tests are required to be compatible with all browsers
 		$search_label = '';
 		$search_status = -1;
+		$search_module_name = '';
 		$search_lastresult = '';
 		$search_all = '';
 		$toselect = array();
@@ -207,7 +208,7 @@ if (empty($reshook)) {
 
 	// Execute jobs
 	if ($action == 'confirm_execute' && $confirm == "yes" && $permissiontoexecute) {
-		if (getDolGlobalString('CRON_KEY') && getDolGlobalString('CRON_KEY') != $securitykey) {
+		if (getDolGlobalString('CRON_KEY') && !hash_equals(getDolGlobalString('CRON_KEY'), (string) $securitykey)) {
 			setEventMessages('Security key '.$securitykey.' is wrong', null, 'errors');
 			$action = '';
 		} else {
@@ -246,6 +247,15 @@ if (empty($reshook)) {
 			}
 			if ($search_label) {
 				$param .= '&search_label='.urlencode($search_label);
+			}
+			if ($search_module_name) {
+				$param .= '&search_module_name='.urlencode($search_module_name);
+			}
+			if ($search_lastresult) {
+				$param .= '&search_lastresult='.urlencode($search_lastresult);
+			}
+			if ($mode) {
+				$param .= '&mode='.urlencode($mode);
 			}
 			if ($optioncss != '') {
 				$param .= '&optioncss='.urlencode($optioncss);

@@ -6,6 +6,7 @@
  * Copyright (C) 2016		ATM Consulting		<support@atm-consulting.fr>
  * Copyright (C) 2019-2025  Frédéric France     <frederic.france@free.fr>
  * Copyright (C) 2024-2025	MDW					<mdeweerd@users.noreply.github.com>
+ * Copyright (C) 2026		Jose MARTINEZ		<jose.martinez@pichinov.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -199,6 +200,7 @@ if ($date && $dateIsValid) {	// Avoid heavy sql if mandatory date is not defined
 		}
 
 		$db->free($resql);
+		$resql = null;	// so the free() at the end of the page does not run on an already closed result
 	} else {
 		dol_print_error($db);
 	}
@@ -266,6 +268,7 @@ if ($date && $dateIsValid) {
 		}
 
 		$db->free($resql);
+		$resql = null;	// so the free() at the end of the page does not run on an already closed result
 	} else {
 		dol_print_error($db);
 	}
@@ -380,10 +383,10 @@ if ($date && $dateIsValid) {	// We avoid a heavy sql if mandatory parameter date
 	//print $sql;
 	if ($ext != 'csv') {
 		$sql .= $db->plimit($limit + 1, $offset);
-		$resql = $db->query($sql);
 	} else {
 		$limit = 0;
 	}
+	$resql = $db->query($sql);
 	if (empty($resql)) {
 		dol_print_error($db);
 		exit;
@@ -588,7 +591,7 @@ if ($ext == 'csv') {
 		$tooltiptext = $langs->trans("QtyAtDate").' x '.$langs->trans("SellingPrice").' ('.$langs->trans("Currently").')';
 		print_liste_field_titre("EstimatedStockValueSell", $_SERVER["PHP_SELF"], "", '', $param, '', $sortfield, $sortorder, 'right ', $tooltiptext, 1);
 		$tooltiptext = $langs->trans("MovementsSinceDate");
-		print_liste_field_titre('', $_SERVER["PHP_SELF"], '', '', $param, '', '', '', 'right ', $tooltiptext, 1);
+		print_liste_field_titre("Movements", $_SERVER["PHP_SELF"], '', '', $param, '', '', '', 'right ', $tooltiptext, 1);
 		print_liste_field_titre('CurrentStock', $_SERVER["PHP_SELF"], $fieldtosortcurrentstock, '', $param, '', $sortfield, $sortorder, 'right ');
 	}
 
@@ -695,7 +698,7 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 					'"'.$objp->label.'"',
 					'"'.price(price2num($stock, 'MS')).'"',
 					price2num($stock * $objp->pmp, 'MT') ? '"'.price2num($stock * $objp->pmp, 'MT').'"' : '',
-					!getDolGlobalString('PRODUIT_MULTIPRICES') ? '"'.price2num($stock * $objp->price, 'MT').'"' : '"'.$langs->trans("Variable").'('.$langs->trans("OptionMULTIPRICESIsOn").')"',
+					(!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) ? '"'.price2num($stock * $objp->price, 'MT').'"' : '"'.$langs->trans("Variable").'('.$langs->trans("OptionMULTIPRICESIsOn").')"',
 					"$nbofmovement",
 					'"'.price2num($currentstock, 'MS').'"'))."\r\n";
 				$totalbuyingprice += $stock * $objp->pmp;
@@ -748,11 +751,11 @@ while ($i < ($limit ? min($num, $limit) : $num)) {
 
 				// Selling value
 				print '<td class="right"';
-				if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+				if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 					print ' title="'.dolPrintHTMLForAttribute($langs->trans("SellingPrice").' ('.$langs->trans("Currently").'): '.price(price2num($objp->price, 'MU'), 1));
 				}
 				print '">';
-				if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+				if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 					print '<span class="amount">';
 					if ($stock || (float) ($stock * $objp->price)) {
 						print price(price2num($stock * $objp->price, 'MT'), 1);
@@ -838,7 +841,7 @@ if ($ext == 'csv') {
 		'',
 		'',
 		'"'.price2num($totalbuyingprice, 'MT').'"',
-		!getDolGlobalString('PRODUIT_MULTIPRICES') ? '"'.price2num($totalsellingprice, 'MT').'"' : '',
+			(!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) ? '"'.price2num($totalsellingprice, 'MT').'"' : '',
 		'',
 		$productid > 0 ? price2num($totalcurrentstock, 'MS') : '')
 	);
@@ -857,7 +860,7 @@ if ($ext == 'csv') {
 		} else {
 			print '<td></td>';
 			print '<td class="right">'.price(price2num($totalbuyingprice, 'MT')).'</td>';
-			if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+			if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 				print '<td class="right">'.price(price2num($totalsellingprice, 'MT')).'</td>';
 			} else {
 				print '<td></td>';

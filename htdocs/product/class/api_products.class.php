@@ -750,7 +750,7 @@ class Products extends DolibarrApi
 			throw new RestException(403);
 		}
 
-		if (!getDolGlobalString('PRODUIT_MULTIPRICES')) {
+		if (!getDolGlobalString('PRODUIT_MULTIPRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 			throw new RestException(400, 'API not available: this mode of pricing is not enabled by setup');
 		}
 
@@ -796,7 +796,7 @@ class Products extends DolibarrApi
 			throw new RestException(403);
 		}
 
-		if (!getDolGlobalString('PRODUIT_CUSTOMER_PRICES')) {
+		if (!getDolGlobalString('PRODUIT_CUSTOMER_PRICES') && !getDolGlobalString('PRODUIT_CUSTOMER_PRICES_AND_MULTIPRICES')) {
 			throw new RestException(400, 'API not available: this mode of pricing is not enabled by setup');
 		}
 
@@ -2067,6 +2067,7 @@ class Products extends DolibarrApi
 	 *
 	 * @throws RestException 500	System error
 	 * @throws RestException 401
+	 * @throws RestException 404
 	 *
 	 * @url PUT variants/{id}
 	 */
@@ -2077,7 +2078,9 @@ class Products extends DolibarrApi
 		}
 
 		$prodcomb = new ProductCombination($this->db);
-		$prodcomb->fetch((int) $id);
+		if ($prodcomb->fetch((int) $id) <= 0) {
+			throw new RestException(404, "Variant not found");
+		}
 
 		foreach ($request_data as $field => $value) {
 			if ($field == 'rowid') {
@@ -2109,6 +2112,7 @@ class Products extends DolibarrApi
 	 *
 	 * @throws RestException 500	System error
 	 * @throws RestException 401
+	 * @throws RestException 404
 	 *
 	 * @url DELETE variants/{id}
 	 */
@@ -2119,7 +2123,9 @@ class Products extends DolibarrApi
 		}
 
 		$prodcomb = new ProductCombination($this->db);
-		$prodcomb->id = (int) $id;
+		if ($prodcomb->fetch((int) $id) <= 0) {
+			throw new RestException(404, "Variant not found");
+		}
 		$result = $prodcomb->delete(DolibarrApiAccess::$user);
 		if ($result <= 0) {
 			throw new RestException(500, "Error deleting variant");
