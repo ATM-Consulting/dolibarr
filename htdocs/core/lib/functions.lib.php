@@ -2395,7 +2395,9 @@ function dol_escape_all($stringtoescape)
  */
 function dol_escape_xml($stringtoescape)
 {
-	return $stringtoescape;
+	$stringtoescape = (string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', (string) $stringtoescape);	// Characters not allowed in XML 1.0
+
+	return htmlspecialchars($stringtoescape, ENT_XML1 | ENT_QUOTES, 'UTF-8');
 }
 
 /**
@@ -15516,7 +15518,7 @@ function fetchObjectByElement($element_id, $element_type, $element_ref = '', $us
 
 			if ($element_id > 0 || !empty($element_ref)) {
 				$ret = $objecttmp->fetch($element_id, $element_ref);
-				if ($ret >= 0) {
+				if ($ret > 0) {
 					if (empty($objecttmp->module)) {
 						$objecttmp->module = $element_prop['module'];
 					}
