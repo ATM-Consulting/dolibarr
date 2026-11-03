@@ -442,6 +442,12 @@ class Invoices extends DolibarrApi
 			throw new RestException(404, 'Order not found');
 		}
 
+		// Refuse orders that cannot be billed, to mirror the GUI (order card "CreateBill" button and list mass action):
+		// this excludes draft and canceled orders, as well as orders already classified as billed.
+		if ($order->status <= Commande::STATUS_DRAFT || !empty($order->billed)) {
+			throw new RestException(405, 'Order '.$order->ref.' is not eligible for invoicing: its status does not allow creating an invoice');
+		}
+
 		$result = $this->invoice->createFromOrder($order, DolibarrApiAccess::$user);
 		if ($result < 0) {
 			throw new RestException(405, $this->invoice->error);
@@ -481,6 +487,9 @@ class Invoices extends DolibarrApi
 		$result = $contract->fetch($contractid);
 		if (!$result) {
 			throw new RestException(404, 'Contract not found');
+		}
+		if (!DolibarrApi::_checkAccessToResource('contrat', $contract->id)) {
+			throw new RestException(403, 'Access to contract '.$contract->id.' not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
 		$result = $this->invoice->createFromContract($contract, DolibarrApiAccess::$user);
@@ -558,6 +567,16 @@ class Invoices extends DolibarrApi
 
 		$request_data->desc = sanitizeVal($request_data->desc, 'restricthtml');
 		$request_data->label = sanitizeVal($request_data->label);
+
+		$invoiceline = new FactureLigne($this->db);
+		$result = $invoiceline->fetch($lineid);
+		if (!$result) {
+			throw new RestException(404, 'Invoice line not found');
+		}
+
+		if ($invoiceline->fk_facture != $id) {
+			throw new RestException(403, 'Line does not belong to this invoice');
+		}
 
 		$updateRes = $this->invoice->updateline(
 			$lineid,
