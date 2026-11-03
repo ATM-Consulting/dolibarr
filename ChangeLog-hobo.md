@@ -7,16 +7,18 @@ complément du `ChangeLog` Dolibarr upstream (qui n'est pas modifié).
 
 ### FIX
 - **Holiday** : l'approbation d'une demande de congés était refusée à tort (« La création
-  de cette demande de congé est bloquée car votre solde est négatif ») quand la demande
-  contenait une demi-journée (début l'après-midi ou fin le matin) et que le solde
-  couvrait exactement les jours demandés. Le contrôle du solde dans
-  `Holiday::approve()` comptait la demande en jours entiers car il ne transmettait pas
-  la demi-journée à `num_open_day()`. Elle est maintenant transmise (`halfday`), comme
-  le fait déjà `holiday/card.php`. Concerne les types de congé avec « bloqué si solde
-  négatif » (ex. congés payés). Backport du correctif upstream Dolibarr
-  (PR #41396, commit a9c15cc9de5), limité à `approve()` : `validate()` et `update()`
-  ne calculent pas de jours demandés en 20.0. _(ticket DA029073, branche
-  `FIX/168/DA029073/backport-holiday-halfday-balance-check`)_
+  de cette demande de congé est bloquée car votre solde est négatif ») alors que le solde
+  couvrait exactement les jours demandés. Deux causes dans le contrôle du solde de
+  `Holiday::approve()` (types de congé « bloqué si solde négatif », ex. congés payés) :
+  la demi-journée (début l'après-midi ou fin le matin) n'était pas transmise à
+  `num_open_day()`, et les dates étaient lues dans le fuseau du serveur (Europe/Paris) au
+  lieu de l'heure universelle, ce qui décalait la période d'un jour (ex. 25/12 00:00 Paris
+  = 24/12 23:00 UTC). Le contrôle utilise maintenant `date_debut_gmt`, `date_fin_gmt` et
+  `halfday`, comme `holiday/card.php`. Backport du correctif upstream Dolibarr
+  (PR #41396, commit a9c15cc9de5) limité à `approve()` : `validate()` et `update()` ne
+  calculent pas de jours demandés en 20.0. _(ticket DA029073, branches
+  `FIX/168/DA029073/backport-holiday-halfday-balance-check` puis
+  `FIX/168/DA029073/holiday-approve-utc-dates`)_
 
 ## 20.0.4 — hobo
 
