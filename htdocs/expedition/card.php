@@ -773,6 +773,7 @@ if (empty($reshook)) {
 		if ($action == 'settracking_url') {		// Test on permission not required
 			$object->tracking_url = trim(GETPOST('tracking_url', 'restricthtml'));
 		}
+
 		if ($action == 'settrueWeight') {		// Test on permission not required
 			$object->trueWeight = GETPOSTFLOAT('trueWeight');
 			$object->weight_units = GETPOSTINT('weight_units');
@@ -815,6 +816,7 @@ if (empty($reshook)) {
 		setEventMessages($object->error, $object->errors, 'errors');
 	} elseif ($action == 'deleteline' && !empty($line_id) && $permissiontoadd) {
 		// delete a line
+		$error = 0;
 		$object->fetch($id);
 		$lines = $object->lines;
 		$line = new ExpeditionLigne($db);
@@ -823,7 +825,9 @@ if (empty($reshook)) {
 		$num_prod = count($lines);
 		for ($i = 0; $i < $num_prod; $i++) {
 			if ($lines[$i]->id == $line_id) {
-				if (count($lines[$i]->details_entrepot) > 1) {
+				// A standalone shipment (SHIPMENT_STANDALONE) loads its lines with fetch_lines_free(),
+				// which does not set details_entrepot, so count() must not be called on it blindly.
+				if (is_array($lines[$i]->details_entrepot) && count($lines[$i]->details_entrepot) > 1) {
 					// delete multi warehouse lines
 					foreach ($lines[$i]->details_entrepot as $details_entrepot) {
 						$line->id = $details_entrepot->line_id;
@@ -1756,8 +1760,9 @@ if ($action == 'create' && $usercancreate) {
 			print $langs->trans("Weight");
 			print '</td><td colspan="3">';
 			print img_picto('', 'fa-balance-scale', 'class="pictofixedwidth"');
-			print '<input name="weight" size="4" value="' . GETPOST('weight') . '"> ';	// Do not use GETPOSTINT here, we must accept '' also.
-			$text = $formproduct->selectMeasuringUnits("weight_units", "weight", GETPOST('weight_units'), 0, 2);
+
+			print '<input name="weight" size="4" value="' . dol_escape_htmltag(GETPOST('weight')) . '"> ';	// Do not use GETPOSTINT here, we must accept '' also.
+			$text = $formproduct->selectMeasuringUnits("weight_units", "weight", (string) GETPOST('weight_units'), 0, 2);
 			$htmltext = $langs->trans("KeepEmptyForAutoCalculation");
 			print $form->textwithpicto($text, $htmltext);
 			print '</td></tr>';
@@ -1959,7 +1964,7 @@ if ($action == 'create' && $usercancreate) {
 						if ($res < 0) {
 							dol_print_error($db, $product->error, $product->errors);
 						}
-						if (getDolGlobalInt('PRODUIT_SOUSPRODUITS') && !getDolGlobalInt('PRODUIT_SOUSPRODUITS_ALSO_ENABLE_PARENT_STOCK_MOVE')) {
+						if (getDolGlobalInt('PRODUIT_SOUSPRODUITS')) {
 							$productChildrenNb = $product->hasFatherOrChild(1);
 						}
 						if ($productChildrenNb > 0) {
@@ -2068,13 +2073,16 @@ if ($action == 'create' && $usercancreate) {
 							// Quantity to send
 							print '<td class="center">';
 							if ($line->product_type == Product::TYPE_PRODUCT || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || ($line->product_type == Product::TYPE_SERVICE && getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES'))) {
-								if (GETPOSTINT('qtyl' . $indiceAsked)) {
-									$deliverableQty = GETPOSTINT('qtyl' . $indiceAsked);
+								if (GETPOSTISSET('qtyl'.$indiceAsked) && GETPOST('qtyl'.$indiceAsked) !== '') {
+									$deliverableQty = GETPOSTFLOAT('qtyl'.$indiceAsked, 'MS');
 								}
 								print '<input name="idl' . $indiceAsked . '" type="hidden" value="' . $line->id . '">';
 								$qtylValue = $deliverableQty;
 								if (getDolGlobalBool('SHIPMENT_DONT_PREFILL_QTY', false)) {
 									$qtylValue = '';
+								} elseif (is_numeric($qtylValue)) {
+									// Render as locale number so GETPOSTFLOAT() on submit reads it back via price2num option=2 without confusing '.' for a thousand separator in es_ES.
+									$qtylValue = price($qtylValue);
 								}
 								print '<input name="qtyl' . $indiceAsked . '" id="qtyl' . $indiceAsked . '" class="qtyl right" type="text" size="4" value="' . $qtylValue . '">';
 							} else {
@@ -2218,6 +2226,8 @@ if ($action == 'create' && $usercancreate) {
 									$qtylValue = $deliverableQty;
 									if (getDolGlobalBool('SHIPMENT_DONT_PREFILL_QTY', false)) {
 										$qtylValue = '';
+									} elseif (is_numeric($qtylValue)) {
+										$qtylValue = price($qtylValue);
 									}
 									print '<input class="qtyl ' . $tooltipClass . ' right" title="' . $tooltipTitle . '" name="qtyl' . $indiceAsked . '_' . $subj . '" id="qtyl' . $indiceAsked . '_' . $subj . '" type="text" size="4" value="' . $qtylValue . '">';
 									print '</td>';
@@ -2304,37 +2314,45 @@ if ($action == 'create' && $usercancreate) {
 									print '<!-- subj=' . $subj . '/' . $nbofsuggested . ' --><tr ' . ((($subj + 1) == $nbofsuggested) ? 'oddeven' : '') . '>';
 									print '<td colspan="3" ></td><td class="center"><!-- qty to ship (no lot management for product line indiceAsked=' . $indiceAsked . ') -->';
 									if ($line->product_type == Product::TYPE_PRODUCT || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES')) {
-										if (isset($alreadyQtySetted[$line->fk_product][intval($warehouse_id)])) {
-											$deliverableQty = min($quantityToBeDelivered, $stock - $alreadyQtySetted[$line->fk_product][intval($warehouse_id)]);
-										} else {
-											if (!isset($alreadyQtySetted[$line->fk_product])) {
-												$alreadyQtySetted[$line->fk_product] = array();
+										// For a virtual product (kit), $deliverableQty is already min($quantityToBeDelivered, $stock) computed above
+										// and the per-warehouse "stock" returned by loadStockForVirtualProduct() is $qtyWish, not a shared physical
+										// stock. The cross-line $alreadyQtySetted cap must not be applied for kits, otherwise the 2nd and next order
+										// lines of the same kit would be wrongly pre-filled with 0.
+										$tooltipClass = $tooltipTitle = '';
+										if ($productChildrenNb <= 0) {
+											if (isset($alreadyQtySetted[$line->fk_product][intval($warehouse_id)])) {
+												$deliverableQty = min($quantityToBeDelivered, $stock - $alreadyQtySetted[$line->fk_product][intval($warehouse_id)]);
+											} else {
+												if (!isset($alreadyQtySetted[$line->fk_product])) {
+													$alreadyQtySetted[$line->fk_product] = array();
+												}
+
+												$deliverableQty = min($quantityToBeDelivered, $stock);
 											}
 
-											$deliverableQty = min($quantityToBeDelivered, $stock);
+											if ($deliverableQty < 0) {
+												$deliverableQty = 0;
+											}
+
+											if (!empty($alreadyQtySetted[$line->fk_product][intval($warehouse_id)])) {
+												$tooltipClass = ' classfortooltip';
+												$tooltipTitle = $langs->trans('StockQuantitiesAlreadyAllocatedOnPreviousLines').' : '.$alreadyQtySetted[$line->fk_product][intval($warehouse_id)];
+											} else {
+												$alreadyQtySetted[$line->fk_product][intval($warehouse_id)] = 0;
+											}
+
+											$alreadyQtySetted[$line->fk_product][intval($warehouse_id)] = $deliverableQty + $alreadyQtySetted[$line->fk_product][intval($warehouse_id)];
 										}
 
-										if ($deliverableQty < 0) {
-											$deliverableQty = 0;
-										}
-
-										$tooltipClass = $tooltipTitle = '';
-										if (!empty($alreadyQtySetted[$line->fk_product][intval($warehouse_id)])) {
-											$tooltipClass = ' classfortooltip';
-											$tooltipTitle = $langs->trans('StockQuantitiesAlreadyAllocatedOnPreviousLines') . ' : ' . $alreadyQtySetted[$line->fk_product][intval($warehouse_id)];
-										} else {
-											$alreadyQtySetted[$line->fk_product][intval($warehouse_id)] = 0;
-										}
-
-										$alreadyQtySetted[$line->fk_product][intval($warehouse_id)] = $deliverableQty + $alreadyQtySetted[$line->fk_product][intval($warehouse_id)];
-
-										$inputName = 'qtyl' . $indiceAsked . '_' . $subj;
+										$inputName = 'qtyl'.$indiceAsked.'_'.$subj;
 										if (GETPOSTISSET($inputName)) {
 											$deliverableQty = GETPOSTINT($inputName);
 										}
 										$qtylValue = $deliverableQty;
 										if (getDolGlobalBool('SHIPMENT_DONT_PREFILL_QTY', false)) {
 											$qtylValue = '';
+										} elseif (is_numeric($qtylValue)) {
+											$qtylValue = price($qtylValue);
 										}
 										print '<input class="qtyl' . $tooltipClass . ' right" title="' . $tooltipTitle . '" name="qtyl' . $indiceAsked . '_' . $subj . '" id="qtyl' . $indiceAsked . '" type="text" size="4" value="' . $qtylValue . '">';
 										print '<input name="ent1' . $indiceAsked . '_' . $subj . '" type="hidden" value="' . $warehouse_id . '">';
@@ -2466,6 +2484,8 @@ if ($action == 'create' && $usercancreate) {
 										$qtylValue = $deliverableQty;
 										if (getDolGlobalBool('SHIPMENT_DONT_PREFILL_QTY', false)) {
 											$qtylValue = '';
+										} elseif (is_numeric($qtylValue)) {
+											$qtylValue = price($qtylValue);
 										}
 										print '<input class="qtyl right ' . $tooltipClass . '" title="' . $tooltipTitle . '" name="' . $inputName . '" id="' . $inputName . '" type="text" size="4" value="' . $qtylValue . '">';
 										print '</td>';

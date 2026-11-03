@@ -74,6 +74,7 @@ class FileUpload
 		$pathname = str_replace('/class', '', $element_prop['classpath']);
 		$filename = dol_sanitizeFileName($element_prop['classfile']);
 		$dir_output = dol_sanitizePathName($element_prop['dir_output']);
+		$savingDocMask = '';
 
 		//print 'fileupload.class.php: element='.$element.' pathname='.$pathname.' filename='.$filename.' dir_output='.$dir_output."\n";
 
@@ -89,6 +90,10 @@ class FileUpload
 			if (!is_object($object) || empty($object->id)) {
 				dol_syslog(get_class($this)."::__construct object ".$element." with id ".((int) $fk_element)." was not found", LOG_WARNING);
 				throw new Exception('objectnotfound');
+			}
+
+			if (!getDolGlobalInt('MAIN_DISABLE_SUGGEST_REF_AS_PREFIX')) {
+				$savingDocMask = dol_sanitizeFileName($object->ref).'-__file__';
 			}
 
 			// Directory of the module, including the sub directory used by some elements (/sending for a shipment,
@@ -138,6 +143,7 @@ class FileUpload
 			'script_url' => $_SERVER['PHP_SELF'],
 			'upload_dir' => $dir_output.'/'.$object_ref.'/',
 			'upload_url' => DOL_URL_ROOT.'/document.php?modulepart='.$element.'&attachment=1&file=/'.$object_ref.'/',
+			'saving_doc_mask' => $savingDocMask,
 			'param_name' => 'files',
 			// Set the following option to 'POST', if your server does not support
 			// DELETE requests. This is a parameter sent to the client:
@@ -467,6 +473,22 @@ class FileUpload
 
 		if ($validate) {
 			if (dol_mkdir($this->options['upload_dir']) >= 0) {
+				// add object reference as file name prefix if const MAIN_DISABLE_SUGGEST_REF_AS_PREFIX is not enabled
+				$fileNameWithoutExt = preg_replace('/\.[^\.]+$/', '', $file->name);
+				$savingDocMask = $this->options['saving_doc_mask'];
+				if ($savingDocMask && strpos($savingDocMask, $fileNameWithoutExt) !== 0) {
+					$fileNameWithPrefix = preg_replace('/__file__/', $file->name, $savingDocMask);
+					$file->name = $fileNameWithPrefix;
+				}
+
+				// trimFileName() checked the name before the prefix above was added: check it again on the stored name.
+				if ($this->options['discard_aborted_uploads']) {
+					$tmppath = dol_sanitizePathName($this->options['upload_dir']);
+					while (dol_is_file($tmppath.dol_sanitizeFileName($file->name)) || dol_is_file($tmppath.dol_sanitizeFileName($file->name).'.noexe')) {
+						$file->name = $this->upcountName($file->name);
+					}
+				}
+
 				$file_path = dol_sanitizePathName($this->options['upload_dir']).dol_sanitizeFileName($file->name);
 				$append_file = !$this->options['discard_aborted_uploads'] && dol_is_file($file_path) && $file->size > dol_filesize($file_path);
 
