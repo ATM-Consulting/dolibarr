@@ -1159,11 +1159,12 @@ class EmailCollector extends CommonObject
 				$keyforsupportedoauth2array = preg_replace('/-.*$/', '', $keyforsupportedoauth2array);
 				$keyforsupportedoauth2array = 'OAUTH_'.$keyforsupportedoauth2array.'_NAME';
 
+				// Tokens are stored under the OAuth service class name (ex: 'Microsoft3'), derived from callbackfile, not under the label.
 				$OAUTH_SERVICENAME = 'Unknown';
-				if (array_key_exists($keyforsupportedoauth2array, $supportedoauth2array)
-					&& array_key_exists('name', $supportedoauth2array[$keyforsupportedoauth2array])
-					&& !empty($supportedoauth2array[$keyforsupportedoauth2array]['name'])) {
-					$OAUTH_SERVICENAME = $supportedoauth2array[$keyforsupportedoauth2array]['name'].(!empty($keyforprovider) ? '-'.$keyforprovider : '');
+				$keyforparamtenant = '';
+				if (!empty($supportedoauth2array[$keyforsupportedoauth2array]['callbackfile'])) {
+					$OAUTH_SERVICENAME = ucfirst(strtolower($supportedoauth2array[$keyforsupportedoauth2array]['callbackfile'])).($keyforprovider ? '-'.$keyforprovider : '');
+					$keyforparamtenant = 'OAUTH_'.strtoupper($supportedoauth2array[$keyforsupportedoauth2array]['callbackfile']).($keyforprovider ? '-'.$keyforprovider : '').'_TENANT';
 				}
 
 				require_once DOL_DOCUMENT_ROOT.'/includes/OAuth/bootstrap.php';
@@ -1172,7 +1173,7 @@ class EmailCollector extends CommonObject
 
 				$token = '';
 
-				$storage = new DoliStorage($db, $conf, $keyforprovider);
+				$storage = new DoliStorage($db, $conf, $keyforprovider, getDolGlobalString($keyforparamtenant));
 
 				try {
 					$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);
@@ -1190,13 +1191,17 @@ class EmailCollector extends CommonObject
 							getDolGlobalString('OAUTH_'.$this->oauth_service.'_URLAUTHORIZE')
 						);
 						$serviceFactory = new \OAuth\ServiceFactory();
+						// The default stream client cannot reach the token endpoint on many setups: the token would never be refreshed.
+						$serviceFactory->setHttpClient(new \OAuth\Common\Http\Client\CurlClient());
 						$oauthname = explode('-', $OAUTH_SERVICENAME);
 						// ex service is Google-Emails we need only the first part Google
 						$apiService = $serviceFactory->createService($oauthname[0], $credentials, $storage, array());
-						// We have to save the token because Google give it only once
+						// Google returns the refresh token only once, Microsoft may rotate it: keep the old one only if none is returned.
 						$refreshtoken = $tokenobj->getRefreshToken();
 						$tokenobj = $apiService->refreshAccessToken($tokenobj);
-						$tokenobj->setRefreshToken($refreshtoken);
+						if (empty($tokenobj->getRefreshToken())) {
+							$tokenobj->setRefreshToken($refreshtoken);
+						}
 						$storage->storeAccessToken($OAUTH_SERVICENAME, $tokenobj);
 					}
 					$tokenobj = $storage->retrieveAccessToken($OAUTH_SERVICENAME);

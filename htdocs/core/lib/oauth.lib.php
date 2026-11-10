@@ -151,6 +151,12 @@ function getAllOauth2Array()
 		'OAUTH_MICROSOFT_SECRET',
 	),
 	array(
+		'OAUTH_MICROSOFT3_NAME',
+		'OAUTH_MICROSOFT3_ID',
+		'OAUTH_MICROSOFT3_SECRET',
+		'OAUTH_MICROSOFT3_DESC',
+	),
+	array(
 		'OAUTH_NEST_NAME',
 		'OAUTH_NEST_ID',
 		'OAUTH_NEST_SECRET',
@@ -324,6 +330,16 @@ function getSupportedOauth2Array()
 		// User.Read is a microsoftgraph scope, if it's not working, do not select it
 		'availablescopes' => 'openid,offline_access,profile,email,User.Read,https://outlook.office365.com/IMAP.AccessAsUser.All,https://outlook.office365.com/SMTP.Send',
 		'returnurl' => '/core/modules/oauth/microsoft_oauthcallback.php'
+	);
+	$supportedoauth2array['OAUTH_MICROSOFT3_NAME'] = array(
+		'callbackfile' => 'microsoft3',
+		'picto' => 'microsoft',
+		'urlforapp' => 'OAUTH_MICROSOFT3_DESC',
+		'name' => 'Microsoft Exchange Online [SMTP/IMAP]',
+		'urlforcredentials' => 'https://portal.azure.com/',
+		// Only outlook.office.com scopes: mixing them with Graph scopes (openid/profile/email) in one request fails with AADSTS28000.
+		'availablescopes' => 'offline_access,https://outlook.office.com/SMTP.Send,https://outlook.office.com/IMAP.AccessAsUser.All',
+		'returnurl' => '/core/modules/oauth/microsoft3_oauthcallback.php'
 	);
 	if (getDolGlobalInt('MAIN_FEATURES_LEVEL') >= 2) {
 		$supportedoauth2array['OAUTH_OTHER_NAME'] = array(
