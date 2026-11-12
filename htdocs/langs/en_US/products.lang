@@ -409,6 +409,7 @@ CloneDestinationReference=Destination product reference
 ErrorCopyProductCombinations=There was an error while copying the product variants
 ErrorDestinationProductNotFound=Destination product not found
 ErrorProductCombinationNotFound=Product variant not found
+# >>> BACKPORT ATM Dolibarr#40166 - native keys since Dolibarr 25.0, remove when upgrading to 25+
 ErrorVariantRefIsParentRef=The ref of the variant product must be different from the ref of its parent product
 ErrorVariantCombinationOfAnotherParent=The variant to reconcile belongs to another parent product
 ErrorVariantAttributeRefNotFound=Variant attribute with ref %s not found
@@ -416,7 +417,9 @@ ErrorVariantAttributeValueRefNotFound=Value %s not found for the variant attribu
 ErrorVariantAttributeValueNotFound=Variant attribute %s or value %s not found
 VariantAttributeRef=Ref of the variant attribute
 VariantValueRef=Ref of the variant attribute value
+# <<< BACKPORT ATM Dolibarr#40166
 ActionAvailableOnVariantProductOnly=Action only available on the variant of product
+# >>> BACKPORT ATM Dolibarr#40167 - native keys since Dolibarr 25.0, remove when upgrading to 25+
 ErrorVariantsImportNeedsStrictLineMode=The import of product variants requires the trigger mode "One trigger per line". In bulk mode, the variants would be created without being linked to their child product.
 ErrorVariantChildIsParent=The variant product and its parent product must be two different products
 ErrorVariantParentNotFound=Parent product of the variant not found
@@ -448,6 +451,7 @@ ImportDataset_variants_value=Variant attribute values
 ImportDataset_variants_combination=Variants (link between a parent product and a variant product)
 ImportDataset_variants_combination2val=Features of the variants (one line per variant and attribute)
 ImportDataset_variants_pricelevel=Price impact of the variants per price level
+# <<< BACKPORT ATM Dolibarr#40167
 ProductsPricePerCustomer=Product prices per customers
 ProductLevelExtraFields=Additional Attributes (Level price)
 ProductCustomerExtraFields=Additional Attributes (Customer price)
