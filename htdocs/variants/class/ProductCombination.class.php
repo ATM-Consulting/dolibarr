@@ -26,6 +26,7 @@
  *	\brief      File of the ProductCombination class
  */
 
+// BACKPORT ATM Dolibarr#40166 - the fetch by ref, resolveAttributeValueId(), deleteLinksByProduct() and the reuse of a combination in createProductCombination() is native since Dolibarr 25.0, remove when upgrading to 25+
 /**
  * Class ProductCombination
  * Used to represent the relation between a product and one of its variants.

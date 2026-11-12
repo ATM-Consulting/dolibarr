@@ -1922,6 +1922,7 @@ class Product extends CommonObject
 				}
 			}
 
+			// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 			// Rows may survive the deactivation of the module, and the foreign key on
 			// fk_product_parent would then refuse to delete the product. Only the links are
 			// removed here, never a product: deleting variant products silently is the job of the
@@ -1937,6 +1938,7 @@ class Product extends CommonObject
 				}
 			}
 
+			// <<< BACKPORT ATM Dolibarr#40166
 			// Delete from product_association
 			if (!$error) {
 				$sql = "DELETE FROM ".$this->db->prefix()."product_association";

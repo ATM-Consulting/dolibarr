@@ -26,6 +26,7 @@
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 
+// BACKPORT ATM Dolibarr#40166 - the fetch by ref and the hardening of this class is native since Dolibarr 25.0, remove when upgrading to 25+
 /**
  * Class ProductAttribute
  * Used to represent a Product attribute

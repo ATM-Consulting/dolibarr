@@ -22,6 +22,7 @@
  */
 require_once DOL_DOCUMENT_ROOT.'/core/triggers/dolibarrtriggers.class.php';
 
+// BACKPORT ATM Dolibarr#40167 - this whole file is native since Dolibarr 25.0, remove when upgrading to 25+
 /**
  * Class of triggered functions that reconcile imported variants with the business logic
  * of the screen.

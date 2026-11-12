@@ -53,6 +53,7 @@ class ProductCombination2ValuePair
 	 */
 	public $id;
 
+	// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 	/**
 	 * @var int		Alias of id, written by the import engine on the object it hands to the triggers
 	 */
@@ -68,6 +69,7 @@ class ProductCombination2ValuePair
 	 */
 	public $context = array();
 
+	// <<< BACKPORT ATM Dolibarr#40166
 	/**
 	 * ID of the ProductCombination linked to this object
 	 * (ex: ID of the ProductCombination between product "shirt" and its variant "shirt XL white")
@@ -153,6 +155,7 @@ class ProductCombination2ValuePair
 		return -1;
 	}
 
+	// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 	/**
 	 * Retrieves a ProductCombination2ValuePair by its rowid
 	 *
@@ -191,6 +194,7 @@ class ProductCombination2ValuePair
 		return 1;
 	}
 
+	// <<< BACKPORT ATM Dolibarr#40166
 	/**
 	 * Retrieve all ProductCombination2ValuePair linked to a given ProductCombination ID.
 	 *

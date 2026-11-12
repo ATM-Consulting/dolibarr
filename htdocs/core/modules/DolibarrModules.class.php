@@ -372,10 +372,12 @@ class DolibarrModules // Can not be abstract, because we need to instantiate it 
 	 * @var array<array<string,string>>
 	 */
 	public $import_updatekeys_array;
+	// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 	/**
 	 * @var array<int,string[]>	Update keys preselected on the screen, as field aliases
 	 */
 	public $import_preselected_updatekeys_array;
+	// <<< BACKPORT ATM Dolibarr#40166
 	/**
 	 * @var array<int,array<int,string>>
 	 */

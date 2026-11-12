@@ -123,6 +123,7 @@ class modVariants extends DolibarrModules
 		$this->rights[$r][1] = 'Delete attributes of variants'; // Permission label
 		$this->rights[$r][4] = 'delete'; // In php code, permission will be checked by test if ($user->rights->eventorganization->level1)
 		$r++;
+// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0, remove when upgrading to 25+
 
 		// Imports
 		//--------
@@ -465,6 +466,7 @@ class modVariants extends DolibarrModules
 			$this->export_sql_end[$r] .= ' AND pac.entity IN ('.getEntity('product').')';
 			$this->export_sql_order[$r] = ' ORDER BY p.ref, p2.ref, pacpl.fk_price_level';
 		}
+// <<< BACKPORT ATM Dolibarr#40167
 	}
 
 	/**

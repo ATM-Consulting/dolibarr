@@ -41,6 +41,7 @@ if (empty($user->id)) {
 $conf->global->MAIN_DISABLE_ALL_MAILS = 1;
 
 
+// BACKPORT ATM Dolibarr#40167 - this whole file is native since Dolibarr 25.0, remove when upgrading to 25+
 /**
  * Class for PHPUnit tests of the variants module
  *
