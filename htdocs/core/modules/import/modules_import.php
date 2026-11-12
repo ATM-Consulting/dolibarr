@@ -32,6 +32,27 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
  */
 class ModeleImports
 {
+	// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0 (import engine of Dolibarr#37367), remove when upgrading to 25+
+	/**
+	 * Tables whose imported lines run the variants import trigger, the only per line trigger of this engine
+	 */
+	const IMPORT_TRIGGER_TABLES = array(
+		'product_attribute_combination',
+		'product_attribute_combination2val',
+		'product_attribute_combination_price_level',
+	);
+
+	/**
+	 * @var int		1 while imports/import.php runs the simulation step: no trigger runs then
+	 */
+	public $importissimulation = 0;
+
+	/**
+	 * @var ?Interfaces	Trigger dispatcher, kept for the whole import
+	 */
+	protected $importtriggerinterface = null;
+	// <<< BACKPORT ATM Dolibarr#40167
+
 	/**
 	 * @var DoliDB Database handler.
 	 */
@@ -382,6 +403,67 @@ class ModeleImports
 
 		return	$element;
 	}
+
+	// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0 (import engine of Dolibarr#37367), remove when upgrading to 25+
+	/**
+	 * Run the variants import trigger on a line just written into one of the IMPORT_TRIGGER_TABLES.
+	 *
+	 * @param	string		$tablename	Table name with database prefix
+	 * @param	string		$operation	'insert' or 'update'
+	 * @param	int			$rowid		Id of the row written, 0 if unknown
+	 * @param	string		$importid	Import key
+	 * @param	User		$user		User running the import
+	 * @param	Translate	$langs		Langs
+	 * @param	Conf		$conf		Conf
+	 * @return	int						0 if nothing to run, 1 if OK, -1 if a trigger refused the line (messages pushed into $this->errors)
+	 */
+	protected function runImportLineTrigger($tablename, $operation, $rowid, $importid, $user, $langs, $conf)
+	{
+		if (!empty($this->importissimulation)) {
+			return 0;
+		}
+		$tableelement = preg_replace('/^'.preg_quote($this->db->prefix(), '/').'/', '', (string) $tablename);
+		if (!in_array($tableelement, self::IMPORT_TRIGGER_TABLES, true)) {
+			return 0;
+		}
+
+		require_once DOL_DOCUMENT_ROOT.'/core/class/interfaces.class.php';
+
+		$object = new stdClass();
+		$object->db = $this->db;
+		$object->id = (int) $rowid;
+		$object->rowid = (int) $rowid;
+		$object->table_element = $tableelement;
+		$object->element = $this->getElementFromTableWithPrefix($tablename);
+		$object->import_key = $importid;
+		$object->context = array('import' => 1, 'operation' => $operation);
+
+		$action = strtoupper($tableelement).($operation == 'update' ? '_MODIFY' : '_CREATE');
+
+		if (!($this->importtriggerinterface instanceof Interfaces)) {
+			$this->importtriggerinterface = new Interfaces($this->db);
+		}
+		$interface = $this->importtriggerinterface;
+		$interface->errors = array();
+
+		try {
+			$result = $interface->run_triggers($action, $object, $user, $langs, $conf);
+		} catch (Throwable $e) {
+			$this->errors[] = array('lib' => $e->getMessage(), 'type' => 'TRIGGER');
+			dol_syslog(get_class($this).'::runImportLineTrigger '.$action.' threw '.$e->getMessage(), LOG_ERR);
+			return -1;
+		}
+		if ($result < 0) {
+			foreach ((array) $interface->errors as $errormsg) {
+				$this->errors[] = array('lib' => $errormsg, 'type' => 'TRIGGER');
+			}
+			$this->errors[] = array('lib' => $langs->trans('ErrorFailedTriggerCall'), 'type' => 'TRIGGER');
+			return -1;
+		}
+
+		return 1;
+	}
+	// <<< BACKPORT ATM Dolibarr#40167
 
 	// phpcs:disable PEAR.NamingConventions.ValidFunctionName.ScopeNotCamelCaps
 	/**

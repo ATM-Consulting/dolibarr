@@ -179,6 +179,8 @@ class AllTests
 		$suite->addTestSuite('ProductTest');
 		require_once dirname(__FILE__).'/VariantsTest.php';
 		$suite->addTestSuite('VariantsTest');
+		require_once dirname(__FILE__).'/VariantsImportEngineTest.php';
+		$suite->addTestSuite('VariantsImportEngineTest');
 
 		require_once dirname(__FILE__).'/PricesTest.php';
 		$suite->addTestSuite('PricesTest');

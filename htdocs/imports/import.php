@@ -1596,6 +1596,9 @@ if ($step == 5 && $datatoimport) {
 	$classname = "Import".ucfirst($model);
 	require_once $dir.$file;
 	$obj = new $classname($db, $datatoimport);
+	// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0 (import engine of Dolibarr#37367), remove when upgrading to 25+
+	$obj->importissimulation = 1;
+	// <<< BACKPORT ATM Dolibarr#40167
 	'@phan-var-force ModeleImports $obj';
 	if ($model == 'csv') {
 		'@phan-var-force ImportCsv $obj';
