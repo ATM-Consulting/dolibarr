@@ -274,4 +274,28 @@ class VariantsImportEngineTest extends CommonClassTest
 		$this->assertEquals(0, $method->invoke($obj, MAIN_DB_PREFIX.'product', 'insert', 1, 'x', $user, $langs, $conf), 'llx_product runs no trigger');
 		$this->assertEquals(0, $method->invoke($obj, MAIN_DB_PREFIX.'product_attribute', 'insert', 1, 'x', $user, $langs, $conf), 'llx_product_attribute runs no trigger');
 	}
+
+	/**
+	 * The UTF-8 BOM written by Excel is not part of the first value of the file.
+	 *
+	 * @return void
+	 */
+	public function testCsvUtf8BomIsSkipped()
+	{
+		$obj = new ImportCsv($this->savdb, 'variants_combination');
+		$obj->separator = ';';
+		$this->assertGreaterThan(0, $obj->import_open_file($this->writeCsv(array('ref:A;ref:B'), "\xEF\xBB\xBF")));
+		$record = $obj->import_read_record();
+		$obj->import_close_file();
+
+		$this->assertSame('ref:A', $record[0]['val'], 'first value without BOM');
+
+		$obj = new ImportCsv($this->savdb, 'variants_combination');
+		$obj->separator = ';';
+		$this->assertGreaterThan(0, $obj->import_open_file($this->writeCsv(array('ref:A;ref:B'))));
+		$record = $obj->import_read_record();
+		$obj->import_close_file();
+
+		$this->assertSame('ref:A', $record[0]['val'], 'first value of a file without BOM is left untouched');
+	}
 }

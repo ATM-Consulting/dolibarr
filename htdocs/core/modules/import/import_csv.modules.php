@@ -216,6 +216,12 @@ class ImportCsv extends ModeleImports
 			$this->error = $langs->trans("ErrorFailToOpenFile", $file);
 			$ret = -1;
 		} else {
+			// >>> BACKPORT ATM Dolibarr#42181 Dolibarr#42346 - native since Dolibarr 25.0, remove when upgrading to 25+
+			// Skip the UTF-8 BOM that Excel adds at the beginning of a file, or it would be part of the first value
+			if (fread($handle, 3) !== "\xEF\xBB\xBF") {
+				rewind($handle);
+			}
+			// <<< BACKPORT ATM Dolibarr#42181 Dolibarr#42346
 			$this->handle = $handle;
 			$this->file = $file;
 		}
