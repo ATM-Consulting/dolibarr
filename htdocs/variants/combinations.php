@@ -283,7 +283,7 @@ if (($action == 'add' || $action == 'create') && $usercancreate && empty($massac
 		setEventMessages($langs->trans('RecordSaved'), null, 'mesgs');
 	}
 } elseif ($action === 'update' && $combination_id > 0 && $usercancreate) {
-	if ($prodcomb->fetch($combination_id) < 0) {
+	if ($prodcomb->fetch($combination_id) <= 0) {	// BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 		dol_print_error($db, $langs->trans('ErrorRecordNotFound'));
 		exit();
 	}
@@ -369,7 +369,7 @@ if ($action === 'confirm_deletecombination' && $usercancreate) {
 		$action = '';
 	}
 } elseif ($action === 'edit' && $usercancreate) {
-	if ($prodcomb->fetch($combination_id) < 0) {
+	if ($prodcomb->fetch($combination_id) <= 0) {	// BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
 		dol_print_error($db, $langs->trans('ErrorRecordNotFound'));
 		exit();
 	}

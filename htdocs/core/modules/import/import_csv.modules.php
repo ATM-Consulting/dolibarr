@@ -216,6 +216,12 @@ class ImportCsv extends ModeleImports
 			$this->error = $langs->trans("ErrorFailToOpenFile", $file);
 			$ret = -1;
 		} else {
+			// >>> BACKPORT ATM Dolibarr#42181 Dolibarr#42346 - native since Dolibarr 25.0, remove when upgrading to 25+
+			// Skip the UTF-8 BOM that Excel adds at the beginning of a file, or it would be part of the first value
+			if (fread($handle, 3) !== "\xEF\xBB\xBF") {
+				rewind($handle);
+			}
+			// <<< BACKPORT ATM Dolibarr#42181 Dolibarr#42346
 			$this->handle = $handle;
 			$this->file = $file;
 		}
@@ -1029,6 +1035,11 @@ class ImportCsv extends ModeleImports
 								if ($resql) {
 									// No error, update has been done. $this->db->db->affected_rows can be 0 if data hasn't changed
 									$updatedone = true;
+									// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0 (import engine of Dolibarr#37367), remove when upgrading to 25+
+									if ($this->runImportLineTrigger($tablename, 'update', is_numeric($lastinsertid) ? (int) $lastinsertid : 0, $importid, $user, $langs, $conf) < 0) {
+										$error++;
+									}
+									// <<< BACKPORT ATM Dolibarr#40167
 								} else {
 									//print 'E';
 									$this->errors[$error]['lib'] = $this->db->lasterror();
@@ -1069,6 +1080,11 @@ class ImportCsv extends ModeleImports
 										$last_insert_id_array[$tablename] = $this->db->last_insert_id($tablename); // store the last inserted auto_increment id for each table, so that child tables can be inserted with the appropriate id. This must be done just after the INSERT request, else we risk losing the id (because another sql query will be issued somewhere in Dolibarr).
 									}
 									$insertdone = true;
+									// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0 (import engine of Dolibarr#37367), remove when upgrading to 25+
+									if ($this->runImportLineTrigger($tablename, 'insert', $is_table_category_link ? 0 : (int) $last_insert_id_array[$tablename], $importid, $user, $langs, $conf) < 0) {
+										$error++;
+									}
+									// <<< BACKPORT ATM Dolibarr#40167
 								} else {
 									//print 'E';
 									$this->errors[$error]['lib'] = $this->db->lasterror();

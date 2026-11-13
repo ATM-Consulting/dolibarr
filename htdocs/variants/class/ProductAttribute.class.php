@@ -26,6 +26,7 @@
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 
+// BACKPORT ATM Dolibarr#40166 - the fetch by ref and the hardening of this class is native since Dolibarr 25.0, remove when upgrading to 25+
 /**
  * Class ProductAttribute
  * Used to represent a Product attribute
@@ -111,6 +112,11 @@ class ProductAttribute extends CommonObject
 	 * @var int rowid
 	 */
 	public $id;
+
+	/**
+	 * @var int		Alias of id, written by the import engine on the object it hands to the triggers
+	 */
+	public $rowid;
 
 	/**
 	 * @var string ref
@@ -280,21 +286,26 @@ class ProductAttribute extends CommonObject
 	}
 
 	/**
-	 * Fetches the properties of a product attribute
+	 * Fetches the properties of a product attribute, from its id or from its ref
 	 *
-	 * @param int $id Attribute id
-	 * @return int Return integer <1 KO, >1 OK
+	 * Note: $id must not be typed as int. The import engine resolves a foreign key by
+	 * calling fetch('', $ref) and an empty string is not a numeric string in PHP 8.
+	 *
+	 * @param	int|string	$id		Attribute id
+	 * @param	string		$ref	Attribute ref, used when $id is empty
+	 * @return	int					Return integer <0 KO, 0 not found, >0 OK
 	 */
-	public function fetch($id)
+	public function fetch($id, $ref = '')
 	{
 		global $langs;
 		$error = 0;
 
 		// Clean parameters
-		$id = $id > 0 ? $id : 0;
+		$id = $id > 0 ? (int) $id : 0;
+		$ref = trim((string) $ref);
 
 		// Check parameters
-		if (empty($id)) {
+		if (empty($id) && $ref === '') {
 			$this->errors[] = $langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("TechnicalID"));
 			$error++;
 		}
@@ -305,7 +316,11 @@ class ProductAttribute extends CommonObject
 
 		$sql = "SELECT rowid, ref, ref_ext, label, position";
 		$sql .= " FROM " . MAIN_DB_PREFIX . $this->table_element;
-		$sql .= " WHERE rowid = " . ((int) $id);
+		if (!empty($id)) {
+			$sql .= " WHERE rowid = " . ((int) $id);
+		} else {
+			$sql .= " WHERE ref = '" . $this->db->escape($ref) . "'";
+		}
 		$sql .= " AND entity IN (" . getEntity('product') . ")";
 
 		dol_syslog(__METHOD__, LOG_DEBUG);
@@ -512,6 +527,14 @@ class ProductAttribute extends CommonObject
 			$resql = $this->db->query($sql);
 			if (!$resql) {
 				$this->errors[] = "Error " . $this->db->lasterror();
+				$error++;
+			}
+		}
+
+		if (!$error) {
+			$result = $this->deleteExtraFields();
+			if ($result < 0) {
+				$this->errors[] = "Error " . $this->error;
 				$error++;
 			}
 		}

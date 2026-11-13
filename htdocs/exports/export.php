@@ -67,6 +67,11 @@ $entitytoicon = array(
 	'other'        => 'generic',
 	'account'      => 'account',
 	'product'      => 'product',
+	// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0, remove when upgrading to 25+
+	'productattribute' => 'product',
+	'productattributevalue' => 'product',
+	'productcombination' => 'product',
+	// <<< BACKPORT ATM Dolibarr#40167
 	'virtualproduct' => 'product',
 	'subproduct'   => 'product',
 	'product_supplier_ref'      => 'product',
@@ -114,6 +119,11 @@ $entitytolang = array(
 	'account'      => 'BankTransactions',
 	'payment'      => 'Payment',
 	'product'      => 'Product',
+	// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0, remove when upgrading to 25+
+	'productattribute' => 'ProductAttribute',
+	'productattributevalue' => 'ProductAttributeValue',
+	'productcombination' => 'ProductCombination',
+	// <<< BACKPORT ATM Dolibarr#40167
 	'virtualproduct'  => 'AssociatedProducts',
 	'subproduct'      => 'SubProduct',
 	'product_supplier_ref'      => 'SupplierPrices',

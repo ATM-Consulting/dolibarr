@@ -177,6 +177,12 @@ class AllTests
 
 		require_once dirname(__FILE__).'/ProductTest.php';
 		$suite->addTestSuite('ProductTest');
+		// >>> BACKPORT ATM Dolibarr#40167 - native since Dolibarr 25.0, remove when upgrading to 25+
+		require_once dirname(__FILE__).'/VariantsTest.php';
+		$suite->addTestSuite('VariantsTest');
+		require_once dirname(__FILE__).'/VariantsImportEngineTest.php';
+		$suite->addTestSuite('VariantsImportEngineTest');
+		// <<< BACKPORT ATM Dolibarr#40167
 
 		require_once dirname(__FILE__).'/PricesTest.php';
 		$suite->addTestSuite('PricesTest');

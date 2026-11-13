@@ -1922,6 +1922,23 @@ class Product extends CommonObject
 				}
 			}
 
+			// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
+			// Rows may survive the deactivation of the module, and the foreign key on
+			// fk_product_parent would then refuse to delete the product. Only the links are
+			// removed here, never a product: deleting variant products silently is the job of the
+			// block above, which runs when the user can actually see them. Missing tables are
+			// tolerated by deleteLinksByProduct(): they only exist once the module was enabled.
+			if (!$error) {
+				include_once DOL_DOCUMENT_ROOT.'/variants/class/ProductCombination.class.php';
+
+				$prodcomb = new ProductCombination($this->db);
+				if ($prodcomb->deleteLinksByProduct($this->id) < 0) {
+					$error++;
+					$this->errors[] = $prodcomb->error;
+				}
+			}
+
+			// <<< BACKPORT ATM Dolibarr#40166
 			// Delete from product_association
 			if (!$error) {
 				$sql = "DELETE FROM ".$this->db->prefix()."product_association";

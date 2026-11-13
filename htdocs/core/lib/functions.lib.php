@@ -15258,6 +15258,33 @@ function getElementProperties($elementType)
 		$classname = 'RecruitmentJobPosition';
 		$subelement = 'recruitmentjobposition';
 		$subdir = '/recruitmentjobposition';
+		// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
+	} elseif ($elementType == 'product_attribute_combination') {
+		$module = 'variants';
+		$classpath = 'variants/class';
+		$classfile = 'ProductCombination';
+		$classname = 'ProductCombination';
+		$element = 'productcombination';
+		$subelement = '';
+		$table_element = 'product_attribute_combination';
+	} elseif ($elementType == 'product_attribute_combination2val') {
+		$module = 'variants';
+		$classpath = 'variants/class';
+		$classfile = 'ProductCombination2ValuePair';
+		$classname = 'ProductCombination2ValuePair';
+		$element = 'productcombination2valuepair';
+		$subelement = '';
+		$table_element = 'product_attribute_combination2val';
+	} elseif ($elementType == 'product_attribute_combination_price_level') {
+		// Class ProductCombinationLevel is declared inside ProductCombination.class.php
+		$module = 'variants';
+		$classpath = 'variants/class';
+		$classfile = 'ProductCombination';
+		$classname = 'ProductCombinationLevel';
+		$element = 'productcombinationlevel';
+		$subelement = '';
+		$table_element = 'product_attribute_combination_price_level';
+		// <<< BACKPORT ATM Dolibarr#40166
 	}
 
 
@@ -15389,10 +15416,28 @@ function fetchObjectByElement($element_id, $element_type, $element_ref = '', $us
 			return $conf->cache['fetchObjectByElement'][$element_type][$element_id];
 		}
 
-		dol_include_once('/' . $element_prop['classpath'] . '/' . $element_prop['classfile'] . '.class.php');
+		// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
+		$includeresult = dol_include_once('/' . $element_prop['classpath'] . '/' . $element_prop['classfile'] . '.class.php');
+		if ($includeresult === false) {
+			dol_syslog('fetchObjectByElement: class file /' . $element_prop['classpath'] . '/' . $element_prop['classfile'] . '.class.php not found for element ' . $element_type, LOG_WARNING);
+		}
+		// <<< BACKPORT ATM Dolibarr#40166
 
 		if (class_exists($element_prop['classname'])) {
 			$className = $element_prop['classname'];
+			// >>> BACKPORT ATM Dolibarr#40166 - native since Dolibarr 25.0, remove when upgrading to 25+
+			// Never instantiate a PHP internal class: the name can only be a collision with a
+			// class of the language (for example an element resolved to the native 'Attribute').
+			try {
+				$isinternalclass = (new ReflectionClass($className))->isInternal();
+			} catch (ReflectionException $e) {
+				$isinternalclass = false;
+			}
+			if ($isinternalclass) {
+				dol_syslog('fetchObjectByElement: refuse to instantiate PHP internal class ' . $className . ' for element ' . $element_type, LOG_ERR);
+				return -1;
+			}
+			// <<< BACKPORT ATM Dolibarr#40166
 			$objecttmp = new $className($db);
 			'@phan-var-force CommonObject $objecttmp';
 			/** @var CommonObject $objecttmp */
