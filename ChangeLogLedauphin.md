@@ -1,7 +1,7 @@
 # CHANGELOG 23.0 Le-Dauphin FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
 * 13/11/2026 *
-- FIX : TK2308-5310 quantité d'un lot inférieure à 1 imprimée « 0 » sur le PDF d'expédition (et dans la
+- FIX : T7037 quantité d'un lot inférieure à 1 imprimée « 0 » sur le PDF d'expédition (et dans la
   description des lots d'une ligne de facture créée depuis une expédition) : printQty passe de %d à %s
   dans htdocs/langs/en_US et fr_FR/productbatch.lang. Les autres langues gardent %d.
   À supprimer quand printQty est en %s en amont (Dolibarr develop est toujours en %d au 13/11/2026).
