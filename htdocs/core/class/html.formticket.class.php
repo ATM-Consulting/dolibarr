@@ -481,7 +481,9 @@ class FormTicket
 		$this->selectSeveritiesTickets($severity_code, 'severity_code', '', 2, 'ifone', 0, 0, 'minwidth200 maxwidth500');
 		print '</td></tr>';
 
-		if (isModEnabled('knowledgemanagement')) {
+		/** START BACKPORT PR#43002 */
+		if (isModEnabled('knowledgemanagement') && ($public || $user->hasRight('knowledgemanagement', 'knowledgerecord', 'read'))) {
+		/** END BACKPORT */
 			// KM Articles
 			print '<tr id="KWwithajax" class="hidden"><td></td></tr>';
 			print '<!-- Script to manage change of ticket group -->
