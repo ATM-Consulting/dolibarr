@@ -3276,6 +3276,8 @@ class pdf_octopus extends ModelePDFFactures
 	 */
 	public function getInfosLineLastSituation(&$object, &$current_line)
 	{
+		global $mysoc;
+
 		if (empty($object->situation_cycle_ref) || $object->situation_counter <= 1) {
 			return;
 		}
@@ -3287,7 +3289,7 @@ class pdf_octopus extends ModelePDFFactures
 			if ($l->rowid == $current_line->fk_prev_id) {
 				// Recovery of total_ht without taking progress into account (for the "sums" column)
 				$ltvatx = (float) sprintf("%01.3f", $l->tva_tx);
-				$tabprice = calcul_price_total($l->qty, $l->subprice, $l->remise_percent, $ltvatx, $l->localtax1_tx, $l->localtax2_tx, 0, 'HT', $l->info_bits, $l->product_type);
+				$tabprice = calcul_price_total($l->qty, $l->subprice, $l->remise_percent, $ltvatx, $l->localtax1_tx, $l->localtax2_tx, 0, 'HT', $l->info_bits, $l->product_type, $mysoc);
 				$total_ht  = $tabprice[0];
 				$total_tva = $tabprice[1];
 				$total_ttc = $tabprice[2];
