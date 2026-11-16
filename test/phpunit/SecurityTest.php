@@ -725,20 +725,31 @@ class SecurityTest extends PHPUnit\Framework\TestCase
 		global $conf;
 
 		// Same chain as show_actions_messaging() and ActionsTicket: must strip JS even without MAIN_RESTRICTHTML_* options
-		unset($conf->global->MAIN_RESTRICTHTML_ONLY_VALID_HTML);
-		unset($conf->global->MAIN_RESTRICTHTML_REMOVE_ALSO_BAD_ATTRIBUTES);
+		$savedconf = array();
+		foreach (array('MAIN_RESTRICTHTML_ONLY_VALID_HTML', 'MAIN_RESTRICTHTML_REMOVE_ALSO_BAD_ATTRIBUTES') as $key) {
+			if (isset($conf->global->$key)) {
+				$savedconf[$key] = $conf->global->$key;
+			}
+			unset($conf->global->$key);
+		}
 		$sanitize = function ($s) {
 			return trim(dol_string_onlythesehtmlattributes(dol_htmlwithnojs(dol_htmlentitiesbr($s))));
 		};
 
-		$this->assertEquals('<p>Hello <b>world</b></p>alert(1)', $sanitize('<p>Hello <b>world</b></p><script>alert(1)</script>'));
-		$this->assertEquals('<img src="x">', $sanitize('<img src=x onerror=alert(1)>'));
-		$this->assertEquals('<img src="x">', $sanitize('<IMG SRC=x OnError=alert(1)>'));
-		$this->assertEquals('<div style="x">ok</div>', $sanitize('<div style="x" onclick="alert(1)">ok</div>'));
-		$this->assertEquals('<a href="alert(1)">x</a>', $sanitize('<a href="javascript:alert(1)">x</a>'));
-		$this->assertEquals('&lt;svg onload=alert(1)&gt;', $sanitize('<svg onload=alert(1)>'));
-		$this->assertEquals('<a href="https://example.com" style="color:red">link</a><br><ul><li>a</li></ul>', $sanitize('<a href="https://example.com" style="color:red">link</a><br><ul><li>a</li></ul>'));
-		$this->assertEquals("Line1<br>\nLine2 &amp; co", $sanitize("Line1\nLine2 & co"));
+		try {
+			$this->assertEquals('<p>Hello <b>world</b></p>alert(1)', $sanitize('<p>Hello <b>world</b></p><script>alert(1)</script>'));
+			$this->assertEquals('<img src="x">', $sanitize('<img src=x onerror=alert(1)>'));
+			$this->assertEquals('<img src="x">', $sanitize('<IMG SRC=x OnError=alert(1)>'));
+			$this->assertEquals('<div style="x">ok</div>', $sanitize('<div style="x" onclick="alert(1)">ok</div>'));
+			$this->assertEquals('<a href="alert(1)">x</a>', $sanitize('<a href="javascript:alert(1)">x</a>'));
+			$this->assertEquals('&lt;svg onload=alert(1)&gt;', $sanitize('<svg onload=alert(1)>'));
+			$this->assertEquals('<a href="https://example.com" style="color:red">link</a><br><ul><li>a</li></ul>', $sanitize('<a href="https://example.com" style="color:red">link</a><br><ul><li>a</li></ul>'));
+			$this->assertEquals("Line1<br>\nLine2 &amp; co", $sanitize("Line1\nLine2 & co"));
+		} finally {
+			foreach ($savedconf as $key => $val) {
+				$conf->global->$key = $val;
+			}
+		}
 
 		return 0;
 	}
