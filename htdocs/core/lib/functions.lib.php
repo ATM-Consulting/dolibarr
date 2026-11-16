@@ -12485,7 +12485,9 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = '', $n
 				&& $actionstatic->code != 'AC_TICKET_MODIFY'
 			) {
 				$out .= '<div class="timeline-body">';
-				$out .= $histo[$key]['message'];
+				// BACKPORT V20 START - PR #29931 - dolPrintHTML() missing in v17: equivalent chain, on* attributes stripped even without MAIN_RESTRICTHTML_REMOVE_ALSO_BAD_ATTRIBUTES
+				$out .= dol_string_onlythesehtmlattributes(dol_htmlwithnojs(dol_htmlentitiesbr($histo[$key]['message'])));
+				// BACKPORT V20 END - PR #29931
 				$out .= '</div>';
 			}
 
