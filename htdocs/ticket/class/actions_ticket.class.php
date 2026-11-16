@@ -325,7 +325,9 @@ class ActionsTicket
 					print '</td>';
 					print '<tr class="oddeven">';
 					print '<td colspan="2">';
-					print $arraymsgs['message'];
+					// BACKPORT V25 START - PR #43074 - dolPrintHTML() missing in v17: same chain as the BACKPORT V20 of show_actions_messaging()
+					print dol_string_onlythesehtmlattributes(dol_htmlwithnojs(dol_htmlentitiesbr($arraymsgs['message'])));
+					// BACKPORT V25 END - PR #43074
 					print '</td>';
 					print '</tr>';
 				}
@@ -366,7 +368,9 @@ class ActionsTicket
 					print '</div> <!-- cd-timeline-img -->';
 
 					print '<div class="cd-timeline-content">';
-					print $arraymsgs['message'];
+					// BACKPORT V25 START - PR #43074 - dolPrintHTML() missing in v17: same chain as the BACKPORT V20 of show_actions_messaging()
+					print dol_string_onlythesehtmlattributes(dol_htmlwithnojs(dol_htmlentitiesbr($arraymsgs['message'])));
+					// BACKPORT V25 END - PR #43074
 
 					print '<span class="cd-date">';
 					print dol_print_date($arraymsgs['datec'], 'dayhour');
