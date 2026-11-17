@@ -102,6 +102,9 @@ if (empty($reshook)) {
 
 	if ($action == 'setsupplieraccountancycode' && $user->hasRight('societe', 'creer')) {
 		$result = $object->fetch($id);
+		// BACKPORT V25 START - PR #43100
+		$object->oldcopy = dol_clone($object);
+		// BACKPORT V25 END - PR #43100
 		$object->code_compta_fournisseur = GETPOST("supplieraccountancycode");
 		$result = $object->update($object->id, $user, 1, 0, 1);
 		if ($result < 0) {
