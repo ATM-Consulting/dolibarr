@@ -2388,7 +2388,7 @@ class FactureFournisseur extends CommonInvoice
 	 * @param	int<0,1>	$skip_update_price	1 to leave the totals of the invoice alone: the caller then calls update_price() once all its lines are written
 	 * @return 	int<-1,1>      					Return integer <0 if KO, >0 if OK
 	 */
-	public function updateline($id, $desc, $pu, $vatrate, $txlocaltax1 = 0, $txlocaltax2 = 0, $qty = 1, $idproduct = 0, $price_base_type = 'HT', $info_bits = 0, $type = 0, $remise_percent = 0, $notrigger = 0, $date_start = '', $date_end = '', $array_options = [], $fk_unit = null, $pu_devise = 0, $ref_supplier = '', $rang = 0, $skip_update_price = 0)
+	public function updateline($id, $desc, $pu, $vatrate, $txlocaltax1 = 0, $txlocaltax2 = 0, $qty = 1, $idproduct = 0, $price_base_type = 'HT', $info_bits = 0, $type = 0, $remise_percent = 0, $notrigger = 0, $date_start = '', $date_end = '', $array_options = [], $fk_unit = null, $pu_devise = 0, $ref_supplier = '', $rang = 0, /** BACKPORT V25 **/ $skip_update_price = 0 /** END BACKPORT **/)
 	{
 		global $mysoc, $langs;
 
@@ -2532,7 +2532,7 @@ class FactureFournisseur extends CommonInvoice
 		if ($res < 1) {
 			$this->errors[] = $line->error;
 			$this->errors = array_merge($this->errors, $line->errors);
-		} elseif (empty($skip_update_price)) {
+		} /** BACKPORT V25 **/ elseif (empty($skip_update_price)) /** END BACKPORT **/ {
 			// Update total price into invoice record
 			$res = $this->update_price(1, 'auto', 0, $this->thirdparty);
 		}
