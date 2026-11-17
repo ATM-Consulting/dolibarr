@@ -49,11 +49,13 @@ foreach ($linkedObjectBlock as $key => $objectlink) {
 		$trclass .= ' liste_sub_total';
 	}
 	echo '<tr class="'.$trclass.'" >';
+	/** START BACKPORT V24.0 */
 	echo '<td class="linkedcol-element tdoverflowmax100">';
 	if (!empty($showImportButton) && getDolGlobalString('MAIN_ENABLE_IMPORT_LINKED_OBJECT_LINES')) {
 		print '<a class="objectlinked_importbtn" href="'.$objectlink->getNomUrl(0, '', 0, 1).'&amp;action=selectlines&amp;token='.newToken().'" data-element="'.$objectlink->element.'" data-id="'.$objectlink->id.'"  > <i class="fa fa-indent"></i> </a>';
 	}
 	echo $langs->trans("CustomerOrder");
+	/** END BACKPORT V24.0 */
 	echo '</td>';
 	echo '<td class="linkedcol-name tdoverflowmax150" >'.$objectlink->getNomUrl(1).'</td>';
 	echo '<td class="linkedcol-ref tdoverflowmax150">'.$objectlink->ref_client.'</td>';
