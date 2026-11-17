@@ -329,6 +329,7 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product as p ON cd.fk_product = p.rowid";
 if ($search_product_category > 0) {
 	$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'categorie_product as cp ON cp.fk_product=cd.fk_product';
 }
+// Backport of Dolibarr PR #43114 (https://github.com/Dolibarr/dolibarr/pull/43114)
 $sql .= " WHERE c.entity IN (".getEntity('contract').")";
 $sql .= " AND c.rowid = cd.fk_contrat";
 if ($search_product_category > 0) {
