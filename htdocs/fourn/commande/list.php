@@ -399,8 +399,8 @@ if (empty($reshook)) {
 	}
 
 	// Mass action to generate vendor bills
-	if ($massaction == 'confirm_createsupplierbills') {
-		$orders = GETPOST('toselect', 'array:int');
+	if (!$error && $massaction == 'confirm_createsupplierbills' && ($user->hasRight("fournisseur", "facture", "creer") || $user->hasRight("supplier_invoice", "creer"))) {
+		$orders = $toselect;	// Ids already checked for access by the mass actions include
 		$createbills_onebythird = GETPOSTINT('createbills_onebythird');
 		$validate_invoices = GETPOSTINT('validate_invoices');
 
@@ -920,6 +920,10 @@ if ($search_status != '' && $search_status != '-1') {
 }
 if ($search_option == 'late') {
 	$sql .= " AND cf.date_commande < '".$db->idate(dol_now() - $conf->order->fournisseur->warning_delay)."'";
+}
+if ($search_option == 'recv_late') {
+	// Same rule as FournisseurCommande::hasDelay() for the ordered and partially received status
+	$sql .= " AND cf.date_livraison < '".$db->idate(dol_now() - $conf->order->fournisseur->warning_delay)."'";
 }
 if ($search_date_order_start) {
 	$sql .= " AND cf.date_commande >= '".$db->idate($search_date_order_start)."'";

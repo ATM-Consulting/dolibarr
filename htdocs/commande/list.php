@@ -268,7 +268,9 @@ $arrayfields = array(
 	'c.import_key' => array('type' => 'varchar(14)', 'label' => 'ImportId', 'enabled' => '1', 'visible' => -2, 'position' => 999),
 	'c.fk_statut' => array('label' => "Status", 'checked' => '1', 'position' => 1000)
 );
-
+if ($user->socid) {
+	unset($arrayfields['c.note_private']);
+}
 $parameters = array('fieldstosearchall' => $fieldstosearchall);
 $reshook = $hookmanager->executeHooks('completeFieldsToSearchAll', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
 if ($reshook > 0) {
@@ -415,8 +417,8 @@ if (empty($reshook)) {
 	$month = "";
 	include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
 
-	if ($massaction == 'confirm_createbills' && $user->hasRight('facture', 'creer')) {   // Create bills from orders.
-		$orders = GETPOST('toselect', 'array:int');
+	if (!$error && $massaction == 'confirm_createbills' && $user->hasRight('facture', 'creer')) {   // @phpstan-ignore-line $error may have been modified by the actions_massactions.inc.php. Create bills from orders.
+		$orders = $toselect;	// Ids already checked for access by the mass actions include
 		$createbills_onebythird = GETPOSTINT('createbills_onebythird');
 		$validate_invoices = GETPOSTINT('validate_invoices');
 
@@ -467,7 +469,9 @@ if (empty($reshook)) {
 				$objecttmp->demand_reason_id = !empty($cmd->demand_reason_id) ? $cmd->demand_reason_id : $cmd->thirdparty->demand_reason_id;
 
 				$objecttmp->fk_project = $cmd->fk_project;
-				$objecttmp->multicurrency_code = $cmd->multicurrency_code;
+				if (isModEnabled('multicurrency')) {
+					$objecttmp->multicurrency_code = $cmd->multicurrency_code;
+				}
 				if (empty($createbills_onebythird)) {
 					$objecttmp->ref_client = $cmd->ref_client;
 				}
@@ -490,6 +494,8 @@ if (empty($reshook)) {
 				$res = $objecttmp->create($user);
 
 				if ($res > 0) {
+					$objecttmp->user_creation_id = $user->id;
+
 					$nb_bills_created++;
 					$lastref = $objecttmp->ref;
 					$lastid = $objecttmp->id;

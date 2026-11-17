@@ -256,16 +256,16 @@ if (empty($reshook)) {
 						$sendto = str_replace(',', ' ', dolGetFirstLastname($obj->firstname, $obj->lastname))." <".$obj->email.">";
 
 						// Make substitutions on topic and body. From (AA=YY;BB=CC;...) we keep YY, CC, ...
-						$other = explode(';', $obj->other);
-						$tmpfield = explode('=', $other[0], 2);
+						$other = explode(';', (string) $obj->other);
+						$tmpfield = explode('=', ($other[0] ?? ''), 2);
 						$other1 = (isset($tmpfield[1]) ? $tmpfield[1] : $tmpfield[0]);
-						$tmpfield = explode('=', $other[1], 2);
+						$tmpfield = explode('=', ($other[1] ?? ''), 2);
 						$other2 = (isset($tmpfield[1]) ? $tmpfield[1] : $tmpfield[0]);
-						$tmpfield = explode('=', $other[2], 2);
+						$tmpfield = explode('=', ($other[2] ?? ''), 2);
 						$other3 = (isset($tmpfield[1]) ? $tmpfield[1] : $tmpfield[0]);
-						$tmpfield = explode('=', $other[3], 2);
+						$tmpfield = explode('=', ($other[3] ?? ''), 2);
 						$other4 = (isset($tmpfield[1]) ? $tmpfield[1] : $tmpfield[0]);
-						$tmpfield = explode('=', $other[4], 2);
+						$tmpfield = explode('=', ($other[4] ?? ''), 2);
 						$other5 = (isset($tmpfield[1]) ? $tmpfield[1] : $tmpfield[0]);
 
 						$signature = ((!empty($user->signature) && !getDolGlobalString('MAIN_MAIL_DO_NOT_USE_SIGN')) ? $user->signature : '');
@@ -626,21 +626,23 @@ if (empty($reshook)) {
 
 		if ($action == 'settitle') {					// Test on permission already done
 			$object->title = trim(GETPOST('title', 'alpha'));
+			if (empty($object->title)) {
+				$mesg = $langs->trans("ErrorFieldRequired", $langs->transnoentities("MailTitle"));
+			}
 		} elseif ($action == 'setemail_from') {			// Test on permission already done
 			$object->email_from = trim(GETPOST('email_from', 'alphawithlgt')); // Must allow 'name <email>'
+			if (empty($object->email_from)) {
+				$mesg = $langs->trans("ErrorFieldRequired", $langs->transnoentities("MailFrom"));
+			}
 		} elseif ($action == 'setemail_replyto') {		// Test on permission already done
 			$object->email_replyto = trim(GETPOST('email_replyto', 'alphawithlgt')); // Must allow 'name <email>'
 		} elseif ($action == 'setemail_errorsto') {		// Test on permission already done
 			$object->email_errorsto = trim(GETPOST('email_errorsto', 'alphawithlgt')); // Must allow 'name <email>'
-		} elseif ($action == 'settitle' && empty($object->title)) {		// Test on permission already done
-			$mesg = $langs->trans("ErrorFieldRequired", $langs->transnoentities("MailTitle"));
-		} elseif ($action == 'setfrom' && empty($object->email_from)) {	// Test on permission already done
-			$mesg = $langs->trans("ErrorFieldRequired", $langs->transnoentities("MailFrom"));
 		} elseif ($action == 'setevenunsubscribe') {	// Test on permission already done
 			$object->evenunsubscribe = (GETPOST('evenunsubscribe') ? 1 : 0);
 		}
 
-		if (isset($mesg) && empty($mesg)) {
+		if (empty($mesg)) {
 			$result = $object->update($user);
 			if ($result >= 0) {
 				header("Location: ".$_SERVER['PHP_SELF']."?id=".$object->id);
@@ -1268,7 +1270,7 @@ if ($action == 'create') {	// aaa
 				1 => array('type' => 'checkbox', 'name' => 'clone_receivers', 'label' => $langs->trans("CloneReceivers"), 'value' => 0)
 				);
 				// Incomplete payment. On demande si motif = escompte ou autre
-				print $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneEMailing', $object->ref), 'confirm_clone', $formquestion, 'yes', 2, 240);
+				print $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneEMailing', $object->ref), 'confirm_clone', $formquestion, 'yes', 2, 0);
 			}
 
 			// Actions Buttons

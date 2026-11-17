@@ -324,9 +324,10 @@ class ExternalModules
 	 * Generate HTML for products.
 	 *
 	 * @param 	array<string,mixed> 	$options 	Options for the request
+	 * @param 	array<string,DolibarrModules>	$modules	Array of locally installed modules (keyed by module class name)
 	 * @return 	string|null 						HTML string representing the products.
 	 */
-	public function getProducts($options)
+	public function getProducts($options, $modules = array())
 	{
 		global $langs;
 
@@ -337,6 +338,18 @@ class ExternalModules
 		$dolibarrversiontouse = DOL_VERSION;	// full string with version
 
 		$this->products = array();
+
+		// Build a map of installed external module names to their versions (lowercase name => version)
+		$installedModules = array();
+		if (is_array($modules)) {
+			foreach ($modules as $objMod) {
+				if (is_object($objMod) && $objMod->isCoreOrExternalModule() != 'core') {
+					$moduleName = strtolower($objMod->name);
+					$moduleVersion = $objMod->getVersion(0);
+					$installedModules[$moduleName] = $moduleVersion;
+				}
+			}
+		}
 
 		$this->categorie = $options['categorie'] ?? 0;
 		$this->per_page  = $options['per_page'] ?? 11;
@@ -466,8 +479,21 @@ class ExternalModules
 			if ($product["status"] == 'soon' || $product["status"] == 'development' || $product["status"] == 'experimental') {
 				$version = '<span class="warning">'.$langs->trans("NotYetAvailable").' - '.$langs->trans("StillInDevelopment").'</span>';
 				$compatible = 'NotCompatible';
-			} elseif ($this->versionCompare($product["dolibarr_min"], $dolibarrversiontouse) <= 0) {
-				if (!empty($product["dolibarr_max"]) && $product["dolibarr_max"] != 'auto' && $product["dolibarr_max"] != 'unknown' && $this->versionCompare($product["dolibarr_max"], $dolibarrversiontouse) >= 0) {
+			} else {
+				// A min or max version set to '', 'auto' or 'unknown' is an unknown version
+				$minknown = (!empty($product["dolibarr_min"]) && !in_array($product["dolibarr_min"], array('auto', 'unknown')));
+				$maxknown = (!empty($product["dolibarr_max"]) && !in_array($product["dolibarr_max"], array('auto', 'unknown')));
+
+				if ($minknown && $this->versionCompare($product["dolibarr_min"], $dolibarrversiontouse) > 0) {
+					// Need update of Dolibarr (current version is lower than min)
+					$version = '<span class="compatibleafterupdate">'.$langs->trans(
+						'CompatibleAfterUpdate',
+						$dolibarrversiontouse,
+						$product["dolibarr_min"],
+						$product["dolibarr_max"]
+					).'</span>';
+					$compatible = 'NotCompatible';
+				} elseif ($maxknown && $this->versionCompare($product["dolibarr_max"], $dolibarrversiontouse) >= 0) {
 					// Compatible
 					$version = '<span class="compatible hideonsmartphone">'.$langs->trans(
 						'CompatibleUpTo',
@@ -477,29 +503,9 @@ class ExternalModules
 					).'</span>';
 					$compatible = '';
 				} else {
-					// Never compatible, module expired
+					// Not compatible (current version is higher than max, or max is unknown)
 					$version = '<span class="warning">'.$langs->trans(
 						'NotCompatible',
-						$dolibarrversiontouse,
-						$product["dolibarr_min"],
-						$product["dolibarr_max"]
-					).'</span>';
-					$compatible = 'NotCompatible';
-				}
-			} else {
-				if ($product["dolibarr_min"] == 'auto' || $product["dolibarr_min"] != 'unknown') {
-					// Never compatible, module expired
-					$version = '<span class="warning">'.$langs->trans(
-						'NotCompatible',
-						$dolibarrversiontouse,
-						$product["dolibarr_min"],
-						$product["dolibarr_max"]
-					).'</span>';
-					$compatible = 'NotCompatible';
-				} else {
-					// Need update
-					$version = '<span class="compatibleafterupdate">'.$langs->trans(
-						'CompatibleAfterUpdate',
 						$dolibarrversiontouse,
 						$product["dolibarr_min"],
 						$product["dolibarr_max"]
@@ -567,14 +573,14 @@ class ExternalModules
 					$download_link = '<a class="paddingleft paddingright valignmiddle" target="_blank" title="'.$langs->trans("View").'" href="'.$urlview.'">';
 					$download_link .= img_picto('', 'url', 'class="size2x"');
 					$download_link .= '</a>';
-					$download_link .= '<a class="paddingleft paddingright" target="_blank" title="'.$langs->trans("Download").'" href="'.$urldownload.'" rel="noopener noreferrer">';
+					$download_link .= '<a class="paddingleft paddingright valignmiddle" target="_blank" title="'.$langs->trans("Download").'" href="'.$urldownload.'" rel="noopener noreferrer">';
 					$download_link .= img_picto('', 'download', 'class="size2x paddingright"');
 					//$download_link .= '<img width="32" src="'.DOL_URL_ROOT.'/admin/remotestore/img/download.png" />';
 					$download_link .= '</a>';
 				}
 
 				// Direct install
-				if (($product['direct-download'] && in_array($product['direct-download'], array('yes', 'dolistore'))) || $product['source'] === 'dolistore') {
+				if ((!empty($product['direct-download']) && in_array($product['direct-download'], array('yes', 'dolistore'))) || $product['source'] === 'dolistore') {
 					$urldownload = '';
 
 					if ($product['source'] === 'githubcommunity') {
@@ -591,7 +597,7 @@ class ExternalModules
 
 						// For community modules, we download from community repo.
 						// But we can force to download from dolistore if MAIN_DOWNLOAD_FROM_DOLISTORE_IN_PRIORITY is set (less reliable, less up to date)
-						if ($product["direct-download"] == 'dolistore' || getDolGlobalString("MAIN_DOWNLOAD_FROM_DOLISTORE_IN_PRIORITY")) {
+						if (($product["direct-download"] ?? '') == 'dolistore' || getDolGlobalString("MAIN_DOWNLOAD_FROM_DOLISTORE_IN_PRIORITY")) {
 							if (preg_match('/https:.*\?id=(\d+)$/', $urlview, $reg)) {
 								$urldownload = 'https://www.dolistore.com/_service_download.php?t=free&p='.$reg[1];
 							}
@@ -619,6 +625,25 @@ class ExternalModules
 						);
 					$installConfirmMessage .= $langs->trans("Path").' : '.$urldownload;
 
+					// Check if module is already installed locally to show "Upgrade" or "Re-install" instead of "Install"
+					$buttonLabel = $langs->trans("Install");
+					$remoteVersion = $product['module_version'] ?? '';
+					$remoteModuleName = strtolower(preg_replace('/@.*$/', '', $product['ref'] ?? ''));
+					// Remove "-" followed by current version at the end of the string if it exists
+					$remoteModuleName = preg_replace('/-' . preg_quote($remoteVersion, '/') . '$/', '', $remoteModuleName);
+					if (!empty($installedModules[$remoteModuleName]) && $remoteVersion && $remoteVersion != 'unknown') {
+						$localVersion = $installedModules[$remoteModuleName];
+						// $localVersion is guaranteed non-empty here (see !empty() test above), so only the 'unknown' value must be excluded
+						if ($localVersion != 'unknown') {
+							$versionDiff = $this->versionCompare($localVersion, $remoteVersion);
+							if ($versionDiff < 0) {
+								$buttonLabel = $langs->trans("Upgrade");
+							} elseif ($versionDiff == 0) {
+								$buttonLabel = $langs->trans("ReInstall");
+							}
+						}
+					}
+
 					$install_link = '<button class="valignmiddle ' . ($disableInstall ? 'butActionRefused' : 'butAction') . ' paddingleft paddingright"'
 						. ($disableInfo     ? ' title="' . dol_escape_htmltag($disableInfo) . '"' : '')
 						. (!$disableInstall ? ' data-confirm' : '')
@@ -626,7 +651,8 @@ class ExternalModules
 						. (!$disableInstall ? ' data-url="' . dol_escape_htmltag($this->url) . '"' : '')
 						. (!$disableInstall ? ' data-confirm-title="' . dol_escape_htmltag($langs->trans("extModuleConfirmInstallTitle")) . '"' : '')
 						. (!$disableInstall ? ' data-confirm-text="' . dol_escape_htmltag($installConfirmMessage) . '"' : '')
-						. '>' . $langs->trans("Install") . '</button>';
+						. (!$disableInstall ? ' data-confirm-label="' . dol_escape_htmltag($buttonLabel) . '"' : '')
+						. '>' . $buttonLabel . '</button>';
 				}
 			}
 
@@ -698,7 +724,7 @@ class ExternalModules
 			// Price - do not load if display none
 			$html .= '<td class="margeCote center amount'.(getDolOptimizeSmallScreen() ? ' left" colspan="2"' : '"').'>';
 			$html .= $price;
-			if (($product['direct-download'] && in_array($product['direct-download'], array('yes', 'dolistore'))) || ($product['source'] === 'dolistore' && empty((float) $product['price_ht']))) {
+			if ((!empty($product['direct-download']) && in_array($product['direct-download'], array('yes', 'dolistore'))) || ($product['source'] === 'dolistore' && empty((float) $product['price_ht']))) {
 				if ($install_link) {
 					$html .= $install_link;
 				}
@@ -728,15 +754,15 @@ class ExternalModules
 		}
 
 		// JS for confirm install
-		$confirmLabel = dol_escape_js($langs->trans("Install"));
-		$cancelLabel = dol_escape_js($langs->trans("Cancel"));
+		$confirmLabel = $langs->trans("Install");
+		$cancelLabel = $langs->trans("Cancel");
 		$html .= '<script>
 		$(document).on("click","[data-confirm]",function(){
 			var button = $(this);
 			var confirmTitle = button.data("confirm-title");
 			var confirmText = button.data("confirm-text");
 			var buttons = {};
-			buttons[button.data("confirm-label")||"' . $confirmLabel . '"] = function(){
+			buttons[button.data("confirm-label")||\'' . dol_escape_js($confirmLabel) . '\'] = function(){
 				var form = $("<form method=\'POST\' style=\'display:none\'>").attr("action", button.data("url"));
 				$.each(button.data("fields"), function(name, value){
 					form.append($("<input type=\'hidden\'>").attr("name", name).val(value));
@@ -745,7 +771,7 @@ class ExternalModules
 				form.submit();
 				$(this).dialog("close");
 			};
-			buttons["' . $cancelLabel . '"] = function(){$(this).dialog("close");};
+			buttons[\'' . dol_escape_js($cancelLabel) . '\'] = function(){$(this).dialog("close");};
 			$("<div>").html(confirmText).dialog({
 				title: confirmTitle,
 				minWidth: 580,
@@ -937,7 +963,18 @@ class ExternalModules
 				if ($this->categorie != 0) {
 					$pagelist .= '<input type="hidden" name="categorie" value="' . $this->categorie . '">';
 				}
-				$pagelist .= '<input type="text" id="page_input" name="no_page" value="'.($page).'" min="1" max="'.$nbpages.'" class="width40 page_input right" oninput="if(this.value > '.$nbpages.') this.value='.$nbpages.'">';
+				// URL to go to another page (without no_page). Used when pressing Enter into the page input field.
+				$param_array = array();
+				if (!empty($this->search)) {
+					$param_array['search_keyword'] = $this->search;
+				}
+				if ($this->categorie != 0) {
+					$param_array['categorie'] = $this->categorie;
+				}
+				$urlforpage = $this->url.($param_array ? '&'.http_build_query($param_array) : '');
+				$pagelist .= '<input type="text" id="page_input" name="no_page" value="'.($page).'" min="1" max="'.$nbpages.'" class="width40 page_input right" data-url="'.dol_escape_htmltag($urlforpage).'"';
+				$pagelist .= ' oninput="if(this.value > '.$nbpages.') this.value='.$nbpages.'"';
+				$pagelist .= ' onkeydown="if (event.key === \'Enter\') { event.preventDefault(); var p = parseInt(this.value, 10); if (isNaN(p) || p < 1) { p = 1; } window.location.href = this.dataset.url + \'&no_page=\' + p; }">';
 				$pagelist .= ' / '.$nbpages;
 				$pagelist .= '</li>';
 
@@ -1227,7 +1264,8 @@ class ExternalModules
 					'module_version' => $package['module_version'],
 					'cover_photo_url' => $urlphoto,
 					'source' => 'dolistore',
-					'status' => empty($package['status']) ? '' : $package['status']
+					'status' => empty($package['status']) ? '' : $package['status'],
+					'direct-download' => '',
 				];
 
 				$adaptedData[$package['id']] = $adaptedPackage;
@@ -1336,7 +1374,7 @@ class ExternalModules
 
 		$statusType = 'status4';
 		if ($status == 0) {
-			$statusType = 'status8';
+			$statusType = 'status3';
 		}
 
 		$labelStatus = [];
@@ -1404,7 +1442,7 @@ class ExternalModules
 				}
 				break;
 			case 'githubcommunity':
-				if ($producttoinstall['direct-download'] && in_array($producttoinstall['direct-download'], array('yes', 'dolistore'))) {
+				if (!empty($producttoinstall['direct-download']) && in_array($producttoinstall['direct-download'], array('yes', 'dolistore'))) {
 					$source_url = 'https://github.com/Dolibarr/dolibarr-community-modules/raw/refs/heads/main/dev/build/bin/module_' . $module_name . '-' . $current_version . '.zip';
 					$downloaded = $this->_downloadFile($source_url, $tmpdir);
 					if (!$downloaded) {

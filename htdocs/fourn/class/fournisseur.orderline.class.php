@@ -150,6 +150,12 @@ class CommandeFournisseurLigne extends CommonOrderLine
 	 */
 	public $remise;
 
+	/**
+	 * 0=This service or product is not managed in stock, 1=This service or product is managed in stock
+	 *
+	 * @var int
+	 */
+	public $stockable_product;
 
 	/**
 	 *	Constructor
@@ -228,8 +234,8 @@ class CommandeFournisseurLigne extends CommonOrderLine
 					$sqlsearchpackage .= ' WHERE entity IN ('.getEntity('productsupplierprice').")";
 					$sqlsearchpackage .= " AND fk_product = ".((int) $objp->fk_product);
 					$sqlsearchpackage .= " AND ref_fourn = '".$this->db->escape($objp->ref_supplier)."'";
-					$sqlsearchpackage .= " AND quantity <= ".((float) $objp->qty);	// required to be qualified
-					$sqlsearchpackage .= " AND (packaging IS NULL OR packaging = 0 OR packaging <= ".((float) $objp->qty).")";	// required to be qualified
+					$sqlsearchpackage .= " AND quantity <= ".abs((float) $objp->qty);	// required to be qualified
+					$sqlsearchpackage .= " AND (packaging IS NULL OR packaging = 0 OR packaging <= ".abs((float) $objp->qty).")";	// required to be qualified
 					$sqlsearchpackage .= " AND fk_soc = ".((int) $objp->socid);
 					$sqlsearchpackage .= " ORDER BY packaging ASC";		// Take the smaller package first
 					$sqlsearchpackage .= " LIMIT 1";

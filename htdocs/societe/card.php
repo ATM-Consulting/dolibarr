@@ -364,12 +364,16 @@ if (empty($reshook)) {
 			$object->email					= trim(GETPOST('email', 'email'));
 			$object->no_email 				= GETPOSTINT("no_email");
 			$object->url					= trim(GETPOST('url', 'url'));
-			$object->idprof1				= trim(GETPOST('idprof1', 'alphanohtml'));
-			$object->idprof2				= trim(GETPOST('idprof2', 'alphanohtml'));
-			$object->idprof3				= trim(GETPOST('idprof3', 'alphanohtml'));
-			$object->idprof4				= trim(GETPOST('idprof4', 'alphanohtml'));
-			$object->idprof5				= trim(GETPOST('idprof5', 'alphanohtml'));
-			$object->idprof6				= trim(GETPOST('idprof6', 'alphanohtml'));
+			// Only the professional ids displayed by the form are posted: the edit form renders the id N
+			// only when N <= THIRDPARTY_MIN_NB_PROF_ID or when the key ProfId<N><country code> is
+			// translated for the language of the user. Reading the 6 of them unconditionally erases
+			// the stored value of a hidden one, so keep it when the field was not submitted.
+			for ($i = 1; $i <= 6; $i++) {
+				$key = 'idprof'.$i;
+				if (GETPOSTISSET($key)) {
+					$object->$key = trim(GETPOST($key, 'alphanohtml'));
+				}
+			}
 			$object->prefix_comm			= GETPOST('prefix_comm', 'alphanohtml');
 			$object->code_client			= GETPOSTISSET('customer_code') ? GETPOST('customer_code', 'alpha') : GETPOST('code_client', 'alpha');
 			$object->code_fournisseur		= GETPOSTISSET('supplier_code') ? GETPOST('supplier_code', 'alpha') : GETPOST('code_fournisseur', 'alpha');
@@ -602,7 +606,8 @@ if (empty($reshook)) {
 								$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 								$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-								if (!($result > 0)) {
+								// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+								if (!is_numeric($result) || $result <= 0) {
 									$errors[] = "ErrorFailedToSaveFile";
 								} else {
 									// Create thumbs
@@ -775,7 +780,8 @@ if (empty($reshook)) {
 							$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 							$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-							if (!($result > 0)) {
+							// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+							if (!is_numeric($result) || $result <= 0) {
 								$errors[] = "ErrorFailedToSaveFile";
 							} else {
 								// Create thumbs
@@ -1179,7 +1185,8 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 					$newfile = $dir.'/'.dol_sanitizeFileName($_FILES['photo']['name']);
 					$result = dol_move_uploaded_file($_FILES['photo']['tmp_name'], $newfile, 1);
 
-					if (!($result > 0)) {
+					// Note: $result is a string when the file was refused and, in PHP 8, such a string compares as greater than 0
+					if (!is_numeric($result) || $result <= 0) {
 						$errors[] = "ErrorFailedToSaveFile";
 					} else {
 						// Create thumbs
@@ -2006,7 +2013,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 				print '<tr class="morefields">';
 				print '<td>'.$langs->trans('ParentCompany').'</td>';
 				print '<td colspan="3" class="maxwidthonsmartphone">';
-				print img_picto('', 'company', 'class="paddingrightonly"');
+				print img_picto('', 'company', 'class="pictofixedwidth"');
 				print $form->select_company(GETPOST('parent_company_id'), 'parent_company_id', '', 'SelectThirdParty', 0, 0, array(), 0, 'minwidth300 maxwidth500 widthcentpercentminusxx');
 				print '</td></tr>';
 			}
@@ -2019,7 +2026,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 			$userlist = $form->select_dolusers($selected, '', 0, null, 0, '', '', '0', 0, 0, 'u.statut:=:1', 0, '', '', 0, 2);
 			// Note: If user has no right to "see all thirdparties", we force selection of sale representative to him, so after creation he can see the record.
 			$selected = (GETPOSTISARRAY('commercial') ? GETPOST('commercial', 'array:int') : (GETPOSTINT('commercial') > 0 ? array(GETPOSTINT('commercial')) : array($user->id)));
-			print img_picto('', 'user').$form->multiselectarray('commercial', $userlist, $selected, 0, 0, 'quatrevingtpercent widthcentpercentminusx', 0, 0);
+			print img_picto('', 'user', 'class="pictofixedwidth"').$form->multiselectarray('commercial', $userlist, $selected, 0, 0, 'quatrevingtpercent widthcentpercentminusx', 0, 0);
 			print '</td></tr>';
 
 			// Add logo
@@ -2226,7 +2233,7 @@ if (is_object($objcanvas) && $objcanvas->displayCanvasExists($canvasdisplayactio
 				//Incoterms
 				if (isModEnabled('incoterm')) {
 					$object->fk_incoterms = GETPOSTINT('incoterm_id');
-					$object->location_incoterms = GETPOST('lcoation_incoterms', 'alpha');
+					$object->location_incoterms = GETPOST('location_incoterms', 'alpha');
 				}
 
 				//Local Taxes

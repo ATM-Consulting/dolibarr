@@ -179,7 +179,7 @@ function takeposDeleteLineWithChildren($invoice, $lineid)
 
 
 
-$number = (float) GETPOST('number', 'alpha');
+$number = GETPOSTFLOAT('number', '', 0);	// Option 0: the value is typed in the free zone (user format) or sent by the numeric pad (always with a dot)
 $idline = GETPOSTINT('idline');
 $selectedline = GETPOSTINT('selectedline');
 $desc = GETPOST('desc', 'alphanohtml');
@@ -308,7 +308,7 @@ if (empty($reshook)) {
 	}
 
 	// Action to record a payment on a TakePOS invoice
-	if ($action == 'valid' && $user->hasRight('facture', 'creer')) {
+	if ($action == 'valid' && $user->hasRight('takepos', 'run')) {
 		$bankaccount = 0;
 		$error = 0;
 
@@ -536,7 +536,7 @@ if (empty($reshook)) {
 	}
 
 	$creditnote = null;
-	if ($action == 'creditnote' && $user->hasRight('facture', 'creer')) {
+	if ($action == 'creditnote' && $user->hasRight('takepos', 'run')) {
 		$db->begin();
 
 		$creditnote = new Facture($db);
@@ -2313,7 +2313,9 @@ if ($placeid > 0) {
 					$htmlforlines .= '<td class="right">'.price($line->subprice).'</td>';
 				}
 				$htmlforlines .= '<td class="right">'.vatrate(price2num($line->remise_percent), true).'</td>';
-				$htmlforlines .= '<td class="right">';
+				// nowraponall keeps the qty and its '(stock)' block on one line: on narrow layouts
+				// the native display otherwise wraps over three lines inside the qty column.
+				$htmlforlines .= '<td class="right nowraponall">';
 				$htmlforlines .= $line->qty;
 				if (isModEnabled('stock') && $user->hasRight('stock', 'mouvement', 'lire')) {
 					$constantforkey = 'CASHDESK_ID_WAREHOUSE'.$_SESSION["takeposterminal"];

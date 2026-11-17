@@ -284,10 +284,11 @@ class FormCompany extends Form
 	 *    @param    int|string	$country_codeid    	Country code or id: 0=list for all countries, otherwise country code or country rowid to show
 	 *    @param    string		$htmlname			Id of department. If '', we want only the string with <option>
 	 *    @param	string		$morecss			Add more css
+	 *    @param	int			$showempty			Show an empty option even when listing all countries
 	 * 	  @return	string							String with HTML select
 	 *    @see select_country()
 	 */
-	public function select_state($selected = 0, $country_codeid = 0, $htmlname = 'state_id', $morecss = 'maxwidth200onsmartphone  minwidth300')
+	public function select_state($selected = 0, $country_codeid = 0, $htmlname = 'state_id', $morecss = 'maxwidth200onsmartphone  minwidth300', $showempty = 0)
 	{
 		// phpcs:enable
 		global $conf, $langs, $user;
@@ -316,7 +317,7 @@ class FormCompany extends Form
 			if (!empty($htmlname)) {
 				$out .= '<select id="' . $htmlname . '" class="flat' . ($morecss ? ' ' . $morecss : '') . '" name="' . $htmlname . '">';
 			}
-			if ($country_codeid) {
+			if ($country_codeid || $showempty) {
 				$out .= '<option value="0">&nbsp;</option>';
 			}
 			$num = $this->db->num_rows($result);
@@ -977,6 +978,8 @@ class FormCompany extends Form
 		// phpcs:enable
 		global $hookmanager;
 
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/profid.lib.php';
+
 		$formlength = 0;
 		if (!getDolGlobalString('MAIN_DISABLEPROFIDRULES')) {
 			if ($country_code == 'FR') {
@@ -1022,13 +1025,20 @@ class FormCompany extends Form
 			$maxlength = 128;
 		}
 
+		// Such an id is most often copy/pasted from an official document, where it is presented with its
+		// separator spaces (SIREN "849 943 618"). This attribute tells lib_head.js.php to remove them from
+		// the pasted text before it is inserted, so that maxlength applies to the id itself and not to its
+		// presentation: without it the browser silently truncates the paste.
+		$dataprofid = isProfIdWithoutSpace($idprof, $country_code) ? ' data-profidnospace="1"' : '';
+		$dataprofid .= isProfIdWithoutDot($idprof, $country_code) ? ' data-profidnodot="1"' : '';	// Same for dots (SIREN "849.943.618")
+
 		$out = '';
 
 		// Execute hook getInputIdProf to complete or replace $out
 		$parameters = array('formlength' => $formlength, 'selected' => $preselected, 'idprof' => $idprof, 'htmlname' => $htmlname, 'country_code' => $country_code);
 		$reshook = $hookmanager->executeHooks('getInputIdProf', $parameters);
 		if (empty($reshook)) {
-			$out .= '<input type="text" ' . ($morecss ? 'class="' . $morecss . '" ' : '') . 'name="' . $htmlname . '" id="' . $htmlname . '" maxlength="' . $maxlength . '" value="' . $selected . '">';
+			$out .= '<input type="text" ' . ($morecss ? 'class="' . $morecss . '" ' : '') . 'name="' . $htmlname . '" id="' . $htmlname . '" maxlength="' . $maxlength . '"' . $dataprofid . ' value="' . $selected . '">';
 		}
 		$out .= $hookmanager->resPrint;
 

@@ -339,7 +339,7 @@ class pdf_sponge extends ModelePDFFactures
 				$nbpayments = count($object->getListOfPayments());
 
 				// Create pdf instance
-				$pdf = pdf_getInstance($this->format);
+				$pdf = pdf_getInstance($this->format);		// Will also define if we use format 1.7, 1.4/A-1b or 1.7/A-3b (embedded fonts)
 				$default_font_size = pdf_getPDFFontSize($outputlangs); // Must be after pdf_getInstance
 				$pdf->setAutoPageBreak(true, 0);
 
@@ -481,7 +481,8 @@ class pdf_sponge extends ModelePDFFactures
 					if ($object->fk_account > 0 || $object->fk_bank > 0 || getDolGlobalInt('FACTURE_RIB_NUMBER')) {
 						$qrcodestring = $object->buildSwitzerlandQRString();
 					}
-				} elseif (getDolGlobalString('INVOICE_ADD_EPC_QR_CODE') == '1' && (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'VIR')) {
+				} elseif (getDolGlobalString('INVOICE_ADD_EPC_QR_CODE') == '1' && (empty($object->mode_reglement_code) || $object->mode_reglement_code == 'VIR') && $object->getRemainToPay() > 0) {
+					// No EPC QR code once the invoice is fully paid: the amount to pay would be 0 (same rule as for INVOICE_ADD_EPC_QR_CODE == 'bottom')
 					if ($object->fk_account > 0 || $object->fk_bank > 0 || getDolGlobalInt('FACTURE_RIB_NUMBER')) {
 						$qrcodestring = $object->buildEPCQrCodeString();
 					}
@@ -714,6 +715,7 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf_sub_options = array();
 				$pdf_sub_options['titleshowuponpdf'] = 1;
 				$pdf_sub_options['titleshowtotalexludingvatonpdf'] = 1;
+				$pdf_sub_options_before_title = array();	// Options in use before each title line, by level
 
 				$hidenextline = 0;
 
@@ -725,6 +727,10 @@ class pdf_sponge extends ModelePDFFactures
 
 					if ($object->lines[$i]->special_code == SUBTOTALS_SPECIAL_CODE) {
 						$level = $object->lines[$i]->qty;
+						// Keep the options in use before a title line, to restore them after the subtotal line that closes its block
+						if ($level > 0 && !isset($pdf_sub_options_before_title[(int) $level])) {
+							$pdf_sub_options_before_title[(int) $level] = $pdf_sub_options;
+						}
 						if ($sub_options) {
 							$hidenextline = 0;
 							if (isset($sub_options['titleshowuponpdf'])) {
@@ -743,6 +749,15 @@ class pdf_sponge extends ModelePDFFactures
 							}
 							if (isset($pdf_sub_options['titleshowtotalexludingvatonpdf']) && abs($level) <= $pdf_sub_options['titleshowtotalexludingvatonpdf']) {
 								unset($pdf_sub_options['titleshowtotalexludingvatonpdf']);
+							}
+						}
+						// A subtotal line closes the block of the title line of same level: the next lines get back the options in use before this title line
+						if ($level < 0 && isset($pdf_sub_options_before_title[(int) abs($level)])) {
+							$pdf_sub_options = $pdf_sub_options_before_title[(int) abs($level)];
+							foreach (array_keys($pdf_sub_options_before_title) as $tmplevel) {
+								if ($tmplevel >= abs($level)) {
+									unset($pdf_sub_options_before_title[$tmplevel]);
+								}
 							}
 						}
 					}
@@ -904,7 +919,7 @@ class pdf_sponge extends ModelePDFFactures
 						}
 
 						// Total with tax line (TTC)
-						if ($this->getColumnStatus('totalincltax')) {
+						if ($this->getColumnStatus('totalincltax') && $object->lines[$i]->special_code != SUBTOTALS_SPECIAL_CODE) {
 							$total_incl_tax = pdf_getlinetotalwithtax($object, $i, $outputlangs, $hidedetails);
 							$this->printStdColumnContent($pdf, $curY, 'totalincltax', $total_incl_tax);
 						}
@@ -2341,6 +2356,7 @@ class pdf_sponge extends ModelePDFFactures
 				$pdf->SetXY($posx, $posy);
 				$pdf->SetTextColor(0, 0, 60);
 				$pdf->MultiCell($w, 3, $outputlangs->transnoentities("Project")." : ".dol_trunc($object->project->title, 50), '', 'R');
+				$posy = $pdf->getY();
 			}
 		}
 
@@ -2569,8 +2585,11 @@ class pdf_sponge extends ModelePDFFactures
 					$carac_client_name_shipping = pdfBuildThirdpartyName($object->contact, $outputlangs);
 					$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $companystatic, $object->contact, 1, 'target', $object);
 				} else {
-					$carac_client_name_shipping = pdfBuildThirdpartyName($object->thirdparty, $outputlangs);
-					$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'target', $object);
+					// When no explicit shipping address is defined, it means it is same than the billing address. It must not be shown twice.
+					//$carac_client_name_shipping = pdfBuildThirdpartyName($object->thirdparty, $outputlangs);
+					//$carac_client_shipping = pdf_build_address($outputlangs, $this->emetteur, $object->thirdparty, '', 0, 'target', $object);
+					$carac_client_name_shipping = '';
+					$carac_client_shipping = '';
 				}
 				if (!empty($carac_client_shipping)) {
 					$posy += $hautcadre;
@@ -2672,7 +2691,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank = 0; // do not use negative rank
 		$this->cols['position'] = array(
 			'rank' => $rank,
-			'width' => 10,
+			'width' => 10.0,
 			'status' => getDolGlobalInt('PDF_SPONGE_ADD_POSITION') ? true : (getDolGlobalInt('PDF_ADD_POSITION') ? true : false),
 			'title' => array(
 				'textkey' => '#', // use lang key is useful in some case with module
@@ -2683,7 +2702,7 @@ class pdf_sponge extends ModelePDFFactures
 			),
 			'content' => array(
 				'align' => 'C',
-				'padding' => array(1, 0.5, 1, 1.5), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
+				'padding' => array(1.0, 0.5, 1.0, 1.5), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
 			),
 		);
 
@@ -2701,7 +2720,7 @@ class pdf_sponge extends ModelePDFFactures
 			),
 			'content' => array(
 				'align' => 'L',
-				'padding' => array(1, 0.5, 1, 1.5), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
+				'padding' => array(1.0, 0.5, 1.0, 1.5), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
 			),
 		);
 
@@ -2709,14 +2728,14 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['photo'] = array(
 			'rank' => $rank,
-			'width' => getDolGlobalInt('MAIN_DOCUMENTS_WITH_PICTURE_WIDTH', 20), // in mm
+			'width' => (float) getDolGlobalInt('MAIN_DOCUMENTS_WITH_PICTURE_WIDTH', 20), // in mm
 			'status' => false,
 			'title' => array(
 				'textkey' => 'Photo',
 				'label' => ' '
 			),
 			'content' => array(
-				'padding' => array(0, 0, 0, 0), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
+				'padding' => array(0.0, 0.0, 0.0, 0.0), // Like css 0 => top , 1 => right, 2 => bottom, 3 => left
 			),
 			'border-left' => false, // remove left line separator
 		);
@@ -2730,7 +2749,7 @@ class pdf_sponge extends ModelePDFFactures
 		$this->cols['vat'] = array(
 			'rank' => $rank,
 			'status' => false,
-			'width' => 16, // in mm
+			'width' => 16.0, // in mm
 			'title' => array(
 				'textkey' => 'VAT'
 			),
@@ -2744,7 +2763,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['subprice'] = array(
 			'rank' => $rank,
-			'width' => 19, // in mm
+			'width' => 19.0, // in mm
 			'status' => true,
 			'title' => array(
 				'textkey' => 'PriceUHT'
@@ -2766,7 +2785,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['qty'] = array(
 			'rank' => $rank,
-			'width' => 16, // in mm
+			'width' => 16.0, // in mm
 			'status' => true,
 			'title' => array(
 				'textkey' => 'Qty'
@@ -2777,7 +2796,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['progress'] = array(
 			'rank' => $rank,
-			'width' => 19, // in mm
+			'width' => 19.0, // in mm
 			'status' => false,
 			'title' => array(
 				'textkey' => 'ProgressShort'
@@ -2792,7 +2811,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['unit'] = array(
 			'rank' => $rank,
-			'width' => 11, // in mm
+			'width' => 11.0, // in mm
 			'status' => false,
 			'title' => array(
 				'textkey' => 'Unit'
@@ -2806,7 +2825,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 10;
 		$this->cols['discount'] = array(
 			'rank' => $rank,
-			'width' => 13, // in mm
+			'width' => 13.0, // in mm
 			'status' => false,
 			'title' => array(
 				'textkey' => 'ReductionShort'
@@ -2820,7 +2839,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 1000; // add a big offset to be sure is the last col because default extrafield rank is 100
 		$this->cols['totalexcltax'] = array(
 			'rank' => $rank,
-			'width' => 26, // in mm
+			'width' => 26.0, // in mm
 			'status' => !getDolGlobalBool('PDF_INVOICE_HIDE_PRICE_EXCL_TAX') && !getDolGlobalBool('PDF_PURCHASE_INVOICE_HIDE_PRICE_EXCL_TAX'),
 			'title' => array(
 				'textkey' => 'TotalHTShort'
@@ -2831,7 +2850,7 @@ class pdf_sponge extends ModelePDFFactures
 		$rank += 1010; // add a big offset to be sure is the last col because default extrafield rank is 100
 		$this->cols['totalincltax'] = array(
 			'rank' => $rank,
-			'width' => 26, // in mm
+			'width' => 26.0, // in mm
 			'status' => getDolGlobalBool('PDF_INVOICE_SHOW_PRICE_INCL_TAX') && !getDolGlobalBool('PDF_PURCHASE_INVOICE_SHOW_PRICE_INCL_TAX'),
 			'title' => array(
 				'textkey' => 'TotalTTCShort'

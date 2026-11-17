@@ -1639,7 +1639,10 @@ class Task extends CommonObjectLine
 		if (isset($this->timespent_note)) {
 			$this->timespent_note = trim($this->timespent_note);
 		}
-		if (empty($this->timespent_datehour) || ($this->timespent_date != $this->timespent_datehour)) {
+		if (empty($this->timespent_datehour) || empty($this->timespent_withhour)) {
+			// Sync datehour from the day-level date when no start hour was provided (withhour = 0), or when
+			// datehour is empty. When a start hour was entered (withhour = 1), keep datehour untouched so the
+			// hour is not discarded (#39276). This still resynchronizes datehour when only the day changes.
 			$this->timespent_datehour = $this->timespent_date;
 		}
 
@@ -2018,7 +2021,7 @@ class Task extends CommonObjectLine
 		$sql .= " p.rowid as project_id,";
 		$sql .= " p.ref as project_ref,";
 		$sql .= " p.title as project_label,";
-		$sql .= " p.public as public";
+		$sql .= " p.public as project_public";
 		$sql .= " FROM ".MAIN_DB_PREFIX."element_time as ptt, ".MAIN_DB_PREFIX."projet_task as pt, ".MAIN_DB_PREFIX."projet as p";
 		$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe as s ON p.fk_soc = s.rowid";
 		$sql .= " WHERE ptt.fk_element = pt.rowid AND pt.fk_projet = p.rowid";
@@ -2047,7 +2050,8 @@ class Task extends CommonObjectLine
 				$newobj->fk_project			= $obj->project_id;
 				$newobj->project_ref		= $obj->project_ref;
 				$newobj->project_label = $obj->project_label;
-				$newobj->public				= $obj->project_public;
+				$newobj->project_public		= $obj->project_public;
+				$newobj->public				= $obj->project_public;		// deprecated
 
 				$newobj->fk_task			= $obj->task_id;
 				$newobj->task_ref = $obj->task_ref;
@@ -2097,16 +2101,19 @@ class Task extends CommonObjectLine
 		}
 
 		// Clean parameters
-		if (empty($this->timespent_datehour) || ($this->timespent_date != $this->timespent_datehour)) {
+		if (empty($this->timespent_datehour) || empty($this->timespent_withhour)) {
+			// Sync datehour from the day-level date when no start hour was provided (withhour = 0), or when
+			// datehour is empty. When a start hour was entered (withhour = 1), keep datehour untouched so the
+			// hour is not discarded (#39276). This still resynchronizes datehour when only the day changes.
 			$this->timespent_datehour = $this->timespent_date;
 		}
 		if (isset($this->timespent_note)) {
 			$this->timespent_note = trim($this->timespent_note);
 		}
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));
@@ -2249,9 +2256,9 @@ class Task extends CommonObjectLine
 
 		$error = 0;
 
-		if (getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
+		if (getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS')) {
 			require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
-			$restrictBefore = dol_time_plus_duree(dol_now(), - $conf->global->PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS, 'm');
+			$restrictBefore = dol_time_plus_duree(dol_now(), - getDolGlobalInt('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'), 'm');
 
 			if ($this->timespent_date < $restrictBefore) {
 				$this->error = $langs->trans('TimeRecordingRestrictedToNMonthsBack', getDolGlobalString('PROJECT_TIMESHEET_PREVENT_AFTER_MONTHS'));

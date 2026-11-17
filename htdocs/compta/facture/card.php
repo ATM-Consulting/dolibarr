@@ -390,7 +390,11 @@ if (empty($reshook)) {
 		// Delete link of credit note to invoice
 		$discount = new DiscountAbsolute($db);
 		$result = $discount->fetch(GETPOSTINT("discountid"));
-		$discount->unlink_invoice();
+		if ($result > 0 && $discount->fk_facture == $object->id) {	// The credit note must be linked to this invoice
+			$discount->unlink_invoice();
+		} else {
+			setEventMessages($langs->trans("ErrorRecordNotFound"), null, 'errors');
+		}
 	} elseif ($action == 'valid' && $usercancreate) {
 		// Validation
 		$object->fetch($id);
@@ -624,6 +628,7 @@ if (empty($reshook)) {
 		if ($result < 0) {
 			setEventMessages($object->error, $object->errors, 'errors');
 		} else {
+			$object->fetch_thirdparty();
 			// Define output language
 			if (!getDolGlobalString('MAIN_DISABLE_PDF_AUTOUPDATE')) {
 				$outputlangs = $langs;
@@ -772,7 +777,7 @@ if (empty($reshook)) {
 		}
 	} elseif ($action == 'setref_client' && $usercancreate) {
 		$object->fetch($id);
-		$object->set_ref_client(GETPOST('ref_client', 'alpha'));
+		$result = $object->set_ref_client(GETPOST('ref_client', 'alpha'));
 		if ($result < 0) {
 			setEventMessages($object->error, $object->errors, 'errors');
 		}
@@ -1261,15 +1266,18 @@ if (empty($reshook)) {
 		if ($object->status == Facture::STATUS_VALIDATED && $object->paye == 0) {
 			$paiement = new Paiement($db);
 			$result = $paiement->fetch(GETPOSTINT('paiement_id'));
-			if ($result > 0) {
+			$paymentbills = ($result > 0) ? $paiement->getBillsArray() : array();
+			if ($result > 0 && is_array($paymentbills) && in_array($object->id, $paymentbills)) {	// The payment must be linked to this invoice
 				$result = $paiement->delete($user); // If fetch ok and found
 				if ($result >= 0) {
 					header("Location: ".$_SERVER['PHP_SELF']."?id=".$id);
 					exit;
 				}
-			}
-			if ($result < 0) {
-				setEventMessages($paiement->error, $paiement->errors, 'errors');
+				if ($result < 0) {
+					setEventMessages($paiement->error, $paiement->errors, 'errors');
+				}
+			} else {
+				setEventMessages($langs->trans("ErrorRecordNotFound"), null, 'errors');
 			}
 		}
 	} elseif ($action == 'add' && $usercancreate) {
@@ -1457,7 +1465,7 @@ if (empty($reshook)) {
 								// The subtraction below assumes total_ht/situation_percent are stored cumulative on situation invoice lines
 								// (INVOICE_USE_SITUATION = 1, legacy). In progressive mode (INVOICE_USE_SITUATION = 2), each line already
 								// holds its own delta, so subtracting the previous invoice's line here would credit the wrong amount.
-								if (getDolGlobalInt('INVOICE_USE_SITUATION') != 2 && !empty($facture_source->tab_previous_situation_invoice)) {
+								if (getDolGlobalInt('INVOICE_USE_SITUATION') == 1 && !empty($facture_source->tab_previous_situation_invoice)) {
 									// search the last standard invoice in cycle and the possible credit note between this last and facture_source
 									// TODO Move this out of loop of $facture_source->lines
 									$tab_jumped_credit_notes = array();
@@ -1920,13 +1928,13 @@ if (empty($reshook)) {
 									0, // date_start
 									0, // date_end
 									0,
-									$i >= 0 ? $lines[$i]->info_bits : 0, // info_bits
+									isset($lines[$i]) ? $lines[$i]->info_bits : 0, // info_bits
 									0,
 									'HT',
 									0,
 									0, // product_type
 									1,
-									$i >= 0 ? $lines[$i]->special_code : 0,
+									isset($lines[$i]) ? $lines[$i]->special_code : 0,
 									$object->origin_type,
 									0,
 									0,
@@ -2131,7 +2139,7 @@ if (empty($reshook)) {
 											$lines[$i]->fk_unit,
 											0,
 											'',
-											0
+											1  // noupdateafterinsertline: update_price() is called once after the loop, calling it per line is quadratic
 										);
 
 										if ($result > 0) {
@@ -2423,7 +2431,7 @@ if (empty($reshook)) {
 		$remise_percent = (GETPOST('remiseforalllines') ? GETPOST('remiseforalllines') : 0);
 		$remise_percent = str_replace('*', '', $remise_percent);
 		foreach ($object->lines as $line) {
-			if ($line->special_code == SUBTOTALS_SPECIAL_CODE) {
+			if ($line->special_code == SUBTOTALS_SPECIAL_CODE || !empty($line->fk_remise_except)) {
 				continue;
 			}
 			$tvatx = $line->tva_tx;
@@ -2916,6 +2924,7 @@ if (empty($reshook)) {
 
 				if ($result > 0) {
 					$ret = $object->fetch($id); // Reload to get new records
+					$object->fetch_thirdparty();
 					// Define output language and generate document
 					if (!getDolGlobalString('MAIN_DISABLE_PDF_AUTOUPDATE')) {
 						$outputlangs = $langs;
@@ -3363,6 +3372,7 @@ if (empty($reshook)) {
 
 			if ($result >= 0) {
 				$ret = $object->fetch($id); // Reload to get new records
+				$object->fetch_thirdparty();
 				if (!getDolGlobalString('MAIN_DISABLE_PDF_AUTOUPDATE')) {
 					// Define output language
 					$outputlangs = $langs;
@@ -5115,7 +5125,7 @@ if ($action == 'create') {
 		}
 
 		if (!$error) {
-			$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?facid='.$object->id, $langs->trans('ValidateBill'), $text, 'confirm_valid', $formquestion, (($object->type != Facture::TYPE_CREDIT_NOTE && $object->total_ttc < 0) ? "no" : "yes"), 2, 260);
+			$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?facid='.$object->id, $langs->trans('ValidateBill'), $text, 'confirm_valid', $formquestion, (($object->type != Facture::TYPE_CREDIT_NOTE && $object->total_ttc < 0) ? "no" : "yes"), 2, 0);
 		}
 	}
 
@@ -5331,7 +5341,7 @@ if ($action == 'create') {
 			array('type' => 'date', 'name' => 'newdate', 'label' => $langs->trans("Date"), 'value' => dol_now())
 		);
 		// Request confirmation to clone
-		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?facid='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneInvoice', $object->ref), 'confirm_clone', $formquestion, 'yes', 1, 250);
+		$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?facid='.$object->id, $langs->trans('ToClone'), $langs->trans('ConfirmCloneInvoice', $object->ref), 'confirm_clone', $formquestion, 'yes', 1, 0);
 	}
 
 	// Subtotal line form
@@ -6898,14 +6908,14 @@ if ($action == 'create') {
 						if ($objectidnext) {
 							print '<span class="butActionRefused classfortooltip" title="'.$langs->trans("DisabledBecauseReplacedInvoice").'">'.$langs->trans('ClassifyCanceled').'</span>';
 						} else {
-							print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=canceled">'.$langs->trans('ClassifyCanceled').'</a>';
+							print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER['PHP_SELF'].'?facid='.$object->id.'&action=canceled&token='.newToken().'">'.$langs->trans('ClassifyCanceled').'</a>';
 						}
 					}
 				}
 			}
 
-			// Create next situation invoice
-			if ($usercancreate && $object->isSituationInvoice() && ($object->status == 1 || $object->status == 2)) {
+			// Create next situation invoice (a credit note of the cycle is not a situation to continue from)
+			if ($usercancreate && $object->isSituationInvoice() && $object->type == Facture::TYPE_SITUATION && ($object->status == 1 || $object->status == 2)) {
 				if ($object->is_last_in_cycle() && $object->situation_final != 1) {
 					print '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?action=create&type=5&origin=facture&originid='.$object->id.'&socid='.$object->socid.'" >'.$langs->trans('CreateNextSituationInvoice').'</a>';
 				} elseif (!$object->is_last_in_cycle()) {

@@ -357,7 +357,9 @@ class ActionsTicket extends CommonHookActions
 
 					print '<tr id="ticket_message_body_'.$ticket_message_nr.'" class="oddeven nohover">';
 					print '<td'.($show_author ? ' colspan="2"' : '').'>';
-					print $arraymsgs['message'];
+					// BACKPORT V25 START - PR #43074
+					print dolPrintHTML($arraymsgs['message']);
+					// BACKPORT V25 END - PR #43074
 
 					//attachment
 
@@ -476,7 +478,9 @@ class ActionsTicket extends CommonHookActions
 					print '</div> <!-- cd-timeline-img -->';
 
 					print '<div class="cd-timeline-content">';
-					print $arraymsgs['message'];
+					// BACKPORT V25 START - PR #43074
+					print dolPrintHTML($arraymsgs['message']);
+					// BACKPORT V25 END - PR #43074
 
 					print '<span class="cd-date">';
 					print dol_print_date($arraymsgs['datec'], 'dayhour');

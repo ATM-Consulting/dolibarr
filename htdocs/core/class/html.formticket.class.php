@@ -481,7 +481,9 @@ class FormTicket
 		$this->selectSeveritiesTickets($severity_code, 'severity_code', '', 2, 'ifone', 0, 0, 'minwidth200 maxwidth500');
 		print '</td></tr>';
 
-		if (isModEnabled('knowledgemanagement')) {
+		/** START BACKPORT PR#43002 */
+		if (isModEnabled('knowledgemanagement') && ($public || $user->hasRight('knowledgemanagement', 'knowledgerecord', 'read'))) {
+		/** END BACKPORT */
 			// KM Articles
 			print '<tr id="KWwithajax" class="hidden"><td></td></tr>';
 			print '<!-- Script to manage change of ticket group -->
@@ -580,7 +582,7 @@ class FormTicket
 		// Categories
 		if (isModEnabled('category') && !$public) {
 			// Categories
-			print '<tr><td class="wordbreak"></td><td>';
+			print '<tr><td class="wordbreak">'.$langs->trans("Categories").'</td><td>';
 			print $form->selectCategories(Categorie::TYPE_TICKET, 'categories', $object);
 			print "</td></tr>";
 		}
@@ -604,7 +606,9 @@ class FormTicket
 			}
 
 			$out = '<tr>';
-			$out .= '<td></td>';
+			$out .= '<td>';
+			$out .= $langs->trans("LinkedFiles");
+			$out .='</td>';
 			$out .= '<td>';
 			// TODO Trick to have param removedfile containing nb of image to delete. But this does not works without javascript
 			$out .= '<input type="hidden" class="removedfilehidden" name="removedfile" value="">'."\n";
@@ -675,7 +679,7 @@ class FormTicket
 				print '<tr><td class="titlefield">'.$langs->trans("ThirdParty").'</td><td>';
 				$events = array();
 				$events[] = array('method' => 'getContacts', 'url' => dol_buildpath('/core/ajax/contacts.php', 1), 'htmlname' => 'contactid', 'params' => array('add-customer-contact' => 'disabled'));
-				print img_picto('', 'company', 'class="paddingright"');
+				print img_picto('', 'company', 'class="pictofixedwidth"');
 				print $form->select_company($this->withfromsocid, 'socid', '', 1, 1, 0, $events, 0, 'minwidth200');
 				print '</td></tr>';
 				if (!empty($conf->use_javascript_ajax) && getDolGlobalString('COMPANY_USE_SEARCH_TO_SELECT')) {

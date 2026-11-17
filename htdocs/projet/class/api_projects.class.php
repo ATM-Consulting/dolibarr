@@ -237,6 +237,11 @@ class Projects extends DolibarrApi
 		if ($socids) {
 			$sql .= " AND t.fk_soc IN (" . $this->db->sanitize($socids) . ")";
 		}
+		// If user has no permission to see all projects, we force the search on projects he is allowed to see only (public projects or projects he is a contact of), like the list.php page does
+		if (!DolibarrApiAccess::$user->hasRight('projet', 'all', 'lire')) {
+			$projectsListId = $this->project->getProjectsAuthorizedForUser(DolibarrApiAccess::$user, 0, 1, 0);
+			$sql .= " AND t.rowid IN (" . $this->db->sanitize($projectsListId) . ")";
+		}
 		// Search on sale representative
 		if ($search_sale && $search_sale != '-1') {
 			if ($search_sale == -2) {
@@ -875,7 +880,13 @@ class Projects extends DolibarrApi
 			$search_sale = DolibarrApiAccess::$user->id;
 		}
 
-		$sql = "SELECT et.rowid, et.element_duration, et.element_datehour, et.fk_user, et.note as time_note, et.thm,";
+		// The hourly rate thm is sensitive payroll data, so it is returned only if the caller has permission to read salaries (same rule as for the users API)
+		$canreadsalary = ((isModEnabled('salaries') && DolibarrApiAccess::$user->hasRight('salaries', 'read')) || !isModEnabled('salaries'));
+
+		$sql = "SELECT et.rowid, et.element_duration, et.element_datehour, et.fk_user, et.note as time_note,";
+		if ($canreadsalary) {
+			$sql .= " et.thm,";
+		}
 		$sql .= " u.login as user_login, u.firstname as user_firstname, u.lastname as user_lastname,";
 		$sql .= " p.rowid as project_id, p.ref as project_ref, p.title as project_title,";
 		$sql .= " t.rowid as task_id, t.ref as task_ref, t.label as task_label,";
@@ -887,7 +898,12 @@ class Projects extends DolibarrApi
 		$sql .= " INNER JOIN ".MAIN_DB_PREFIX."user AS u ON (u.rowid = et.fk_user)";
 		$sql .= ' WHERE t.entity IN ('.getEntity('project').')';
 		if ($socids) {
-			$sql .= " AND t.fk_soc IN (".$this->db->sanitize($socids).")";
+			$sql .= " AND p.fk_soc IN (".$this->db->sanitize($socids).")";
+		}
+		// If user has no permission to see all projects, we force the search on projects he is allowed to see only (public projects or projects he is a contact of), like the list.php page does
+		if (!DolibarrApiAccess::$user->hasRight('projet', 'all', 'lire')) {
+			$projectsListId = $this->project->getProjectsAuthorizedForUser(DolibarrApiAccess::$user, 0, 1, 0);
+			$sql .= " AND p.rowid IN (".$this->db->sanitize($projectsListId).")";
 		}
 
 		// Search on sale representative
@@ -905,8 +921,32 @@ class Projects extends DolibarrApi
 
 		// Add sql filters
 		if ($sqlfilters) {
+			// List of properties we can't filter on, whatever are permissions (to avoid guess by search binary attack).
+			// This includes sensitive properties of table llx_user joined by the request
+			$forbiddenfilterfields = array(
+				'pass',
+				'pass_crypted',
+				'pass_temp',
+				'api_key',
+				'openid',
+				'national_registration_number',
+				'birth',
+				'address',
+				'personal_mobile',
+				'personal_email',
+				'note_private',
+				'iplastlogin',
+				'ippreviouslogin'
+			);
+			// Salary data of user is sensitive payroll data, so it is forbidden if the caller has no permission to read salaries (same rule as for the users API)
+			if (!$canreadsalary) {
+				$forbiddenfilterfields[] = 'salary';
+				$forbiddenfilterfields[] = 'salaryextra';
+				$forbiddenfilterfields[] = 'thm';
+				$forbiddenfilterfields[] = 'tjm';
+			}
 			$errormessage = '';
-			$sql .= forgeSQLFromUniversalSearchCriteria($sqlfilters, $errormessage);
+			$sql .= forgeSQLFromUniversalSearchCriteria($sqlfilters, $errormessage, 0, 0, 0, $forbiddenfilterfields);
 			if ($errormessage) {
 				throw new RestException(400, 'Error when validating parameter sqlfilters -> '.$errormessage);
 			}
@@ -1118,12 +1158,16 @@ class Projects extends DolibarrApi
 		// If requested, add the contact to tasks
 		if ($affect_to_tasks !== null) {
 			$this->project->getLinesArray(DolibarrApiAccess::$user);
+			$taskContactType = ($type_contact == 'PROJECTLEADER' ? 'TASKEXECUTIVE' : 'TASKCONTRIBUTOR');
 
 			foreach ($this->project->lines as $task) {
 				// If $affect_to_tasks is empty, assign to all tasks
 				// Otherwise, check if the task is in the list
 				if (empty($affect_to_tasks) || in_array($task->id, $affect_to_tasks)) {
-					$task->add_contact($fk_socpeople, $type_contact, $source, $notrigger);
+					$result = $task->add_contact($fk_socpeople, $taskContactType, $source, $notrigger);
+					if ($result < 0) {
+						throw new RestException(500, 'Error adding contact to task '.$task->id.': '.$task->error);
+					}
 				}
 			}
 		}
