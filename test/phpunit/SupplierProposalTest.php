@@ -115,6 +115,40 @@ class SupplierProposalTest extends CommonClassTest
 	}
 
 	/**
+	 * testSupplierProposalCreateWithoutModelUsesDefaultModel
+	 *
+	 * @return	void
+	 */
+	public function testSupplierProposalCreateWithoutModelUsesDefaultModel()
+	{
+		global $conf,$user,$langs,$db;
+		$conf = $this->savconf;
+		$user = $this->savuser;
+		$langs = $this->savlangs;
+		$db = $this->savdb;
+
+		$savedmodel = getDolGlobalString('SUPPLIER_PROPOSAL_ADDON_PDF');
+		$savedodtmodel = getDolGlobalString('SUPPLIER_PROPOSAL_ADDON_PDF_ODT_DEFAULT');
+		$conf->global->SUPPLIER_PROPOSAL_ADDON_PDF = 'zenith';
+		$conf->global->SUPPLIER_PROPOSAL_ADDON_PDF_ODT_DEFAULT = '';
+
+		try {
+			$localobject = new SupplierProposal($db);
+			$localobject->initAsSpecimen(array('tobuy' => 1));
+			$localobject->model_pdf = '';
+			$id = $localobject->create($user);
+		} finally {
+			$conf->global->SUPPLIER_PROPOSAL_ADDON_PDF = $savedmodel;
+			$conf->global->SUPPLIER_PROPOSAL_ADDON_PDF_ODT_DEFAULT = $savedodtmodel;
+		}
+
+		$this->assertGreaterThan(0, $id);
+		$fetched = new SupplierProposal($db);
+		$fetched->fetch($id);
+		$this->assertSame('zenith', $fetched->model_pdf);
+	}
+
+	/**
 	 * testSupplierProposalFetch
 	 *
 	 * @param	int		$id		Id of object

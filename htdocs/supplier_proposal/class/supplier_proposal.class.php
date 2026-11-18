@@ -1005,6 +1005,13 @@ class SupplierProposal extends CommonObject
 			$this->multicurrency_tx = 1;
 		}
 
+		if (empty($this->model_pdf)) {
+			$this->model_pdf = getDolGlobalString('SUPPLIER_PROPOSAL_ADDON_PDF_ODT_DEFAULT');
+			if (empty($this->model_pdf)) {
+				$this->model_pdf = getDolGlobalString('SUPPLIER_PROPOSAL_ADDON_PDF');
+			}
+		}
+
 		$this->db->begin();
 
 		// Insert into database
