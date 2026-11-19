@@ -576,9 +576,11 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testShowActionsMessagingPrintsRecipients()
 	{
+		global $langs;
+
 		$out = $this->renderTimelineWithMessage('TICKET_MSG_PRIVATE_SENTBYMAIL', 'a@x.fr, b@x.fr', 'c@x.fr');
 
-		$this->assertStringContainsString('Envoy&eacute; &agrave;', $out);
+		$this->assertStringContainsString($langs->trans('TicketMessageSentTo'), $out);
 		$this->assertStringContainsString('a@x.fr, b@x.fr', $out);
 		$this->assertStringContainsString('c@x.fr', $out);
 	}
@@ -603,9 +605,12 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testShowActionsMessagingIgnoresNonTicketEvent()
 	{
+		global $langs;
+
 		$out = $this->renderTimelineWithMessage('AC_EMAIL', 'a@x.fr');
 
-		$this->assertStringNotContainsString('Envoy&eacute; &agrave;', $out);
+		$this->assertStringContainsString('Ticket message recipients test', $out);
+		$this->assertStringNotContainsString($langs->trans('TicketMessageSentTo'), $out);
 	}
 
 	/**
@@ -615,9 +620,12 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testShowActionsMessagingHidesRecipientsFromExternalUser()
 	{
+		global $langs;
+
 		$out = $this->renderTimelineWithMessage('TICKET_MSG_PRIVATE_SENTBYMAIL', 'a@x.fr', '', 1);
 
-		$this->assertStringNotContainsString('Envoy&eacute; &agrave;', $out);
+		$this->assertStringContainsString('Ticket message recipients test', $out);
+		$this->assertStringNotContainsString($langs->trans('TicketMessageSentTo'), $out);
 	}
 
 	/**
