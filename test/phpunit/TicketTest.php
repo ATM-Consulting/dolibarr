@@ -33,6 +33,7 @@ require_once dirname(__FILE__).'/../../htdocs/user/class/usergroup.class.php';
 require_once dirname(__FILE__).'/../../htdocs/ticket/class/ticket.class.php';
 // @ATM-PATCH BEGIN backport-tests — tests of the ticket message hooks and of the recipients recorded on the message event
 // grep: git grep '@ATM-PATCH' -- htdocs/ test/
+require_once dirname(__FILE__).'/../../htdocs/core/class/html.form.class.php';
 require_once dirname(__FILE__).'/../../htdocs/core/class/hookmanager.class.php';
 require_once dirname(__FILE__).'/../../htdocs/contact/class/contact.class.php';
 require_once dirname(__FILE__).'/../../htdocs/societe/class/societe.class.php';
@@ -418,6 +419,79 @@ class TicketTest extends CommonClassTest
 	}
 
 	/**
+	 * testShowActionsMessagingWithoutHookAddsNothing
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingWithoutHookAddsNothing()
+	{
+		$fixture = $this->createMessageFixture();
+		try {
+			$this->createTimelineEvent($fixture['ticket']);
+			$withoutHook = $this->renderTimeline($fixture['ticket']);
+			$withHook = $this->renderTimeline($fixture['ticket'], $this->newTimelineHook());
+		} finally {
+			$this->deleteMessageFixture($fixture);
+		}
+
+		$this->assertStringContainsString('Ticket message hooks test', $withoutHook);
+		$this->assertStringNotContainsString('phpunit-after-message', $withoutHook);
+		$this->assertSame($withoutHook, str_replace('<span class="phpunit-after-message"></span>', '', $withHook));
+	}
+
+	/**
+	 * testShowActionsMessagingAppendsHookOutput
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingAppendsHookOutput()
+	{
+		$timelineHook = $this->newTimelineHook();
+		$fixture = $this->createMessageFixture();
+		try {
+			$this->createTimelineEvent($fixture['ticket']);
+			$out = $this->renderTimeline($fixture['ticket'], $timelineHook);
+		} finally {
+			$this->deleteMessageFixture($fixture);
+		}
+
+		$this->assertSame(1, substr_count($out, '<span class="phpunit-after-message"></span>'));
+		$this->assertSame(array('timeline-to@example.invalid'), $timelineHook->recipients);
+	}
+
+	/**
+	 * Hook object printing a marker under each timeline message.
+	 *
+	 * @return	object
+	 */
+	private function newTimelineHook()
+	{
+		return new class () {
+			/** @var string */
+			public $error = '';
+			/** @var string[] */
+			public $errors = array();
+			/** @var ?string */
+			public $resprints;
+			/** @var string[] */
+			public $recipients = array();
+
+			/**
+			 * Print a marker under the message.
+			 *
+			 * @param	array<string,mixed>	$parameters	Hook parameters
+			 * @return	int
+			 */
+			public function printActionMessagingAfterMessage($parameters)
+			{
+				$this->recipients[] = (string) $parameters['histo']['msg_to'];
+				$this->resprints = '<span class="phpunit-after-message"></span>';
+				return 0;
+			}
+		};
+	}
+
+	/**
 	 * Create a thirdparty, a ticket with one external contact and one internal user contact, both with an email.
 	 *
 	 * @return	array{thirdparty:Societe,ticket:Ticket,contact:Contact,internal:User,externalEmail:string,internalEmail:string}
@@ -535,6 +609,64 @@ class TicketTest extends CommonClassTest
 		}
 
 		return array('return' => $return, 'sent' => $sink->sent);
+	}
+
+	/**
+	 * Create a message event with recipients on a ticket.
+	 *
+	 * @param	Ticket	$ticket	Ticket
+	 * @return	int
+	 */
+	private function createTimelineEvent($ticket)
+	{
+		global $db, $user;
+
+		$event = new ActionComm($db);
+		$event->type_code = 'AC_OTH_AUTO';
+		$event->code = 'TICKET_MSG_SENTBYMAIL';
+		$event->label = 'Ticket message hooks test';
+		$event->note_private = 'Ticket message hooks test body';
+		$event->elementtype = 'ticket';
+		$event->fk_element = $ticket->id;
+		$event->socid = $ticket->fk_soc;
+		$event->datep = dol_now();
+		$event->percentage = -1;
+		$event->userownerid = $user->id;
+		$event->userassigned = array($user->id => array('id' => $user->id, 'transparency' => 0));
+		$event->email_to = 'timeline-to@example.invalid';
+		$actionId = $event->create($user, 1);
+		$this->assertGreaterThan(0, $actionId, $event->error.implode(',', $event->errors));
+
+		return $actionId;
+	}
+
+	/**
+	 * Render the timeline of a ticket with no module hook, plus $hookObject when given.
+	 *
+	 * @param	Ticket	$ticket		Ticket
+	 * @param	?object	$hookObject	Hook object
+	 * @return	string
+	 */
+	private function renderTimeline($ticket, $hookObject = null)
+	{
+		global $conf, $langs, $db, $form, $hookmanager;
+
+		$langs->load('ticket');
+		$form = new Form($db);
+		$savedHookManager = $hookmanager;
+		$savedHookParts = $conf->modules_parts['hooks'];
+		$hookmanager = new HookManager($db);
+		if ($hookObject !== null) {
+			$hookmanager->hooks['phpunit']['phpunittimeline'] = $hookObject;
+			$hookmanager->hooksSorted['phpunit']['1:phpunittimeline'] = $hookObject;
+		}
+		$conf->modules_parts['hooks'] = array();
+		try {
+			return (string) show_actions_messaging($conf, $langs, $db, $ticket, null, 1, '', 'done', array('search_agenda_label' => ''));
+		} finally {
+			$hookmanager = $savedHookManager;
+			$conf->modules_parts['hooks'] = $savedHookParts;
+		}
 	}
 
 	/**

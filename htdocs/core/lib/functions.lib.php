@@ -14453,7 +14453,10 @@ function getActionCommEcmList($object)
 function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, $noprint = 0, $actioncode = '', $donetodo = 'done', $filters = array(), $sortfield = 'a.datep,a.id', $sortorder = 'DESC')
 {
 	global $user, $conf;
-	global $form;
+	// @ATM-PATCH BEGIN backport-43191 — hook printActionMessagingAfterMessage under each event message of the timeline
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	global $form, $hookmanager;
+	// @ATM-PATCH END backport-43191
 
 	global $param, $massactionbutton;
 
@@ -14465,7 +14468,10 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 	}
 
 	$histo = array();
-	'@phan-var-force array<int,array{type:string,tododone:string,id:string,datestart:int|string,dateend:int|string,note:string,message:string,percent:string,userid:string,login:string,userfirstname:string,userlastname:string,userphoto:string,msg_from?:string,contact_id?:string,socpeopleassigned?:int[],lastname?:string,firstname?:string,fk_element?:int,elementtype?:string,acode:string,alabel?:string,libelle?:string,apicto?:string}> $histo';
+	// @ATM-PATCH BEGIN backport-43191 — hook printActionMessagingAfterMessage under each event message of the timeline
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	'@phan-var-force array<int,array{type:string,tododone:string,id:string,datestart:int|string,dateend:int|string,note:string,message:string,percent:string,userid:string,login:string,userfirstname:string,userlastname:string,userphoto:string,msg_from?:string,msg_to?:string,msg_tocc?:string,contact_id?:string,socpeopleassigned?:int[],lastname?:string,firstname?:string,fk_element?:int,elementtype?:string,acode:string,alabel?:string,libelle?:string,apicto?:string}> $histo';
+	// @ATM-PATCH END backport-43191
 
 	$numaction = 0;
 	$now = dol_now();
@@ -14494,7 +14500,10 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 		$sql .= " a.percent as percent, 'action' as type,";
 		$sql .= " a.fk_element, a.elementtype,";
 		$sql .= " a.fk_contact,";
-		$sql .= " a.email_from as msg_from,";
+		// @ATM-PATCH BEGIN backport-43191 — hook printActionMessagingAfterMessage under each event message of the timeline
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		$sql .= " a.email_from as msg_from, a.email_to as msg_to, a.email_tocc as msg_tocc,";
+		// @ATM-PATCH END backport-43191
 		$sql .= " c.code as acode, c.libelle as alabel, c.picto as apicto,";
 		$sql .= " u.rowid as user_id, u.login as user_login, u.photo as user_photo, u.firstname as user_firstname, u.lastname as user_lastname";
 		if (is_object($filterobj) && get_class($filterobj) == 'Societe') {
@@ -14722,6 +14731,11 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 						'userlastname' => $obj->user_lastname,
 						'userphoto' => $obj->user_photo,
 						'msg_from' => $obj->msg_from,
+						// @ATM-PATCH BEGIN backport-43191 — hook printActionMessagingAfterMessage under each event message of the timeline
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						'msg_to' => $obj->msg_to,
+						'msg_tocc' => $obj->msg_tocc,
+						// @ATM-PATCH END backport-43191
 
 						'contact_id' => $obj->fk_contact,
 						'socpeopleassigned' => $contactaction->socpeopleassigned,
@@ -15077,6 +15091,17 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 
 				$out .= '</div>';
 			}
+
+			// @ATM-PATCH BEGIN backport-43191 — hook printActionMessagingAfterMessage under each event message of the timeline
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			if (is_object($hookmanager)) {
+				$parameters = array('histo' => $histo[$key]);
+				$reshook = $hookmanager->executeHooks('printActionMessagingAfterMessage', $parameters, $actionstatic);
+				if ($reshook >= 0) {
+					$out .= $hookmanager->resPrint;
+				}
+			}
+			// @ATM-PATCH END backport-43191
 
 			// Timeline footer
 			$footer = '';
