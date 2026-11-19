@@ -2878,7 +2878,7 @@ class Ticket extends CommonObject
 						// @ATM-PATCH BEGIN ticket-editable-recipients — a private message is mailed to the recipients chosen in the form: internal contacts only, plus the free input
 						// grep: git grep '@ATM-PATCH' -- htdocs/
 						$privateRecipients = null;
-						if (!empty($object->private) && GETPOSTISSET('receiver_multiselect')) {
+						if (!empty($object->private) && (GETPOSTISSET('receiver_private_multiselect') || GETPOSTISSET('receiver_multiselect'))) {
 							$internalEmails = array();
 							if (is_array($internal_contacts)) {
 								foreach ($internal_contacts as $info_sendto) {
@@ -2922,27 +2922,28 @@ class Ticket extends CommonObject
 								foreach ($sendto as $recipient) {
 									$message .= '<br>'.$langs->trans('TicketNotificationRecipient').' : '.dol_escape_htmltag($recipient).'<br>';
 								}
-							} else {
-								// Build array to display recipient list
-								foreach ($internal_contacts as $key => $info_sendto) {
-									// Avoid duplicate notifications
-									if ($info_sendto['id'] == $user->id) {
-										continue;
-									}
-
-									if ($info_sendto['email'] != '') {
-										$email = $info_sendto['email'];
-										if ($email != null) {
-											$sendto[$email] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
-										}
-
-										// Contact type
-										$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], -1).' ('.strtolower((string) $info_sendto['libelle']).')';
-										$message .= (!empty($recipient) ? '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
-									}
-								}
+								// Emptied so the native loop below adds no automatic recipient.
+								$internal_contacts = array();
 							}
 							// @ATM-PATCH END ticket-editable-recipients
+							// Build array to display recipient list
+							foreach ($internal_contacts as $key => $info_sendto) {
+								// Avoid duplicate notifications
+								if ($info_sendto['id'] == $user->id) {
+									continue;
+								}
+
+								if ($info_sendto['email'] != '') {
+									$email = $info_sendto['email'];
+									if ($email != null) {
+										$sendto[$email] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
+									}
+
+									// Contact type
+									$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], -1).' ('.strtolower((string) $info_sendto['libelle']).')';
+									$message .= (!empty($recipient) ? '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+								}
+							}
 							$message .= '<br>';
 							// URL ticket
 							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
@@ -3251,7 +3252,7 @@ class Ticket extends CommonObject
 	 * Record the recipients of a ticket message on its agenda event (ActionComm::update() does not write email_*).
 	 *
 	 * @param	int						$actionCommId	Id of the message event
-	 * @param	array<string,string>	$sendTo			email => recipient label, as sent; duplicates differing only by case are recorded once
+	 * @param	array<string,string>	$sendTo			email => recipient label, as sent (only the emails are stored)
 	 * @param	string					$sendToCc		Comma separated CC list, as sent
 	 * @return	int										1 if OK, -1 if KO
 	 */
@@ -3259,26 +3260,13 @@ class Ticket extends CommonObject
 	{
 		global $conf;
 
-		$to = array();
-		foreach ($sendTo as $email => $label) {
-			$key = strtolower((string) $email);
-			if (!isset($to[$key])) {
-				$to[$key] = $label;
-			}
-		}
-
-		$cc = array();
-		foreach (explode(',', $sendToCc) as $entry) {
-			$entry = trim($entry);
-			$key = strtolower($this->getEmailOfRecipient($entry));
-			if ($key !== '' && !isset($cc[$key])) {
-				$cc[$key] = $entry;
-			}
-		}
+		$to = array_map('strval', array_keys($sendTo));
+		$cc = explode(',', $sendToCc);
 
 		$sql = "UPDATE ".MAIN_DB_PREFIX."actioncomm";
-		$sql .= " SET email_to = '".$this->db->escape(implode(', ', $to))."'";
-		$sql .= ", email_tocc = ".(count($cc) > 0 ? "'".$this->db->escape(implode(', ', $cc))."'" : "NULL");
+		$sql .= " SET email_to = '".$this->db->escape($this->joinEmailsForColumn($to))."'";
+		$ccValue = $this->joinEmailsForColumn($cc);
+		$sql .= ", email_tocc = ".($ccValue !== '' ? "'".$this->db->escape($ccValue)."'" : "NULL");
 		$sql .= " WHERE id = ".((int) $actionCommId);
 		$sql .= " AND entity = ".((int) $conf->entity);
 
@@ -3288,6 +3276,33 @@ class Ticket extends CommonObject
 		}
 
 		return 1;
+	}
+
+	/**
+	 * Join recipients as bare emails for a varchar(255) email column.
+	 *
+	 * @param	string[]	$recipients		Recipients as "email" or "Name <email>"
+	 * @return	string						"a@x.fr, b@x.fr": each address once whatever its case, only whole addresses that fit in 255 chars
+	 */
+	private function joinEmailsForColumn(array $recipients): string
+	{
+		$emails = array();
+		$length = 0;
+		foreach ($recipients as $recipient) {
+			$email = $this->getEmailOfRecipient(trim($recipient));
+			$key = strtolower($email);
+			if ($email === '' || isset($emails[$key])) {
+				continue;
+			}
+			$newLength = $length + ($length > 0 ? 2 : 0) + strlen($email);
+			if ($newLength > 255) {
+				continue;
+			}
+			$emails[$key] = $email;
+			$length = $newLength;
+		}
+
+		return implode(', ', $emails);
 	}
 	// @ATM-PATCH END ticket-mail-recipients-trace
 

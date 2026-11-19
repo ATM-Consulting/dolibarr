@@ -367,14 +367,14 @@ class TicketTest extends CommonClassTest
 		$actionId = $this->createTicketMessageEventFixture();
 
 		$ticket = new Ticket($db);
-		$result = $ticket->recordMessageRecipients($actionId, array('a@x.fr' => 'Ann <a@x.fr>'), 'c@x.fr');
+		$result = $ticket->recordMessageRecipients($actionId, array('a@x.fr' => 'Ann <a@x.fr>'), 'Carl <c@x.fr>');
 
 		$event = new ActionComm($db);
 		$event->fetch($actionId);
 		$event->delete($user, 1);
 
 		$this->assertSame(1, $result, (string) $ticket->error);
-		$this->assertSame('Ann <a@x.fr>', $event->email_to);
+		$this->assertSame('a@x.fr', $event->email_to);
 		$this->assertSame('c@x.fr', $event->email_tocc);
 	}
 
@@ -389,7 +389,6 @@ class TicketTest extends CommonClassTest
 
 		$actionId = $this->createTicketMessageEventFixture();
 
-		// Internal and external sends merged: each address must be recorded once, whatever its case.
 		$ticket = new Ticket($db);
 		$ticket->recordMessageRecipients($actionId, array('A@x.fr' => 'Ann <A@x.fr>', 'b@x.fr' => 'b@x.fr', 'a@x.fr' => 'a@x.fr'), 'c@x.fr,C@x.fr');
 
@@ -397,8 +396,40 @@ class TicketTest extends CommonClassTest
 		$event->fetch($actionId);
 		$event->delete($user, 1);
 
-		$this->assertSame('Ann <A@x.fr>, b@x.fr', $event->email_to);
+		$this->assertSame('A@x.fr, b@x.fr', $event->email_to);
 		$this->assertSame('c@x.fr', $event->email_tocc);
+	}
+
+	/**
+	 * testRecordMessageRecipientsKeepsWholeAddressesWithin255
+	 *
+	 * @return	void
+	 */
+	public function testRecordMessageRecipientsKeepsWholeAddressesWithin255()
+	{
+		global $db, $user;
+
+		$actionId = $this->createTicketMessageEventFixture();
+
+		$sendTo = array();
+		for ($i = 10; $i < 40; $i++) {
+			$sendTo['recipient'.$i.'@example.invalid'] = 'recipient'.$i.'@example.invalid';
+		}
+		$ticket = new Ticket($db);
+		$result = $ticket->recordMessageRecipients($actionId, $sendTo, implode(',', array_keys($sendTo)));
+
+		$event = new ActionComm($db);
+		$event->fetch($actionId);
+		$event->delete($user, 1);
+
+		$this->assertSame(1, $result, (string) $ticket->error);
+		foreach (array($event->email_to, $event->email_tocc) as $stored) {
+			$this->assertLessThanOrEqual(255, strlen($stored));
+			$this->assertStringStartsWith('recipient10@example.invalid, ', $stored);
+			foreach (explode(', ', $stored) as $email) {
+				$this->assertArrayHasKey($email, $sendTo);
+			}
+		}
 	}
 
 	/**
@@ -408,62 +439,76 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testNewMessagePrivateWithoutRecipientSendsNothing()
 	{
-		global $db, $user, $langs;
+		global $langs;
 
-		$langs->load('ticket');
-
-		$thirdparty = new Societe($db);
-		$thirdparty->name = 'PrivateMailTestThirdparty';
-		$thirdpartyId = $thirdparty->create($user, 1);
-		$this->assertGreaterThan(0, $thirdpartyId, $thirdparty->error.implode(',', $thirdparty->errors));
-
-		$ticket = new Ticket($db);
-		$ticket->initAsSpecimen();
-		$ticket->ref = 'TIPMR-'.uniqid();
-		$ticket->track_id = uniqid('pmr');
-		$ticket->fk_soc = $thirdpartyId;
-		$ticket->fk_user_assign = 0;
-		$ticketId = $ticket->create($user, 1);
-		$this->assertGreaterThan(0, $ticketId, $ticket->error.implode(',', $ticket->errors));
-		$ticket->fetch($ticketId);
-
-		$contact = new Contact($db);
-		$contact->lastname = 'PrivateMailTestExternal';
-		$contact->email = 'external-private-test@example.com';
-		$contactId = $contact->create($user, 1);
-		$this->assertGreaterThan(0, $contactId, $contact->error.implode(',', $contact->errors));
-		$this->assertGreaterThan(0, $ticket->add_contact($contactId, 'SUPPORTCLI', 'external', 1));
-
-		$_SESSION['dol_events'] = array();
-		$_POST = array(
-			'track_id' => $ticket->track_id,
-			'message' => 'Private note',
+		$fixture = $this->createTicketWithExternalContactFixture();
+		$result = $this->postTicketMessage($fixture['ticket'], array(
 			'private_message' => '1',
-			'send_email' => '1',
-			'receiver_multiselect' => '1',
 			'receiver_private_multiselect' => '1',
-			'sendto' => '',
-		);
-		$action = 'add_message';
-		$result = $ticket->newMessage($user, $action, 1, 0);
-		$_POST = array();
-		$events = $_SESSION['dol_events'];
+		));
+		$row = $this->fetchTicketMessageEvent($fixture['ticket']->id);
+		$this->deleteTicketFixture($fixture);
 
-		$sql = "SELECT code, email_to FROM ".MAIN_DB_PREFIX."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $ticketId);
-		$resql = $db->query($sql);
-		$row = $db->fetch_object($resql);
-		$db->free($resql);
-
-		$ticket->fetch_thirdparty();
-		$ticket->delete($user, 1);
-		$contact->delete($user, 1);
-		$thirdparty->delete($thirdpartyId, $user, 0);
-
-		$this->assertSame(1, $result);
-		$this->assertContains($langs->trans('ErrorMailRecipientIsEmptyForSendTicketMessage'), $events['warnings'] ?? array());
-		$this->assertEmpty($events['errors'] ?? array(), 'A mail send was attempted: '.json_encode($events['errors'] ?? array()));
+		$this->assertSame(1, $result['return']);
+		$this->assertContains($langs->trans('ErrorMailRecipientIsEmptyForSendTicketMessage'), $result['events']['warnings'] ?? array());
+		$this->assertSame(array(), $result['sent'], 'A mail send was attempted');
 		$this->assertSame('TICKET_MSG_PRIVATE_SENTBYMAIL', $row->code);
 		$this->assertEmpty($row->email_to);
+	}
+
+	/**
+	 * testNewMessagePrivateDropsPostedExternalAddress
+	 *
+	 * @return	void
+	 */
+	public function testNewMessagePrivateDropsPostedExternalAddress()
+	{
+		global $langs;
+
+		$fixture = $this->createTicketWithExternalContactFixture();
+		$result = $this->postTicketMessage($fixture['ticket'], array(
+			'private_message' => '1',
+			'receiver_private_multiselect' => '1',
+			'receiver_private' => array($fixture['externalEmail']),
+		));
+		$row = $this->fetchTicketMessageEvent($fixture['ticket']->id);
+		$this->deleteTicketFixture($fixture);
+
+		$this->assertContains($langs->trans('ErrorMailRecipientIsEmptyForSendTicketMessage'), $result['events']['warnings'] ?? array());
+		$this->assertSame(array(), $result['sent'], 'The external address was mailed');
+		$this->assertEmpty($row->email_to);
+	}
+
+	/**
+	 * testNewMessagePublicRecordsUnionOfInternalAndExternalSends
+	 *
+	 * @return	void
+	 */
+	public function testNewMessagePublicRecordsUnionOfInternalAndExternalSends()
+	{
+		global $db, $user;
+
+		$fixture = $this->createTicketWithExternalContactFixture();
+
+		$internal = new User($db);
+		$internal->login = 'pmrinternal'.uniqid();
+		$internal->lastname = 'PrivateMailTestInternal';
+		$internal->email = 'shared@example.invalid';
+		$internalId = $internal->create($user, 1);
+		$this->assertGreaterThan(0, $internalId, $internal->error.implode(',', $internal->errors));
+		$this->assertGreaterThan(0, $fixture['ticket']->add_contact($internalId, 'SUPPORTTEC', 'internal', 1));
+
+		$result = $this->postTicketMessage($fixture['ticket'], array(
+			'private_message' => '0',
+			'receiver_multiselect' => '1',
+			'receiver' => array($fixture['externalEmail'], 'SHARED@example.invalid'),
+		), 0);
+		$row = $this->fetchTicketMessageEvent($fixture['ticket']->id);
+		$this->deleteTicketFixture($fixture);
+		$internal->delete($user);
+
+		$this->assertCount(3, $result['sent'], json_encode($result['sent']));
+		$this->assertSame('shared@example.invalid, '.$fixture['externalEmail'], $row->email_to);
 	}
 
 	/**
@@ -489,5 +534,143 @@ class TicketTest extends CommonClassTest
 		$this->assertGreaterThan(0, $actionId, $event->error.implode(',', $event->errors));
 
 		return $actionId;
+	}
+
+	/**
+	 * Create a thirdparty, a ticket on it and an external contact of the ticket with an email.
+	 *
+	 * @return	array{thirdparty:Societe,ticket:Ticket,contact:Contact,externalEmail:string}
+	 */
+	private function createTicketWithExternalContactFixture()
+	{
+		global $db, $user;
+
+		// A thirdparty is required: local ticket triggers read $ticket->thirdparty->name.
+		$thirdparty = new Societe($db);
+		$thirdparty->name = 'PrivateMailTestThirdparty';
+		$thirdpartyId = $thirdparty->create($user, 1);
+		$this->assertGreaterThan(0, $thirdpartyId, $thirdparty->error.implode(',', $thirdparty->errors));
+
+		$ticket = new Ticket($db);
+		$ticket->initAsSpecimen();
+		$ticket->ref = 'TIPMR-'.uniqid();
+		$ticket->track_id = uniqid('pmr');
+		$ticket->fk_soc = $thirdpartyId;
+		$ticket->fk_user_assign = 0;
+		$ticketId = $ticket->create($user, 1);
+		$this->assertGreaterThan(0, $ticketId, $ticket->error.implode(',', $ticket->errors));
+		$ticket->fetch($ticketId);
+		$ticket->fetch_thirdparty();
+
+		$contact = new Contact($db);
+		$contact->lastname = 'PrivateMailTestExternal';
+		$contact->email = 'external-private-test@example.invalid';
+		$contactId = $contact->create($user, 1);
+		$this->assertGreaterThan(0, $contactId, $contact->error.implode(',', $contact->errors));
+		$this->assertGreaterThan(0, $ticket->add_contact($contactId, 'SUPPORTCLI', 'external', 1));
+
+		return array('thirdparty' => $thirdparty, 'ticket' => $ticket, 'contact' => $contact, 'externalEmail' => $contact->email);
+	}
+
+	/**
+	 * Post a back-office message by email, with a hook standing in for the mail transport.
+	 *
+	 * @param	Ticket				$ticket		Ticket
+	 * @param	array<string,mixed>	$post		POST fields added to the message ones
+	 * @param	int					$private	$private argument of newMessage()
+	 * @return	array{return:int,events:array<string,string[]>,sent:array<array{to:string,cc:string}>}
+	 */
+	private function postTicketMessage($ticket, $post, $private = 1)
+	{
+		global $conf, $user, $hookmanager;
+
+		$sink = new class () {
+			/** @var string */
+			public $error = '';
+			/** @var string[] */
+			public $errors = array();
+			/** @var array<array{to:string,cc:string}> */
+			public $sent = array();
+
+			/**
+			 * Record the mail instead of sending it.
+			 *
+			 * @param	array<string,mixed>	$parameters	Hook parameters
+			 * @param	CMailFile			$mail		Mail
+			 * @return	int
+			 */
+			public function sendMail($parameters, $mail)
+			{
+				$this->sent[] = array('to' => (string) $mail->addr_to, 'cc' => (string) $mail->addr_cc);
+				return 1;
+			}
+		};
+
+		// Only the sink may answer the 'mail' hook, so sendfile() returns true without sending anything.
+		$savedHookManager = $hookmanager;
+		$savedHookParts = $conf->modules_parts['hooks'];
+		$savedDisableMails = getDolGlobalString('MAIN_DISABLE_ALL_MAILS');
+		$savedFrom = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_FROM');
+		$hookmanager = new HookManager($ticket->db);
+		$hookmanager->hooks['mail']['phpunitmailsink'] = $sink;
+		$hookmanager->hooksSorted['mail']['1:phpunitmailsink'] = $sink;
+		$conf->modules_parts['hooks'] = array();
+		$conf->global->MAIN_DISABLE_ALL_MAILS = 0;
+		$conf->global->TICKET_NOTIFICATION_EMAIL_FROM = 'from@example.invalid';
+
+		$_SESSION['dol_events'] = array();
+		$_POST = array_merge(array(
+			'track_id' => $ticket->track_id,
+			'message' => 'Message body',
+			'send_email' => '1',
+			'sendto' => '',
+		), $post);
+		$action = 'add_message';
+		try {
+			$return = $ticket->newMessage($user, $action, $private, 0);
+		} finally {
+			$_POST = array();
+			$hookmanager = $savedHookManager;
+			$conf->modules_parts['hooks'] = $savedHookParts;
+			$conf->global->MAIN_DISABLE_ALL_MAILS = $savedDisableMails;
+			$conf->global->TICKET_NOTIFICATION_EMAIL_FROM = $savedFrom;
+		}
+
+		return array('return' => $return, 'events' => $_SESSION['dol_events'], 'sent' => $sink->sent);
+	}
+
+	/**
+	 * Read the message event of a ticket.
+	 *
+	 * @param	int		$ticketId	Ticket id
+	 * @return	object
+	 */
+	private function fetchTicketMessageEvent($ticketId)
+	{
+		global $db;
+
+		$sql = "SELECT code, email_to FROM ".MAIN_DB_PREFIX."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $ticketId);
+		$resql = $db->query($sql);
+		$row = $db->fetch_object($resql);
+		$db->free($resql);
+		$this->assertIsObject($row);
+
+		return $row;
+	}
+
+	/**
+	 * Delete the fixture of createTicketWithExternalContactFixture().
+	 *
+	 * @param	array{thirdparty:Societe,ticket:Ticket,contact:Contact,externalEmail:string}	$fixture	Fixture
+	 * @return	void
+	 */
+	private function deleteTicketFixture($fixture)
+	{
+		global $user;
+
+		$fixture['ticket']->fetch_thirdparty();
+		$fixture['ticket']->delete($user, 1);
+		$fixture['contact']->delete($user, 1);
+		$fixture['thirdparty']->delete($fixture['thirdparty']->id, $user, 0);
 	}
 }
