@@ -31,6 +31,8 @@ global $conf,$user,$langs,$db;
 require_once dirname(__FILE__).'/../../htdocs/master.inc.php';
 require_once dirname(__FILE__).'/../../htdocs/user/class/usergroup.class.php';
 require_once dirname(__FILE__).'/../../htdocs/ticket/class/ticket.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once dirname(__FILE__).'/../../htdocs/contact/class/contact.class.php';
 require_once dirname(__FILE__).'/../../htdocs/societe/class/societe.class.php';
 require_once dirname(__FILE__).'/../../htdocs/comm/action/class/actioncomm.class.php';
@@ -509,6 +511,113 @@ class TicketTest extends CommonClassTest
 
 		$this->assertCount(3, $result['sent'], json_encode($result['sent']));
 		$this->assertSame('shared@example.invalid, '.$fixture['externalEmail'], $row->email_to);
+	}
+
+	/**
+	 * Create a message event on a ticket with recipients written straight to the columns.
+	 *
+	 * @param	Ticket	$ticket	Ticket
+	 * @param	string	$code	Event code
+	 * @param	string	$to		email_to
+	 * @param	string	$cc		email_tocc
+	 * @return	int
+	 */
+	private function createTimelineMessageEvent($ticket, $code, $to, $cc = '')
+	{
+		global $db;
+
+		$actionId = $this->createTicketMessageEventFixture();
+		$sql = "UPDATE ".MAIN_DB_PREFIX."actioncomm SET code = '".$db->escape($code)."', elementtype = 'ticket', fk_element = ".((int) $ticket->id);
+		$sql .= ", email_to = '".$db->escape($to)."', email_tocc = '".$db->escape($cc)."' WHERE id = ".((int) $actionId);
+		$this->assertTrue((bool) $db->query($sql), (string) $db->lasterror());
+
+		return $actionId;
+	}
+
+	/**
+	 * Render the timeline of a ticket holding one event, then delete the fixtures.
+	 *
+	 * @param	string	$code		Event code
+	 * @param	string	$to			email_to
+	 * @param	string	$cc			email_tocc
+	 * @param	int		$viewerSocid	socid of the viewing user
+	 * @return	string
+	 */
+	private function renderTimelineWithMessage($code, $to, $cc = '', $viewerSocid = 0)
+	{
+		global $conf, $langs, $db, $user, $form;
+
+		$langs->load('ticket');
+		$form = new Form($db);
+		$fixture = $this->createTicketWithExternalContactFixture();
+		$actionId = 0;
+		$previousSocid = $user->socid;
+		try {
+			$actionId = $this->createTimelineMessageEvent($fixture['ticket'], $code, $to, $cc);
+			$user->socid = $viewerSocid;
+			$out = show_actions_messaging($conf, $langs, $db, $fixture['ticket'], null, 1, '', 'done', array('search_agenda_label' => ''));
+		} finally {
+			$user->socid = $previousSocid;
+			if ($actionId > 0) {
+				$event = new ActionComm($db);
+				$event->fetch($actionId);
+				$event->delete($user, 1);
+			}
+			$this->deleteTicketFixture($fixture);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * testShowActionsMessagingPrintsRecipients
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingPrintsRecipients()
+	{
+		$out = $this->renderTimelineWithMessage('TICKET_MSG_PRIVATE_SENTBYMAIL', 'a@x.fr, b@x.fr', 'c@x.fr');
+
+		$this->assertStringContainsString('Envoy&eacute; &agrave;', $out);
+		$this->assertStringContainsString('a@x.fr, b@x.fr', $out);
+		$this->assertStringContainsString('c@x.fr', $out);
+	}
+
+	/**
+	 * testShowActionsMessagingEscapesRecipients
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingEscapesRecipients()
+	{
+		$out = $this->renderTimelineWithMessage('TICKET_MSG', '<b>x</b>@x.fr');
+
+		$this->assertStringNotContainsString('<b>', $out);
+		$this->assertStringContainsString('x@x.fr', $out);
+	}
+
+	/**
+	 * testShowActionsMessagingIgnoresNonTicketEvent
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingIgnoresNonTicketEvent()
+	{
+		$out = $this->renderTimelineWithMessage('AC_EMAIL', 'a@x.fr');
+
+		$this->assertStringNotContainsString('Envoy&eacute; &agrave;', $out);
+	}
+
+	/**
+	 * testShowActionsMessagingHidesRecipientsFromExternalUser
+	 *
+	 * @return	void
+	 */
+	public function testShowActionsMessagingHidesRecipientsFromExternalUser()
+	{
+		$out = $this->renderTimelineWithMessage('TICKET_MSG_PRIVATE_SENTBYMAIL', 'a@x.fr', '', 1);
+
+		$this->assertStringNotContainsString('Envoy&eacute; &agrave;', $out);
 	}
 
 	/**

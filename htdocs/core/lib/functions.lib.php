@@ -14465,7 +14465,7 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 	}
 
 	$histo = array();
-	'@phan-var-force array<int,array{type:string,tododone:string,id:string,datestart:int|string,dateend:int|string,note:string,message:string,percent:string,userid:string,login:string,userfirstname:string,userlastname:string,userphoto:string,msg_from?:string,contact_id?:string,socpeopleassigned?:int[],lastname?:string,firstname?:string,fk_element?:int,elementtype?:string,acode:string,alabel?:string,libelle?:string,apicto?:string}> $histo';
+	'@phan-var-force array<int,array{type:string,tododone:string,id:string,datestart:int|string,dateend:int|string,note:string,message:string,percent:string,userid:string,login:string,userfirstname:string,userlastname:string,userphoto:string,msg_from?:string,msg_to?:string,msg_tocc?:string,contact_id?:string,socpeopleassigned?:int[],lastname?:string,firstname?:string,fk_element?:int,elementtype?:string,acode:string,alabel?:string,libelle?:string,apicto?:string}> $histo';
 
 	$numaction = 0;
 	$now = dol_now();
@@ -14495,6 +14495,10 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 		$sql .= " a.fk_element, a.elementtype,";
 		$sql .= " a.fk_contact,";
 		$sql .= " a.email_from as msg_from,";
+		// @ATM-PATCH BEGIN ticket-mail-recipients-trace — select the recipients recorded on a ticket message event
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		$sql .= " a.email_to as msg_to, a.email_tocc as msg_tocc,";
+		// @ATM-PATCH END ticket-mail-recipients-trace
 		$sql .= " c.code as acode, c.libelle as alabel, c.picto as apicto,";
 		$sql .= " u.rowid as user_id, u.login as user_login, u.photo as user_photo, u.firstname as user_firstname, u.lastname as user_lastname";
 		if (is_object($filterobj) && get_class($filterobj) == 'Societe') {
@@ -14722,6 +14726,11 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 						'userlastname' => $obj->user_lastname,
 						'userphoto' => $obj->user_photo,
 						'msg_from' => $obj->msg_from,
+						// @ATM-PATCH BEGIN ticket-mail-recipients-trace — carry the recipients to the timeline
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						'msg_to' => $obj->msg_to,
+						'msg_tocc' => $obj->msg_tocc,
+						// @ATM-PATCH END ticket-mail-recipients-trace
 
 						'contact_id' => $obj->fk_contact,
 						'socpeopleassigned' => $contactaction->socpeopleassigned,
@@ -15077,6 +15086,19 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 
 				$out .= '</div>';
 			}
+
+			// @ATM-PATCH BEGIN ticket-mail-recipients-trace — print the recipients of a ticket message to internal users only
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			if (strpos((string) $actionstatic->code, 'TICKET_MSG') === 0 && empty($user->socid) && !empty($histo[$key]['msg_to'])) {
+				$langs->loadLangs(array('ticket', 'mails'));
+				$out .= '<div class="timeline-body wordbreak small opacitymedium">';
+				$out .= $langs->trans('TicketMessageSentTo').' : '.dol_escape_htmltag($histo[$key]['msg_to']);
+				if (!empty($histo[$key]['msg_tocc'])) {
+					$out .= '<br>'.$langs->trans('MailCC').' : '.dol_escape_htmltag($histo[$key]['msg_tocc']);
+				}
+				$out .= '</div>';
+			}
+			// @ATM-PATCH END ticket-mail-recipients-trace
 
 			// Timeline footer
 			$footer = '';
