@@ -2711,7 +2711,10 @@ class Ticket extends CommonObject
 	 */
 	public function newMessage($user, &$action, $private = 1, $public_area = 0)
 	{
-		global $mysoc, $langs;
+		// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		global $mysoc, $langs, $hookmanager;
+		// @ATM-PATCH END backport-37887
 
 		$error = 0;
 
@@ -2818,6 +2821,17 @@ class Ticket extends CommonObject
 							}
 						}
 
+						// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						$parameters = array('sendto' => $sendto);
+						$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+						if (empty($reshook)) {
+							$sendto = array_merge($sendto, $hookmanager->resArray);
+						} elseif ($reshook > 0) {
+							$sendto = $hookmanager->resArray;
+						}
+						// @ATM-PATCH END backport-37887
+
 						if (!empty($sendto)) {
 							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
@@ -2923,6 +2937,17 @@ class Ticket extends CommonObject
 									$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
 								}
 							}
+
+							// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+							// grep: git grep '@ATM-PATCH' -- htdocs/
+							$parameters = array('sendto' => $sendto);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							// @ATM-PATCH END backport-37887
 
 							// don't try to send email if no recipient
 							if (!empty($sendto)) {
@@ -3046,6 +3071,17 @@ class Ticket extends CommonObject
 										$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
 									}
 								}
+
+								// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$parameters = array('sendto' => $sendto);
+								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendto = array_merge($sendto, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendto = $hookmanager->resArray;
+								}
+								// @ATM-PATCH END backport-37887
 
 								// @ATM-PATCH BEGIN ticket-editable-recipients — when the standardised send form is used (PR #38391 backport), replace auto-computed recipients with the user selection and add the CC list
 								// grep: git grep '@ATM-PATCH' -- htdocs/
