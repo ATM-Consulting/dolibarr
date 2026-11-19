@@ -1949,7 +1949,10 @@ class Ticket extends CommonObject
 			return -1 * $error;
 		} else {
 			$this->db->commit();
-			return 1;
+			// @ATM-PATCH BEGIN ticket-mail-recipients-trace — return the message event id so newMessage() can record its recipients on it
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			return $actionid;
+			// @ATM-PATCH END ticket-mail-recipients-trace
 		}
 	}
 
@@ -2867,7 +2870,27 @@ class Ticket extends CommonObject
 						$internal_contacts = $object->getInfosTicketInternalContact(1);
 
 						$sendto = array();
-						if (is_array($internal_contacts) && count($internal_contacts) > 0) {
+						// @ATM-PATCH BEGIN ticket-mail-recipients-trace — recipients actually mailed, recorded on the message event
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						$sentTo = array();
+						$sentCcList = array();
+						// @ATM-PATCH END ticket-mail-recipients-trace
+						// @ATM-PATCH BEGIN ticket-editable-recipients — a private message is mailed to the recipients chosen in the form: internal contacts only, plus the free input
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						$privateRecipients = null;
+						if (!empty($object->private) && GETPOSTISSET('receiver_multiselect')) {
+							$internalEmails = array();
+							if (is_array($internal_contacts)) {
+								foreach ($internal_contacts as $info_sendto) {
+									if (!empty($info_sendto['email'])) {
+										$internalEmails[] = strtolower($info_sendto['email']);
+									}
+								}
+							}
+							$privateRecipients = $this->getPostedMessageRecipients($internalEmails);
+						}
+						if ((is_array($internal_contacts) && count($internal_contacts) > 0) || $privateRecipients !== null) {
+							// @ATM-PATCH END ticket-editable-recipients
 							// Set default subject
 							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
@@ -2892,24 +2915,34 @@ class Ticket extends CommonObject
 							$message .= !empty($object->thirdparty->town) ? '<br>'.$langs->trans('Town')." : ".$object->thirdparty->town : '';
 							$message .= !empty($object->thirdparty->phone) ? '<br>'.$langs->trans('Phone')." : ".$object->thirdparty->phone : '';
 
-							// Build array to display recipient list
-							foreach ($internal_contacts as $key => $info_sendto) {
-								// Avoid duplicate notifications
-								if ($info_sendto['id'] == $user->id) {
-									continue;
+							// @ATM-PATCH BEGIN ticket-editable-recipients — use the chosen recipients of a private message instead of every internal contact
+							// grep: git grep '@ATM-PATCH' -- htdocs/
+							if ($privateRecipients !== null) {
+								$sendto = $privateRecipients['to'];
+								foreach ($sendto as $recipient) {
+									$message .= '<br>'.$langs->trans('TicketNotificationRecipient').' : '.dol_escape_htmltag($recipient).'<br>';
 								}
-
-								if ($info_sendto['email'] != '') {
-									$email = $info_sendto['email'];
-									if ($email != null) {
-										$sendto[$email] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
+							} else {
+								// Build array to display recipient list
+								foreach ($internal_contacts as $key => $info_sendto) {
+									// Avoid duplicate notifications
+									if ($info_sendto['id'] == $user->id) {
+										continue;
 									}
 
-									// Contact type
-									$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], -1).' ('.strtolower((string) $info_sendto['libelle']).')';
-									$message .= (!empty($recipient) ? '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+									if ($info_sendto['email'] != '') {
+										$email = $info_sendto['email'];
+										if ($email != null) {
+											$sendto[$email] = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'])." <".$info_sendto['email'].">";
+										}
+
+										// Contact type
+										$recipient = dolGetFirstLastname($info_sendto['firstname'], $info_sendto['lastname'], -1).' ('.strtolower((string) $info_sendto['libelle']).')';
+										$message .= (!empty($recipient) ? '<br>'.$langs->trans('TicketNotificationRecipient').' : '.$recipient.'<br>' : '');
+									}
 								}
 							}
+							// @ATM-PATCH END ticket-editable-recipients
 							$message .= '<br>';
 							// URL ticket
 							$url_internal_ticket = dol_buildpath('/ticket/card.php', 2).'?track_id='.$object->track_id;
@@ -2917,17 +2950,27 @@ class Ticket extends CommonObject
 							// Add html link on url
 							$message .= '<br>'.$langs->trans('TicketNotificationEmailBodyInfosTrackUrlinternal').' : <a href="'.$url_internal_ticket.'">'.$object->track_id.'</a><br>';
 
+							// @ATM-PATCH BEGIN ticket-editable-recipients — a private message goes only to its chosen recipients (no generic address), with the CC of the form
+							// grep: git grep '@ATM-PATCH' -- htdocs/
 							// Add global email address recipient
-							if (getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
+							if ($privateRecipients === null && getDolGlobalString('TICKET_NOTIFICATION_ALSO_MAIN_ADDRESS') && !array_key_exists(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO'), $sendto)) {
 								if (getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')) {
 									$sendto[getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO')] = getDolGlobalString('TICKET_NOTIFICATION_EMAIL_TO');
 								}
 							}
 
+							$sendtocc_internal = ($privateRecipients !== null ? $privateRecipients['cc'] : '');
 							// don't try to send email if no recipient
 							if (!empty($sendto)) {
-								$this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames);
+								if ($this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames, $sendtocc_internal)) {
+									$sentTo = array_merge($sentTo, $sendto);
+									$sentCcList[] = $sendtocc_internal;
+								}
+							} elseif ($privateRecipients !== null) {
+								// Must not reach sendTicketMessageByEmail(): an empty list makes it mail every contact, external ones included.
+								setEventMessages($langs->trans('ErrorMailRecipientIsEmptyForSendTicketMessage'), null, 'warnings');
 							}
+							// @ATM-PATCH END ticket-editable-recipients
 						}
 
 						/*
@@ -3051,69 +3094,9 @@ class Ticket extends CommonObject
 								// grep: git grep '@ATM-PATCH' -- htdocs/
 								$sendtocc_form = '';
 								if (GETPOSTISSET('receiver_multiselect')) {
-									$sendto = array();
-									$receiver_selected = GETPOST('receiver', 'array');
-									if (is_array($receiver_selected)) {
-										foreach ($receiver_selected as $email) {
-											$email = trim((string) $email);
-											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-												$sendto[$email] = $email;
-											}
-										}
-									}
-									// Free input: plain email or "Name <email>", comma-separated
-									$sendto_free = GETPOST('sendto', 'alphawithlgt');
-									if ($sendto_free !== '') {
-										foreach (explode(',', $sendto_free) as $entry) {
-											$entry = trim($entry);
-											if ($entry === '') {
-												continue;
-											}
-											if (preg_match('/.*<\s*([^>]+)\s*>/', $entry, $matches)) {
-												$email = trim($matches[1]);
-											} else {
-												$email = $entry;
-											}
-											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-												$sendto[$email] = $entry;
-											}
-										}
-									}
-
-									// CC list built from the form (multiselect + free input), case-insensitive dedup
-									$sendtocc_list = array();
-									$sendtocc_seen = array();
-									if (GETPOSTISSET('receivercc_multiselect')) {
-										$receivercc_selected = GETPOST('receivercc', 'array');
-										if (is_array($receivercc_selected)) {
-											foreach ($receivercc_selected as $email) {
-												$email = trim((string) $email);
-												if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($email), $sendtocc_seen)) {
-													$sendtocc_list[] = $email;
-													$sendtocc_seen[] = strtolower($email);
-												}
-											}
-										}
-									}
-									$sendtocc_free = GETPOST('sendtocc', 'alphawithlgt');
-									if ($sendtocc_free !== '') {
-										foreach (explode(',', $sendtocc_free) as $entry) {
-											$entry = trim($entry);
-											if ($entry === '') {
-												continue;
-											}
-											if (preg_match('/.*<\s*([^>]+)\s*>/', $entry, $matches)) {
-												$email = trim($matches[1]);
-											} else {
-												$email = $entry;
-											}
-											if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($email), $sendtocc_seen)) {
-												$sendtocc_list[] = $entry;
-												$sendtocc_seen[] = strtolower($email);
-											}
-										}
-									}
-									$sendtocc_form = implode(',', $sendtocc_list);
+									$postedRecipients = $this->getPostedMessageRecipients();
+									$sendto = $postedRecipients['to'];
+									$sendtocc_form = $postedRecipients['cc'];
 								}
 								// @ATM-PATCH END ticket-editable-recipients
 
@@ -3124,10 +3107,22 @@ class Ticket extends CommonObject
 										// update last_msg_sent date (for last message sent to external users)
 										$this->date_last_msg_sent = dol_now();
 										$this->update($user, 1);	// disable trigger when updating date_last_msg_sent. sendTicketMessageByEmail already create an event in actioncomm table.
+										// @ATM-PATCH BEGIN ticket-mail-recipients-trace — collect the external recipients actually mailed
+										// grep: git grep '@ATM-PATCH' -- htdocs/
+										$sentTo = array_merge($sentTo, $sendto);
+										$sentCcList[] = $sendtocc_form;
+										// @ATM-PATCH END ticket-mail-recipients-trace
 									}
 								}
 							}
 						}
+
+						// @ATM-PATCH BEGIN ticket-mail-recipients-trace — record on the message event who it was mailed to
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						if (!empty($sentTo) && $this->recordMessageRecipients($id, $sentTo, implode(',', $sentCcList)) < 0) {
+							dol_syslog(__METHOD__.' failed to record the recipients of event '.$id.': '.$this->error, LOG_ERR);
+						}
+						// @ATM-PATCH END ticket-mail-recipients-trace
 					}
 				}
 
@@ -3173,6 +3168,128 @@ class Ticket extends CommonObject
 		return make_substitutions($content, $substitutionarray);
 	}
 	/**SPECIFIQUE ATM **/
+
+	// @ATM-PATCH BEGIN ticket-editable-recipients — recipients posted by the ticket message form
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	/**
+	 * Read the TO and CC recipients posted by the ticket message form (multiselect + free input).
+	 *
+	 * @param	string[]|null	$allowedEmails	Lowercased emails accepted from the private lists (receiver_private, receivercc_private); null reads the public lists unfiltered. Free inputs are never filtered.
+	 * @return	array{to:array<string,string>,cc:string}	'to': email => recipient as typed, 'cc': comma separated list
+	 */
+	public function getPostedMessageRecipients(?array $allowedEmails = null): array
+	{
+		$toName = ($allowedEmails === null ? 'receiver' : 'receiver_private');
+		$ccName = ($allowedEmails === null ? 'receivercc' : 'receivercc_private');
+
+		$sendto = array();
+		$receiver_selected = GETPOST($toName, 'array');
+		if (is_array($receiver_selected)) {
+			foreach ($receiver_selected as $email) {
+				$email = trim((string) $email);
+				if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && ($allowedEmails === null || in_array(strtolower($email), $allowedEmails, true))) {
+					$sendto[$email] = $email;
+				}
+			}
+		}
+		foreach (explode(',', GETPOST('sendto', 'alphawithlgt')) as $entry) {
+			$entry = trim($entry);
+			$email = $this->getEmailOfRecipient($entry);
+			if ($email !== '') {
+				$sendto[$email] = $entry;
+			}
+		}
+
+		$sendtocc_list = array();
+		$sendtocc_seen = array();
+		if (GETPOSTISSET($ccName.'_multiselect')) {
+			$receivercc_selected = GETPOST($ccName, 'array');
+			if (is_array($receivercc_selected)) {
+				foreach ($receivercc_selected as $email) {
+					$email = trim((string) $email);
+					if ($email && filter_var($email, FILTER_VALIDATE_EMAIL) && !in_array(strtolower($email), $sendtocc_seen)
+						&& ($allowedEmails === null || in_array(strtolower($email), $allowedEmails, true))) {
+						$sendtocc_list[] = $email;
+						$sendtocc_seen[] = strtolower($email);
+					}
+				}
+			}
+		}
+		foreach (explode(',', GETPOST('sendtocc', 'alphawithlgt')) as $entry) {
+			$entry = trim($entry);
+			$email = $this->getEmailOfRecipient($entry);
+			if ($email !== '' && !in_array(strtolower($email), $sendtocc_seen)) {
+				$sendtocc_list[] = $entry;
+				$sendtocc_seen[] = strtolower($email);
+			}
+		}
+
+		return array('to' => $sendto, 'cc' => implode(',', $sendtocc_list));
+	}
+
+	/**
+	 * Extract the email of a recipient typed as "email" or "Name <email>".
+	 *
+	 * @param	string	$entry	Recipient as typed
+	 * @return	string			Valid email, or '' if none
+	 */
+	private function getEmailOfRecipient(string $entry): string
+	{
+		if (preg_match('/.*<\s*([^>]+)\s*>/', $entry, $matches)) {
+			$email = trim($matches[1]);
+		} else {
+			$email = $entry;
+		}
+
+		return ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) ? $email : '';
+	}
+	// @ATM-PATCH END ticket-editable-recipients
+
+	// @ATM-PATCH BEGIN ticket-mail-recipients-trace — store on the message event who it was mailed to
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	/**
+	 * Record the recipients of a ticket message on its agenda event (ActionComm::update() does not write email_*).
+	 *
+	 * @param	int						$actionCommId	Id of the message event
+	 * @param	array<string,string>	$sendTo			email => recipient label, as sent; duplicates differing only by case are recorded once
+	 * @param	string					$sendToCc		Comma separated CC list, as sent
+	 * @return	int										1 if OK, -1 if KO
+	 */
+	public function recordMessageRecipients(int $actionCommId, array $sendTo, string $sendToCc): int
+	{
+		global $conf;
+
+		$to = array();
+		foreach ($sendTo as $email => $label) {
+			$key = strtolower((string) $email);
+			if (!isset($to[$key])) {
+				$to[$key] = $label;
+			}
+		}
+
+		$cc = array();
+		foreach (explode(',', $sendToCc) as $entry) {
+			$entry = trim($entry);
+			$key = strtolower($this->getEmailOfRecipient($entry));
+			if ($key !== '' && !isset($cc[$key])) {
+				$cc[$key] = $entry;
+			}
+		}
+
+		$sql = "UPDATE ".MAIN_DB_PREFIX."actioncomm";
+		$sql .= " SET email_to = '".$this->db->escape(implode(', ', $to))."'";
+		$sql .= ", email_tocc = ".(count($cc) > 0 ? "'".$this->db->escape(implode(', ', $cc))."'" : "NULL");
+		$sql .= " WHERE id = ".((int) $actionCommId);
+		$sql .= " AND entity = ".((int) $conf->entity);
+
+		if (!$this->db->query($sql)) {
+			$this->error = $this->db->lasterror();
+			return -1;
+		}
+
+		return 1;
+	}
+	// @ATM-PATCH END ticket-mail-recipients-trace
 
 	/**
 	 * Send ticket by email to linked contacts
