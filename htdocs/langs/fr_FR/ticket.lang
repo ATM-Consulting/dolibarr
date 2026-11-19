@@ -151,6 +151,7 @@ TicketEmailHideExtrafields=Masquer les attributs supplémentaires dans les e-mai
 TicketEmailHideExtrafieldsHelp=Les e-mails envoyés à l'adresse d'administration et au client à la création d'un ticket, et à la personne assignée, ne listent plus les attributs supplémentaires. Les autres informations restent inchangées.
 # @ATM-PATCH END ticket-email-hide-extrafields
 # @ATM-PATCH BEGIN ticket-mail-recipients-trace — label of the recipients line in the ticket timeline
+# grep: git grep '@ATM-PATCH' -- htdocs/
 TicketMessageSentTo=Envoyé à
 # @ATM-PATCH END ticket-mail-recipients-trace
 TicketAssignContactToMessage=Assigner un contact externe à un message

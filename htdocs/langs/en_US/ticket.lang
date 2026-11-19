@@ -153,6 +153,7 @@ TicketEmailHideExtrafields=Hide the complementary attributes in the ticket notif
 TicketEmailHideExtrafieldsHelp=The emails sent to the admin address and to the customer on ticket creation, and to the assignee, no longer list the complementary attributes. The other fields are unchanged.
 # @ATM-PATCH END ticket-email-hide-extrafields
 # @ATM-PATCH BEGIN ticket-mail-recipients-trace — label of the recipients line in the ticket timeline
+# grep: git grep '@ATM-PATCH' -- htdocs/
 TicketMessageSentTo=Sent to
 # @ATM-PATCH END ticket-mail-recipients-trace
 TicketAssignContactToMessage=Assign an external contact to a message
