@@ -9,6 +9,7 @@ PR#40049 - Adding conf MAIN_SHOW_TECHNICAL_ID on contractline list
 PR#40041 - NB_REC_FACT_CUSTOMER_GEN_BY_CALL
 PR#39062 - Add possibility to add contact on API ticket creation
 PR#43074 - Sanitize ticket messages on the ticket public interface (T260272)
+PR#43195 - Quadratic update_price when generating a supplier invoice from a template (T250214)
 
 
 ## SPÉ KOESIO 
