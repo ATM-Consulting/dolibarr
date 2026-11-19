@@ -1949,7 +1949,10 @@ class Ticket extends CommonObject
 			return -1 * $error;
 		} else {
 			$this->db->commit();
-			return 1;
+			// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			return $actionid;
+			// @ATM-PATCH END backport-43190
 		}
 	}
 
@@ -2711,7 +2714,10 @@ class Ticket extends CommonObject
 	 */
 	public function newMessage($user, &$action, $private = 1, $public_area = 0)
 	{
-		global $mysoc, $langs;
+		// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		global $mysoc, $langs, $hookmanager;
+		// @ATM-PATCH END backport-37887
 
 		$error = 0;
 
@@ -2818,6 +2824,17 @@ class Ticket extends CommonObject
 							}
 						}
 
+						// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						$parameters = array('sendto' => $sendto);
+						$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+						if (empty($reshook)) {
+							$sendto = array_merge($sendto, $hookmanager->resArray);
+						} elseif ($reshook > 0) {
+							$sendto = $hookmanager->resArray;
+						}
+						// @ATM-PATCH END backport-37887
+
 						if (!empty($sendto)) {
 							$appli = getDolGlobalString('MAIN_APPLICATION_TITLE', $mysoc->name);
 
@@ -2863,6 +2880,13 @@ class Ticket extends CommonObject
 					 * Send emails to internal users (linked contacts) then, if private is not set, to external users (linked contacts or thirdparty email if no contact set)
 					 */
 					if ($send_email > 0) {
+						// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						$sent_to = array();
+						$sent_tocc = array();
+						$sent_subject = '';
+						// @ATM-PATCH END backport-43190
+
 						// Retrieve internal contact datas
 						$internal_contacts = $object->getInfosTicketInternalContact(1);
 
@@ -2924,9 +2948,43 @@ class Ticket extends CommonObject
 								}
 							}
 
+							// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+							// grep: git grep '@ATM-PATCH' -- htdocs/
+							$parameters = array('sendto' => $sendto);
+							$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendto = array_merge($sendto, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendto = $hookmanager->resArray;
+							}
+							// @ATM-PATCH END backport-37887
+
+							// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+							// grep: git grep '@ATM-PATCH' -- htdocs/
+							$sendtocc = array();
+							$parameters = array('sendto' => $sendto, 'sendtocc' => $sendtocc, 'mailtype' => 'internal');
+							$reshook = $hookmanager->executeHooks('updateSendtoccTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendtocc = array_merge($sendtocc, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendtocc = $hookmanager->resArray;
+							}
+							// @ATM-PATCH END backport-43189
+
 							// don't try to send email if no recipient
 							if (!empty($sendto)) {
-								$this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames);
+								// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$result = $this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames, implode(',', $sendtocc));
+								// @ATM-PATCH END backport-43189
+								// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								if ($result) {
+									$sent_to = $this->mergeEmailRecipients($sent_to, $sendto);
+									$sent_tocc = $this->mergeEmailRecipients($sent_tocc, $sendtocc);
+									$sent_subject = $subject;
+								}
+								// @ATM-PATCH END backport-43190
 							}
 						}
 
@@ -3047,6 +3105,17 @@ class Ticket extends CommonObject
 									}
 								}
 
+								// @ATM-PATCH BEGIN backport-37887 — hook updateSendtoTicketMessage to change the recipients of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$parameters = array('sendto' => $sendto);
+								$reshook = $hookmanager->executeHooks('updateSendtoTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendto = array_merge($sendto, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendto = $hookmanager->resArray;
+								}
+								// @ATM-PATCH END backport-37887
+
 								// @ATM-PATCH BEGIN ticket-editable-recipients — when the standardised send form is used (PR #38391 backport), replace auto-computed recipients with the user selection and add the CC list
 								// grep: git grep '@ATM-PATCH' -- htdocs/
 								$sendtocc_form = '';
@@ -3117,6 +3186,19 @@ class Ticket extends CommonObject
 								}
 								// @ATM-PATCH END ticket-editable-recipients
 
+								// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$sendtocc = ($sendtocc_form !== '' ? explode(',', $sendtocc_form) : array());
+								$parameters = array('sendto' => $sendto, 'sendtocc' => $sendtocc, 'mailtype' => 'external');
+								$reshook = $hookmanager->executeHooks('updateSendtoccTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendtocc = array_merge($sendtocc, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendtocc = $hookmanager->resArray;
+								}
+								$sendtocc_form = implode(',', $sendtocc);
+								// @ATM-PATCH END backport-43189
+
 								// Don't try to send email when no recipient
 								if (!empty($sendto)) {
 									$result = $this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames, $sendtocc_form);
@@ -3124,10 +3206,33 @@ class Ticket extends CommonObject
 										// update last_msg_sent date (for last message sent to external users)
 										$this->date_last_msg_sent = dol_now();
 										$this->update($user, 1);	// disable trigger when updating date_last_msg_sent. sendTicketMessageByEmail already create an event in actioncomm table.
+										// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+										// grep: git grep '@ATM-PATCH' -- htdocs/
+										$sent_to = $this->mergeEmailRecipients($sent_to, $sendto);
+										$sent_tocc = $this->mergeEmailRecipients($sent_tocc, $sendtocc);
+										$sent_subject = $subject;
+										// @ATM-PATCH END backport-43190
 									}
 								}
 							}
 						}
+
+						// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+						// grep: git grep '@ATM-PATCH' -- htdocs/
+						if (!empty($sent_to)) {
+							$sql = "UPDATE ".$this->db->prefix()."actioncomm";
+							$sql .= " SET email_subject = '".$this->db->escape($sent_subject)."',";
+							$sql .= " email_from = '".$this->db->escape(getDolGlobalString('TICKET_NOTIFICATION_EMAIL_FROM'))."',";
+							$sql .= " email_to = '".$this->db->escape(implode(',', $sent_to))."',";
+							$sql .= " email_tocc = '".$this->db->escape(implode(',', $sent_tocc))."'";
+							$sql .= " WHERE id = ".((int) $id);
+
+							$resql = $this->db->query($sql);
+							if (!$resql) {
+								dol_syslog(get_class($this)."::newMessage failed to record the recipients on event id=".((int) $id).": ".$this->db->lasterror(), LOG_ERR);
+							}
+						}
+						// @ATM-PATCH END backport-43190
 					}
 				}
 
@@ -3155,6 +3260,33 @@ class Ticket extends CommonObject
 			return -1;
 		}
 	}
+
+	// @ATM-PATCH BEGIN backport-43190 — record the recipients of the internal and external mails of a ticket message on its event
+	// grep: git grep '@ATM-PATCH' -- htdocs/
+	/**
+	 * Merge two lists of email recipients, keeping each email address once (case-insensitive)
+	 *
+	 * @param	string[]	$list	Recipients already kept, as "email" or "Name <email>"
+	 * @param	string[]	$add	Recipients to add, same format
+	 * @return	string[]			Merged list
+	 */
+	private function mergeEmailRecipients(array $list, array $add): array
+	{
+		$merged = array();
+		$seen = array();
+		foreach (array_merge(array_values($list), array_values($add)) as $recipient) {
+			$recipient = (string) $recipient;
+			$email = strtolower(trim(preg_match('/<\s*([^>]+)\s*>/', $recipient, $reg) ? $reg[1] : $recipient));
+			if ($email === '' || isset($seen[$email])) {
+				continue;
+			}
+			$seen[$email] = 1;
+			$merged[] = $recipient;
+		}
+
+		return $merged;
+	}
+	// @ATM-PATCH END backport-43190
 
 	/**SPECIFIQUE ATM **/
 	/**
