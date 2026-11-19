@@ -818,7 +818,11 @@ class FactureFournisseur extends CommonInvoice
 						$_facrec->lines[$i]->ref_supplier,
 						$_facrec->lines[$i]->special_code,
 						0,
-						0
+						0,
+						// BACKPORT V25 START - PR #43195
+						'',
+						1	// No update_price() per line: it rereads every line (quadratic), the call after the loop is enough
+						// BACKPORT V25 END - PR #43195
 					);
 					if ($result_insert < 0) {
 						$error++;
@@ -2127,6 +2131,7 @@ class FactureFournisseur extends CommonInvoice
 	}
 
 
+	// BACKPORT V25 START - PR #43195 (parameter $noupdateafterinsertline)
 	/**
 	 *	Adds an invoice line (associated with no predefined product/service)
 	 *	The parameters are already supposed to be correct and with final values when calling
@@ -2159,9 +2164,11 @@ class FactureFournisseur extends CommonInvoice
 	 *	@param      int         	$fk_parent_line         Parent line id
 	 *	@param      int         	$fk_remise_except       Id discount used
 	 *	@param      string         	$origin_type            Type of origin document (related to origin_id). Can be 'supplier_order' or 'supplier_orderdet'
+	 *	@param      int<0,1>       	$noupdateafterinsertline	1=Do not update the invoice totals after inserting the line. The caller must call update_price() once after its last line.
 	 *	@return     int             		                Return >0 if OK, <0 if KO
 	 */
-	public function addline($desc, $pu, $txtva, $txlocaltax1, $txlocaltax2, $qty, $fk_product = 0, $remise_percent = 0, $date_start = 0, $date_end = 0, $fk_code_ventilation = 0, $info_bits = 0, $price_base_type = 'HT', $type = 0, $rang = -1, $notrigger = 0, $array_options = [], $fk_unit = null, $origin_id = 0, $pu_devise = 0, $ref_supplier = '', $special_code = 0, $fk_parent_line = 0, $fk_remise_except = 0, $origin_type = '')
+	public function addline($desc, $pu, $txtva, $txlocaltax1, $txlocaltax2, $qty, $fk_product = 0, $remise_percent = 0, $date_start = 0, $date_end = 0, $fk_code_ventilation = 0, $info_bits = 0, $price_base_type = 'HT', $type = 0, $rang = -1, $notrigger = 0, $array_options = [], $fk_unit = null, $origin_id = 0, $pu_devise = 0, $ref_supplier = '', $special_code = 0, $fk_parent_line = 0, $fk_remise_except = 0, $origin_type = '', $noupdateafterinsertline = 0)
+	// BACKPORT V25 END - PR #43195
 	{
 		global $langs, $mysoc;
 
@@ -2376,7 +2383,11 @@ class FactureFournisseur extends CommonInvoice
 			$result = $supplierinvoiceline->insert($notrigger);
 			if ($result > 0) {
 				// Update denormalized fields at the order level
-				$result = $this->update_price(1, 'auto', 0, $this->thirdparty); // The addline method is designed to add line from user input so total calculation with update_price must be done using 'auto' mode.
+				// BACKPORT V25 START - PR #43195
+				if (empty($noupdateafterinsertline)) {
+					$result = $this->update_price(1, 'auto', 0, $this->thirdparty); // The addline method is designed to add line from user input so total calculation with update_price must be done using 'auto' mode.
+				}
+				// BACKPORT V25 END - PR #43195
 
 				if ($result > 0) {
 					if (!isset($this->context['createfromclone'])) {
