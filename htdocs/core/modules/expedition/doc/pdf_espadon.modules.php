@@ -727,7 +727,9 @@ class pdf_espadon extends ModelePdfExpedition
 					}
 
 					if ($this->getColumnStatus('unit_order') && $object->lines[$i]->special_code != SUBTOTALS_SPECIAL_CODE) {
-						$this->printStdColumnContent($pdf, $curY, 'unit_order', $object->lines[$i]->getLabelOfUnit('short', $outputlangs, 1));
+						// BACKPORT Dolibarr/dolibarr#43192 - remove this block once merged upstream
+						$this->printStdColumnContent($pdf, $curY, 'unit_order', pdf_getlineunit($object, $i, $outputlangs, $hidedetails));
+						// END BACKPORT Dolibarr/dolibarr#43192
 						$nexY = max($pdf->GetY(), $nexY);
 					}
 

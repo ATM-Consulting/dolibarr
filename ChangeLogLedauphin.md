@@ -2,9 +2,9 @@
 
 * 19/11/2026 *
 - FIX : unité imprimée en libellé long (« Kilogramme ») sur le PDF d'expédition espadon, trop large pour
-  la colonne : htdocs/core/modules/expedition/doc/pdf_espadon.modules.php imprime le libellé court, comme le
-  PDF de commande (getLabelOfUnit('short')). À supprimer quand l'amont fait de même (Dolibarr develop imprime
-  toujours measuringUnitString() au 19/11/2026).
+  la colonne : htdocs/core/modules/expedition/doc/pdf_espadon.modules.php imprime le libellé court via
+  pdf_getlineunit(), comme tous les autres modèles PDF. Backport de Dolibarr/dolibarr#43192 (bloc BACKPORT),
+  à supprimer une fois cette PR mergée en amont.
 
 * 13/11/2026 *
 - FIX : TK2308-5310 quantité d'un lot inférieure à 1 imprimée « 0 » sur le PDF d'expédition (et dans la
