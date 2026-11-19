@@ -1607,6 +1607,22 @@ class FormTicket
 				});';
 		}
 
+		// @ATM-PATCH BEGIN ticket-editable-recipients — a private message by email offers the internal-only recipient lists
+		// grep: git grep '@ATM-PATCH' -- htdocs/
+		print '
+			function syncRecipientRows() {
+				const isPrivate = jQuery("#private_message").is(":checked");
+				// Hidden lists must stay disabled: a posted list (or its _multiselect flag) is read as the recipients.
+				jQuery(".email_line_private").toggle(isPrivate).find("select, input").prop("disabled", !isPrivate);
+				jQuery(".email_line_public").toggle(!isPrivate).find("select, input").prop("disabled", isPrivate);
+			}
+			syncRecipientRows();
+			jQuery("#private_message, #send_msg_email").on("change", function() {
+				jQuery(".email_line").toggle(jQuery("#send_msg_email").is(":checked"));
+				syncRecipientRows();
+			});';
+		// @ATM-PATCH END ticket-editable-recipients
+
 		print '});
 		</script>';
 
@@ -1713,31 +1729,45 @@ class FormTicket
 			print ' '.$form->textwithpicto('', $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"), 1, 'help');
 			print '</td><td>';
 			$withto = array();
+			$withtoPrivate = array();
 			if ($res) {
 				$sendto_free = GETPOSTISSET('sendto') ? GETPOST('sendto', 'alphawithlgt') : '';
 				print '<input class="minwidth200" id="sendto" name="sendto" spellcheck="false" placeholder="email@domain.com" value="'.dol_escape_htmltag($sendto_free).'" />';
 
 				// Build recipient list; keys are email addresses (used directly in newMessage())
-				$contacts = $ticketstat->getInfosTicketInternalContact(1);
-				$contacts = array_merge($contacts, $ticketstat->getInfosTicketExternalContact(1));
+				$buildContactEntry = static function (array $info_sendto): array {
+					$label_text = trim($info_sendto['firstname'].' '.$info_sendto['lastname']).' <'.$info_sendto['email'].'>';
+					$label_html = dol_htmlentities(trim($info_sendto['firstname'].' '.$info_sendto['lastname']), ENT_QUOTES, 'UTF-8')
+						.' <span class="opacitymedium">('.dol_htmlentities($info_sendto['libelle'], ENT_QUOTES, 'UTF-8').')</span>';
+					return array(
+						'id'        => $info_sendto['email'],
+						'label'     => str_replace(array('<', '>'), array('(', ')'), $label_text),
+						'labelhtml' => $label_html,
+					);
+				};
+				$internalContacts = $ticketstat->getInfosTicketInternalContact(1);
+				$internalContacts = is_array($internalContacts) ? $internalContacts : array();
+				$contacts = $ticketstat->getInfosTicketExternalContact(1);
+				$contacts = array_merge($internalContacts, is_array($contacts) ? $contacts : array());
 				$seen_emails = array();
 
-				if (is_array($contacts) && count($contacts) > 0) {
-					foreach ($contacts as $info_sendto) {
-						if ($info_sendto['email'] != '') {
-							$email_lc = strtolower($info_sendto['email']);
-							if (!in_array($email_lc, $seen_emails)) {
-								$label_text = trim($info_sendto['firstname'].' '.$info_sendto['lastname']).' <'.$info_sendto['email'].'>';
-								$label_html = dol_htmlentities(trim($info_sendto['firstname'].' '.$info_sendto['lastname']), ENT_QUOTES, 'UTF-8')
-									.' <span class="opacitymedium">('.dol_htmlentities($info_sendto['libelle'], ENT_QUOTES, 'UTF-8').')</span>';
-								$withto[$info_sendto['email']] = array(
-									'id'        => $info_sendto['email'],
-									'label'     => str_replace(array('<', '>'), array('(', ')'), $label_text),
-									'labelhtml' => $label_html,
-								);
-								$seen_emails[] = $email_lc;
-							}
+				foreach ($contacts as $info_sendto) {
+					if ($info_sendto['email'] != '') {
+						$email_lc = strtolower($info_sendto['email']);
+						if (!in_array($email_lc, $seen_emails)) {
+							$withto[$info_sendto['email']] = $buildContactEntry($info_sendto);
+							$seen_emails[] = $email_lc;
 						}
+					}
+				}
+
+				// Private list: internal contacts only, never the external or generic addresses below
+				$seenPrivateEmails = array();
+				foreach ($internalContacts as $info_sendto) {
+					$email_lc = strtolower((string) $info_sendto['email']);
+					if ($email_lc !== '' && !in_array($email_lc, $seenPrivateEmails)) {
+						$withtoPrivate[$info_sendto['email']] = $buildContactEntry($info_sendto);
+						$seenPrivateEmails[] = $email_lc;
 					}
 				}
 
@@ -1775,6 +1805,7 @@ class FormTicket
 					$withtoselected = array_keys($withto);
 				}
 
+				print '<span class="email_line_public">';
 				if (!empty($withto)) {
 					print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
 					print $form->multiselectarray('receiver', $withto, $withtoselected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
@@ -1783,6 +1814,27 @@ class FormTicket
 					print '<input type="hidden" name="receiver_multiselect" value="1">';
 					print ' &nbsp;<span class="opacitymedium"><small>'.$langs->trans('WarningNoEMailsAdded').'</small></span>';
 				}
+				print '</span>';
+
+				if (GETPOSTISSET('receiver_private_multiselect')) {
+					$withtoPrivateSelected = GETPOST('receiver_private', 'array');
+				} else {
+					$withtoPrivateSelected = array();
+					foreach (array_keys($withtoPrivate) as $email) {
+						if (strtolower((string) $email) !== strtolower((string) $user->email)) {
+							$withtoPrivateSelected[] = (string) $email;
+						}
+					}
+				}
+				print '<span class="email_line_private">';
+				if (!empty($withtoPrivate)) {
+					print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
+					print $form->multiselectarray('receiver_private', $withtoPrivate, $withtoPrivateSelected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
+				} else {
+					print '<input type="hidden" name="receiver_private_multiselect" value="1">';
+					print ' &nbsp;<span class="opacitymedium"><small>'.$langs->trans('WarningNoEMailsAdded').'</small></span>';
+				}
+				print '</span>';
 			}
 			print '</td></tr>';
 
@@ -1790,16 +1842,25 @@ class FormTicket
 			print '<tr class="email_line"><td>';
 			print $form->textwithpicto($langs->trans("MailCC"), $langs->trans("YouCanUseCommaSeparatorForSeveralRecipients"), 1, 'help');
 			print '</td><td>';
-			if (GETPOSTISSET('receivercc_multiselect')) {
+			if (GETPOSTISSET('receivercc_multiselect') || GETPOSTISSET('receivercc_private_multiselect')) {
 				$sendtocc_free = GETPOST('sendtocc', 'alphawithlgt');
 			} else {
 				$sendtocc_free = getDolGlobalString('TICKET_SEND_INTERNAL_CC');
 			}
 			print '<input class="minwidth200" id="sendtocc" name="sendtocc" spellcheck="false" value="'.dol_escape_htmltag($sendtocc_free).'" />';
 			if (!empty($withto)) {
+				print '<span class="email_line_public">';
 				print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
 				$withtocc_selected = GETPOSTISSET('receivercc_multiselect') ? GETPOST('receivercc', 'array') : array();
 				print $form->multiselectarray('receivercc', $withto, $withtocc_selected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
+				print '</span>';
+			}
+			if (!empty($withtoPrivate)) {
+				print '<span class="email_line_private">';
+				print ' <span class="opacitymedium">'.$langs->trans("and").'/'.$langs->trans("or").'</span> ';
+				$withtoPrivateCcSelected = GETPOSTISSET('receivercc_private_multiselect') ? GETPOST('receivercc_private', 'array') : array();
+				print $form->multiselectarray('receivercc_private', $withtoPrivate, $withtoPrivateCcSelected, 0, 0, 'inline-block minwidth500', 0, 0, '', '', '', 1);
+				print '</span>';
 			}
 			print '</td></tr>';
 			// @ATM-PATCH END ticket-editable-recipients
