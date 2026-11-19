@@ -1,5 +1,11 @@
 # CHANGELOG 23.0 Le-Dauphin FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
+* 19/11/2026 *
+- FIX : unité imprimée en libellé long (« Kilogramme ») sur le PDF d'expédition espadon, trop large pour
+  la colonne : htdocs/core/modules/expedition/doc/pdf_espadon.modules.php imprime le libellé court via
+  pdf_getlineunit(), comme tous les autres modèles PDF. Backport de Dolibarr/dolibarr#43192 (bloc BACKPORT),
+  à supprimer une fois cette PR mergée en amont.
+
 * 13/11/2026 *
 - FIX : TK2308-5310 quantité d'un lot inférieure à 1 imprimée « 0 » sur le PDF d'expédition (et dans la
   description des lots d'une ligne de facture créée depuis une expédition) : printQty passe de %d à %s
