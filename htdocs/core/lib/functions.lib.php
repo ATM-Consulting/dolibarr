@@ -14465,7 +14465,10 @@ function show_actions_messaging($conf, $langs, $db, $filterobj, $objcon = null, 
 	}
 
 	$histo = array();
+	// @ATM-PATCH BEGIN ticket-mail-recipients-trace — msg_to / msg_tocc added to the timeline entry shape
+	// grep: git grep '@ATM-PATCH' -- htdocs/
 	'@phan-var-force array<int,array{type:string,tododone:string,id:string,datestart:int|string,dateend:int|string,note:string,message:string,percent:string,userid:string,login:string,userfirstname:string,userlastname:string,userphoto:string,msg_from?:string,msg_to?:string,msg_tocc?:string,contact_id?:string,socpeopleassigned?:int[],lastname?:string,firstname?:string,fk_element?:int,elementtype?:string,acode:string,alabel?:string,libelle?:string,apicto?:string}> $histo';
+	// @ATM-PATCH END ticket-mail-recipients-trace
 
 	$numaction = 0;
 	$now = dol_now();

@@ -31,11 +31,14 @@ global $conf,$user,$langs,$db;
 require_once dirname(__FILE__).'/../../htdocs/master.inc.php';
 require_once dirname(__FILE__).'/../../htdocs/user/class/usergroup.class.php';
 require_once dirname(__FILE__).'/../../htdocs/ticket/class/ticket.class.php';
+// @ATM-PATCH BEGIN ticket-mail-recipients-trace — tests of the private message recipients and of their trace
+// grep: git grep '@ATM-PATCH' -- htdocs/ test/
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once dirname(__FILE__).'/../../htdocs/contact/class/contact.class.php';
 require_once dirname(__FILE__).'/../../htdocs/societe/class/societe.class.php';
 require_once dirname(__FILE__).'/../../htdocs/comm/action/class/actioncomm.class.php';
+// @ATM-PATCH END ticket-mail-recipients-trace
 require_once dirname(__FILE__).'/CommonClassTest.class.php';
 
 if (empty($user->id)) {
@@ -321,6 +324,8 @@ class TicketTest extends CommonClassTest
 		return $result;
 	}
 
+	// @ATM-PATCH BEGIN ticket-mail-recipients-trace — tests of the private message recipients and of their trace
+	// grep: git grep '@ATM-PATCH' -- htdocs/ test/
 	/**
 	 * testGetPostedMessageRecipientsPrivateDropsExternal
 	 *
@@ -790,4 +795,5 @@ class TicketTest extends CommonClassTest
 		$fixture['contact']->delete($user, 1);
 		$fixture['thirdparty']->delete($fixture['thirdparty']->id, $user, 0);
 	}
+	// @ATM-PATCH END ticket-mail-recipients-trace
 }
