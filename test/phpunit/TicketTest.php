@@ -333,8 +333,34 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testNewMessagePublicRecordsUnionOfInternalAndExternalMails()
 	{
-		$fixture = $this->createMessageFixture();
+		$fixture = array();
 		try {
+			$this->createMessageFixture($fixture);
+			$result = $this->postMessage($fixture, array(
+				'private_message' => '0',
+				'receiver_multiselect' => '1',
+				'receiver' => array($fixture['externalEmail']),
+			));
+			$event = $this->fetchMessageEvent($fixture['ticket']->id);
+		} finally {
+			$this->deleteMessageFixture($fixture);
+		}
+
+		$this->assertGreaterThan(0, $result['return']);
+		$this->assertSame(array($fixture['externalEmail'], $fixture['internalEmail']), $this->emailsOf(implode(',', array_column($result['sent'], 'to'))));
+		$this->assertSame(array($fixture['externalEmail'], $fixture['internalEmail']), $this->emailsOf((string) $event->email_to));
+	}
+
+	/**
+	 * testNewMessagePublicRecordsSharedAddressOnce
+	 *
+	 * @return	void
+	 */
+	public function testNewMessagePublicRecordsSharedAddressOnce()
+	{
+		$fixture = array();
+		try {
+			$this->createMessageFixture($fixture);
 			$result = $this->postMessage($fixture, array(
 				'private_message' => '0',
 				'receiver_multiselect' => '1',
@@ -345,9 +371,71 @@ class TicketTest extends CommonClassTest
 			$this->deleteMessageFixture($fixture);
 		}
 
-		$this->assertGreaterThan(0, $result['return']);
 		$this->assertCount(3, $result['sent'], json_encode($result['sent']));
 		$this->assertSame(array($fixture['externalEmail'], $fixture['internalEmail']), $this->emailsOf((string) $event->email_to));
+	}
+
+	/**
+	 * testNewMessagePublicKeepsFormCcWithoutHook
+	 *
+	 * @return	void
+	 */
+	public function testNewMessagePublicKeepsFormCcWithoutHook()
+	{
+		$fixture = array();
+		try {
+			$this->createMessageFixture($fixture);
+			$result = $this->postMessage($fixture, $this->publicMessageWithFormCc($fixture));
+			$event = $this->fetchMessageEvent($fixture['ticket']->id);
+		} finally {
+			$this->deleteMessageFixture($fixture);
+		}
+
+		$this->assertSame(array('cc-form@example.invalid'), $this->ccOfMailsTo($result['sent'], $fixture['externalEmail']));
+		$this->assertSame('cc-form@example.invalid', $event->email_tocc);
+	}
+
+	/**
+	 * testUpdateSendtoccTicketMessageMergesExternalCc
+	 *
+	 * @return	void
+	 */
+	public function testUpdateSendtoccTicketMessageMergesExternalCc()
+	{
+		$ccHook = new class () {
+			/** @var string */
+			public $error = '';
+			/** @var string[] */
+			public $errors = array();
+			/** @var string[] */
+			public $results = array();
+
+			/**
+			 * Add one CC to the external mail.
+			 *
+			 * @param	array<string,mixed>	$parameters	Hook parameters
+			 * @return	int
+			 */
+			public function updateSendtoccTicketMessage($parameters)
+			{
+				if ($parameters['mailtype'] === 'external') {
+					$this->results = array('cc-hook@example.invalid');
+				}
+				return 0;
+			}
+		};
+
+		$fixture = array();
+		try {
+			$this->createMessageFixture($fixture);
+			$result = $this->postMessage($fixture, $this->publicMessageWithFormCc($fixture), $ccHook);
+			$event = $this->fetchMessageEvent($fixture['ticket']->id);
+		} finally {
+			$this->deleteMessageFixture($fixture);
+		}
+
+		$this->assertSame(array('cc-form@example.invalid,cc-hook@example.invalid'), $this->ccOfMailsTo($result['sent'], $fixture['externalEmail']));
+		$this->assertSame('cc-form@example.invalid,cc-hook@example.invalid', $event->email_tocc);
 	}
 
 	/**
@@ -357,8 +445,9 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testNewMessagePrivateRecordsInternalMail()
 	{
-		$fixture = $this->createMessageFixture();
+		$fixture = array();
 		try {
+			$this->createMessageFixture($fixture);
 			$result = $this->postMessage($fixture, array('private_message' => '1'));
 			$event = $this->fetchMessageEvent($fixture['ticket']->id);
 		} finally {
@@ -404,8 +493,9 @@ class TicketTest extends CommonClassTest
 			}
 		};
 
-		$fixture = $this->createMessageFixture();
+		$fixture = array();
 		try {
+			$this->createMessageFixture($fixture);
 			$result = $this->postMessage($fixture, array('private_message' => '1'), $ccHook);
 			$event = $this->fetchMessageEvent($fixture['ticket']->id);
 		} finally {
@@ -425,18 +515,17 @@ class TicketTest extends CommonClassTest
 	 */
 	public function testShowActionsMessagingWithoutHookAddsNothing()
 	{
-		$fixture = $this->createMessageFixture();
+		$fixture = array();
 		try {
+			$this->createMessageFixture($fixture);
 			$this->createTimelineEvent($fixture['ticket']);
-			$withoutHook = $this->renderTimeline($fixture['ticket']);
-			$withHook = $this->renderTimeline($fixture['ticket'], $this->newTimelineHook());
+			$out = $this->renderTimeline($fixture['ticket']);
 		} finally {
 			$this->deleteMessageFixture($fixture);
 		}
 
-		$this->assertStringContainsString('Ticket message hooks test', $withoutHook);
-		$this->assertStringNotContainsString('phpunit-after-message', $withoutHook);
-		$this->assertSame($withoutHook, str_replace('<span class="phpunit-after-message"></span>', '', $withHook));
+		// Without footer, the message body is followed by the end of the timeline item only.
+		$this->assertStringContainsString('Ticket message hooks test body</div></div>'."\n".'</li><!-- END timeline item -->', $out);
 	}
 
 	/**
@@ -447,8 +536,9 @@ class TicketTest extends CommonClassTest
 	public function testShowActionsMessagingAppendsHookOutput()
 	{
 		$timelineHook = $this->newTimelineHook();
-		$fixture = $this->createMessageFixture();
+		$fixture = array();
 		try {
+			$this->createMessageFixture($fixture);
 			$this->createTimelineEvent($fixture['ticket']);
 			$out = $this->renderTimeline($fixture['ticket'], $timelineHook);
 		} finally {
@@ -493,16 +583,19 @@ class TicketTest extends CommonClassTest
 
 	/**
 	 * Create a thirdparty, a ticket with one external contact and one internal user contact, both with an email.
+	 * Each object is put into $fixture as soon as it exists, so deleteMessageFixture() also cleans a partial fixture.
 	 *
-	 * @return	array{thirdparty:Societe,ticket:Ticket,contact:Contact,internal:User,externalEmail:string,internalEmail:string}
+	 * @param	array<string,mixed>	$fixture	Filled with thirdparty, ticket, contact, internal, externalEmail, internalEmail
+	 * @return	void
 	 */
-	private function createMessageFixture()
+	private function createMessageFixture(&$fixture)
 	{
 		global $db, $user;
 
 		$thirdparty = new Societe($db);
 		$thirdparty->name = 'TicketMessageHooksTest';
 		$this->assertGreaterThan(0, $thirdparty->create($user, 1), $thirdparty->error.implode(',', $thirdparty->errors));
+		$fixture['thirdparty'] = $thirdparty;
 
 		$ticket = new Ticket($db);
 		$ticket->initAsSpecimen();
@@ -514,24 +607,26 @@ class TicketTest extends CommonClassTest
 		$ticketId = $ticket->create($user, 1);
 		$this->assertGreaterThan(0, $ticketId, $ticket->error.implode(',', $ticket->errors));
 		$ticket->fetch($ticketId);
+		$fixture['ticket'] = $ticket;
 
 		$contact = new Contact($db);
 		$contact->lastname = 'TicketMessageHooksExternal';
 		$contact->email = 'external-msg-hooks@example.invalid';
 		$this->assertGreaterThan(0, $contact->create($user, 1), $contact->error.implode(',', $contact->errors));
+		$fixture['contact'] = $contact;
+		$fixture['externalEmail'] = $contact->email;
 
 		$internal = new User($db);
 		$internal->login = 'tmhinternal'.uniqid();
 		$internal->lastname = 'TicketMessageHooksInternal';
 		$internal->email = 'internal-msg-hooks@example.invalid';
 		$this->assertGreaterThan(0, $internal->create($user, 1), $internal->error.implode(',', $internal->errors));
+		$fixture['internal'] = $internal;
+		$fixture['internalEmail'] = $internal->email;
 
-		$fixture = array('thirdparty' => $thirdparty, 'ticket' => $ticket, 'contact' => $contact, 'internal' => $internal, 'externalEmail' => $contact->email, 'internalEmail' => $internal->email);
 		// add_contact() also returns 0 for an unknown contact type, so only > 0 proves the link.
 		$this->assertGreaterThan(0, $ticket->add_contact($contact->id, 'SUPPORTCLI', 'external', 1));
 		$this->assertGreaterThan(0, $ticket->add_contact($internal->id, 'SUPPORTTEC', 'internal', 1));
-
-		return $fixture;
 	}
 
 	/**
@@ -587,6 +682,7 @@ class TicketTest extends CommonClassTest
 		}
 		$conf->modules_parts['hooks'] = array();
 
+		$savedPost = $_POST;
 		$_POST = array_merge(array(
 			'track_id' => $ticket->track_id,
 			'message' => 'Ticket message hooks test',
@@ -596,7 +692,7 @@ class TicketTest extends CommonClassTest
 		try {
 			$return = $ticket->newMessage($user, $action, 1, 0);
 		} finally {
-			$_POST = array();
+			$_POST = $savedPost;
 			$hookmanager = $savedHookManager;
 			$conf->modules_parts['hooks'] = $savedHookParts;
 			foreach ($savedConsts as $name => $value) {
@@ -670,6 +766,42 @@ class TicketTest extends CommonClassTest
 	}
 
 	/**
+	 * POST fields of a public message to the external contact with a CC chosen in the form.
+	 *
+	 * @param	array<string,mixed>	$fixture	Fixture
+	 * @return	array<string,mixed>
+	 */
+	private function publicMessageWithFormCc($fixture)
+	{
+		return array(
+			'private_message' => '0',
+			'receiver_multiselect' => '1',
+			'receiver' => array($fixture['externalEmail']),
+			'receivercc_multiselect' => '1',
+			'sendtocc' => 'cc-form@example.invalid',
+		);
+	}
+
+	/**
+	 * CC of each mail sent to one address.
+	 *
+	 * @param	array<array{to:string,cc:string}>	$sent	Mails recorded by the sink
+	 * @param	string								$to		Recipient email
+	 * @return	string[]
+	 */
+	private function ccOfMailsTo($sent, $to)
+	{
+		$ccs = array();
+		foreach ($sent as $mail) {
+			if (strpos($mail['to'], $to) !== false) {
+				$ccs[] = $mail['cc'];
+			}
+		}
+
+		return $ccs;
+	}
+
+	/**
 	 * Read the message event of a ticket.
 	 *
 	 * @param	int		$ticketId	Ticket id
@@ -679,7 +811,7 @@ class TicketTest extends CommonClassTest
 	{
 		global $db;
 
-		$sql = "SELECT code, email_to, email_tocc FROM ".$db->prefix()."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $ticketId);
+		$sql = "SELECT code, email_to, email_tocc FROM ".$db->prefix()."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $ticketId)." AND code LIKE 'TICKET_MSG%'";
 		$resql = $db->query($sql);
 		$this->assertNotFalse($resql, (string) $db->lasterror());
 		$this->assertSame(1, $db->num_rows($resql));
@@ -707,33 +839,41 @@ class TicketTest extends CommonClassTest
 	}
 
 	/**
-	 * Delete the fixture of createMessageFixture() and the events of its ticket.
+	 * Delete what createMessageFixture() created, even partially, and the events of its ticket.
 	 *
-	 * @param	array{thirdparty:Societe,ticket:Ticket,contact:Contact,internal:User}	$fixture	Fixture
+	 * @param	array<string,mixed>	$fixture	Fixture
 	 * @return	void
 	 */
 	private function deleteMessageFixture($fixture)
 	{
 		global $db, $user;
 
-		$sql = "SELECT id FROM ".$db->prefix()."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $fixture['ticket']->id);
-		$resql = $db->query($sql);
-		$ids = array();
-		while ($resql && ($obj = $db->fetch_object($resql))) {
-			$ids[] = (int) $obj->id;
-		}
-		foreach ($ids as $id) {
-			$event = new ActionComm($db);
-			if ($event->fetch($id) > 0) {
-				$event->delete($user, 1);
+		if (isset($fixture['ticket'])) {
+			$sql = "SELECT id FROM ".$db->prefix()."actioncomm WHERE elementtype = 'ticket' AND fk_element = ".((int) $fixture['ticket']->id);
+			$resql = $db->query($sql);
+			$ids = array();
+			while ($resql && ($obj = $db->fetch_object($resql))) {
+				$ids[] = (int) $obj->id;
 			}
+			foreach ($ids as $id) {
+				$event = new ActionComm($db);
+				if ($event->fetch($id) > 0) {
+					$event->delete($user, 1);
+				}
+			}
+			// Linked-object triggers of local modules read $ticket->thirdparty.
+			$fixture['ticket']->fetch_thirdparty();
+			$fixture['ticket']->delete($user, 1);
 		}
-		// Linked-object triggers of local modules read $ticket->thirdparty.
-		$fixture['ticket']->fetch_thirdparty();
-		$fixture['ticket']->delete($user, 1);
-		$fixture['contact']->delete($user, 1);
-		$fixture['internal']->delete($user);
-		$fixture['thirdparty']->delete($fixture['thirdparty']->id, $user, 0);
+		if (isset($fixture['contact'])) {
+			$fixture['contact']->delete($user, 1);
+		}
+		if (isset($fixture['internal'])) {
+			$fixture['internal']->delete($user);
+		}
+		if (isset($fixture['thirdparty'])) {
+			$fixture['thirdparty']->delete($fixture['thirdparty']->id, $user, 0);
+		}
 	}
 	// @ATM-PATCH END backport-tests
 }
