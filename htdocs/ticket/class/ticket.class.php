@@ -2949,9 +2949,24 @@ class Ticket extends CommonObject
 							}
 							// @ATM-PATCH END backport-37887
 
+							// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+							// grep: git grep '@ATM-PATCH' -- htdocs/
+							$sendtocc = array();
+							$parameters = array('sendto' => $sendto, 'sendtocc' => $sendtocc, 'mailtype' => 'internal');
+							$reshook = $hookmanager->executeHooks('updateSendtoccTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+							if (empty($reshook)) {
+								$sendtocc = array_merge($sendtocc, $hookmanager->resArray);
+							} elseif ($reshook > 0) {
+								$sendtocc = $hookmanager->resArray;
+							}
+							// @ATM-PATCH END backport-43189
+
 							// don't try to send email if no recipient
 							if (!empty($sendto)) {
-								$this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames);
+								// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$this->sendTicketMessageByEmail($subject, $message, 0, $sendto, $listofpaths, $listofmimes, $listofnames, implode(',', $sendtocc));
+								// @ATM-PATCH END backport-43189
 							}
 						}
 
@@ -3152,6 +3167,19 @@ class Ticket extends CommonObject
 									$sendtocc_form = implode(',', $sendtocc_list);
 								}
 								// @ATM-PATCH END ticket-editable-recipients
+
+								// @ATM-PATCH BEGIN backport-43189 — hook updateSendtoccTicketMessage to change the CC of a ticket message
+								// grep: git grep '@ATM-PATCH' -- htdocs/
+								$sendtocc = ($sendtocc_form !== '' ? explode(',', $sendtocc_form) : array());
+								$parameters = array('sendto' => $sendto, 'sendtocc' => $sendtocc, 'mailtype' => 'external');
+								$reshook = $hookmanager->executeHooks('updateSendtoccTicketMessage', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+								if (empty($reshook)) {
+									$sendtocc = array_merge($sendtocc, $hookmanager->resArray);
+								} elseif ($reshook > 0) {
+									$sendtocc = $hookmanager->resArray;
+								}
+								$sendtocc_form = implode(',', $sendtocc);
+								// @ATM-PATCH END backport-43189
 
 								// Don't try to send email when no recipient
 								if (!empty($sendto)) {

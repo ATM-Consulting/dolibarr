@@ -1712,6 +1712,11 @@ class FormTicket
 			$parameters = array();
 			$action = '';
 			$reshook = $hookmanager->executeHooks('printFieldTicketEmailTo', $parameters, $this, $action);
+			// @ATM-PATCH BEGIN backport-43189 — printFieldTicketEmailTo output also printed when the hook adds rows (return 0)
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			// Saved now: hooks run while building the core rows (fetch_thirdparty) reset resPrint.
+			$hookprint = $hookmanager->resPrint;
+			// @ATM-PATCH END backport-43189
 			if (empty($reshook)) {
 				// @ATM-PATCH END backport-37580
 				// @ATM-PATCH BEGIN ticket-editable-recipients — editable TO/CC recipient fields, backport of Dolibarr core PR #38391 (adapted to 21.0)
@@ -1812,10 +1817,12 @@ class FormTicket
 				// @ATM-PATCH END ticket-editable-recipients
 				// @ATM-PATCH BEGIN backport-37580 — hook printFieldTicketEmailTo to replace the recipient rows
 				// grep: git grep '@ATM-PATCH' -- htdocs/
-			} else {
-				print $hookmanager->resPrint;
 			}
 			// @ATM-PATCH END backport-37580
+			// @ATM-PATCH BEGIN backport-43189 — printFieldTicketEmailTo output also printed when the hook adds rows (return 0)
+			// grep: git grep '@ATM-PATCH' -- htdocs/
+			print $hookprint;
+			// @ATM-PATCH END backport-43189
 		}
 
 		$uselocalbrowser = false;
