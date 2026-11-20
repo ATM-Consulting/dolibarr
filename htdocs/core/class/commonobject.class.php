@@ -4149,7 +4149,7 @@ abstract class CommonObject
 						if ((float) $tmpcal[0] == (float) $obj->total_ht) {
 							// In rare cases, we can have the unit price that was not saved as original (like when adding a line from a discount of down payment). In this case, recalculation from unit price
 							// will give different results than the one stored in database (the good one are the one in database and we must not fix anything).
-							if ($obj->description != '(DEPOSIT)' && !getDolGlobalInt('MAIN_DISABLE_AUTOFIX_CORRUPTED_LINES_WHEN_TOTAL_DOES_NOT_MATCH_RECALCULATION_FROM_UP')) {
+							if (strpos((string) $obj->description, '(DEPOSIT)') !== 0 && !getDolGlobalInt('MAIN_DISABLE_AUTOFIX_CORRUPTED_LINES_WHEN_TOTAL_DOES_NOT_MATCH_RECALCULATION_FROM_UP')) {
 								// After calculation from HT, totals sum of all part is consistent ($diff_on_current_total) + total_ht is same + we are not on a line with a bad unit amount + we have found a difference between VAT part calculated from unit price and the VAT part into database,
 								// and we ask to force the use of rounding on line (like what we did on initial calculation) so this should not happen, so we force the update of line to fix this.
 								// This part of code must be called only to fix corrupted data due to the use of the old feature to round total instead of rounding lines.
