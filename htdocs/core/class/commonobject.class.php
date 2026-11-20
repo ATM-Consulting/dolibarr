@@ -7198,7 +7198,9 @@ abstract class CommonObject
 					$InfoFieldList = explode(":", $param_list[0]);
 					dol_include_once($InfoFieldList[1]);
 					if ($InfoFieldList[0] && class_exists($InfoFieldList[0])) {
-						if ($value == '-1') {	// -1 is key for no defined in combo list of objects
+						// BACKPORT V25 START - PR #43233 (was: if ($value == '-1'))
+						if (ExtraFields::isEmptyValue($value, 'link')) {	// -1 from a combo list, 0 from an autocomplete hidden input
+						// BACKPORT V25 END - PR #43233
 							$new_array_options[$key] = '';
 						} elseif ($value) {
 							$object = new $InfoFieldList[0]($this->db);
@@ -7551,7 +7553,9 @@ abstract class CommonObject
 			// Similar code than into insertExtraFields
 			if ($attributeRequired) {	// If attribute is "Mandatory", then it is also in database as "Not null", so we must check even if attribute is not 'enabled'.
 				$mandatorypb = false;
-				if ($attributeType == 'link' && $this->array_options["options_".$key] == '-1') {
+				// BACKPORT V25 START - PR #43233 (was: == '-1')
+				if ($attributeType == 'link' && ExtraFields::isEmptyValue($this->array_options["options_".$key], 'link')) {
+				// BACKPORT V25 END - PR #43233
 					$mandatorypb = true;
 				}
 				if ($this->array_options["options_".$key] === '') {
@@ -7699,7 +7703,9 @@ abstract class CommonObject
 					}
 					break;
 				case 'link':
-					if ($this->array_options["options_".$key] === '') {
+					// BACKPORT V25 START - PR #43233 (was: === '')
+					if (ExtraFields::isEmptyValue($this->array_options["options_".$key], 'link')) {
+					// BACKPORT V25 END - PR #43233
 						$new_array_options["options_".$key] = null;
 
 						$this->array_options["options_".$key] = $new_array_options["options_".$key];

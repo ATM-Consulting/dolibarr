@@ -3301,9 +3301,11 @@ class ExtraFields
 		if (is_array($v) || $type == 'select') {
 			return empty($v);
 		}
+		// BACKPORT V25 START - PR #43233
 		if ($type == 'link') {
-			return ($v == '-1');
+			return in_array((string) $v, array('-1', '0'), true);
 		}
+		// BACKPORT V25 END - PR #43233
 		if ($type == 'sellist') {
 			return ($v == '0');
 		}
