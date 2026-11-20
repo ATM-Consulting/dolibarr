@@ -195,6 +195,9 @@ if (empty($reshook)) {
 	// Set accountancy code
 	if ($action == 'setcustomeraccountancycode' && $permissiontoadd) {
 		$result = $object->fetch($id);
+		// BACKPORT V25 START - PR #43100
+		$object->oldcopy = dol_clone($object, 2);  // @phan-suppress-current-line PhanTypeMismatchProperty
+		// BACKPORT V25 END - PR #43100
 		$object->code_compta_client = GETPOST("customeraccountancycode");
 		$object->code_compta = $object->code_compta_client; // For Backward compatibility
 		$result = $object->update($object->id, $user, 1, 1, 0);
