@@ -1,0 +1,1 @@
+DA029175 - Client-specific: a purchase order created from a proposal now uses the cost price of each proposal line as its unit price, when the line has one.
