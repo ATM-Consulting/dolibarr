@@ -1417,6 +1417,11 @@ if (empty($reshook)) {
 										$lines[$i]->subprice = $productsupplier->fourn_unitprice;
 										$lines[$i]->remise_percent = $productsupplier->fourn_remise_percent;
 									}
+									// The quote cost price is already net of any supplier discount.
+									if ($subelement === 'propal' && (float) $lines[$i]->pa_ht > 0) {
+										$lines[$i]->subprice = $lines[$i]->pa_ht;
+										$lines[$i]->remise_percent = 0;
+									}
 								} else {
 									$ref_supplier = $lines[$i]->ref_fourn;
 									$product_fourn_price_id = 0;
