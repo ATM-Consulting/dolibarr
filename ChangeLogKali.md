@@ -11,6 +11,7 @@ PR#39062 - Add possibility to add contact on API ticket creation
 PR#41643 - Shipment and reception cards show one line per lot/serial with a show/hide toggle, like the product stock tab (T260251)
 PR#43074 - Sanitize ticket messages on the ticket public interface (T260272)
 PR#43233 - A link extrafield left empty was stored as 0 instead of NULL (T250214)
+PR#43290 - A chkbxlst extrafield filtered on $ID$ broke the search input of list views (T250214)
 
 
 ## SPÉ KOESIO 
