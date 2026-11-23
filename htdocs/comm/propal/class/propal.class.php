@@ -1567,6 +1567,14 @@ class Propal extends CommonObject
 								$line->subprice = $pu_ht;
 								$line->tva_tx = $tva_tx;
 								$line->remise_percent = $remise_percent;
+								// ForceBuyingPriceIfNull would return the selling price, not a known buy price
+								if (!getDolGlobalInt('ForceBuyingPriceIfNull')) {
+									$buyPrice = $this->defineBuyPrice((float) $pu_ht, (float) $remise_percent, $prod->id);
+									if ($buyPrice > 0) {
+										$line->pa_ht = $buyPrice;
+										$line->fk_fournprice = 0;
+									}
+								}
 							}
 							if ($update_desc === true) {
 								$line->desc = $prod->description;
