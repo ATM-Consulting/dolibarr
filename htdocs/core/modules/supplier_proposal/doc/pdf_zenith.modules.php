@@ -784,9 +784,6 @@ class pdf_zenith extends ModelePDFSupplierProposal
 				// Affiche zone infos
 				$posy = $this->_tableau_info($pdf, $object, $bottomlasttab, $outputlangs);
 
-				// Affiche zone totaux
-				$posy = $this->_tableau_tot($pdf, $object, $deja_regle, $bottomlasttab, $outputlangs);
-
 				// Affiche zone versements
 				if ($deja_regle || $amount_credit_notes_included || $amount_deposits_included) {
 					$posy = $this->_tableau_versements($pdf, $object, $posy, $outputlangs);
