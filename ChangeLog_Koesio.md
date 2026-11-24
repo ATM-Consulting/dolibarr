@@ -1,3 +1,4 @@
+- BACKPORT 25 - T260270 - (PR #43346) New option TICKET_DISABLE_MAIL_ASSIGNED: the native assignment email to the assigned user is no longer sent, to avoid a duplicate with the clinetworksticketing notification - **2026-11-24**
 - BACKPORT 25 - T260272 - (PR #43074) Ticket messages sanitized on the ticket public interface: scripts and on* attributes no longer run - **2026-11-16**
 - BACKPORT 20 - T260272 - (PR #29931) Ticket messages sanitized on the messaging timeline (ticket card): scripts and on* attributes no longer run - **2026-11-16**
 - BACKPORT develop - T260197 - (PR #39963) insertExtraFields() silently stored null for an unresolvable link extrafield, making the recurring billing cron re-invoice already invoiced periods - **2026-09-01**
