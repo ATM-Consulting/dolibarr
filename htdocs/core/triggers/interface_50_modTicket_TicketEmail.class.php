@@ -75,7 +75,7 @@ class InterfaceTicketEmail extends DolibarrTriggers
 					if ($res > 0) {
 						// Send email to notification email
 
-						if (empty($conf->global->TICKET_DISABLE_ALL_MAILS)) {
+						if (empty($conf->global->TICKET_DISABLE_ALL_MAILS) && empty($conf->global->TICKET_DISABLE_MAIL_ASSIGNED)) {
 							// Init to avoid errors
 							$filepath = array();
 							$filename = array();
