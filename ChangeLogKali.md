@@ -13,6 +13,7 @@ PR#43074 - Sanitize ticket messages on the ticket public interface (T260272)
 PR#43233 - A link extrafield left empty was stored as 0 instead of NULL (T250214)
 PR#43290 - A chkbxlst extrafield filtered on $ID$ broke the search input of list views (T250214)
 PR#43306 - A link extrafield to a category showed a bad setup error instead of its combo (T250214)
+PR#43346 - New option TICKET_DISABLE_MAIL_ASSIGNED to not send the native assignment email to the assigned user (T260270)
 
 
 ## SPÉ KOESIO 
