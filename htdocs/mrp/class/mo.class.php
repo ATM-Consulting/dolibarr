@@ -273,6 +273,14 @@ class Mo extends CommonObject
 	 */
 	public $tpl = array();
 
+	/**
+	 * @var int[] Ids of BOM lines (with a sub-BOM) that must not be flattened into their raw materials
+	 *            when generating the consume/produce lines, because the user asked to generate a child MO
+	 *            for them instead (see mo_card.php "Generate Child MO"). A single MoLine anchored on the
+	 *            sub-assembly product is created for these lines instead of recursing into the sub-BOM.
+	 */
+	public $noFlattenBomLineIds = array();
+
 
 	/**
 	 * Constructor
@@ -815,7 +823,7 @@ class Mo extends CommonObject
 
 			$tmpproduct = new Product($this->db);
 			$tmpproduct->fetch($line->fk_product);
-			if ($line->fk_bom_child > 0) {
+			if ($line->fk_bom_child > 0 && !in_array($line->id, $this->noFlattenBomLineIds)) {
 				$bom = new BOM($this->db);
 				$bom->fetch((int) $line->fk_bom_child);
 				$error += $this->processBOM($user, $role, $bom, $quantity_line);
@@ -1847,7 +1855,7 @@ class Mo extends CommonObject
 		$this->tpl['label'] = '';
 		if (!empty($line->fk_product) && $line->fk_product > 0) {
 			$productstatic->fetch($line->fk_product);
-			$productstatic->load_virtual_stock();
+			$productstatic->load_stock(); // load_virtual_stock() is done in load_stock()
 			$this->tpl['label'] .= $productstatic->getNomUrl(1);
 			//$this->tpl['label'].= ' - '.$productstatic->label;
 		} else {

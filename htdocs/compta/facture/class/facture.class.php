@@ -73,6 +73,11 @@ class Facture extends CommonInvoice
 	public $element = 'facture';
 
 	/**
+	 * @var string Prefix used to build trigger event names in generic CommonObject methods (BILL_MODIFY, ...)
+	 */
+	public $TRIGGER_PREFIX = 'BILL';
+
+	/**
 	 * @var string Name of table without prefix where object is stored
 	 */
 	public $table_element = 'facture';
@@ -1184,7 +1189,10 @@ class Facture extends CommonInvoice
 
 		// Retrieve all extrafield
 		// fetch optionals attributes and labels
-		$this->fetch_optionals();
+		// (unless the caller already set array_options, e.g. from a create form, so we don't overwrite them)
+		if (empty($this->array_options)) {
+			$this->fetch_optionals();
+		}
 
 		if (!empty($this->array_options)) {
 			$facture->array_options = $this->array_options;
@@ -1283,6 +1291,12 @@ class Facture extends CommonInvoice
 		$this->db->begin();
 
 		$object->fetch($fromid);
+		// fetch() clears $object->thirdparty, but the subsequent $object->create() path
+		// reaches addLine() -> getLocalTaxesFromRate() -> get_localtax() and uses the
+		// buyer thirdparty to decide whether IRPF/localtax2 applies. Without this fetch,
+		// get_localtax() sees $thirdparty_buyer = null, returns 0 and the cloned lines
+		// lose their localtax2_tx (see issue #29052).
+		$object->fetch_thirdparty();
 
 		// Load source object
 		$objFrom = clone $object;
@@ -4391,7 +4405,7 @@ class Facture extends CommonInvoice
 
 			// Rank to use
 			$ranktouse = $rang;
-			if ($ranktouse == -1) {
+			if (empty($ranktouse) || $ranktouse == -1) {
 				$rangmax = $this->line_max($fk_parent_line);
 				$ranktouse = $rangmax + 1;
 			}
@@ -4710,7 +4724,7 @@ class Facture extends CommonInvoice
 				$this->line->rang = $rangmax + 1;
 			}
 			$apply_abs_price_on_credit_note = false;
-			if ($this->type == self::TYPE_CREDIT_NOTE  && !getDolGlobalInt('FACTURE_ENABLE_NEGATIVE_LINES') && !getDolGlobalInt('INVOICE_KEEP_DISCOUNT_LINES_AS_IN_ORIGIN')) {
+			if ($this->type == self::TYPE_CREDIT_NOTE && !(getDolGlobalInt('FACTURE_ENABLE_NEGATIVE_LINES') && getDolGlobalInt('INVOICE_KEEP_DISCOUNT_LINES_AS_IN_ORIGIN'))) {
 				$apply_abs_price_on_credit_note = true;
 			}
 
