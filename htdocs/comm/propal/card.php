@@ -1452,6 +1452,7 @@ if (empty($reshook)) {
 
 			// Check price is not lower than minimum
 			if ($usermustrespectpricemin) {
+				// FIX ATM (DA029217 zero price): a unit price of 0 must not skip the minimum price check.
 				if ((string) $pu_equivalent !== '' && $price_min && (((float)price2num($pu_equivalent) * (1 - $remise_percent / 100)) < price2num($price_min)) && $price_base_type == 'HT') {
 					$mesg = $langs->trans("CantBeLessThanMinPrice", price(price2num($price_min, 'MU'), 0, $langs, 0, 0, -1, $conf->currency));
 					setEventMessages($mesg, null, 'errors');
@@ -1643,6 +1644,7 @@ if (empty($reshook)) {
 
 			// Check price is not lower than minimum
 			if ($usermustrespectpricemin) {
+				// FIX ATM (DA029217 zero price): a unit price of 0 must not skip the minimum price check.
 				if ((string) $pu_equivalent !== '' && $price_min && (((float)price2num($pu_equivalent) * (1 - (float)$remise_percent / 100)) < (float)price2num($price_min)) && $price_base_type == 'HT') {
 					$mesg = $langs->trans("CantBeLessThanMinPrice", price(price2num($price_min, 'MU'), 0, $langs, 0, 0, -1, $conf->currency));
 					setEventMessages($mesg, null, 'errors');
