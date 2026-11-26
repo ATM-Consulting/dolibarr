@@ -1,3 +1,5 @@
+- UPDATE : Montée en 23.0.4. Le bloc DA021525 est retiré : le correctif Dolibarr #39254 (23.0.4) renseigne les champs complémentaires du formulaire avant le déclencheur BILL_CREATE, qui ne part plus qu'une fois
+- FIX : DA029246 - Les fichiers joints d'un produit rangés dans l'ancien dossier photos provoquaient une erreur de doublon (corrigé par la 23.0.4)
 - NEW : Ajout bouton "Parcourir le serveur" pour l'ajout d'image dans les modèles de mail
 - NEW : Ajout de statut STATUS_NOTFEASIBLE sur les proposition commerciales
 - NEW : DA021525 - Activation du trigger pour vider le champ complémentaire "date_compta" sur création de facture de situation (hors première facture de situation)

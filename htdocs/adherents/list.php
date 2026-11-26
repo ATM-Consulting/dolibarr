@@ -375,7 +375,19 @@ if (empty($reshook)) {
 		foreach ($toselect as $id) {
 			$res = $tmpmember->fetch($id);
 			if ($res > 0) {
-				$result = $tmpmember->subscription($now, (float) $amount, 0, '', '', '', '', '', $datesubend);
+				// Mirror the single subscription form (adherents/subscription.php): if no
+				// global EOM/EOY override was set, compute the end date from the member's
+				// AdherentType duration_value/duration_unit so a 6-month type does not
+				// silently fall back to the 1-year default in Adherent::subscription()
+				$datesubendthismember = $datesubend;
+				if (!$datesubendthismember && $tmpmember->typeid > 0) {
+					if ($adht->fetch($tmpmember->typeid) > 0) {
+						$delay = !empty($adht->duration_value) ? $adht->duration_value : 1;
+						$delayunit = !empty($adht->duration_unit) ? $adht->duration_unit : 'y';
+						$datesubendthismember = dol_time_plus_duree(dol_time_plus_duree($now, $delay, $delayunit), -1, 'd');
+					}
+				}
+				$result = $tmpmember->subscription($now, (float) $amount, 0, '', '', '', '', '', $datesubendthismember);
 				if ($result < 0) {
 					$error++;
 				} else {
@@ -1482,8 +1494,9 @@ while ($i < $imaxinloop) {
 		}
 		// EMail
 		if (!empty($arrayfields['d.email']['checked'])) {
-			print '<td class="tdoverflowmax150" title="'.dol_escape_htmltag($obj->email).'">';
-			print dol_print_email($obj->email, 0, 0, 1, 64, 1, 1);
+			print '<td class="tdoverflowmax150" title="'.dolPrintHTMLForAttribute($obj->email).'">';
+			$showinvalidemail = getDolGlobalInt('MAIN_SHOW_INVALID_EMAIL_IN_LIST', 1); // in list, we check only syntax of emails
+			print dol_print_email($obj->email, 0, 0, 1, 64, $showinvalidemail, 1);
 			print "</td>\n";
 			if (!$i) {
 				$totalarray['nbfield']++;
