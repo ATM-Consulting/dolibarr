@@ -11,3 +11,4 @@
 - Fix proposal line edit: enforce product price_min on updateline (same productid-missing bug as for orders) **27/05/2026**
 - Fix invoice line edit: enforce product price_min on updateline (same productid-missing + price_base_type-not-initialized bugs as for orders) **27/05/2026**
 - Backport v22 fix on product variants: copy the parent's default VAT code to the variant when the price is propagated (without it, the VAT rate is not preselected on order lines) **20/10/2026**
+- Fix order, proposal and invoice lines: a unit price of 0 skipped the product minimum price check for users without the "ignore minimum price" right (DA029217) **26/11/2026**
