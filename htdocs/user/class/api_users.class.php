@@ -111,8 +111,24 @@ class Users extends DolibarrApi
 
 		// Add sql filters
 		if ($sqlfilters) {
+			// List of properties we can't filter on, whatever are permissions (to avoid guess by search binary attack)
+			$forbiddenfilterfields = array(
+				'pass',
+				'pass_crypted',
+				'pass_temp',
+				'api_key',
+				'openid'
+			);
+			$canreadsalary = ((isModEnabled('salaries') && DolibarrApiAccess::$user->hasRight('salaries', 'read')) || !isModEnabled('salaries'));
+			if (!$canreadsalary) {
+				$forbiddenfilterfields[] = 'salary';
+				$forbiddenfilterfields[] = 'salaryextra';
+				$forbiddenfilterfields[] = 'thm';
+				$forbiddenfilterfields[] = 'tjm';
+			}
+
 			$errormessage = '';
-			$sql .= forgeSQLFromUniversalSearchCriteria($sqlfilters, $errormessage);
+			$sql .= forgeSQLFromUniversalSearchCriteria($sqlfilters, $errormessage, 0, 0, 0, $forbiddenfilterfields);
 			if ($errormessage) {
 				throw new RestException(400, 'Error when validating parameter sqlfilters -> '.$errormessage);
 			}
@@ -919,6 +935,14 @@ class Users extends DolibarrApi
 		if (!DolibarrApi::_checkAccessToResource('user', $this->useraccount->id, 'user')) {
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
+
+		if ($this->useraccount->admin && empty(DolibarrApiAccess::$user->admin)) {
+			throw new RestException(403, 'Only admin users can delete admin users');
+		}
+		if ($this->useraccount->admin && empty($this->useraccount->entity) && !empty(DolibarrApiAccess::$user->entity)) {
+			throw new RestException(403, 'Only superadmin users can delete superadmin users');
+		}
+
 		$this->useraccount->oldcopy = clone $this->useraccount; // @phan-suppress-current-line PhanTypeMismatchProperty
 
 		if (!$this->useraccount->delete(DolibarrApiAccess::$user)) {
@@ -1296,6 +1320,9 @@ class Users extends DolibarrApi
 		unset($object->ldap_sid);
 		unset($object->clicktodial_loaded);
 
+		unset($object->lines);
+		unset($object->model_pdf);
+
 		// List of properties never returned by API, whatever are permissions
 		unset($object->pass);
 		unset($object->pass_indatabase);
@@ -1305,11 +1332,7 @@ class Users extends DolibarrApi
 		unset($object->clicktodial_password);
 		unset($object->openid);
 
-		unset($object->lines);
-		unset($object->model_pdf);
-
 		$canreadsalary = ((isModEnabled('salaries') && DolibarrApiAccess::$user->hasRight('salaries', 'read')) || !isModEnabled('salaries'));
-
 		if (!$canreadsalary) {
 			unset($object->salary);
 			unset($object->salaryextra);

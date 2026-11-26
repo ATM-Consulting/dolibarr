@@ -533,6 +533,16 @@ class Orders extends DolibarrApi
 		$request_data->desc = sanitizeVal($request_data->desc, 'restricthtml');
 		$request_data->label = sanitizeVal($request_data->label);
 
+		$orderline = new OrderLine($this->db);
+		$result = $orderline->fetch($lineid);
+		if (!$result) {
+			throw new RestException(404, 'Order line not found');
+		}
+
+		if ($orderline->fk_commande != $id) {
+			throw new RestException(403, 'Line does not belong to this order');
+		}
+
 		$updateRes = $this->commande->updateline(
 			$lineid,
 			$request_data->desc,
@@ -1207,6 +1217,9 @@ class Orders extends DolibarrApi
 		if (!DolibarrApiAccess::$user->hasRight('expedition', 'lire')) {
 			throw new RestException(403);
 		}
+		if (!DolibarrApi::_checkAccessToResource('commande', $id)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
 		$obj_ret = array();
 		$sql = "SELECT e.rowid";
 		$sql .= " FROM ".MAIN_DB_PREFIX."expedition as e";
@@ -1272,19 +1285,32 @@ class Orders extends DolibarrApi
 		if (!$result) {
 			throw new RestException(404, 'Order not found');
 		}
+		if (!DolibarrApi::_checkAccessToResource('commande', $this->commande->id)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
 		$shipment = new Expedition($this->db);
 		$shipment->socid = $this->commande->socid;
 		$shipment->origin_id = $this->commande->id;
 		$shipment->origin = $this->commande->element;
+
+		// Give the lines to Expedition::create() instead of adding them after, so that it expands the kits into their
+		// components. Without this, a kit is stored as a parent line with a warehouse and no child lines.
+		$shipment->lines = array();
+		foreach ($this->commande->lines as $line) {
+			$shipmentline = new ExpeditionLigne($this->db);
+			$shipmentline->entrepot_id = (int) $warehouse_id;
+			$shipmentline->origin_line_id = $line->id;
+			$shipmentline->fk_elementdet = $line->id;
+			$shipmentline->qty = $line->qty;
+			if (empty($line->product_type) || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES')) {
+				$shipmentline->fk_product = (int) $line->fk_product;
+			}
+			$shipment->lines[] = $shipmentline;
+		}
+
 		$result = $shipment->create(DolibarrApiAccess::$user);
 		if ($result <= 0) {
-			throw new RestException(500, 'Error on creating expedition :'.$this->db->lasterror());
-		}
-		foreach ($this->commande->lines as $line) {
-			$result = $shipment->create_line($warehouse_id, $line->id, $line->qty);
-			if ($result <= 0) {
-				throw new RestException(500, 'Error on creating expedition lines:'.$this->db->lasterror());
-			}
+			throw new RestException(500, 'Error on creating expedition :'.$shipment->errorsToString());
 		}
 		return $shipment->id;
 	}

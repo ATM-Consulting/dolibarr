@@ -4933,7 +4933,8 @@ function migrate_holiday_path()
 			if ($entity > 1) {
 				$dir = DOL_DATA_ROOT.'/'.$entity.'/holiday';
 			} else {
-				$dir = $conf->holiday->multidir_output[$entity]; // $conf->user->multidir_output[] for each entity is construct by the multicompany module
+				// $conf->holiday is not set when the Leave module is disabled: its files, if any, are still in the default directory
+				$dir = empty($conf->holiday->multidir_output[$entity]) ? DOL_DATA_ROOT.'/holiday' : $conf->holiday->multidir_output[$entity];
 			}
 
 			if ($dir) {
@@ -5676,7 +5677,7 @@ function migrate_apiresttokens()
 
 	if (!$error) {
 		$sql = "SELECT 'dolibarr_rest_api' AS service, u.api_key AS tokenstring, u.rowid AS fk_user, u.entity";
-		$sql .= " FROM llx_user AS u";
+		$sql .= " FROM ".MAIN_DB_PREFIX."user AS u";
 		$sql .= " WHERE u.api_key IS NOT NULL AND u.api_key <> ''";
 
 		$result = $db->query($sql);
@@ -5691,7 +5692,7 @@ function migrate_apiresttokens()
 					$tmpuser->fetch((int) $obj->fk_user, '', '', 1, ($obj->entity ? $obj->entity : $conf->entity));
 
 					$sqlforinsert = "INSERT INTO ".MAIN_DB_PREFIX."oauth_token (service, tokenstring, fk_user, datec, entity, apicount_total)";
-					$sqlforinsert .= " VALUES ('".$db->escape($obj->service)."', '".$db->escape(dolEncrypt(dolDecrypt($obj->tokenstring)))."', ";
+					$sqlforinsert .= " VALUES ('".$db->escape($obj->service)."', '".$db->escape(dolEncrypt(dolDecrypt($obj->tokenstring), '', '', 'dolibarr'))."', ";
 					$sqlforinsert .= ((int) $obj->fk_user).", '".$db->idate(dol_now())."', ".((int) $obj->entity).", ";
 					$sqlforinsert .= getDolUserInt('API_COUNT_CALL', 0, $tmpuser);
 					$sqlforinsert .= ")";
@@ -5751,6 +5752,21 @@ function migrate_blockedlog_add_hmac_key()
 
 		$result = dolibarr_set_const($db, 'BLOCKEDLOG_HMAC_KEY', $hmac_secret_key, 'chaine', 0, 'The secret key for HMAC used for blockedlog record', $conf->entity);	// Will encrypt the value using dolCrypt and store it.
 
+		if ($result < 0) {
+			dol_print_error($db);
+			$db->rollback();
+
+			print '</td></tr>';
+			return -1;
+		}
+
+		print $langs->trans('Done');
+	} elseif (!preg_match('/^(dolcrypt|dolobfuscation)/', $hmac_encoded_secret_key)) {
+		// The value is stored in clear, without any prefix. This happens on instances migrated from a
+		// version that stored it unencrypted. dolDecrypt() returns such a value unchanged, so the test
+		// below used to pass and the value was left in clear, which then breaks getClearHMACSecretKey().
+		// Store the same key again so it gets encrypted, without changing the key itself.
+		$result = dolibarr_set_const($db, 'BLOCKEDLOG_HMAC_KEY', $hmac_encoded_secret_key, 'chaine', 0, 'The secret key for HMAC used for blockedlog record', $conf->entity);
 		if ($result < 0) {
 			dol_print_error($db);
 			$db->rollback();

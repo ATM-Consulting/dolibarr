@@ -1,0 +1,10 @@
+agent_type = "agent"
+display_name = "Agent Power"
+description = "Agent with bash usage guidelines; pair it with the auto-approve or smart-approve approval policy to run without prompts."
+
+instructions = """
+When running bash commands, keep them plain so they can be auto-approved:
+- Use literal paths, never shell variables ($VAR, ${VAR}) or $(...) substitutions.
+- Never use output redirection (> or >>). Write files with the write_file tool,
+  or pipe the output to tee instead.
+"""

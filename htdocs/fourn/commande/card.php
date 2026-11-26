@@ -439,7 +439,7 @@ if (empty($reshook)) {
 		$price_ht_devise = price2num(GETPOST('multicurrency_price_ht'), 'CU', 2);
 		$price_ttc = price2num(GETPOST('price_ttc'), 'MU', 2);
 		$price_ttc_devise = price2num(GETPOST('multicurrency_price_ttc'), 'CU', 2);
-		$qty = price2num(GETPOST('qty'.$predef, 'alpha'), 'MS');
+		$qty = price2num(GETPOST('qty'.$predef, 'alpha'), 'MS', 2);
 
 		$remise_percent = (GETPOSTISSET('remise_percent'.$predef) ? price2num(GETPOST('remise_percent'.$predef, 'alpha'), '', 2) : 0);
 		if (empty($remise_percent)) {
@@ -676,6 +676,7 @@ if (empty($reshook)) {
 			$db->commit();
 
 			$ret = $object->fetch($object->id); // Reload to get new records
+			$object->fetch_thirdparty(); // fetch() reset thirdparty to null, reload it before reading default_lang
 
 			// Define output language
 			if (!getDolGlobalString('MAIN_DISABLE_PDF_AUTOUPDATE')) {
@@ -809,7 +810,7 @@ if (empty($reshook)) {
 			$lineid,
 			GETPOST('product_desc', 'restricthtml'),
 			$ht,
-			(float) price2num(GETPOST('qty'), 'MS'),
+			(float) price2num(GETPOST('qty'), 'MS', 2),
 			(float) price2num(GETPOST('remise_percent'), '', 2),
 			$vat_rate,
 			$localtax1_rate,
@@ -828,10 +829,13 @@ if (empty($reshook)) {
 		unset($_POST['qty']);
 		unset($_POST['type']);
 		unset($_POST['idprodfournprice']);
-		unset($_POST['remmise_percent']);
+		unset($_POST['remise_percent']);
 		unset($_POST['dp_desc']);
 		unset($_POST['np_desc']);
 		unset($_POST['pu']);
+		unset($_POST['price_ht']);
+		unset($_POST['price_ttc']);
+		unset($_POST['buying_price']);
 		unset($_POST['fourn_ref']);
 		unset($_POST['tva_tx']);
 		unset($_POST['date_start']);
@@ -1921,9 +1925,9 @@ if ($action == 'create') {
 			print '<tr><td>'.$langs->trans('AmountTTC').'</td><td>'.price($objectsrc->total_ttc)."</td></tr>";
 
 			if (isModEnabled("multicurrency")) {
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht).'</td></tr>';
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva).'</td></tr>';
-				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
 			}
 		}
 
@@ -1981,7 +1985,7 @@ if ($action == 'create') {
 	$head = ordersupplier_prepare_head($object);
 
 	$title = $langs->trans("SupplierOrder");
-	print dol_get_fiche_head($head, 'card', $title, -1, 'order');
+	print dol_get_fiche_head($head, 'card', $title, -1, 'order', 0, '', '', 0, '', 1);
 
 
 	$formconfirm = '';

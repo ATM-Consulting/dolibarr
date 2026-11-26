@@ -1413,7 +1413,7 @@ if ($action == 'create') {
 		$hselected = '0';
 		$formconfirm = '';
 
-		print dol_get_fiche_head($head, $hselected, $langs->trans("Contract"), -1, 'contract');
+		print dol_get_fiche_head($head, $hselected, $langs->trans("Contract"), -1, 'contract', 0, '', '', 0, '', 1);
 
 
 		if ($action == 'delete') {
@@ -2491,7 +2491,7 @@ if (isModEnabled('margin') && $action == 'editline') {
 				if (fournprice > 0) {
 					if (this.id == fournprice) {
 					  options += ' selected';
-					  $("#buying_price").val(this.price);
+					  $("#buying_price").val(pricejs(this.price, 'MU'));
 					  trouve = true;
 					}
 				}
@@ -2509,7 +2509,7 @@ if (isModEnabled('margin') && $action == 'editline') {
 			  $("#fournprice").change(function() {
 				var selval = $(this).find('option:selected').attr("price");
 				if (selval)
-				  $("#buying_price").val(selval).hide();
+				  $("#buying_price").val(pricejs(selval, 'MU')).hide();
 				else
 				  $('#buying_price').show();
 			  });
@@ -2527,5 +2527,5 @@ if (isModEnabled('margin') && $action == 'editline') {
 		}
 	});
 	<?php
-	print "\n".'<script type="text/javascript">'."\n";
+	print '</script>'."\n";
 }
