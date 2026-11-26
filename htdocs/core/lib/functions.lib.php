@@ -15310,7 +15310,10 @@ function getElementProperties($elementType)
 		$module = 'bank';	// We need $conf->bank->dir_output and not $conf->banque->dir_output
 		$classfile = 'account';
 		$classname = 'AccountLine';
-	} elseif ($elementType == 'category') {
+		// BACKPORT V25 START - PR #43306 (was: } elseif ($elementType == 'category') {)
+	} elseif ($elementType == 'category' || $elementType == 'categorie') {	// 'categorie': old name, used by link extrafields
+		$element = 'category';
+		// BACKPORT V25 END - PR #43306
 		$classpath = 'categories/class';
 		$module = 'categorie';
 		$subelement = 'categorie';

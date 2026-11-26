@@ -1993,6 +1993,11 @@ class ExtraFields
 								// Replace '$ID$ = column' by "word"
 								$word = '#\$ID\$ *= *\b([a-zA-Z0-9-\.-_]+)\b#';
 								$InfoFieldList[4] = preg_replace($word, '$1', $InfoFieldList[4]);
+								// BACKPORT V25 START - PR #43290
+								// Same with the Universal Search Filter syntax, '(column:=:$ID$)'
+								$word = '#\b([a-zA-Z0-9-\.-_]+)\b *: *[<>!=]?= *: *\$ID\$#';
+								$InfoFieldList[4] = preg_replace($word, '1:=:1', $InfoFieldList[4]);
+								// BACKPORT V25 END - PR #43290
 							} else {
 								$InfoFieldList[4] = str_replace('$ID$', '0', $InfoFieldList[4]);
 							}
@@ -3301,9 +3306,11 @@ class ExtraFields
 		if (is_array($v) || $type == 'select') {
 			return empty($v);
 		}
+		// BACKPORT V25 START - PR #43233
 		if ($type == 'link') {
-			return ($v == '-1');
+			return in_array((string) $v, array('-1', '0'), true);
 		}
+		// BACKPORT V25 END - PR #43233
 		if ($type == 'sellist') {
 			return ($v == '0');
 		}
