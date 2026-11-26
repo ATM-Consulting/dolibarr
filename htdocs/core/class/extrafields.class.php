@@ -1244,6 +1244,8 @@ class ExtraFields
 		}
 
 		$objectid = (is_numeric($object) ? $object : $object->id);
+		// ajaxextrafield.php needs an element type for getElementProperties(), not a table name
+		$ajaxobjecttype = (is_object($object) ? $object->getElementType() : $extrafieldsobjectkey);
 
 		$out = '';
 
@@ -1525,7 +1527,7 @@ class ExtraFields
 									var query = {
 										search: params.term,
 										page: params.page || 1,
-										objecttype: '".dol_escape_js($extrafieldsobjectkey)."',
+										objecttype: '".dol_escape_js($ajaxobjecttype)."',
 										objectid: '".dol_escape_js($objectid)."',
 										objectkey: '".dol_escape_js($key)."',
 										mode: '".((int) $mode)."',
@@ -1861,7 +1863,7 @@ class ExtraFields
 								var query = {
 									search: params.term,
 									page: params.page || 1,
-									objecttype: '".dol_escape_js($extrafieldsobjectkey)."',
+									objecttype: '".dol_escape_js($ajaxobjecttype)."',
 									objectid: '".dol_escape_js($object->id)."',
 									objectkey: '".dol_escape_js($key)."',
 									mode: '".((int) $mode)."',
