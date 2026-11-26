@@ -1,11 +1,12 @@
 # CHANGELOG 23.0 Le-Dauphin FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
 
 * 26/11/2026 *
-- FIX : DA029243 un OF produit pouvait être rouvert puis remis en brouillon, ses lignes consommées et produites
-  gardant leurs mouvements de stock : Mo::setDraft() et Mo::createProduction() refusent désormais, bouton
-  « Retour en brouillon » grisé. Backport de Dolibarr/dolibarr#41621 (2682ada6bb7, sur 23.0 après la 23.0.4),
-  plus la clé ErrorMoConsumptionOrProductionStarted dans htdocs/langs/fr_FR/mrp.lang.
-  À supprimer à la prochaine mise à jour 23.0.x qui contient ce correctif.
+- MERGE : DA029243 fusion de la branche communautaire origin/23.0 du 26/11/2026 (1 524 commits amont pas encore dans la branche,
+  version affichée inchangée), qui apporte entre autres Dolibarr/dolibarr#41621 : un OF dont la production a
+  commencé ne peut plus être remis en brouillon. Le cherry-pick de ce correctif fait juste avant la fusion est
+  redondant avec elle.
+- FIX : DA029243 clé ErrorMoConsumptionOrProductionStarted traduite dans htdocs/langs/fr_FR/mrp.lang
+  (l'amont ne fournit que l'anglais). À supprimer quand la traduction française arrive de l'amont.
 
 * 19/11/2026 *
 - FIX : unité imprimée en libellé long (« Kilogramme ») sur le PDF d'expédition espadon, trop large pour
