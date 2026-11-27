@@ -5,6 +5,7 @@
  * Copyright (C) 2022-2023	Christophe Battarel		<christophe.battarel@altairis.fr>
  * Copyright (C) 2024-2025	MDW						<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024-2025  Frédéric France			<frederic.france@free.fr>
+ * Copyright (C) 2026		Jose Martinez			<jose.martinez@pichinov.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,7 +129,7 @@ function fail($message)
 
 
 
-$number = (float) GETPOST('number', 'alpha');
+$number = GETPOSTFLOAT('number', '', 0);	// Option 0: the value is typed in the free zone (user format) or sent by the numeric pad (always with a dot)
 $idline = GETPOSTINT('idline');
 $selectedline = GETPOSTINT('selectedline');
 $desc = GETPOST('desc', 'alphanohtml');
@@ -207,6 +208,7 @@ if ($reshook < 0) {
 	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 }
 
+
 $sectionwithinvoicelink = '';
 $CUSTOMER_DISPLAY_line1 = '';
 $CUSTOMER_DISPLAY_line2 = '';
@@ -214,6 +216,16 @@ $headerorder = '';
 $footerorder = '';
 $printer = null;
 $idoflineadded = 0;
+
+// Enforce the "edit lines" permission on every action that modifies an existing line
+// (delete, quantity, price, discount). Adding a line, a free zone or a note is gated by
+// the "run" permission elsewhere and must stay available to a plain cashier (#38949).
+if (in_array($action, array('deleteline', 'updateqty', 'updateprice', 'updatereduction', 'update_reduction_global')) && !$user->hasRight('takepos', 'editlines')) {
+	dol_htmloutput_errors($langs->trans("NotEnoughPermissions", "TakePos"), array(), 1);
+	$action = '';
+}
+
+
 if (empty($reshook)) {
 	// Action to record a payment on a TakePOS invoice
 	if ($action == 'valid' && $user->hasRight('facture', 'creer')) {
@@ -243,6 +255,10 @@ if (empty($reshook)) {
 
 		$invoice = new Facture($db);
 		$invoice->fetch($placeid);
+
+		// Stock of products with lot/serial is moved below only when this call validates the draft sale.
+		// A later payment on an already validated sale must not move it a second time.
+		$invoicewasdraft = ($invoice->status == Facture::STATUS_DRAFT);
 
 		$invoice->oldcopy = dol_clone($invoice, 2);
 
@@ -389,7 +405,7 @@ if (empty($reshook)) {
 		$warehouseid = 0;
 		// Update stock for batch products
 		if (!$error && $res >= 0) {
-			if (isModEnabled('stock') && isModEnabled('productbatch') && $allowstockchange) {
+			if (isModEnabled('stock') && isModEnabled('productbatch') && $allowstockchange && $invoicewasdraft) {
 				// Update stocks
 				dol_syslog("Now we record the stock movement for each qualified line");
 
@@ -659,6 +675,14 @@ if (empty($reshook)) {
 
 		$invoice = new Facture($db);
 		$invoice->fetch($placeid);
+
+		// The header (and what follows) must show the customer of this sale, not the one of the current cart
+		$soc = new Societe($db);
+		if ($invoice->socid > 0) {
+			$soc->fetch($invoice->socid);
+		} else {
+			$soc->fetch(getDolGlobalInt($constforcompanyid));
+		}
 	}
 
 	// If we add a line and no invoice yet, we create the invoice
@@ -971,7 +995,7 @@ if (empty($reshook)) {
 		$invoice->fetch($placeid);
 	}
 
-	if ($action == "deleteline" && ($user->hasRight('takepos', 'run') || defined('INCLUDE_PHONEPAGE_FROM_PUBLIC_PAGE'))) {
+	if ($action == "deleteline" && ($user->hasRight('takepos', 'editlines') || defined('INCLUDE_PHONEPAGE_FROM_PUBLIC_PAGE'))) {
 		/*
 		$permissiontoupdateline = ($user->hasRight('takepos', 'editlines') && ($user->hasRight('takepos', 'editorderedlines') || $line->special_code != "4"));
 		if (defined('INCLUDE_PHONEPAGE_FROM_PUBLIC_PAGE')) {
@@ -995,14 +1019,22 @@ if (empty($reshook)) {
 		}
 
 		if (count($invoice->lines) == 0) {
-			$invoice->delete($user);
+			// Keep an empty draft invoice alive when a non-default customer was
+			// already attached so deleting the last line does not silently lose
+			// the customer that was just selected (#38219). Only drop the invoice
+			// when it is still on the default cashdesk thirdparty (or none).
+			$defaultsocid = (int) getDolGlobalString('CASHDESK_ID_THIRDPARTY'.$_SESSION["takeposterminal"]);
+			$invoicesocid = (int) $invoice->socid;
+			if ($invoicesocid === 0 || $invoicesocid === $defaultsocid) {
+				$invoice->delete($user);
 
-			if (defined('INCLUDE_PHONEPAGE_FROM_PUBLIC_PAGE')) {
-				header("Location: ".DOL_URL_ROOT."/takepos/public/auto_order.php");
-			} else {
-				header("Location: ".DOL_URL_ROOT."/takepos/invoice.php");
+				if (defined('INCLUDE_PHONEPAGE_FROM_PUBLIC_PAGE')) {
+					header("Location: ".DOL_URL_ROOT."/takepos/public/auto_order.php");
+				} else {
+					header("Location: ".DOL_URL_ROOT."/takepos/invoice.php");
+				}
+				exit;
 			}
-			exit;
 		}
 	}
 
@@ -2009,6 +2041,9 @@ if ($placeid > 0) {
 		$htmlsupplements = array();
 		foreach ($tmplines as $line) {
 			if ($line->fk_parent_line != false) {
+				if (!isset($htmlsupplements[$line->fk_parent_line])) {
+					$htmlsupplements[$line->fk_parent_line] = '';
+				}
 				$htmlsupplements[$line->fk_parent_line] .= '<tr class="drag drop oddeven posinvoiceline';
 				if ($line->special_code == "4") {
 					$htmlsupplements[$line->fk_parent_line] .= ' order';
@@ -2161,7 +2196,9 @@ if ($placeid > 0) {
 					$htmlforlines .= '<td class="right">'.price($line->subprice).'</td>';
 				}
 				$htmlforlines .= '<td class="right">'.vatrate(price2num($line->remise_percent), true).'</td>';
-				$htmlforlines .= '<td class="right">';
+				// nowraponall keeps the qty and its '(stock)' block on one line: on narrow layouts
+				// the native display otherwise wraps over three lines inside the qty column.
+				$htmlforlines .= '<td class="right nowraponall">';
 				$htmlforlines .= $line->qty;
 				if (isModEnabled('stock') && $user->hasRight('stock', 'mouvement', 'lire')) {
 					$constantforkey = 'CASHDESK_ID_WAREHOUSE'.$_SESSION["takeposterminal"];

@@ -124,6 +124,8 @@ if (!empty($extrafields)) {
 		$objectline = new FactureLigneRec($this->db);
 	} elseif ($this->table_element_line == 'facture_fourn_det_rec') {
 		$objectline = new FactureFournisseurLigneRec($this->db);
+	} elseif ($this->table_element_line == 'expeditiondet') {
+		$objectline = new ExpeditionLigne($this->db);
 	}
 }
 print "<!-- BEGIN PHP TEMPLATE objectline_create.tpl.php -->\n";
@@ -454,14 +456,12 @@ if ($nolinesbefore) {
 		if (isModEnabled("service") && ($object->element == 'facturerec' || $object->element == 'invoice_supplier_rec')) {
 			echo '<div class="divlinefordates"><br>';
 			echo $langs->trans('AutoFillDateFrom').' ';
-			if (getDolGlobalString('INVOICE_REC_DATE_TO_YES')) {
-				$line->date_start_fill = 1;
-				$line->date_end_fill = 1;
-			}
-			echo $form->selectyesno('date_start_fill', $line->date_start_fill, 1);
+			// There is no $line in this template (it is included by formAddObjectLine()), so use the default from setup
+			$autofilldate = (getDolGlobalString('INVOICE_REC_DATE_TO_YES') ? 1 : 0);
+			echo $form->selectyesno('date_start_fill', $autofilldate, 1);
 			echo ' - ';
 			echo $langs->trans('AutoFillDateTo').' ';
-			echo $form->selectyesno('date_end_fill', $line->date_end_fill, 1);
+			echo $form->selectyesno('date_end_fill', $autofilldate, 1);
 			echo '</div>';
 		}
 		if (is_object($objectline)) {
@@ -702,13 +702,13 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 			return true;
 
 		if (! $.isNumeric(rate.val().replace(',','.')))	{		// TODO Use price2numjs ?
-			alert('<?php echo dol_escape_js($langs->trans("rateMustBeNumeric")); ?>');
+			alert('<?php echo dol_escape_js($langs->transnoentities("rateMustBeNumeric")); ?>');
 			e.stopPropagation();
 			setTimeout(function () { rate.focus() }, 50);
 			return false;
 		}
 		if (npRate == "np_markRate" && rate.val() >= 100) {		// TODO Use price2numjs ?
-			alert('<?php echo dol_escape_js($langs->trans("markRateShouldBeLesserThan100")); ?>');
+			alert('<?php echo dol_escape_js($langs->transnoentities("markRateShouldBeLesserThan100")); ?>');
 			e.stopPropagation();
 			setTimeout(function () { rate.focus() }, 50);
 			return false;
@@ -732,7 +732,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 		}
 
 		// $("input[name='price_ht']:first").val(price);	// TODO Must use a function like php price to have here a formatted value
-		$("input[name='price_ht']:first").val(pricejs(price));
+		$("input[name='price_ht']:first").val(pricejs(price, 'MU'));
 
 		return true;
 	}
@@ -892,7 +892,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 					// Get the price for the product and display it
 					console.log("Load unit price and set it into #price_ht or #price_ttc for product id="+$(this).val()+" socid=<?php print $object->socid; ?>");
 					$.post('<?php echo DOL_URL_ROOT; ?>/product/ajax/products.php?action=fetch',
-						{ 'id': $(this).val(), 'socid': <?php print $object->socid; ?>, 'token': '<?php print currentToken(); ?>', 'addalsovatforthirdpartyid': 1 },
+						{ 'id': $(this).val(), 'socid': <?php print (int) (property_exists($object, 'socid') ? $object->socid : 0); ?>, 'token': '<?php print currentToken(); ?>', 'addalsovatforthirdpartyid': 1 },
 						function(data) {
 							console.log("objectline_create.tpl Load unit price ends, we got value ht="+data.price_ht+" ttc="+data.price_ttc+" pricebasetype="+data.pricebasetype);
 
@@ -1020,7 +1020,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 							}
 																						<?php
 									} else { ?>
-							jQuery('#dp_desc').text(proddesc);
+							jQuery('#dp_desc').val(proddesc);
 										<?php
 									} ?>
 									<?php
@@ -1123,7 +1123,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 
 						/* Define default price at loading */
 						var defaultprice = $("#fournprice_predef").find('option:selected').attr("price");
-						$("#buying_price").val(defaultprice);
+						$("#buying_price").val((defaultprice === undefined || defaultprice === '') ? '' : pricejs(defaultprice, 'MU'));	/* an empty buying price must stay empty, not become 0 */
 
 						$("#fournprice_predef").change(function() {
 							console.log("change on fournprice_predef");
@@ -1131,16 +1131,33 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 							var linevalue=$(this).find('option:selected').val();
 							var pricevalue = $(this).find('option:selected').attr("price");
 							if (linevalue != 'inputprice' && linevalue != 'pmpprice') {
-								$("#buying_price").val(pricevalue).hide();	/* We set value then hide field */
+								$("#buying_price").val(pricejs(pricevalue, 'MU')).hide();	/* We set value then hide field */
 							}
 							if (linevalue == 'inputprice') {
 								$('#buying_price').show();
 							}
 							if (linevalue == 'pmpprice') {
-								$("#buying_price").val(pricevalue);
+								$("#buying_price").val(pricejs(pricevalue, 'MU'));
 								$('#buying_price').hide();
 							}
 						});
+
+						<?php if (getDolGlobalString('PRODUCT_USE_UNITS')) { ?>
+						// Sync the measuring unit dropdown with the product's default fk_unit
+						// for the supplier-side line picker (issue #38636), mirroring the
+						// customer-side behaviour from issue #34610. Look at the first
+						// non-pmp/non-cost row of the AJAX response (all rows for a given
+						// product carry the same fk_unit since it comes from llx_product).
+						var firstFkUnit = null;
+						$(data).each(function() {
+							if (this.id != 'pmpprice' && this.id != 'costprice' && typeof this.fk_unit != 'undefined' && this.fk_unit != null && firstFkUnit === null) {
+								firstFkUnit = this.fk_unit;
+							}
+						});
+						if (firstFkUnit !== null && $("#units").length) {
+							$("#units").val(firstFkUnit).trigger('change');
+						}
+						<?php } ?>
 					}
 				},
 				'json');
@@ -1250,9 +1267,13 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 
 				if (has_multicurrency_up === false) {
 					if (typeof up_locale === 'undefined') {
-						jQuery("#price_ht").val(up);
+						if (!Number.isNaN(up)) {
+							jQuery("#price_ht").val(up);
+						}
 					} else {
-						jQuery("#price_ht").val(up_locale);
+						if (!Number.isNaN(up_locale)) {
+							jQuery("#price_ht").val(up_locale);
+						}
 					}
 				}
 
@@ -1293,7 +1314,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 						<?php
 					} else {
 						?>
-				jQuery('#dp_desc').text(description);
+				jQuery('#dp_desc').val(description);
 						<?php
 					}
 				}
@@ -1341,7 +1362,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 						<?php
 					} else {
 						?>
-				jQuery('#dp_desc').text('');
+				jQuery('#dp_desc').val('');
 						<?php
 					}
 				}
@@ -1419,7 +1440,7 @@ if (!empty($usemargins) && $user->hasRight('margins', 'creer')) {
 		<?php if (!getDolGlobalString('DISPLAY_MARK_RATES')) { ?>
 			jQuery("#np_markRate, .np_markRate").hide();
 		<?php } ?>
-		jQuery("#units, #title_units").hide();
+		jQuery("#units, #title_units, .linecoluseunit .selection").hide();
 		jQuery("#buying_price").show();
 		jQuery('#trlinefordates, .divlinefordates').show();
 	}

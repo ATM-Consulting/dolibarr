@@ -356,7 +356,7 @@ llxHeader('', $langs->trans("Payment"));
 $facture = new Facture($db);
 $result = $facture->fetch($facid);
 
-if ($result >= 0) {
+if ($result > 0) {
 	$facture->fetch_thirdparty();
 
 	$title = '';
@@ -732,8 +732,8 @@ if ($result >= 0) {
 					$multicurrency_payment = $invoice->getSommePaiement(1);
 					$multicurrency_creditnotes = $invoice->getSumCreditNotesUsed(1);
 					$multicurrency_deposits = $invoice->getSumDepositsUsed(1);
-					$multicurrency_alreadypayed = price2num($multicurrency_payment + $multicurrency_creditnotes + $multicurrency_deposits, 'MT');
-					$multicurrency_remaintopay = price2num($invoice->multicurrency_total_ttc - $multicurrency_payment - $multicurrency_creditnotes - $multicurrency_deposits, 'MT');
+					$multicurrency_alreadypayed = (float) price2num($multicurrency_payment + $multicurrency_creditnotes + $multicurrency_deposits, 'MT');
+					$multicurrency_remaintopay = (float) price2num($invoice->multicurrency_total_ttc - $multicurrency_payment - $multicurrency_creditnotes - $multicurrency_deposits, 'MT');
 					// Multicurrency full amount tooltip
 					$tooltiponmulticurrencyfullamount = $langs->trans('AmountHT') . ": " . price($objp->multicurrency_total_ht, 0, $langs, 0, -1, -1, $objp->multicurrency_code) . "<br>";
 					$tooltiponmulticurrencyfullamount .= $langs->trans('AmountVAT') . ": " . price($objp->multicurrency_total_tva, 0, $langs, 0, -1, -1, $objp->multicurrency_code) . "<br>";
@@ -1059,6 +1059,8 @@ if ($result >= 0) {
 	print $formconfirm;
 
 	print "</form>\n";
+} else {
+	print '<div class="error">'.$langs->trans("ErrorRecordNotFound").'</div>';
 }
 
 

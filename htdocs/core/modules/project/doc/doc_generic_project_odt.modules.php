@@ -100,6 +100,7 @@ class doc_generic_project_odt extends ModelePDFProjects
 		$this->db = $db;
 		$this->name = "ODT templates";
 		$this->description = $langs->trans("DocumentModelOdt");
+		$this->update_main_doc_field = 1; // Save the name of generated file as the main doc when generating a doc with this template
 		$this->scandir = 'PROJECT_ADDON_PDF_ODT_PATH'; // Name of constant that is used to save list of directories to scan
 
 		// Page size for A4 format
@@ -876,9 +877,13 @@ class doc_generic_project_odt extends ModelePDFProjects
 					}
 					$odfHandler->mergeSegment($listlines);
 				} catch (OdfException $e) {
-					$this->error = $e->getMessage();
-					dol_syslog($this->error, LOG_WARNING);
-					return -1;
+					$ExceptionTrace = $e->getTrace();
+					// no segment defined on ODT is not an error
+					if ($ExceptionTrace[0]['function'] != 'setSegment') {
+						$this->error = $e->getMessage();
+						dol_syslog($this->error, LOG_WARNING);
+						return -1;
+					}
 				}
 
 				// Replace tags of lines for contacts
@@ -921,9 +926,13 @@ class doc_generic_project_odt extends ModelePDFProjects
 						}
 						$odfHandler->mergeSegment($listlines);
 					} catch (OdfException $e) {
-						$this->error = $e->getMessage();
-						dol_syslog($this->error, LOG_WARNING);
-						return -1;
+						$ExceptionTrace = $e->getTrace();
+						// no segment defined on ODT is not an error
+						if ($ExceptionTrace[0]['function'] != 'setSegment') {
+							$this->error = $e->getMessage();
+							dol_syslog($this->error, LOG_WARNING);
+							return -1;
+						}
 					}
 				}
 
@@ -1111,8 +1120,8 @@ class doc_generic_project_odt extends ModelePDFProjects
 								}
 							}
 						}
-						$odfHandler->mergeSegment($listlines);
 					}
+					$odfHandler->mergeSegment($listlines);
 				} catch (OdfExceptionSegmentNotFound $e) {
 					// Do nothing
 				} catch (OdfException $e) {

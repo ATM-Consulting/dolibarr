@@ -1684,12 +1684,13 @@ while ($i < $imaxinloop) {
 
 		// EMail
 		if (!empty($arrayfields['p.email']['checked'])) {
-			print '<td class="nowraponall tdoverflowmax200" title="'.dolPrintHTML($obj->email).'">';
+			print '<td class="nowraponall tdoverflowmax200" title="'.dolPrintHTMLForAttribute($obj->email).'">';
 			if ($contextpage == 'poslist') {
 				print $obj->email;
 			} else {
+				$showinvalidemail = getDolGlobalInt('MAIN_SHOW_INVALID_EMAIL_IN_LIST', 1); // in list, we check only syntax of emails
 				/** SPE CERIBOIS */
-				print dol_print_email($obj->email, $obj->rowid, $obj->socid, 1, 35, 0, 1);
+				print dol_print_email($obj->email, $obj->rowid, $obj->socid, 1, 35, $showinvalidemail, 1);
 				/** FIN SPE */
 			}
 			print '</td>';
@@ -1781,7 +1782,7 @@ while ($i < $imaxinloop) {
 		// Prospect status
 		if (!empty($arrayfields['p.fk_stcommcontact']['checked'])) {
 			print '<td class="center nowrap"><div class="nowrap">';
-			print '<div class="inline-block">'.$contactstatic->libProspCommStatut($obj->stcomm_id, 2, $contactstatic->cacheprospectstatus[$obj->stcomm_id]['label'], $obj->stcomm_picto);
+			print '<div class="inline-block">'.$contactstatic->libProspCommStatut($obj->stcomm_id, 2, $contactstatic->cacheprospectstatus[$obj->stcomm_id]['label'] ?? '', $obj->stcomm_picto);
 			print '</div> - <div class="inline-block">';
 			foreach ($contactstatic->cacheprospectstatus as $key => $val) {
 				$titlealt = 'default';

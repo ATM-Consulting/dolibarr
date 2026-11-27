@@ -419,8 +419,11 @@ if ($step == 2 && $action == 'select_model' && $user->hasRight('export', 'lire')
 		$fieldsarrayvalue = explode(',', $objexport->hexafiltervalue);
 		$i = 1;
 		foreach ($fieldsarrayvalue as $val) {
+			if ($val === '') {
+				continue;	// Model saved without any filter
+			}
 			$tmp = explode('=', $val);
-			$array_filtervalue[$tmp[0]] = $tmp[1];
+			$array_filtervalue[$tmp[0]] = $tmp[1] ?? '';
 			$i++;
 		}
 		$_SESSION["export_filtered_fields"] = $array_filtervalue;
@@ -666,7 +669,13 @@ if ($step == 2 && $datatoexport) {
 		$tablename = getablenamefromfield($code, $sqlmaxforexport);
 		$htmltext = '<b>'.$langs->trans("Name").":</b> ".$text.'<br>';
 		if (!empty($objexport->array_export_special[0][$code])) {
-			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ".$objexport->array_export_special[0][$code]."<br>";
+			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ";
+			if (isset($objexport->array_export_special[0][$code]['method'])) {
+				$htmltext .= $objexport->array_export_special[0][$code]['method'];
+			} elseif (!is_array($objexport->array_export_special[0][$code])) {
+				$htmltext .= $objexport->array_export_special[0][$code];
+			}
+			$htmltext .= "<br>";
 		} else {
 			$htmltext .= '<b>'.$langs->trans("Table")." -> ".$langs->trans("Field").":</b> ".$tablename." -> ".preg_replace('/^.*\./', '', $code)."<br>";
 		}
@@ -862,7 +871,13 @@ if ($step == 3 && $datatoexport) {
 		$tablename = getablenamefromfield($code, $sqlmaxforexport);
 		$htmltext = '<b>'.$langs->trans("Name").':</b> '.$text.'<br>';
 		if (!empty($objexport->array_export_special[0][$code])) {
-			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ".$objexport->array_export_special[0][$code]."<br>";
+			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ";
+			if (isset($objexport->array_export_special[0][$code]['method'])) {
+				$htmltext .= $objexport->array_export_special[0][$code]['method'];
+			} elseif (!is_array($objexport->array_export_special[0][$code])) {
+				$htmltext .= $objexport->array_export_special[0][$code];
+			}
+			$htmltext .= "<br>";
 		} else {
 			$htmltext .= '<b>'.$langs->trans("Table")." -> ".$langs->trans("Field").":</b> ".$tablename." -> ".preg_replace('/^.*\./', '', $code)."<br>";
 		}
@@ -1072,7 +1087,13 @@ if ($step == 4 && $datatoexport) {
 		$tablename = getablenamefromfield($code, $sqlmaxforexport);
 		$htmltext = '<b>'.$langs->trans("Name").':</b> '.$text.'<br>';
 		if (!empty($objexport->array_export_special[0][$code])) {
-			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ".$objexport->array_export_special[0][$code]."<br>";
+			$htmltext .= '<b>'.$langs->trans("ComputedField")." -> ".$langs->trans("Method")." :</b> ";
+			if (isset($objexport->array_export_special[0][$code]['method'])) {
+				$htmltext .= $objexport->array_export_special[0][$code]['method'];
+			} elseif (!is_array($objexport->array_export_special[0][$code])) {
+				$htmltext .= $objexport->array_export_special[0][$code];
+			}
+			$htmltext .= "<br>";
 		} else {
 			$htmltext .= '<b>'.$langs->trans("Table")." -> ".$langs->trans("Field").":</b> ".$tablename." -> ".preg_replace('/^.*\./', '', $code)."<br>";
 		}

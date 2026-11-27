@@ -6,11 +6,11 @@
 						$sql .= " SET reponses = '0".$db->escape($obj->reponses)."'";
 						$tmpfiles = dol_dir_list($tmpdir, 'files', 0, '\.od(s|t)$', '', 'name', SORT_ASC, 0);
 						print '<td class="center"><a href="'.DOL_URL_ROOT.'/product/stock/product.php?dwid='.$object->id.'&id='.$objp->rowid.'&action=transfert&token='.newToken().'&backtopage='.urlencode($_SERVER["PHP_SELF"].'?id='.$id).'">';
-					$dateemail = dol_stringtotime((string) $overview[0]->udate, 'gmt');
+						$dateemail = dol_stringtotime((string) $overview[0]->udate, 'gmt');
 					$pice = '<i class="fas fa-briefcase inline-block"></i>';
 					$typea = ($data[$j]->typea == 'birth') ? $picb : $pice;
 					GETPOSTINT("mouvement"),
-					dol_syslog("msgid=".$overview[0]->message_id." date=".dol_print_date($overview[0]->udate, 'dayrfc', 'gmt')." from=".$overview[0]->from." to=".$overview[0]->to." subject=".$overview[0]->subject);
+						dol_syslog("msgid=".$overview[0]->message_id." date=".dol_print_date($overview[0]->udate, 'dayrfc', 'gmt')." from=".$overview[0]->from." to=".$overview[0]->to." subject=".$overview[0]->subject);
 					jQuery("#mouvement option").removeAttr("selected").change();
 					jQuery("#mouvement option[value=0]").attr("selected","selected").trigger("change");
 					jQuery("#mouvement option[value=1]").attr("selected","selected").trigger("change");
@@ -134,7 +134,7 @@
 $permissiontoadd = $user->hasRight('stock', 'mouvement', 'creer');
 $permissiontodelete = $user->hasRight('stock', 'mouvement', 'creer'); // There is no deletion permission for stock movement as we should never delete
 $permissiontoread = $user->hasRight('stock', 'mouvement', 'lire');
-$sql .= " GROUP BY cs.rowid, cs.fk_type, cs.fk_user, cs.amount, cs.date_ech, cs.libelle, cs.paye, cs.periode, cs.fk_account, c.libelle, c.accountancy_code, ba.label, ba.ref, ba.number, ba.account_number, ba.iban_prefix, ba.bic, ba.currency_code, ba.clos, pay.code";
+$sql .= " GROUP BY cs.rowid, cs.fk_type, cs.fk_user, cs.amount, cs.date_ech, cs.libelle, cs.paye, cs.periode, cs.fk_account, cs.note_public, cs.note_private, c.libelle, c.accountancy_code, ba.label, ba.ref, ba.number, ba.account_number, ba.iban_prefix, ba.bic, ba.currency_code, ba.clos, pay.code";
 $sql .= " cs.amount, cs.date_ech, cs.libelle as label, cs.paye, cs.periode as period, cs.fk_account, cs.note_public, cs.note_private,";
 $sql .= " cs.rowid, cs.libelle as label_sc, cs.fk_type as type, cs.periode as period, cs.date_ech, cs.amount as total, cs.paye,";
 $sql = "SELECT id_users, nom as name, id_sondage, reponses";

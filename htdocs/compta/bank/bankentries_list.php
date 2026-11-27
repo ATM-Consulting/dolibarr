@@ -1479,6 +1479,7 @@ if ($resql) {
 
 		$banklinestatic->id = $objp->rowid;
 		$banklinestatic->ref = (string) $objp->rowid;
+		$banklinestatic->amount = $objp->amount;
 
 		print '<tr class="oddeven" '.$backgroundcolor.'>';
 
@@ -1695,9 +1696,11 @@ if ($resql) {
 
 		// Cheque
 		if (!empty($arrayfields['b.fk_bordereau']['checked'])) {
-			$bordereaustatic->fetch($objp->fk_bordereau);
 			print '<td class="nowraponall center">';
-			print $bordereaustatic->getNomUrl();
+			if ($objp->fk_bordereau > 0) {
+				$bordereaustatic->fetch($objp->fk_bordereau);
+				print $bordereaustatic->getNomUrl();
+			}
 			print '</td>';
 			if (!$i) {
 				$totalarray['nbfield']++;
@@ -1872,16 +1875,6 @@ if ($resql) {
 			}
 		}
 
-		if (!empty($arrayfields['b.fk_bordereau']['checked'])) {
-			$bordereaustatic->fetch($objp->fk_bordereau);
-			print '<td class="nowraponall center">';
-			print $bordereaustatic->getNomUrl();
-			print '</td>';
-			if (!$i) {
-				$totalarray['nbfield']++;
-			}
-		}
-
 		// Extra fields
 		$obj = $objp; // Because extrafield template use $obj and not $objp as object variable name
 		include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_print_fields.tpl.php';
@@ -1913,7 +1906,9 @@ if ($resql) {
 				}
 			}
 			if ($user->hasRight('banque', 'modifier')) {
-				$parambis = preg_replace('/action=reconcile/', '', $param);
+				// Strip the surrounding & so the leading action= we put first stays the only action= in the URL.
+				// Without this the URL ends up with two action= params; PHP picks the last one and the page silently switches to 'reconcile' instead of 'delete'.
+				$parambis = preg_replace('/&?action=(reconcile|confirm_deleteonreconcile)(&|$)/', '\2', $param);
 				print '<a href="'.$_SERVER["PHP_SELF"].'?action='.($action == 'reconcile' ? 'confirm_deleteonreconcile&confirm=yes' : 'delete').'&token='.newToken().'&rowid='.$objp->rowid.'&page='.$page.$parambis.($sortfield ? '&sortfield='.$sortfield : '').($sortorder ? '&sortorder='.$sortorder : '').'">';
 				print img_delete('', 'class="marginleftonly"');
 				print '</a>';

@@ -278,6 +278,42 @@ class Boms extends DolibarrApi
 	}
 
 	/**
+	 * Validate BOM
+	 *
+	 * @param   int $id             BOM ID
+	 * @param   int $notrigger      1=Does not execute triggers, 0= execute triggers
+	 * @return  Object              Object with cleaned properties
+	 *
+	 * @url POST    {id}/validate
+	 *
+	 * @throws RestException 304
+	 * @throws RestException 401
+	 * @throws RestException 404
+	 * @throws RestException 500 System error
+	 */
+	public function validate($id, $notrigger = 0)
+	{
+		if (!DolibarrApiAccess::$user->hasRight('bom', 'write')) {
+			throw new RestException(403);
+		}
+		$result = $this->bom->fetch($id);
+		if (!$result) {
+			throw new RestException(404, 'Bom not found');
+		}
+
+		$result = $this->bom->validate(DolibarrApiAccess::$user, $notrigger);
+		if ($result == 0) {
+			throw new RestException(304, 'Error nothing done. May be object is already validated');
+		}
+		if ($result < 0) {
+			throw new RestException(500, 'Error when validating BOM: '.$this->bom->error);
+		}
+		$result = $this->bom->fetch($id);
+
+		return $this->_cleanObjectDatas($this->bom);
+	}
+
+	/**
 	 * Delete bom
 	 *
 	 * @param   int     $id   BOM ID
@@ -434,6 +470,16 @@ class Boms extends DolibarrApi
 
 		if (!DolibarrApi::_checkAccessToResource('bom_bom', $this->bom->id)) {
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
+		// BOM::updateLine() sets fk_bom to this BOM on whatever line it is given, so a line of
+		// another BOM must be refused here or it would be moved into this one.
+		$bomline = new BOMLine($this->db);
+		if ($bomline->fetch($lineid) <= 0) {
+			throw new RestException(404, 'BOM line not found');
+		}
+		if ($bomline->fk_bom != $this->bom->id) {
+			throw new RestException(403, 'Line does not belong to this BOM');
 		}
 
 		$request_data = (object) $request_data;

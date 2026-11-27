@@ -715,6 +715,14 @@ if (empty($reshook)) {
 									break;
 								}
 
+								// Keep the extra parameters of the source line (for example the options of subtotal lines)
+								if ($result > 0 && !empty($lines[$i]->extraparams)) {
+									$newline = new PropaleLigne($db);
+									$newline->id = $result;
+									$newline->extraparams = $lines[$i]->extraparams;
+									$newline->setExtraParameters();
+								}
+
 								// Defined the new fk_parent_line
 								if ($result > 0 && $lines[$i]->product_type == 9) {
 									$fk_parent_line = $result;
@@ -932,7 +940,7 @@ if (empty($reshook)) {
 		$fromElementid = GETPOST('fromelementid');
 		$importLines = GETPOST('line_checkbox');
 
-		if (!empty($importLines) && is_array($importLines) && !empty($fromElement) && ctype_alpha($fromElement) && !empty($fromElementid)) {
+		if (!empty($importLines) && is_array($importLines) && !empty($fromElement) && preg_match('/^[a-zA-Z]+$/', $fromElement) && !empty($fromElementid)) {
 			if ($fromElement == 'commande') {
 				dol_include_once('/' . $fromElement . '/class/' . $fromElement . '.class.php');
 				$lineClassName = 'OrderLine';
@@ -1014,7 +1022,9 @@ if (empty($reshook)) {
 	$triggersendname = 'PROPAL_SENTBYMAIL';
 	$autocopy = 'MAIN_MAIL_AUTOCOPY_PROPOSAL_TO';
 	$trackid = 'pro' . $object->id;
-	include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';
+	if ($usercansend) {	// The right to send is also tested here, not only to show the button (action=send can be forged)
+		include DOL_DOCUMENT_ROOT . '/core/actions_sendmails.inc.php';
+	}
 
 
 	// Go back to draft
@@ -1400,7 +1410,9 @@ if (empty($reshook)) {
 						$pu_ttc = $prod->multiprices_ttc[$object->thirdparty->price_level];
 						$price_min = $prod->multiprices_min[$object->thirdparty->price_level];
 						$price_min_ttc = $prod->multiprices_min_ttc[$object->thirdparty->price_level];
-						$price_base_type = $prod->multiprices_base_type[$object->thirdparty->price_level];
+						// A price level with no price row leaves multiprices_base_type empty (null or ''), and an empty
+						// value is not 'HT' for addline(), which then takes the price as TTC and stores it with the VAT added.
+						$price_base_type = (empty($prod->multiprices_base_type[$object->thirdparty->price_level]) ? 'HT' : $prod->multiprices_base_type[$object->thirdparty->price_level]);
 						if (getDolGlobalString('PRODUIT_MULTIPRICES_USE_VAT_PER_LEVEL')) {  // using this option is a bug. kept for backward compatibility
 							if (isset($prod->multiprices_tva_tx[$object->thirdparty->price_level])) {
 								$tva_tx = $prod->multiprices_tva_tx[$object->thirdparty->price_level];
@@ -1415,7 +1427,9 @@ if (empty($reshook)) {
 					$pu_ttc = $prod->multiprices_ttc[$object->thirdparty->price_level];
 					$price_min = $prod->multiprices_min[$object->thirdparty->price_level];
 					$price_min_ttc = $prod->multiprices_min_ttc[$object->thirdparty->price_level];
-					$price_base_type = $prod->multiprices_base_type[$object->thirdparty->price_level];
+					// A price level with no price row leaves multiprices_base_type empty (null or ''), and an empty
+					// value is not 'HT' for addline(), which then takes the price as TTC and stores it with the VAT added.
+					$price_base_type = (empty($prod->multiprices_base_type[$object->thirdparty->price_level]) ? 'HT' : $prod->multiprices_base_type[$object->thirdparty->price_level]);
 					if (getDolGlobalString('PRODUIT_MULTIPRICES_USE_VAT_PER_LEVEL')) {  // using this option is a bug. kept for backward compatibility
 						if (isset($prod->multiprices_tva_tx[$object->thirdparty->price_level])) {
 							$tva_tx = $prod->multiprices_tva_tx[$object->thirdparty->price_level];
@@ -1748,6 +1762,9 @@ if (empty($reshook)) {
 
 					setEventMessages($object->error, $object->errors, 'errors');
 				}
+			} else {
+				// A check before the insert failed (e.g. price lower than minimum price): close the transaction opened above
+				$db->rollback();
 			}
 		}
 	} elseif ($action == 'addline' && $usercancreate && (
@@ -1780,7 +1797,7 @@ if (empty($reshook)) {
 				} else {
 					setEventMessages($prod->error, $prod->errors, 'errors');
 				}
-			} else {
+			} elseif ($line->fk_product) { // Display errors only for non-free lines
 				setEventMessages($prod->error, $prod->errors, 'errors');
 			}
 
@@ -2038,7 +2055,7 @@ if (empty($reshook)) {
 				}
 			}
 
-			$qty = price2num(GETPOST('qty', 'alpha'), 'MS');
+			$qty = price2num(GETPOST('qty', 'alpha'), 'MS', 2);
 
 			$result = $object->updateline(GETPOSTINT('lineid'), (float) $pu, (float) $qty, $remise_percent, $vat_rate, $localtax1_rate, $localtax2_rate, $description, $price_base_type, $info_bits, $special_code, GETPOSTINT('fk_parent_line'), 0, (int) $fournprice, $buyingprice, $label, $type, $date_start, $date_end, $array_options, GETPOSTINT("units"), (float) $pu_ht_devise);
 
@@ -2336,6 +2353,9 @@ if ($action == 'create') {
 		if (GETPOSTISSET('fk_account')) {
 			$fk_account = GETPOSTINT('fk_account');
 		}
+		if (GETPOSTISSET('shipping_method_id')) {
+			$shipping_method_id = GETPOSTINT('shipping_method_id');
+		}
 	}
 	// Warehouse default if null
 	if ($soc->fk_warehouse > 0) {
@@ -2387,7 +2407,6 @@ if ($action == 'create') {
 
 		print '<td class="titlefieldcreate fieldrequired">' . $langs->trans('Customer') . '</td>';
 		$shipping_method_id = 0;
-		$warehouse_id = 0;
 
 		if ($socid > 0) {
 			print '<td class="valuefieldcreate">';
@@ -2484,7 +2503,7 @@ if ($action == 'create') {
 			}
 			print '<tr class="field_shipping_method_id"><td class="titlefieldcreate">' . $langs->trans('SendingMethod') . '</td><td class="valuefieldcreate">';
 			print img_picto('', 'dolly', 'class="pictofixedwidth"');
-			$form->selectShippingMethod((string) (GETPOSTISSET('shipping_method_id') ? GETPOSTINT('shipping_method_id') : $shipping_method_id), 'shipping_method_id', '', 1, '', 0, 'maxwidth200 widthcentpercentminusx');
+			$form->selectShippingMethod((string) $shipping_method_id, 'shipping_method_id', '', 1, '', 0, 'maxwidth200 widthcentpercentminusx');
 			print '</td></tr>';
 		}
 
@@ -2640,9 +2659,9 @@ if ($action == 'create') {
 			print '<tr><td>' . $langs->trans('AmountTTC') . '</td><td>' . price($objectsrc->total_ttc, 0, $langs, 1, -1, -1, $conf->currency) . "</td></tr>";
 
 			if (isModEnabled("multicurrency")) {
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountHT') . '</td><td>' . price($objectsrc->multicurrency_total_ht) . '</td></tr>';
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountVAT') . '</td><td>' . price($objectsrc->multicurrency_total_tva) . "</td></tr>";
-				print '<tr><td>' . $langs->trans('MulticurrencyAmountTTC') . '</td><td>' . price($objectsrc->multicurrency_total_ttc) . "</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountHT').'</td><td>'.price($objectsrc->multicurrency_total_ht, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code).'</td></tr>';
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountVAT').'</td><td>'.price($objectsrc->multicurrency_total_tva, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
+				print '<tr><td>'.$langs->trans('MulticurrencyAmountTTC').'</td><td>'.price($objectsrc->multicurrency_total_ttc, 0, $langs, 1, -1, -1, $objectsrc->multicurrency_code)."</td></tr>";
 			}
 		}
 
@@ -3019,7 +3038,7 @@ if ($action == 'create') {
 	// Thirdparty
 	$morehtmlref .= '<br>' . $soc->getNomUrl(1, 'customer');
 	if (!getDolGlobalString('MAIN_DISABLE_OTHER_LINK') && $soc->id > 0) {
-		$morehtmlref .= ' (<a href="' . DOL_URL_ROOT . '/comm/propal/list.php?socid=' . $soc->id . '&search_societe=' . urlencode($soc->name) . '">' . $langs->trans("OtherProposals") . '</a>)';
+		$morehtmlref .= ' (<a href="' . DOL_URL_ROOT . '/comm/propal/list.php?socid=' . ((int) $soc->id) . '">' . $langs->trans("OtherProposals") . '</a>)';
 	}
 	// Project
 	if (isModEnabled('project')) {
@@ -3556,7 +3575,7 @@ if ($action == 'create') {
 						'url' => '/comm/propal/card.php?id=' . $object->id . '&action=add_subtotal_line&token=' . newToken()
 					);
 
-					print dolGetButtonAction('', $langs->trans('Subtotal'), 'default', $url_button, '', true);
+					print dolGetButtonAction('', $langs->trans('SubTotal'), 'default', $url_button, '', true);
 				}
 
 				// Validate
@@ -3619,7 +3638,7 @@ if ($action == 'create') {
 						'enabled' => ($object->status == Propal::STATUS_SIGNED && isModEnabled("supplier_order")),
 						'perm' => $usercancreatepurchaseorder,
 						'label' => 'AddPurchaseOrder',
-						'url' => '/fourn/commande/card.php?action=create&origin=' . urlencode($object->element) . '&originid=' . ((int) $object->id) . '&socid=' . ((int) $object->socid)
+						'url' => '/fourn/commande/card.php?action=create&origin=' . urlencode($object->element) . '&originid=' . ((int) $object->id)
 					);
 					/*if ($object->status == Propal::STATUS_SIGNED && isModEnabled("supplier_order")) {
 						if ($usercancreatepurchaseorder) {

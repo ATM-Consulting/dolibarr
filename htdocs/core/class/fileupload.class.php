@@ -73,6 +73,7 @@ class FileUpload
 		$pathname = str_replace('/class', '', $element_prop['classpath']);
 		$filename = dol_sanitizeFileName($element_prop['classfile']);
 		$dir_output = dol_sanitizePathName($element_prop['dir_output']);
+		$savingDocMask = '';
 
 		//print 'fileupload.class.php: element='.$element.' pathname='.$pathname.' filename='.$filename.' dir_output='.$dir_output."\n";
 
@@ -88,6 +89,11 @@ class FileUpload
 			$object = fetchObjectByElement($fk_element, $element);
 
 			$object_ref = dol_sanitizeFileName($object->ref);
+
+			// add object reference as file name prefix if const MAIN_DISABLE_SUGGEST_REF_AS_PREFIX is not enabled
+			if (!getDolGlobalInt('MAIN_DISABLE_SUGGEST_REF_AS_PREFIX')) {
+				$savingDocMask = $object_ref.'-__file__';
+			}
 
 			// Special cases to forge $object_ref used to forge $upload_dir
 			if ($element == 'invoice_supplier') {
@@ -114,6 +120,7 @@ class FileUpload
 			'script_url' => $_SERVER['PHP_SELF'],
 			'upload_dir' => $dir_output.'/'.$object_ref.'/',
 			'upload_url' => DOL_URL_ROOT.'/document.php?modulepart='.$element.'&attachment=1&file=/'.$object_ref.'/',
+			'saving_doc_mask' => $savingDocMask,
 			'param_name' => 'files',
 			// Set the following option to 'POST', if your server does not support
 			// DELETE requests. This is a parameter sent to the client:
@@ -274,7 +281,8 @@ class FileUpload
 		$new_file_path = $options['upload_dir'].$file_name;
 
 		if (dol_mkdir($options['upload_dir']) >= 0) {
-			list($img_width, $img_height) = @getimagesize($file_path);
+			$imagesize = @getimagesize($file_path);	// false if the file is not an image, and destructuring false raises a warning since PHP 8.5
+			list($img_width, $img_height) = (is_array($imagesize) ? $imagesize : array(null, null));
 			if (!$img_width || !$img_height) {
 				return false;
 			}
@@ -343,7 +351,9 @@ class FileUpload
 			$file->error = 'maxNumberOfFiles';
 			return false;
 		}
-		list($img_width, $img_height) = @getimagesize($uploaded_file);
+		// getimagesize() throws a ValueError on an empty path since PHP 8, so it is not called when the file was not found
+		$imagesize = (empty($uploaded_file) ? false : @getimagesize($uploaded_file));	// false if the file is not an image, and destructuring false raises a warning since PHP 8.5
+		list($img_width, $img_height) = (is_array($imagesize) ? $imagesize : array(null, null));
 		if (is_numeric($img_width)) {
 			if ($this->options['max_width'] && $img_width > $this->options['max_width'] ||
 					$this->options['max_height'] && $img_height > $this->options['max_height']) {
@@ -432,13 +442,23 @@ class FileUpload
 
 		// Sanitize to avoid stream execution when calling file_size(). Not that this is a second security because
 		// most streams are already disabled by stream_wrapper_unregister() in filefunc.inc.php
-		$uploaded_file = preg_replace('/\s*(http|ftp|sftp|)s?:/i', '', $uploaded_file);
+		// A scheme has at least 2 characters (http:, phar:, data:...), so the drive letter of a Windows path
+		// (C:\wamp64\tmp\php1A2.tmp) is kept: removing it made realpath() fail and every upload fail on Windows.
+		$uploaded_file = preg_replace('/\s*[a-z][a-z0-9+.\-]+:/i', '', (string) $uploaded_file);
 		$uploaded_file = realpath($uploaded_file);	// A hack to be sure the file point to an existing file on disk (and is not a SSRF attack)
 
 		$validate = $this->validate($uploaded_file, $file, $error, $index);
 
 		if ($validate) {
 			if (dol_mkdir($this->options['upload_dir']) >= 0) {
+				// add object reference as file name prefix if const MAIN_DISABLE_SUGGEST_REF_AS_PREFIX is not enabled
+				$fileNameWithoutExt = preg_replace('/\.[^\.]+$/', '', $file->name);
+				$savingDocMask = $this->options['saving_doc_mask'];
+				if ($savingDocMask && strpos($savingDocMask, $fileNameWithoutExt) !== 0) {
+					$fileNameWithPrefix = preg_replace('/__file__/', $file->name, $savingDocMask);
+					$file->name = $fileNameWithPrefix;
+				}
+
 				$file_path = dol_sanitizePathName($this->options['upload_dir']).dol_sanitizeFileName($file->name);
 				$append_file = !$this->options['discard_aborted_uploads'] && dol_is_file($file_path) && $file->size > dol_filesize($file_path);
 

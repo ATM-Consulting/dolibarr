@@ -334,6 +334,17 @@ class ProductFournisseur extends Product
 
 		$error = 0;
 
+		// When called on a loaded product, the price line must be one of its own
+		if ($this->id > 0) {
+			$sql = "SELECT rowid FROM ".MAIN_DB_PREFIX."product_fournisseur_price";
+			$sql .= " WHERE rowid = ".((int) $rowid)." AND fk_product = ".((int) $this->id);
+			$resql = $this->db->query($sql);
+			if (!$resql || !$this->db->num_rows($resql)) {
+				$this->error = 'ErrorRecordNotFound';
+				return -1;
+			}
+		}
+
 		$this->db->begin();
 
 		// Call trigger
@@ -832,7 +843,7 @@ class ProductFournisseur extends Product
 	public function list_product_fournisseur_price($prodid, $sortfield = '', $sortorder = '', $limit = 0, $offset = 0, $socid = 0)
 	{
 		// phpcs:enable
-		$sql = "SELECT s.nom as supplier_name, s.rowid as fourn_id, p.ref as product_ref, p.tosell as status, p.tobuy as status_buy, ";
+		$sql = "SELECT s.nom as supplier_name, s.rowid as fourn_id, p.ref as product_ref, p.tosell as status, p.tobuy as status_buy, p.fk_unit as product_fk_unit, ";
 		$sql .= " pfp.rowid as product_fourn_pri_id, pfp.entity, pfp.ref_fourn, pfp.desc_fourn, pfp.fk_product as product_fourn_id, pfp.fk_supplier_price_expression,";
 		$sql .= " pfp.price, pfp.quantity, pfp.unitprice, pfp.remise_percent, pfp.remise, pfp.tva_tx, pfp.fk_availability, pfp.charges, pfp.info_bits, pfp.delivery_time_days, pfp.supplier_reputation,";
 		$sql .= " pfp.multicurrency_price, pfp.multicurrency_unitprice, pfp.multicurrency_tx, pfp.fk_multicurrency, pfp.multicurrency_code, pfp.datec, pfp.tms,";
@@ -885,6 +896,11 @@ class ProductFournisseur extends Product
 				$prodfourn->supplier_reputation = $record["supplier_reputation"];
 				$prodfourn->fourn_date_creation = $this->db->jdate($record['datec']);
 				$prodfourn->fourn_date_modification = $this->db->jdate($record['tms']);
+				// Carry the product's default measuring unit so the AJAX caller
+				// (getSupplierPrices.php) can return it to the line form, which
+				// then preselects #units like the customer side already does for
+				// idprod (see issues #34610 client-side and #38636 supplier-side).
+				$prodfourn->fk_unit = $record["product_fk_unit"];
 
 				$prodfourn->fourn_multicurrency_price = $record["multicurrency_price"];
 				$prodfourn->fourn_multicurrency_unitprice = $record["multicurrency_unitprice"];
