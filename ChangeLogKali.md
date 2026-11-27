@@ -14,6 +14,7 @@ PR#43195 - Quadratic update_price when generating a supplier invoice from a temp
 PR#43233 - A link extrafield left empty was stored as 0 instead of NULL (T250214)
 PR#43290 - A chkbxlst extrafield filtered on $ID$ broke the search input of list views (T250214)
 PR#43306 - A link extrafield to a category showed a bad setup error instead of its combo (T250214)
+PR#41087 - Hook printFieldListSearchParam on the reception list (TK2609-5362)
 
 
 ## SPÉ KOESIO 
