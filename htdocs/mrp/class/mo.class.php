@@ -312,7 +312,7 @@ class Mo extends CommonObject
 
 		// Translate some data of arrayofkeyval
 		foreach ($this->fields as $key => $val) {
-			if (!empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
+			if (is_object($langs) && !empty($val['arrayofkeyval']) && is_array($val['arrayofkeyval'])) {
 				foreach ($val['arrayofkeyval'] as $key2 => $val2) {
 					$this->fields[$key]['arrayofkeyval'][$key2] = $langs->trans($val2);
 				}
@@ -1318,7 +1318,7 @@ class Mo extends CommonObject
 	 *      @param	string	$fieldstatus	Name of status field in this->table_element
 	 *      @return int						Return integer <0 if KO, >0 if OK
 	 */
-	public function setStatut($status, $elementId = null, $elementType = '', $trigkey = '', $fieldstatus = 'fk_statut')
+	public function setStatut($status, $elementId = null, $elementType = '', $trigkey = '', $fieldstatus = '')
 	{
 		global $user;
 

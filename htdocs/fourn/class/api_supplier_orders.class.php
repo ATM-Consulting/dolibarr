@@ -21,6 +21,7 @@
 use Luracast\Restler\RestException;
 
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.commande.class.php';
+require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 
 /**
  * API class for supplier orders
@@ -114,9 +115,11 @@ class SupplierOrders extends DolibarrApi
 		// case of external user, $thirdparty_ids param is ignored and replaced by user's socid
 		$socids = DolibarrApiAccess::$user->socid ?: $thirdparty_ids;
 
-		// If the internal user must only see his customers, force searching by him
+		// If the internal user must only see his customers, force searching by him.
+		// The filter also applies when the caller provides thirdparty_ids, so the requested
+		// thirdparties are intersected with the customers of the sale representative.
 		$search_sale = 0;
-		if (!DolibarrApiAccess::$user->hasRight("societe", "client", "voir") && !empty($socids)) {
+		if (!DolibarrApiAccess::$user->socid && !DolibarrApiAccess::$user->hasRight("societe", "client", "voir")) {
 			$search_sale = DolibarrApiAccess::$user->id;
 		}
 
@@ -292,7 +295,8 @@ class SupplierOrders extends DolibarrApi
 	 * @param 	array 	$request_data   	Data
 	 * @phan-param ?array<string,string> $request_data
 	 * @phpstan-param ?array<string,string> $request_data
-	 * @return 	Object|false				Updated object
+	 * @return 	Object					Updated object
+	 * @throws RestException
 	 */
 	public function put($id, $request_data = null)
 	{
@@ -318,6 +322,18 @@ class SupplierOrders extends DolibarrApi
 				$this->order->context['caller'] = sanitizeVal($request_data['caller'], 'aZ09');
 				continue;
 			}
+			if ($field == 'socid' && (int) $value != $this->order->socid) {
+				// Check access to the new thirdparty to avoid a cross-customer supplier order reassignment
+				$new_socid = (int) $value;
+				$thirdparty = new Societe($this->db);
+				$result = $thirdparty->fetch($new_socid);
+				if ($result < 1) {
+					throw new RestException(404, 'Thirdparty with id='.$new_socid.' not found or not allowed');
+				}
+				if (!DolibarrApi::_checkAccessToResource('societe', $new_socid)) {
+					throw new RestException(403, 'Access to new thirdparty='.$new_socid.' is not allowed for login '.DolibarrApiAccess::$user->login);
+				}
+			}
 			if ($field == 'array_options' && is_array($value)) {
 				foreach ($value as $index => $val) {
 					$this->order->array_options[$index] = $this->_checkValExtrafieldsForAPI($index, $val, $this->order);
@@ -328,11 +344,11 @@ class SupplierOrders extends DolibarrApi
 			$this->order->$field = $this->_checkValForAPI($field, $value, $this->order);
 		}
 
-		if ($this->order->update(DolibarrApiAccess::$user)) {
+		if ($this->order->update(DolibarrApiAccess::$user) > 0) {
 			return $this->get($id);
 		}
 
-		return false;
+		throw new RestException(500, 'Error updating supplier order', array_merge(array($this->order->error), $this->order->errors));
 	}
 
 	/**
@@ -389,7 +405,9 @@ class SupplierOrders extends DolibarrApi
 			$request_data->multicurrency_subprice,
 			$request_data->origin,
 			$request_data->origin_id,
-			$request_data->rang,
+			// -1 is the "append at the end" value of addline(). An absent rang is null, which empty() turns into 0,
+			// so without this every line added through the API is stored with rang 0 instead of being appended.
+			isset($request_data->rang) ? $request_data->rang : -1,
 			$request_data->special_code
 		);
 

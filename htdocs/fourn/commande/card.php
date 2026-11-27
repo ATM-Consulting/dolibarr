@@ -594,7 +594,7 @@ if (empty($reshook)) {
 		$price_ht_devise = price2num(GETPOST('multicurrency_price_ht'), 'CU', 2);
 		$price_ttc = price2num(GETPOST('price_ttc'), 'MU', 2);
 		$price_ttc_devise = price2num(GETPOST('multicurrency_price_ttc'), 'CU', 2);
-		$qty = price2num(GETPOST('qty'.$predef, 'alpha'), 'MS');
+		$qty = price2num(GETPOST('qty'.$predef, 'alpha'), 'MS', 2);
 
 		$remise_percent = (GETPOSTISSET('remise_percent'.$predef) ? price2num(GETPOST('remise_percent'.$predef, 'alpha'), '', 2) : 0);
 		if (empty($remise_percent)) {
@@ -1047,7 +1047,7 @@ if (empty($reshook)) {
 			$lineid,
 			GETPOST('product_desc', 'restricthtml'),
 			$ht,
-			(float) price2num(GETPOST('qty'), 'MS'),
+			(float) price2num(GETPOST('qty'), 'MS', 2),
 			(float) price2num(GETPOST('remise_percent'), '', 2),
 			$vat_rate,
 			$localtax1_rate,
@@ -1066,10 +1066,13 @@ if (empty($reshook)) {
 		unset($_POST['qty']);
 		unset($_POST['type']);
 		unset($_POST['idprodfournprice']);
-		unset($_POST['remmise_percent']);
+		unset($_POST['remise_percent']);
 		unset($_POST['dp_desc']);
 		unset($_POST['np_desc']);
 		unset($_POST['pu']);
+		unset($_POST['price_ht']);
+		unset($_POST['price_ttc']);
+		unset($_POST['buying_price']);
 		unset($_POST['fourn_ref']);
 		unset($_POST['tva_tx']);
 		unset($_POST['date_start']);
@@ -1615,8 +1618,11 @@ if (empty($reshook)) {
 							$num = count($lines);
 
 							for ($i = 0; $i < $num; $i++) {
+								// The empty subprice test comes from the creation from a price request, where a line without a
+								// price must be skipped. From a customer order the sale price is not used at all: it is reset to 0
+								// below and replaced by the supplier price, so a line sold at 0 must still be ordered.
 								if (
-									empty($lines[$i]->subprice)
+									(empty($lines[$i]->subprice) && $origin != 'commande' && $origin != 'order')
 									|| $lines[$i]->qty < 0
 									|| !in_array($lines[$i]->id, $selectedLines)
 									|| $lines[$i]->special_code == SUBTOTALS_SPECIAL_CODE
@@ -2867,7 +2873,7 @@ if ($action == 'create') {
 						'enabled' => $object->status == CommandeFournisseur::STATUS_DRAFT,
 						'perm' => (bool) $usercancreate,
 						'label' => $langs->trans('AddTitleLine'),
-						'url' => dolBuildUrl($_SERVER['PHP_SELF'], ['id' => $object->id, 'action' => 'add_title_line'], true)
+						'url' => dolBuildUrl('/fourn/commande/card.php', ['id' => $object->id, 'action' => 'add_title_line'], true)
 					);
 
 					$url_button[] = array(
@@ -2875,7 +2881,7 @@ if ($action == 'create') {
 						'enabled' => $object->status == CommandeFournisseur::STATUS_DRAFT,
 						'perm' => (bool) $usercancreate,
 						'label' => $langs->trans('AddSubtotalLine'),
-						'url' => dolBuildUrl($_SERVER['PHP_SELF'], ['id' => $object->id, 'action' => 'add_subtotal_line'], true)
+						'url' => dolBuildUrl('/fourn/commande/card.php', ['id' => $object->id, 'action' => 'add_subtotal_line'], true)
 					);
 
 					print dolGetButtonAction('', $langs->trans('SubTotal'), 'default', $url_button, '', true);

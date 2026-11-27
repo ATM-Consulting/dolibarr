@@ -512,7 +512,7 @@ function completeFileArrayWithDatabaseInfo(&$filearray, $relativedir, $object = 
 				$ecmfile->fullpath_orig = $filearray[$key]['fullname'];
 				$ecmfile->gen_or_uploaded = 'unknown';
 				if (is_object($object)) {
-					$ecmfile->src_object_type = $object->element;
+					$ecmfile->src_object_type = $object->table_element;
 					$ecmfile->src_object_id = $object->id;
 				}
 				$ecmfile->description = ''; // indexed content
@@ -3052,11 +3052,12 @@ function dol_most_recent_file($dir, $regexfilter = '', $excludefilter = array('(
 
 /**
  * Security check when accessing to a document (used by document.php, viewimage.php and webservices to get documents).
+ * In read mode, a document not found into the session entity is searched into the entity of its object, if shared with the session entity.
  * TODO Replace code that set $accessallowed by a call to restrictedArea()
  *
  * @param	string		$modulepart			Module of document ('module', 'module_user_temp', 'module_user' or 'module_temp'). Example: 'medias', 'invoice', 'logs', 'tax-vat', ...
  * @param	string		$original_file		Relative path with filename, relative to modulepart.
- * @param	int 		$entity				Restrict objects stored into entity (0=no restriction). Note that permissions tested are the one the user is logged in, so permissions for $conf->entity that may be different than $entity.
+ * @param	int 		$entity				Restrict objects stored into entity (0=no restriction). Note that permissions tested are the one the user is logged in, so permissions for $conf->entity that may be different than $entity. An entity not visible from $conf->entity is replaced with $conf->entity.
  * @param  	User|null	$fuser				User object (forced)
  * @param	string		$refname			Ref of object to check permission for external users (autodetect if not provided by taking the dirname of $original_file) or for hierarchy
  * @param   string  	$mode               Check permission for 'read' or 'write'
@@ -3076,15 +3077,25 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	if (empty($modulepart)) {
 		return 'ErrorBadParameter';
 	}
+	// Parameters received, used to search the document into the entity of its object if it is not found into the session entity
+	$modulepartparam = $modulepart;
+	$originalfileparam = $original_file;
+	$refnameparam = $refname;
+
 	if (empty($entity)) {
 		if (!isModEnabled('multicompany')) {
 			$entity = 1;
 		} else {
 			$entity = 0;
 		}
-	} else {
-		// TODO Test that the user in session of conf->entity can see objects of the target $entity
-		// ...
+	} elseif ((int) $entity != (int) $conf->entity) {
+		// Permissions tested are the ones of the user into the session entity $conf->entity, so the target $entity is kept only if
+		// objects of the modulepart into $entity are visible from $conf->entity (shared entities). If not, we use $conf->entity.
+		$elementpropforentity = getElementProperties(preg_replace('/^apercu/', '', $modulepart));
+		if (!in_array((int) $entity, array_map('intval', explode(',', getEntity($elementpropforentity['element']))), true)) {
+			dol_syslog("dol_check_secure_access_document entity ".$entity." is not visible from entity ".$conf->entity." for modulepart=".$modulepart.", so we use entity ".$conf->entity, LOG_WARNING);
+			$entity = (int) $conf->entity;
+		}
 	}
 	// Fix modulepart for backward compatibility
 	if ($modulepart == 'facture') {
@@ -3107,6 +3118,18 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 	$accessallowed = 0;
 	$sqlprotectagainstexternals = '';
 	$ret = array();
+	$checksecureaccesshook = false;
+
+	// Security: Remove '.', '..' and empty segments ('/' -> '//') from $original_file. Without this, the reference
+	// of the object extracted from the subdirectory can be faked with a path like 'REF/./file' or 'REF//file':
+	// the reference resolved is '.' or '', the fetch of the object fails and some checks of permission are skipped.
+	$pathsegments = explode('/', $original_file);
+	foreach ($pathsegments as $key => $pathsegment) {
+		if ($pathsegment === '.' || $pathsegment === '..' || $pathsegment === '') {
+			unset($pathsegments[$key]);
+		}
+	}
+	$original_file = implode('/', $pathsegments);
 
 	// Find the subdirectory name as the reference. For example original_file='10/myfile.pdf' -> refname='10'
 	if (empty($refname)) {
@@ -3291,8 +3314,9 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			if ($refname && !$fuser->hasRight('holiday', 'readall') && !preg_match('/^specimen/i', $original_file)) {
 				include_once DOL_DOCUMENT_ROOT.'/holiday/class/holiday.class.php';
 				$tmpholiday = new Holiday($db);
-				$tmpholiday->fetch(0, $refname);
-				$accessallowed = checkUserAccessToObject($user, array('holiday'), $tmpholiday, 'holiday', '', '', 'rowid', '');
+				$resultfetch = $tmpholiday->fetch(0, $refname);
+				// If the object of the document can not be resolved, we refuse the access
+				$accessallowed = ($resultfetch > 0) ? checkUserAccessToObject($user, array('holiday'), $tmpholiday, 'holiday', '', '', 'rowid', '') : 0;
 			}
 		}
 		$original_file = $conf->holiday->dir_output.'/'.$original_file;
@@ -3323,8 +3347,9 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			if ($refname && !$fuser->hasRight('expensereport', 'readall') && !preg_match('/^specimen/i', $original_file)) {
 				include_once DOL_DOCUMENT_ROOT.'/expensereport/class/expensereport.class.php';
 				$tmpexpensereport = new ExpenseReport($db);
-				$tmpexpensereport->fetch(0, $refname);
-				$accessallowed = checkUserAccessToObject($user, array('expensereport'), $tmpexpensereport, 'expensereport', '', '', 'rowid', '');
+				$resultfetch = $tmpexpensereport->fetch(0, $refname);
+				// If the object of the document can not be resolved, we refuse the access
+				$accessallowed = ($resultfetch > 0) ? checkUserAccessToObject($user, array('expensereport'), $tmpexpensereport, 'expensereport', '', '', 'rowid', '') : 0;
 			}
 		}
 		$original_file = $conf->expensereport->dir_output.'/'.$original_file;
@@ -3399,16 +3424,23 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		$original_file = $conf->tax->dir_output.'/'.($modulepartsuffix != 'tax' ? $modulepartsuffix.'/' : '').$original_file;
 	} elseif (($modulepart == 'actions' || $modulepart == 'actioncomm') && !empty($conf->agenda->dir_output)) {
 		// Wrapping for events
-		if ($fuser->hasRight('agenda', 'myactions', $read)) {
+		if ($fuser->hasRight('agenda', 'allactions', $read)) {
+			$accessallowed = 1;
+		} elseif ($fuser->hasRight('agenda', 'myactions', $read)) {
 			$accessallowed = 1;
 			// If we known $id of project, call checkUserAccessToObject to check permission on the given agenda event on properties and assigned users
 			if ($refname && !preg_match('/^specimen/i', $original_file)) {
 				include_once DOL_DOCUMENT_ROOT.'/comm/action/class/actioncomm.class.php';
 				$tmpobject = new ActionComm($db);
-				$tmpobject->fetch((int) $refname);
-				$accessallowed = checkUserAccessToObject($user, array('agenda'), $tmpobject->id, 'actioncomm&societe', 'myactions|allactions', 'fk_soc', 'id', '');
-				if ($user->socid && $tmpobject->socid) {
-					$accessallowed = checkUserAccessToObject($user, array('societe'), $tmpobject->socid);
+				$resultfetch = $tmpobject->fetch((int) $refname);
+				if ($resultfetch > 0) {
+					$accessallowed = checkUserAccessToObject($user, array('agenda'), $tmpobject->id, 'actioncomm&societe', 'myactions|allactions', 'fk_soc', 'id', '');
+					if ($user->socid && $tmpobject->socid) {
+						$accessallowed = checkUserAccessToObject($user, array('societe'), $tmpobject->socid);
+					}
+				} else {
+					// If the event of the document can not be resolved, we refuse the access
+					$accessallowed = 0;
 				}
 			}
 		}
@@ -3480,6 +3512,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		$sqlprotectagainstexternals = "SELECT rowid as fk_soc FROM ".MAIN_DB_PREFIX."societe WHERE rowid = ".((int) $refname)." AND entity IN (".getEntity('societe').")";
 	} elseif (($modulepart == 'contact' || $modulepart == 'socpeople') && !empty($conf->societe->multidir_output[$entity])) {
 		// Wrapping for contact
+		$checksecureaccesshook = true;
 		if (empty($entity) || empty($conf->societe->multidir_output[$entity])) {
 			return array('accessallowed' => 0, 'error' => 'Value entity must be provided');
 		}
@@ -3592,8 +3625,9 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			if ($refname && !preg_match('/^specimen/i', $original_file)) {
 				include_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 				$tmpproject = new Project($db);
-				$tmpproject->fetch(0, $refname);
-				$accessallowed = checkUserAccessToObject($user, array('projet'), $tmpproject->id, 'projet&project', '', '', 'rowid', '');
+				$resultfetch = $tmpproject->fetch(0, $refname);
+				// If the project of the document can not be resolved, checkUserAccessToObject is skipped so we refuse the access
+				$accessallowed = ($resultfetch > 0) ? checkUserAccessToObject($user, array('projet'), $tmpproject->id, 'projet&project', '', '', 'rowid', '') : 0;
 			}
 		}
 		$original_file = $conf->project->multidir_output[$entity].'/'.$original_file;
@@ -3605,8 +3639,9 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			if ($refname && !preg_match('/^specimen/i', $original_file)) {
 				include_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
 				$tmptask = new Task($db);
-				$tmptask->fetch(0, $refname);
-				$accessallowed = checkUserAccessToObject($user, array('projet_task'), $tmptask->id, 'projet_task&project', '', '', 'rowid', '');
+				$resultfetch = $tmptask->fetch(0, $refname);
+				// If the task of the document can not be resolved, checkUserAccessToObject is skipped so we refuse the access
+				$accessallowed = ($resultfetch > 0) ? checkUserAccessToObject($user, array('projet_task'), $tmptask->id, 'projet_task&project', '', '', 'rowid', '') : 0;
 			}
 		}
 		$original_file = $conf->project->multidir_output[$entity].'/'.$original_file;
@@ -3616,14 +3651,14 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		if ($fuser->hasRight('fournisseur', 'commande', $lire) || preg_match('/^specimen/i', $original_file)) {
 			$accessallowed = 1;
 		}
-		$original_file = $conf->fournisseur->commande->dir_output.'/'.$original_file;
+		$original_file = (!empty($conf->fournisseur->commande->multidir_output[$entity]) ? $conf->fournisseur->commande->multidir_output[$entity] : $conf->fournisseur->commande->dir_output).'/'.$original_file;
 		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."commande_fournisseur WHERE ref='".$db->escape($refname)."' AND entity = ".((int) $conf->entity);
 	} elseif (($modulepart == 'facture_fournisseur' || $modulepart == 'invoice_supplier' || $modulepart == 'supplier_invoice') && !empty($conf->fournisseur->facture->dir_output)) {
 		// Wrapping for supplier invoices
 		if ($fuser->hasRight('fournisseur', 'facture', $lire) || preg_match('/^specimen/i', $original_file)) {
 			$accessallowed = 1;
 		}
-		$original_file = $conf->fournisseur->facture->dir_output.'/'.$original_file;
+		$original_file = (!empty($conf->fournisseur->facture->multidir_output[$entity]) ? $conf->fournisseur->facture->multidir_output[$entity] : $conf->fournisseur->facture->dir_output).'/'.$original_file;
 		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."facture_fourn WHERE ref='".$db->escape($refname)."' AND entity=".((int) $conf->entity);
 	} elseif ($modulepart == 'supplier_payment') {
 		// Wrapping for supplier payments
@@ -3670,12 +3705,14 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		}
 		$original_file = $conf->expedition->dir_output."/".(strpos($original_file, 'sending/') === 0 ? '' : 'sending/').$original_file;
 		//$original_file = $conf->expedition->dir_output."/".$original_file;
+		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."expedition WHERE ref='".$db->escape($refname)."' AND entity IN (".getEntity('expedition').")";
 	} elseif (($modulepart == 'livraison' || $modulepart == 'delivery') && !empty($conf->expedition->dir_output)) {
 		// Delivery Note Wrapping
 		if ($fuser->hasRight('expedition', 'delivery', $lire) || preg_match('/^specimen/i', $original_file)) {
 			$accessallowed = 1;
 		}
 		$original_file = $conf->expedition->dir_output."/".(strpos($original_file, 'receipt/') === 0 ? '' : 'receipt/').$original_file;
+		$sqlprotectagainstexternals = "SELECT fk_soc as fk_soc FROM ".MAIN_DB_PREFIX."delivery WHERE ref='".$db->escape($refname)."' AND entity IN (".getEntity('delivery').")";
 	} elseif ($modulepart == 'actionsreport' && !empty($conf->agenda->dir_temp)) {
 		// Wrapping for actions
 		if ($fuser->hasRight('agenda', 'allactions', $read) || preg_match('/^specimen/i', $original_file)) {
@@ -3684,6 +3721,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		$original_file = $conf->agenda->dir_temp."/".$original_file;
 	} elseif ($modulepart == 'product' || $modulepart == 'produit' || $modulepart == 'service' || $modulepart == 'produit|service') {
 		// Wrapping for products and services
+		$checksecureaccesshook = true;
 		if (empty($entity) || (empty($conf->product->multidir_output[$entity]) && empty($conf->service->multidir_output[$entity]))) {
 			return array('accessallowed' => 0, 'error' => 'Value entity must be provided');
 		}
@@ -3839,6 +3877,7 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		// If modulepart=module-abc			Allows any module to open a file if file is in directory called DOL_DATA_ROOT/modulepart
 	} else {
 		// GENERIC Wrapping
+		$checksecureaccesshook = true;
 		//var_dump($modulepart);
 		//var_dump($original_file);
 		if (preg_match('/^specimen/i', $original_file)) {
@@ -3929,7 +3968,10 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 				$original_file = $conf->$modulepart->dir_output.'/'.$original_file;
 			}
 		}
+	}
 
+	// Keep the session entity; modules must validate any requested shared entity themselves.
+	if ($checksecureaccesshook) {
 		$parameters = array(
 			'modulepart' => $modulepart,
 			'original_file' => $original_file,
@@ -3939,11 +3981,13 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 			'mode' => $mode
 		);
 		$reshook = $hookmanager->executeHooks('checkSecureAccess', $parameters, $object);
-		if ($reshook > 0) {
+		if ($reshook < 0) {
+			$accessallowed = 0;
+		} elseif ($reshook > 0) {
 			if (!empty($hookmanager->resArray['original_file'])) {
 				$original_file = $hookmanager->resArray['original_file'];
 			}
-			if (!empty($hookmanager->resArray['accessallowed'])) {
+			if (array_key_exists('accessallowed', $hookmanager->resArray)) {
 				$accessallowed = $hookmanager->resArray['accessallowed'];
 			}
 			if (!empty($hookmanager->resArray['sqlprotectagainstexternals'])) {
@@ -3961,6 +4005,17 @@ function dol_check_secure_access_document($modulepart, $original_file, $entity, 
 		}
 		if ($modulepart == 'memberphoto' && !$fuser->hasRight('adherent', $lire)) {
 			$accessallowed = 0;
+		}
+	}
+
+	// A document not found into the session entity may be the one of an object of another entity shared with the session entity. We then
+	// use the entity of this object (never an entity provided by the user). It is the same object than in checkUserAccessToDocumentObject().
+	if ($mode == 'read' && (int) $entity == (int) $conf->entity && isModEnabled('multicompany') && !empty($fuser->id)
+		&& !empty($original_file) && !file_exists(dol_osencode($original_file))) {
+		$documentobject = fetchObjectOfDocument($modulepartparam, $originalfileparam);
+		if (is_object($documentobject['object']) && $documentobject['object']->id > 0 && (int) $documentobject['object']->entity > 0 && (int) $documentobject['object']->entity != (int) $conf->entity) {
+			dol_syslog("dol_check_secure_access_document file not found into entity ".$conf->entity.", we use entity ".$documentobject['object']->entity." of the object of the document");
+			return dol_check_secure_access_document($modulepartparam, $originalfileparam, (int) $documentobject['object']->entity, $fuser, $refnameparam, $mode);
 		}
 	}
 

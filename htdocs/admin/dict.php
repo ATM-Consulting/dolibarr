@@ -928,9 +928,13 @@ if (empty($reshook)) {
 			$ok = 0;
 			setEventMessages($langs->transnoentities("ErrorCountryCodeMustBe2Char", $langs->transnoentities("Code")), null, 'errors');
 		}
-		if ($id == DICT_PAIEMENT && strlen(GETPOST("code")) >= 6) {  // 6 char max on code for payment mode codes
+		if ($id == DICT_PAIEMENT && strlen(GETPOST("code")) > 6) {  // 6 char max on code for payment mode codes
 			$ok = 0;
 			setEventMessages($langs->transnoentities("ErrorFieldMustHaveLessThanXChar", $langs->transnoentities("Code"), '6'), null, 'errors');
+		}
+		if ($id == DICT_TVA && dol_strlen(GETPOST("note")) > 128) {  // 128 char max on note for VAT dictionary
+			$ok = 0;
+			setEventMessages($langs->transnoentities("ErrorFieldMustHaveLessThanXChar", $langs->transnoentities("Note"), '128'), null, 'errors');
 		}
 
 		// Clean some parameters
@@ -954,6 +958,12 @@ if (empty($reshook)) {
 		}
 		if ($id == DICT_TVA && GETPOSTISSET("code")) {  // Spaces are not allowed into code for tax dictionary
 			$_POST["code"] = preg_replace('/[^a-zA-Z0-9_\-\+]/', '', GETPOST("code"));
+		}
+		// Checked after the cleaning above, so that a code shortened by it is not refused. The column c_tva.code
+		// is a varchar(10) and a longer value ended in a fatal SQL error instead of a message on the form.
+		if ($id == DICT_TVA && strlen(GETPOST("code")) > 10) {
+			$ok = 0;
+			setEventMessages($langs->transnoentities("ErrorFieldMustHaveLessThanXChar", $langs->transnoentities("Code"), '10'), null, 'errors');
 		}
 
 		$tablename = $tabname[$id];
@@ -1156,7 +1166,11 @@ if (empty($reshook)) {
 		$tablename = preg_replace('/^'.preg_quote(MAIN_DB_PREFIX, '/').'/', '', $tablename);
 
 		if ($rowid) {
-			$sql = "UPDATE ".MAIN_DB_PREFIX.$db->sanitize($tablename)." SET active = 1 WHERE ".$db->sanitize($rowidcol)." = ".((int) $rowid).($entity != '' ? " AND entity = ".(int) $entity : '');
+			if (in_array($rowidcol, array('code', 'code_iso'))) {
+				$sql = "UPDATE ".MAIN_DB_PREFIX.$db->sanitize($tablename)." SET active = 1 WHERE ".$db->sanitize($rowidcol)." = '".$db->escape($rowid)."'".($entity != '' ? " AND entity = ".(int) $entity : '');
+			} else {
+				$sql = "UPDATE ".MAIN_DB_PREFIX.$db->sanitize($tablename)." SET active = 1 WHERE ".$db->sanitize($rowidcol)." = ".((int) $rowid).($entity != '' ? " AND entity = ".(int) $entity : '');
+			}
 		} elseif ($code) {
 			$sql = "UPDATE ".MAIN_DB_PREFIX.$db->sanitize($tablename)." SET active = 1 WHERE code = '".$db->escape(dol_escape_htmltag($code))."'".($entity != '' ? " AND entity = ".(int) $entity : '');
 		} else {
@@ -2464,7 +2478,7 @@ if ($id > 0) {
 						foreach ($fieldlist as $field => $value) {
 							$class = (isset($tabcomplete[$tabname[$id]]['css'][$value]) ? $tabcomplete[$tabname[$id]]['css'][$value] : '');
 							$showfield = 1;
-							$valuetoshow = (isset($obj->$value) && $obj->$value !== null && $obj->$value !== '') ? $obj->$value : '';
+							$valuetoshow = (isset($obj->$value) && $obj->$value !== '') ? $obj->$value : '';
 							$titletoshow = '';
 
 							if ($value == 'entity') {

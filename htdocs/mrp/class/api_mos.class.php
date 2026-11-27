@@ -79,6 +79,11 @@ class Mos extends DolibarrApi
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
 		return $this->_cleanObjectDatas($this->mo);
 	}
 
@@ -239,6 +244,11 @@ class Mos extends DolibarrApi
 			$this->mo->$field = $this->_checkValForAPI($field, $value, $this->mo);
 		}
 
+		// Check permission on the thirdparty the new MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
 		$this->checkRefNumbering();
 
 		$result = $this->mo->create(DolibarrApiAccess::$user);
@@ -274,6 +284,11 @@ class Mos extends DolibarrApi
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
 		foreach ($request_data as $field => $value) {
 			if ($field == 'id') {
 				continue;
@@ -289,6 +304,10 @@ class Mos extends DolibarrApi
 					$this->mo->array_options[$index] = $this->_checkValExtrafieldsForAPI($index, $val, $this->mo);
 				}
 				continue;
+			}
+
+			if ($field == 'fk_soc' && (int) $value > 0 && !DolibarrApi::_checkAccessToResource('societe', (int) $value)) {
+				throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 			}
 
 			$this->mo->$field = $this->_checkValForAPI($field, $value, $this->mo);
@@ -332,6 +351,11 @@ class Mos extends DolibarrApi
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
 		$result = $this->mo->validate(DolibarrApiAccess::$user, $notrigger);
 		if ($result == 0) {
 			throw new RestException(304, 'Error nothing done. May be object is already validated');
@@ -363,6 +387,11 @@ class Mos extends DolibarrApi
 		}
 
 		if (!DolibarrApi::_checkAccessToResource('mrp', $this->mo->id, 'mrp_mo')) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
 			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
@@ -423,6 +452,15 @@ class Mos extends DolibarrApi
 		$result = $this->mo->fetch($id);
 		if (!$result) {
 			throw new RestException(404, 'MO not found');
+		}
+
+		if (!DolibarrApi::_checkAccessToResource('mrp', $this->mo->id, 'mrp_mo')) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
 		if ($this->mo->status != Mo::STATUS_VALIDATED && $this->mo->status != Mo::STATUS_INPROGRESS) {
@@ -806,6 +844,15 @@ class Mos extends DolibarrApi
 		$result = $this->mo->fetch($id);
 		if (!$result) {
 			throw new RestException(404, 'MO not found');
+		}
+
+		if (!DolibarrApi::_checkAccessToResource('mrp', $this->mo->id, 'mrp_mo')) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
+		}
+
+		// Check permission on the thirdparty the MO is linked to
+		if ($this->mo->fk_soc > 0 && !DolibarrApi::_checkAccessToResource('societe', $this->mo->fk_soc)) {
+			throw new RestException(403, 'Access not allowed for login '.DolibarrApiAccess::$user->login);
 		}
 
 		if ($this->mo->status != Mo::STATUS_VALIDATED && $this->mo->status != Mo::STATUS_INPROGRESS) {

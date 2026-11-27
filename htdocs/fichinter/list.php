@@ -293,6 +293,10 @@ foreach ($arrayfields as $tmpkey => $tmpval) {
 		break;
 	}
 }
+// The table of lines is joined only if a field of lines is shown, so do not search into it otherwise
+if (!$atleastonefieldinlines) {
+	unset($fieldstosearchall['fd.description']);
+}
 
 $sql = "SELECT";
 $sql .= " f.ref, f.ref_client, f.rowid, f.fk_statut as status, f.signed_status as signed_status, f.description, f.datec as date_creation, f.tms as date_modification, f.note_public, f.note_private,";
@@ -339,7 +343,7 @@ $reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object
 $sql .= $hookmanager->resPrint;
 
 $sql .= ", ".MAIN_DB_PREFIX."societe as s";
-$sql .= " WHERE f.entity IN (".getEntity('intervention').")";
+$sql .= " WHERE f.entity IN (".getEntity('fichinter').")";
 $sql .= " AND f.fk_soc = s.rowid";
 if ($search_ref) {
 	$sql .= natural_search('f.ref', $search_ref);

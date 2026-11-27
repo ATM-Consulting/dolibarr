@@ -240,9 +240,11 @@ class Tickets extends DolibarrApi
 		$socid = DolibarrApiAccess::$user->socid ?: $socid;
 
 		$search_sale = null;
-		// If the internal user must only see his customers, force searching by him
+		// If the internal user must only see his customers, force searching by him.
+		// The filter also applies when the caller provides the socid filter, so the requested
+		// thirdparties are intersected with the customers of the sale representative.
 		$search_sale = 0;
-		if (!DolibarrApiAccess::$user->hasRight('societe', 'client', 'voir') && !$socid) {
+		if (!DolibarrApiAccess::$user->socid && !DolibarrApiAccess::$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = DolibarrApiAccess::$user->id;
 		}
 
@@ -365,7 +367,7 @@ class Tickets extends DolibarrApi
 		$this->_validate($request_data);
 
 		// Check thirdparty validity
-		$socid = (int) $request_data['socid'];
+		$socid = (int) ($request_data['socid'] ?? 0);
 		if ($socid > 0) {
 			$thirdpartytmp = new Societe($this->db);
 			$thirdparty_result = $thirdpartytmp->fetch($socid);
@@ -486,7 +488,8 @@ class Tickets extends DolibarrApi
 		}
 		$ticketMessageText = $this->ticket->message;
 		$result = $this->ticket->fetch(0, '', $this->ticket->track_id);
-		// Backport of Dolibarr PR #42413 (https://github.com/Dolibarr/dolibarr/pull/42413)
+		// fetch() returns -1 on an error and 0 when nothing matches, and !(-1) is false, so an error went past
+		// this 404 and was reported later as a 400 or a 500 instead of a missing ticket.
 		if ($result <= 0) {
 			throw new RestException(404, 'Ticket not found');
 		}
@@ -602,7 +605,7 @@ class Tickets extends DolibarrApi
 		}
 
 		// Check thirdparty validity
-		$socid = (int) $request_data['socid'];
+		$socid = (int) ($request_data['socid'] ?? 0);
 		if ($socid > 0) {
 			$thirdpartytmp = new Societe($this->db);
 			$thirdparty_result = $thirdpartytmp->fetch($socid);

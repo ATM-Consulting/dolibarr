@@ -4,6 +4,7 @@
  * Copyright (C) 2025		MDW						<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2025		Charlene Benke  		<charlene@patas-monkey.com>
  * Copyright (C) 2025       Frédéric France         <frederic.france@free.fr>
+ * Copyright (C) 2026       Marukome0743
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +23,7 @@
 use Luracast\Restler\RestException;
 
 require_once DOL_DOCUMENT_ROOT.'/expedition/class/expedition.class.php';
+require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 
 /**
  * API class for shipments
@@ -118,9 +120,11 @@ class Shipments extends DolibarrApi
 		// case of external user, $thirdparty_ids param is ignored and replaced by user's socid
 		$socids = DolibarrApiAccess::$user->socid ?: $thirdparty_ids;
 
-		// If the internal user must only see his customers, force searching by him
+		// If the internal user must only see his customers, force searching by him.
+		// The filter also applies when the caller provides thirdparty_ids, so the requested
+		// thirdparties are intersected with the customers of the sale representative.
 		$search_sale = 0;
-		if (!DolibarrApiAccess::$user->hasRight('societe', 'client', 'voir') && !$socids) {
+		if (!DolibarrApiAccess::$user->socid && !DolibarrApiAccess::$user->hasRight('societe', 'client', 'voir')) {
 			$search_sale = DolibarrApiAccess::$user->id;
 		}
 
@@ -236,6 +240,8 @@ class Shipments extends DolibarrApi
 			$this->shipment->$field = $this->_checkValForAPI($field, $value, $this->shipment);
 		}
 		if (isset($request_data["lines"])) {
+			require_once DOL_DOCUMENT_ROOT.'/commande/class/commande.class.php';
+
 			$lines = array();
 			foreach ($request_data["lines"] as $line) {
 				$shipmentline = new ExpeditionLigne($this->db);
@@ -256,6 +262,14 @@ class Shipments extends DolibarrApi
 				if (is_array($detail_batch) || is_object($detail_batch)) {
 					$shipmentline->detail_batch = $detail_batch;
 				}
+
+				// Expedition::create() expands a kit into its components only when the line carries its product.
+				// Without this, the kit is stored as a parent line with a warehouse and no child lines.
+				$orderline = new OrderLine($this->db);
+				if ($orderline->fetch($shipmentline->fk_elementdet) > 0 && (empty($orderline->product_type) || getDolGlobalString('STOCK_SUPPORTS_SERVICES') || getDolGlobalString('SHIPMENT_SUPPORTS_SERVICES'))) {
+					$shipmentline->fk_product = (int) $orderline->fk_product;
+				}
+
 				$lines[] = $shipmentline;
 			}
 			$this->shipment->lines = $lines;
@@ -512,6 +526,19 @@ class Shipments extends DolibarrApi
 				// Add a mention of caller so on trigger called after action, we can filter to avoid a loop if we try to sync back again with the caller
 				$this->shipment->context['caller'] = sanitizeVal($request_data['caller'], 'aZ09');
 				continue;
+			}
+
+			if ($field == 'socid' && (int) $value != $this->shipment->socid) {
+				// Check access to the new thirdparty to avoid a cross-customer shipment reassignment
+				$new_socid = (int) $value;
+				$thirdparty = new Societe($this->db);
+				$result = $thirdparty->fetch($new_socid);
+				if ($result < 1) {
+					throw new RestException(404, 'Thirdparty with id='.$new_socid.' not found or not allowed');
+				}
+				if (!DolibarrApi::_checkAccessToResource('societe', $new_socid)) {
+					throw new RestException(403, 'Access to new thirdparty='.$new_socid.' is not allowed for login '.DolibarrApiAccess::$user->login);
+				}
 			}
 
 			if ($field == 'array_options' && is_array($value)) {
