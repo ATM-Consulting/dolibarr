@@ -519,28 +519,56 @@ if ($object->element == 'commande' && isModEnabled('stock') && isModEnabled('shi
 
 
 	if ($line->fk_product > 0 && $line->product_type == 0) {
-		static $productstatcache = array();
+		// BEGIN SPE KOESIO: T260145 let a module own the per line verdict
+		// This column used to recompute the state on its own, while the header icon goes
+		// through Commande::getShippableInfos() - which a module may replace. When the hook
+		// exposes a per line verdict under 'lines', it wins here too.
+		// Vocabulary of the contract: 'shipped' | 'shippable' | 'not_shippable', empty string
+		// or missing key meaning "no opinion, keep the native computation".
+		static $knShippableLines = null;
+		if ($knShippableLines === null) {
+			$knInfos = $object->getShippableInfos();
+			$knShippableLines = (isset($knInfos['lines']) && is_array($knInfos['lines'])) ? $knInfos['lines'] : array();
+		}
+		$knVerdict = isset($knShippableLines[$line->id]) ? $knShippableLines[$line->id] : '';
 
-		if (empty($productstatcache[$line->fk_product])) {
-			$prod = new Product($this->db);
-			$prod->fetch($line->fk_product);
-			$prod->load_stock('nobatch,warehouseopen');
-			$productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
-		}
-		$stock = $productstatcache[$line->fk_product]['stockreel'];
-		$reliquat = $line->qty;
-		if (!empty($object->expeditions[$line->id])) {
-			$reliquat -= $object->expeditions[$line->id];
-		}
-		if ($reliquat > 0) {
-			if ($stock >= $reliquat) {
-				print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'green');
+		if ($knVerdict !== '') {
+			// No stock figure in the label on purpose: the module may scope it to the line
+			// warehouse, and showing a total next to a per warehouse verdict is contradictory.
+			if ($knVerdict === 'shipped') {
+				print img_picto($langs->trans("Shipped"), 'statut5');
+			} elseif ($knVerdict === 'shippable') {
+				print img_picto($langs->trans("Shippable"), 'dolly', '', 0, 0, 0, '', 'green');
 			} else {
-				print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'error');
+				print img_picto($langs->trans("NonShippable"), 'dolly', '', 0, 0, 0, '', 'error');
 			}
 		} else {
-			print img_picto($langs->trans("Shipped"), 'statut5');
+			// END SPE KOESIO: T260145
+			static $productstatcache = array();
+
+			if (empty($productstatcache[$line->fk_product])) {
+				$prod = new Product($this->db);
+				$prod->fetch($line->fk_product);
+				$prod->load_stock('nobatch,warehouseopen');
+				$productstatcache[$line->fk_product]['stockreel'] = $prod->stock_reel;
+			}
+			$stock = $productstatcache[$line->fk_product]['stockreel'];
+			$reliquat = $line->qty;
+			if (!empty($object->expeditions[$line->id])) {
+				$reliquat -= $object->expeditions[$line->id];
+			}
+			if ($reliquat > 0) {
+				if ($stock >= $reliquat) {
+					print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'green');
+				} else {
+					print img_picto($langs->trans("Stock").': '.$stock, 'dolly', '', 0, 0, 0, '', 'error');
+				}
+			} else {
+				print img_picto($langs->trans("Shipped"), 'statut5');
+			}
+			// BEGIN SPE KOESIO: T260145
 		}
+		// END SPE KOESIO: T260145 let a module own the per line verdict
 	} else {
 		print '&nbsp;';
 	}

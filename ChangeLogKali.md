@@ -14,6 +14,8 @@ PR#43195 - Quadratic update_price when generating a supplier invoice from a temp
 PR#43233 - A link extrafield left empty was stored as 0 instead of NULL (T250214)
 PR#43290 - A chkbxlst extrafield filtered on $ID$ broke the search input of list views (T250214)
 PR#43306 - A link extrafield to a category showed a bad setup error instead of its combo (T250214)
+PR#41087 - Hook printFieldListSearchParam on the reception list (TK2609-5362)
+PR#39793 - Hook getShippableInfos to let a module replace the order shippability computation (T260145)
 
 
 ## SPÉ KOESIO 
@@ -24,3 +26,10 @@ fbde090e43db98684e83d96bc8db51fcb0904949 - Limite mémoire relevée à 2048 Mo
 2897cb7ad87a63089b48ad5298031475ad48213d - TVA du vendeur et non du client sur un contrat fournisseur
 a1428b79cf0 - Génération anticipée des factures récurrentes
 369607840b9 - Hide edit button when date_compta is not empty
+8b370a68c01 - La colonne stock des lignes de commande utilise le verdict par ligne du hook getShippableInfos (T260145)
+060f6d221fe - insertExtraFields ne vide plus un extrafield link dont l'id est introuvable (fk_last_invoice) (T260197)
+b200f586161 - Bouton Modifier de la facture fournisseur masqué si date_compta est non vide (et plus seulement non définie)
+b200f586161 - Bloc « Lier à » masqué sur la facture fournisseur
+b200f586161 - Lignes jamais pré-cochées dans la liste des services de contrat
+b200f586161 - Date de création affichée sur la fiche lot/série
+b200f586161 - Contrôle du code client désactivé dans Societe::verify()

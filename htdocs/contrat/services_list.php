@@ -947,9 +947,11 @@ while ($i < $imaxinloop) {
 		print '<td class="nowrap center">';
 		if ($massactionbutton || $massaction) {   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 			$selected = 0;
-			if (in_array($obj->rowid, $arrayofselected)) {
+			/** START SPÉ KN */
+			/*if (in_array($obj->rowid, $arrayofselected)) {
 				$selected = 1;
-			}
+			}*/
+			/** END SPÉ KN */
 			print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 		}
 		print '</td>';
@@ -1160,9 +1162,11 @@ while ($i < $imaxinloop) {
 		print '<td class="nowrap center">';
 		if ($massactionbutton || $massaction) {   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 			$selected = 0;
-			if (in_array($obj->rowid, $arrayofselected)) {
+			/** START SPÉ KN */
+			/*if (in_array($obj->rowid, $arrayofselected)) {
 				$selected = 1;
-			}
+			}*/
+			/** END SPÉ KN */
 			print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 		}
 		print '</td>';

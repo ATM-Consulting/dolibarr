@@ -7225,13 +7225,33 @@ abstract class CommonObject
 							if (is_object($obj)) {
 								$objectId = $obj->rowid;
 								$res = 1;
-							} else {
+							}
+							// BEGIN SPE KOESIO: T260197 - upstream returns -1 when the id cannot be
+							// resolved. We cannot afford that failure here: the fk_last_invoice extrafield
+							// of a contract line points either to llx_facture or to llx_facture_fourn, and
+							// LightFactureDispatcher can only tell them apart when the $object global holds
+							// the contract, i.e. on the contract card. Anywhere else a supplier invoice id
+							// is looked up in llx_facture and not found, so returning -1 would break every
+							// ContratLigne::update() coming from the API or from a script. We leave the
+							// column untouched instead, which keeps the value that was already stored.
+							elseif ($obj === 0) {
+								$res = 0;
+							}
+							// END SPE KOESIO: T260197
+							else {
 								$res = -1;
 							}
 
 							if ($res > 0) {
 								$new_array_options[$key] = $objectId;
-							} else {
+							}
+							// BEGIN SPE KOESIO: T260197 - dropping the key excludes the column from the
+							// UPDATE built below, so its stored value survives.
+							elseif ($res === 0) {
+								unset($new_array_options[$key]);
+							}
+							// END SPE KOESIO: T260197
+							else {
 								$this->error = "Id/Ref '".$value."' for object '".$object->element."' not found";
 								return -1;
 							}
