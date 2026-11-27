@@ -4326,7 +4326,7 @@ if ($action == 'create') {
 					$ventilExportCompta = $object->getVentilExportCompta(); // Should be 0 since the sum of payments are zero. But we keep the protection.
 					/** START SPÉ KN */
 					$date_compta = $object->array_options['options_date_compta'];
-					if (!isset($date_compta)) {
+					if (empty($date_compta)) {
 						if ($ventilExportCompta == 0) {
 							print '<a class="butAction'.($conf->use_javascript_ajax ? ' reposition' : '').'" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=edit&token='.newToken().'">'.$langs->trans('Modify').'</a>';
 						} else {
@@ -4523,10 +4523,13 @@ if ($action == 'create') {
 					$somethingshown = $formfile->numoffiles;
 
 					// Show links to link elements
-					$tmparray = $form->showLinkToObjectBlock($object, array(), array('invoice_supplier'), 1);
+					/** START SPÉ KN */
+					/*$tmparray = $form->showLinkToObjectBlock($object, array(), array('invoice_supplier'), 1);
 					$linktoelem = $tmparray['linktoelem'];
 					$htmltoenteralink = $tmparray['htmltoenteralink'];
-					print $htmltoenteralink;
+					print $htmltoenteralink;*/
+					$linktoelem = '';
+					/** END SPÉ KN */
 
 					$somethingshown = $form->showLinkedObjectBlock($object, $linktoelem);
 

@@ -1269,7 +1269,8 @@ class Societe extends CommonObject
 			$result = -2;
 		}
 
-		if ($this->client) {
+		/** SPÉ KN : customer code check disabled */
+		if ($this->client && false) {
 			$rescode = $this->check_codeclient();
 			if ($rescode != 0 && $rescode != -5) {
 				if ($rescode == -1) {
