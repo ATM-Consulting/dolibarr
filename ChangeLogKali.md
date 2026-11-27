@@ -24,6 +24,7 @@ fbde090e43db98684e83d96bc8db51fcb0904949 - Limite mémoire relevée à 2048 Mo
 2897cb7ad87a63089b48ad5298031475ad48213d - TVA du vendeur et non du client sur un contrat fournisseur
 a1428b79cf0 - Génération anticipée des factures récurrentes
 369607840b9 - Hide edit button when date_compta is not empty
+060f6d221fe - insertExtraFields ne vide plus un extrafield link dont l'id est introuvable (fk_last_invoice) (T260197)
 b200f586161 - Bouton Modifier de la facture fournisseur masqué si date_compta est non vide (et plus seulement non définie)
 b200f586161 - Bloc « Lier à » masqué sur la facture fournisseur
 b200f586161 - Lignes jamais pré-cochées dans la liste des services de contrat
